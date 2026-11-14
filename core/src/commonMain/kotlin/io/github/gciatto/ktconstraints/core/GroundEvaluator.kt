@@ -31,6 +31,10 @@ object GroundEvaluator {
             is IntDifference -> (values[0] as BigInteger) - (values[1] as BigInteger)
             is IntProduct -> (values[0] as BigInteger) * (values[1] as BigInteger)
             is IntNegation -> -(values[0] as BigInteger)
+            is Element -> evaluateElement(node, values)
+            is LinearSum -> values.zip(node.coefficients).fold(node.constant) { total, (value, coefficient) ->
+                total + (value as BigInteger) * coefficient
+            }
             else -> throw IllegalArgumentException("Unsupported integer expression: $node")
         }
 
@@ -45,6 +49,24 @@ object GroundEvaluator {
             is IntEquality -> values[0] == values[1]
             is IntLessThan -> (values[0] as BigInteger) < (values[1] as BigInteger)
             is IntLessOrEqual -> (values[0] as BigInteger) <= (values[1] as BigInteger)
+            is AllDifferent -> values.toSet().size == values.size
+            is Table -> node.tuples.any { it == values }
+            is BoolCardinality -> evaluateCardinality(node, values)
             else -> throw IllegalArgumentException("Unsupported Boolean expression: $node")
         }
+
+    private fun evaluateElement(node: Element, values: List<Any>): BigInteger {
+        val index = values[0] as BigInteger
+        require(index >= BigInteger.ZERO && index < BigInteger.of(node.values.size)) { "Element index out of range: $index" }
+        return values[index.toIntExact() + 1] as BigInteger
+    }
+
+    private fun evaluateCardinality(node: BoolCardinality, values: List<Any>): Boolean {
+        val actual = values.count { it == true }
+        return when (node.relation) {
+            CardinalityRelation.AT_MOST -> actual <= node.count
+            CardinalityRelation.EXACTLY -> actual == node.count
+            CardinalityRelation.AT_LEAST -> actual >= node.count
+        }
+    }
 }

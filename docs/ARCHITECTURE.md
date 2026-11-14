@@ -52,6 +52,11 @@ rejected explicitly. Division and modulo are deferred until their cross-backend 
 `allDifferent` etc. remain IR nodes until a compiler decides whether native global support, lossless decomposition
 or rejection is appropriate.
 
+The first globals are all-different, zero-based element selection, allowed-tuple tables, exact weighted sums,
+and Boolean cardinalities. Their operand and tuple collections are detached immutable snapshots with structural
+equality. An element expression requires a non-empty array and rejects an out-of-range ground index; tables
+validate tuple arity. Empty all-different is true and an empty allowed-tuple table is false, including at arity zero.
+
 A `ConstraintSolver` performs one-shot solving. An `IncrementalSession` offers assertion scopes and satisfiability
 queries. A `PropagatingSession` is a stronger capability, reporting domain reductions and entailment. It is incorrect
 to advertise general CLP propagation merely because a backend implements SMT push/pop.
