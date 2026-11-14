@@ -31,6 +31,10 @@ reached by several routes. API selection must identify both engine and route.
 A frozen model is immutable and serializable/cachable by design. A session is stateful and potentially
 thread-confined. `ConstraintScope` allocates semantic variable identities; name reuse across scopes cannot alias.
 
+Model construction copies declaration and constraint collections into Kotlin `buildList` snapshots. Their
+contents cannot be changed through mutable collection casts, and subsequent builder edits cannot affect them.
+This freezes the collections; custom expression and domain implementations must themselves be immutable.
+
 Integer is mathematical, bounded Long representation in the first P0 prototype only. Later representation must
 be arbitrary precision with range validation when compiling for CP-SAT. `Sort.BitVector` is a separate bitwise sort.
 

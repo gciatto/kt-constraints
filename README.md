@@ -4,6 +4,8 @@
 
 [Architecture](docs/ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Releasing](docs/RELEASING.md)
 
+[Bootstrap verification](docs/BOOTSTRAP.md) records build, wrapper, publication and platform evidence.
+
 ## Project status
 
 Early **repository bootstrap / P0**, not a released constraint solver. The `:core`, `:model`, and `:dsl` modules
