@@ -22,6 +22,9 @@ data class SolveResult(
         require(feasible == (assignment != null)) { "Only feasible/optimal results carry an assignment" }
         require(objectiveValue == null || assignment != null) { "An objective value requires an assignment" }
         require(status != SolveStatus.OPTIMAL || objectiveValue != null) { "Optimality requires an objective value" }
+        require(status != SolveStatus.OPTIMAL || bestBound == null || bestBound == objectiveValue) {
+            "An optimal objective and its provided bound must agree"
+        }
         require(status == SolveStatus.UNKNOWN || status == SolveStatus.FEASIBLE || terminationReason == TerminationReason.COMPLETED) {
             "A proof status requires completed execution"
         }
