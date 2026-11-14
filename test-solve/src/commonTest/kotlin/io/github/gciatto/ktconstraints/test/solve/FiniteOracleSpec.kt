@@ -23,6 +23,7 @@ import org.gciatto.kt.math.BigInteger
 
 /** The test-only finite oracle is exact, bounded and honest about incomplete search. */
 class FiniteOracleSpec : FunSpec({
+    include(solverContract { FiniteOracle() })
     test("oracle/sat-and-unsat-with-boolean-variables") {
         val scope = ConstraintScope.empty()
         val flag = scope.boolVar("flag")
