@@ -22,6 +22,15 @@ import org.gciatto.kt.math.BigInteger
 
 /** Shared stream lifecycle is exercised independently of any engine. */
 class ManagedSolutionStreamSpec : FunSpec({
+    test("stream/backend-deadline-retains-incumbent-with-timeout-reason") {
+        val stream = RecordingStream(listOf(SolutionFound(Assignment.empty(), BigInteger.ONE)))
+        stream.next()
+        stream.timeout()
+        stream.terminalResult?.terminationReason shouldBe TerminationReason.TIMEOUT
+        stream.terminalResult?.status shouldBe SolveStatus.FEASIBLE
+        stream.cancel()
+        stream.terminalResult?.terminationReason shouldBe TerminationReason.TIMEOUT
+    }
     test("stream/emits-one-completion-and-releases-on-exhaustion") {
         val result = SolveResult(SolveStatus.FEASIBLE, Assignment.empty(), SolverDescriptor("fake", "stream", emptySet()))
         val solution = SolutionFound(Assignment.empty())

@@ -2,6 +2,7 @@ package io.github.gciatto.ktconstraints.solve.spi
 
 import io.github.gciatto.ktconstraints.solve.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.TerminationReason
 
 internal class RecordingStream(
     events: List<SolutionEvent> = emptyList(),
@@ -27,4 +28,6 @@ internal class RecordingStream(
         releases++
         releaseHook()
     }
+
+    fun timeout() = stop(TerminationReason.TIMEOUT)
 }
