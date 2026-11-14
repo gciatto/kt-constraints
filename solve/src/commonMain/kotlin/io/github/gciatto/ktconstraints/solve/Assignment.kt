@@ -2,17 +2,18 @@ package io.github.gciatto.ktconstraints.solve
 
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.Valuation
 import org.gciatto.kt.math.BigInteger
 import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmStatic
 
 /** Read-only projection of one solver assignment. */
-interface Assignment {
+interface Assignment : Valuation {
     /** Returns null when the variable is not assigned or not part of the projection. */
-    fun valueOf(variable: BoolVar): Boolean?
+    override fun valueOf(variable: BoolVar): Boolean?
 
     /** Returns the exact integer value, or null when outside the assignment projection. */
-    fun valueOf(variable: IntVar): BigInteger?
+    override fun valueOf(variable: IntVar): BigInteger?
 
     /** Factories for detached typed assignments. */
     companion object {

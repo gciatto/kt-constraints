@@ -13,10 +13,22 @@ object GroundEvaluator {
     @JvmStatic
     fun evaluate(expression: BoolExpr): Boolean = evaluateGround(expression) as Boolean
 
-    private fun evaluateGround(expression: Expr): Any {
-        require(expression.variables.isEmpty()) { "Ground evaluation does not accept variables" }
+    /** Evaluates an integer expression under complete, domain-valid variable bindings. */
+    @JvmStatic
+    fun evaluate(expression: IntExpr, valuation: Valuation): BigInteger = evaluateGround(expression, valuation) as BigInteger
+
+    /** Evaluates a Boolean expression under complete, domain-valid variable bindings. */
+    @JvmStatic
+    fun evaluate(expression: BoolExpr, valuation: Valuation): Boolean = evaluateGround(expression, valuation) as Boolean
+
+    private fun evaluateGround(expression: Expr, valuation: Valuation? = null): Any {
+        require(valuation != null || expression.variables.isEmpty()) { "Ground evaluation does not accept variables" }
         return expression.fold { node, values: List<Any> ->
             when (node) {
+                is IntVar -> requireNotNull(valuation?.valueOf(node)) { "Missing integer binding: ${node.name}" }.also {
+                    require(it in node.domain) { "Integer binding outside domain: ${node.name}" }
+                }
+                is BoolVar -> requireNotNull(valuation?.valueOf(node)) { "Missing Boolean binding: ${node.name}" }
                 is IntExpr -> evaluateInteger(node, values)
                 is BoolExpr -> evaluateBoolean(node, values)
                 else -> throw IllegalArgumentException("Unsupported expression: $node")
@@ -67,7 +79,9 @@ object GroundEvaluator {
         values: List<Any>,
     ): BigInteger {
         val index = values[0] as BigInteger
-        require(index >= BigInteger.ZERO && index < BigInteger.of(node.values.size)) { "Element index out of range: $index" }
+        if (index < BigInteger.ZERO || index >= BigInteger.of(node.values.size)) {
+            throw UndefinedExpressionException("Element index out of range: $index")
+        }
         return values[index.toIntExact() + 1] as BigInteger
     }
 

@@ -86,6 +86,15 @@ assignment, and proof statuses require completed search rather than a timeout/ca
 values and bounds remain exact. Assignment factories snapshot typed maps and reject out-of-domain values;
 solver descriptors snapshot their capabilities and identify each engine/route with a distinct `engine/route` ID.
 
+Pure evaluation may bind variables through a solver-independent typed `Valuation`; an `Assignment` supplies
+those bindings. Missing or out-of-domain values are errors. Undefined element indices have a distinct error
+so a finite test oracle can reject invalid candidates without swallowing unsupported-node failures.
+
+Streams emit solution/incumbent events and exactly one completion event, then return null. Cancellation and
+close preserve the first definitive terminal result and release resources once, including during an in-flight
+read. Only one consumer may call `next` at a time. Closing a solver cancels its active streams. Shared lifecycle
+implementations use portable atomic state; coroutine cancellation is propagated rather than reported as UNSAT.
+
 ## Platform boundaries
 
 - `commonMain`: pure typed IR, compiler contracts, generic descriptors.
