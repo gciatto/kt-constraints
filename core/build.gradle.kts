@@ -4,5 +4,8 @@ kotlin {
         commonMain {
             dependencies { api(libs.kt.math) }
         }
+        commonTest {
+            dependencies { implementation(project(":test-core")) }
+        }
     }
 }
