@@ -81,6 +81,11 @@ Any backend-owning solver and session must be `AutoCloseable`, cancellable, and 
 Streams must be single-pass, close automatically when exhausted, and expose terminal status separately from
 incumbent solutions. Native solver contexts and JS Wasm runtimes are never owned by common AST objects.
 
+M2 result contracts keep search status separate from termination. Feasible/optimal results require an
+assignment, and proof statuses require completed search rather than a timeout/cancellation. Integer objective
+values and bounds remain exact. Assignment factories snapshot typed maps and reject out-of-domain values;
+solver descriptors snapshot their capabilities and identify each engine/route with a distinct `engine/route` ID.
+
 ## Platform boundaries
 
 - `commonMain`: pure typed IR, compiler contracts, generic descriptors.
