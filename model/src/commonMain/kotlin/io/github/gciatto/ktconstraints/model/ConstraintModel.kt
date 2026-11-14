@@ -6,15 +6,22 @@ import io.github.gciatto.ktconstraints.core.Variable
 /** Frozen, solver-independent constraint problem. */
 class ConstraintModel internal constructor(
     variables: Collection<Variable>,
-    constraints: Collection<BoolExpr>,
+    entries: Collection<ConstraintEntry>,
     /** Optional optimization objective; null means satisfaction. */
     val objective: Objective?,
+    outputVariables: Collection<Variable> = variables,
 ) {
     /** Variables declared in the model, in declaration order. */
     val variables: List<Variable> = buildList { addAll(variables) }
 
-    /** Asserted Boolean expressions. */
-    val constraints: List<BoolExpr> = buildList { addAll(constraints) }
+    /** Immutable assertions and metadata, in assertion order. */
+    val entries: List<ConstraintEntry> = buildList { addAll(entries) }
+
+    /** Asserted Boolean expressions, preserving the original modelling API. */
+    val constraints: List<BoolExpr> = buildList { entries.forEach { add(it.expression) } }
+
+    /** Variables included in public solver output, in projection order. */
+    val outputVariables: List<Variable> = buildList { addAll(outputVariables) }
 
     /** Creates a fresh modelling scope for a new model. */
     companion object {
