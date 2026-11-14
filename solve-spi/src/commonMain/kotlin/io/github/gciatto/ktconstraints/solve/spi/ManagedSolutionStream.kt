@@ -64,9 +64,15 @@ abstract class ManagedSolutionStream(
         }
     }
 
-    final override fun cancel() = finish { interrupted(it, TerminationReason.CANCELLED) }
+    final override fun cancel() = stop(TerminationReason.CANCELLED)
 
     final override fun close() = cancel()
+
+    /** Stops for an externally observed deadline or resource limit, preserving an incumbent and prior completion. */
+    protected fun stop(reason: TerminationReason) {
+        require(reason != TerminationReason.COMPLETED) { "Completed search requires an explicit result" }
+        finish { interrupted(it, reason) }
+    }
 
     private fun fail(failure: Throwable, reason: TerminationReason) {
         try {
