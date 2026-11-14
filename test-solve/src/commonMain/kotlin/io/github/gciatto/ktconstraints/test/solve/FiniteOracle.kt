@@ -9,13 +9,24 @@ import io.github.gciatto.ktconstraints.solve.spi.ManagedSolutionStream
 
 /** Tiny exact test oracle; unpublished and never registered as a production backend. */
 class FiniteOracle : ManagedConstraintSolver() {
-    override val descriptor: SolverDescriptor = SolverDescriptor(
-        "finite-oracle", "test",
-        setOf(SolverCapability.SATISFACTION, SolverCapability.OPTIMIZATION, SolverCapability.ENUMERATION,
-            SolverCapability.INTEGER_ARITHMETIC, SolverCapability.GLOBAL_CONSTRAINTS),
-    )
+    override val descriptor: SolverDescriptor =
+        SolverDescriptor(
+            "finite-oracle",
+            "test",
+            setOf(
+                SolverCapability.SATISFACTION,
+                SolverCapability.OPTIMIZATION,
+                SolverCapability.ENUMERATION,
+                SolverCapability.INTEGER_ARITHMETIC,
+                SolverCapability.GLOBAL_CONSTRAINTS,
+            ),
+        )
 
-    override fun openStream(model: ConstraintModel, options: SolveOptions, onClosed: () -> Unit): ManagedSolutionStream {
+    override fun openStream(
+        model: ConstraintModel,
+        options: SolveOptions,
+        onClosed: () -> Unit,
+    ): ManagedSolutionStream {
         requireOracleSupported(model)
         return OracleStream(model, options, OracleCandidates(model), descriptor, onClosed)
     }

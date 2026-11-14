@@ -31,21 +31,27 @@ import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
 internal fun requireOracleSupported(model: ConstraintModel) {
     val errors = mutableListOf<String>()
     if (model.variables.size > FiniteOracle.MAX_VARIABLES) errors += "Oracle variable cap exceeded"
-    val roots: List<Expr> = model.variables + model.constraints + when (val objective = model.objective) {
-        is Objective.Minimize -> listOf(objective.expression)
-        is Objective.Maximize -> listOf(objective.expression)
-        null -> emptyList()
-    }
-    for (root in roots) root.fold { node, _: List<Unit> ->
-        if (!knownOracleNode(node)) errors += "Unsupported expression: ${node::class.simpleName}"
+    val roots: List<Expr> =
+        model.variables + model.constraints +
+            when (val objective = model.objective) {
+                is Objective.Minimize -> listOf(objective.expression)
+                is Objective.Maximize -> listOf(objective.expression)
+                null -> emptyList()
+            }
+    for (root in roots) {
+        root.fold { node, _: List<Unit> ->
+            if (!knownOracleNode(node)) errors += "Unsupported expression: ${node::class.simpleName}"
+        }
     }
     if (errors.isNotEmpty()) throw UnsupportedModelException(SupportReport(errors.distinct()))
 }
 
-private fun knownOracleNode(node: Expr): Boolean = when (node) {
-    is BoolVar, is IntVar, is BoolLiteral, is IntLiteral, is IntSum, is IntDifference, is IntProduct,
-    is IntNegation, is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolAnd, is BoolOr,
-    is BoolNot, is BoolImplies, is BoolEquality, is AllDifferent, is Element, is Table,
-    is LinearSum, is BoolCardinality -> true
-    else -> false
-}
+private fun knownOracleNode(node: Expr): Boolean =
+    when (node) {
+        is BoolVar, is IntVar, is BoolLiteral, is IntLiteral, is IntSum, is IntDifference, is IntProduct,
+        is IntNegation, is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolAnd, is BoolOr,
+        is BoolNot, is BoolImplies, is BoolEquality, is AllDifferent, is Element, is Table,
+        is LinearSum, is BoolCardinality,
+        -> true
+        else -> false
+    }

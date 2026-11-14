@@ -11,7 +11,11 @@ internal class RecordingSolver(
     override val descriptor = SolverDescriptor("fake", "stream", emptySet())
     val created = mutableListOf<RecordingStream>()
 
-    override fun openStream(model: ConstraintModel, options: SolveOptions, onClosed: () -> Unit): ManagedSolutionStream {
+    override fun openStream(
+        model: ConstraintModel,
+        options: SolveOptions,
+        onClosed: () -> Unit,
+    ): ManagedSolutionStream {
         val stream = RecordingStream(releaseHook = releaseHook, onClosed = onClosed)
         created += stream
         onOpen()

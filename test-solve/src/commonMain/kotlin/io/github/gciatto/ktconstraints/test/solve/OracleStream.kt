@@ -52,11 +52,12 @@ internal class OracleStream(
         val value: BigInteger?
         try {
             if (!model.constraints.all { GroundEvaluator.evaluate(it, assignment) }) return null
-            value = when (val objective = model.objective) {
-                is Objective.Minimize -> GroundEvaluator.evaluate(objective.expression, assignment)
-                is Objective.Maximize -> GroundEvaluator.evaluate(objective.expression, assignment)
-                null -> null
-            }
+            value =
+                when (val objective = model.objective) {
+                    is Objective.Minimize -> GroundEvaluator.evaluate(objective.expression, assignment)
+                    is Objective.Maximize -> GroundEvaluator.evaluate(objective.expression, assignment)
+                    null -> null
+                }
         } catch (_: UndefinedExpressionException) {
             return null
         }
@@ -64,31 +65,47 @@ internal class OracleStream(
         val event = SolutionFound(projected, value)
         if (model.objective == null) {
             if (incumbent == null) incumbent = event
-            val key: List<Any> = model.outputVariables.map { variable -> when (variable) {
-                is BoolVar -> requireNotNull(projected.valueOf(variable))
-                is IntVar -> requireNotNull(projected.valueOf(variable))
-                else -> error("Unsupported projection")
-            } }
+            val key: List<Any> =
+                model.outputVariables.map { variable ->
+                    when (variable) {
+                        is BoolVar -> requireNotNull(projected.valueOf(variable))
+                        is IntVar -> requireNotNull(projected.valueOf(variable))
+                        else -> error("Unsupported projection")
+                    }
+                }
             return if (seen.add(key)) event else null
         }
         val previous = incumbent?.objectiveValue
-        if (previous != null && when (model.objective) {
+        if (previous != null &&
+            when (model.objective) {
                 is Objective.Minimize -> requireNotNull(value) >= previous
                 else -> requireNotNull(value) <= previous
-            }) return null
+            }
+        ) {
+            return null
+        }
         incumbent = event
         return event
     }
 
     private fun complete(reason: TerminationReason): SolveCompleted {
         val best = incumbent
-        val status = when {
-            best == null -> if (reason == TerminationReason.COMPLETED) SolveStatus.INFEASIBLE else SolveStatus.UNKNOWN
-            model.objective != null && reason == TerminationReason.COMPLETED -> SolveStatus.OPTIMAL
-            else -> SolveStatus.FEASIBLE
-        }
-        return SolveCompleted(SolveResult(status, best?.assignment, descriptor, reason,
-            best?.objectiveValue, if (status == SolveStatus.OPTIMAL) best?.objectiveValue else null))
+        val status =
+            when {
+                best == null -> if (reason == TerminationReason.COMPLETED) SolveStatus.INFEASIBLE else SolveStatus.UNKNOWN
+                model.objective != null && reason == TerminationReason.COMPLETED -> SolveStatus.OPTIMAL
+                else -> SolveStatus.FEASIBLE
+            }
+        return SolveCompleted(
+            SolveResult(
+                status,
+                best?.assignment,
+                descriptor,
+                reason,
+                best?.objectiveValue,
+                if (status == SolveStatus.OPTIMAL) best?.objectiveValue else null,
+            ),
+        )
     }
 
     override fun release() = Unit
