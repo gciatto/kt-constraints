@@ -1,0 +1,12 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["before 8am on monday"],
+  "packageRules": [
+    {
+      "matchPackageNames": ["org.danilopianini:publish-on-central"],
+      "enabled": false,
+      "description": "Pinned at 9.2.4 for the Gradle coroutines clash, consistent with kt-math and 2p-kt."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+site_name: Kt-Constraints
+site_url: https://gciatto.github.io/kt-constraints/
+repo_url: https://github.com/gciatto/kt-constraints
+site_description: Kotlin Multiplatform CP, SMT and CLP constraint modelling
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Roadmap: roadmap.md
+  - Releasing: releasing.md
+theme:
+  name: material
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true

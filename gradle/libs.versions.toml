@@ -1,0 +1,32 @@
+[versions]
+kotlin = "2.4.21"
+jvm = "17"
+node = "22-latest"
+ktMpp = "6.1.4"
+kotest = "6.2.7"
+ksp = "2.3.14"
+kover = "0.9.11"
+
+[libraries]
+kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", version.ref = "kotest" }
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
+kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
+# Future arbitrary precision support (not yet linked by the bootstrap core):
+kt-math = "io.github.gciatto:kt-math:2.1.2"
+
+[plugins]
+gitSemVer = "org.danilopianini.git-sensitive-semantic-versioning:7.3.3"
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+kotest = { id = "io.kotest", version.ref = "kotest" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+ktMpp-versions = { id = "io.github.gciatto.kt-mpp.versions", version.ref = "ktMpp" }
+ktMpp-linter = { id = "io.github.gciatto.kt-mpp.linter", version.ref = "ktMpp" }
+ktMpp-bugFinder = { id = "io.github.gciatto.kt-mpp.bug-finder", version.ref = "ktMpp" }
+ktMpp-documentation = { id = "io.github.gciatto.kt-mpp.documentation", version.ref = "ktMpp" }
+ktMpp-mavenPublish = { id = "io.github.gciatto.kt-mpp.maven-publish", version.ref = "ktMpp" }
+ktMpp-npmPublish = { id = "io.github.gciatto.kt-mpp.npm-publish", version.ref = "ktMpp" }
+ktMpp-multiProjectHelper = { id = "io.github.gciatto.kt-mpp.multi-project-helper", version.ref = "ktMpp" }
+ktMpp-multiplatform = { id = "io.github.gciatto.kt-mpp.multiplatform", version.ref = "ktMpp" }
+ktMpp-jvmOnly = { id = "io.github.gciatto.kt-mpp.jvm-only", version.ref = "ktMpp" }
+ktMpp-jsOnly = { id = "io.github.gciatto.kt-mpp.js-only", version.ref = "ktMpp" }

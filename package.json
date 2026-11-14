@@ -1,0 +1,12 @@
+{
+  "name": "kt-constraints-release-tooling",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Semantic release tooling for Kt-Constraints (not a published npm package)",
+  "devDependencies": {
+    "semantic-release-preconfigured-conventional-commits": "1.1.158"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

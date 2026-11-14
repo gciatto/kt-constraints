@@ -1,0 +1,7 @@
+# Small repository-specific delta; kt-mpp supplies baseline defaults.
+config:
+  validation: true
+style:
+  MaxLineLength:
+    active: true
+    maxLineLength: 160

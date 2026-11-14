@@ -1,0 +1,19 @@
+name: CI summary
+description: Appends one job summary row without modifying the repository.
+inputs:
+  title:
+    description: Job or stage title
+    required: true
+  status:
+    description: Final job status
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        TITLE: ${{ inputs.title }}
+        STATUS: ${{ inputs.status }}
+      run: |
+        echo "### $TITLE" >> "$GITHUB_STEP_SUMMARY"
+        echo "Outcome: **$STATUS**" >> "$GITHUB_STEP_SUMMARY"

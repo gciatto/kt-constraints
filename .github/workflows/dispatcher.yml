@@ -1,0 +1,70 @@
+name: CI/CD
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      mode: verify
+    secrets: inherit
+
+  test-extensively:
+    needs: build
+    uses: ./.github/workflows/test-extensively.yml
+    secrets: inherit
+
+  docs:
+    needs: build
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit
+
+  release:
+    # No publishing at bootstrap. Explicitly enable repository variable ENABLE_RELEASE=true.
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/master' &&
+      vars.ENABLE_RELEASE == 'true'
+    needs: [build, test-extensively, docs]
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      issues: write
+      pull-requests: write
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      mode: release
+    secrets: inherit
+
+  summary:
+    if: always()
+    needs: [build, test-extensively, docs, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Overall CI summary
+        env:
+          BUILD: ${{ needs.build.result }}
+          EXTENSIVE: ${{ needs.test-extensively.result }}
+          DOCS: ${{ needs.docs.result }}
+          RELEASE: ${{ needs.release.result }}
+        run: |
+          {
+            echo '# Kt-Constraints CI summary'
+            echo '| Stage | Outcome |'
+            echo '| --- | --- |'
+            echo "| Build and lint | $BUILD |"
+            echo "| Multi-OS tests | $EXTENSIVE |"
+            echo "| Documentation | $DOCS |"
+            echo "| Release (opt-in) | $RELEASE |"
+          } >> "$GITHUB_STEP_SUMMARY"
