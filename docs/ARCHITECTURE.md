@@ -99,3 +99,8 @@ solver descriptors snapshot their capabilities and identify each engine/route wi
 Backends register a descriptor and a compiler/transport pair. Compilation returns diagnostics and a supported
 subset description. Conformance tests independently verify constructs and runtime lifecycle. A backend not yet
 implemented or present must never be selected by `auto`.
+
+Registry registration is explicit and immutable on every platform. Selection preserves registration order and
+checks required capabilities, runtime availability and the whole-model support report before returning a backend.
+An objective additionally requires optimization capability. Rejections retain route-scoped diagnostics; unknown
+or incompatible backends are never substituted silently and selection does not allocate solver resources.
