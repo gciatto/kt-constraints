@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.spi
 
-import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.model.ConstraintModel
+import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 
@@ -17,7 +17,10 @@ interface SolverBackend {
     fun availability(): BackendAvailability
 
     /** Assesses the entire model and options without dropping or approximating unsupported constructs. */
-    fun support(model: ConstraintModel, options: SolveOptions = SolveOptions.DEFAULT): SupportReport
+    fun support(
+        model: ConstraintModel,
+        options: SolveOptions = SolveOptions.DEFAULT,
+    ): SupportReport
 
     /** Creates a fresh solver instance, or fails explicitly if unavailable. */
     fun create(): ConstraintSolver

@@ -9,12 +9,13 @@ internal class ImmutableAssignment(
     integers: Map<IntVar, BigInteger>,
 ) : Assignment {
     private val booleans: Map<BoolVar, Boolean> = buildMap { putAll(booleans) }
-    private val integers: Map<IntVar, BigInteger> = buildMap {
-        integers.forEach { (variable, value) ->
-            require(value in variable.domain) { "Value $value is outside the domain of ${variable.name}" }
-            put(variable, value)
+    private val integers: Map<IntVar, BigInteger> =
+        buildMap {
+            integers.forEach { (variable, value) ->
+                require(value in variable.domain) { "Value $value is outside the domain of ${variable.name}" }
+                put(variable, value)
+            }
         }
-    }
 
     override fun valueOf(variable: BoolVar): Boolean? = booleans[variable]
 

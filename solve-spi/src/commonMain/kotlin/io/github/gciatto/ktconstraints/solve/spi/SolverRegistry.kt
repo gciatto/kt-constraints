@@ -6,11 +6,18 @@ import io.github.gciatto.ktconstraints.solve.SolverCapability
 import kotlin.jvm.JvmStatic
 
 /** Immutable explicit registry; deterministic eligibility selection never instantiates a solver. */
-class SolverRegistry private constructor(backends: Collection<SolverBackend>) {
+class SolverRegistry private constructor(
+    backends: Collection<SolverBackend>,
+) {
     private val backends: List<SolverBackend> = buildList { addAll(backends) }
 
     init {
-        require(this.backends.map { it.descriptor.id }.toSet().size == this.backends.size) { "Duplicate backend route ID" }
+        require(
+            this.backends
+                .map { it.descriptor.id }
+                .toSet()
+                .size == this.backends.size,
+        ) { "Duplicate backend route ID" }
     }
 
     /** Returns a registered route, failing explicitly for unknown IDs. */
@@ -23,11 +30,12 @@ class SolverRegistry private constructor(backends: Collection<SolverBackend>) {
         options: SolveOptions = SolveOptions.DEFAULT,
         requiredCapabilities: Set<SolverCapability> = emptySet(),
     ): SolverBackend {
-        val required = buildSet {
-            add(SolverCapability.SATISFACTION)
-            if (model.objective != null) add(SolverCapability.OPTIMIZATION)
-            addAll(requiredCapabilities)
-        }
+        val required =
+            buildSet {
+                add(SolverCapability.SATISFACTION)
+                if (model.objective != null) add(SolverCapability.OPTIMIZATION)
+                addAll(requiredCapabilities)
+            }
         val rejections = linkedMapOf<String, List<String>>()
         for (backend in backends) {
             val reasons = rejectionReasons(backend, model, options, required)
