@@ -63,12 +63,15 @@ are a deliberate compatibility preference, **not** a runtime dependency.
 - [x] Add initial `ConstraintSolver` / `SolveOptions` / descriptor / `SolverBackend` contracts (not yet operational).
 - [x] Add Kotest starter cases and source/test module wiring.
 - [x] Add CI structure, release gating, docs, Gradle wrapper bootstrap and contributor/agent documentation.
+- [x] Add exact integer literals/domains, Boolean/integer operations, preserved CP globals, folds and ground evaluation.
+- [x] Add immutable assertion metadata, source labels and output projection; retain scope-owned variable identities.
+- [x] Add reusable seeded representation contracts and a separately compiled Java core consumer.
 - [ ] Complete numeric types (BigInteger via kt-math or an equivalent MPP abstraction), sort checking, domain operations.
 - [ ] Finalize AST coverage, normalization, canonicalization and algebraic simplifications.
 - [ ] Complete immutable model metadata, objective semantics, variable projections, model cloning and diagnostics.
 - [ ] Stabilize runtime SPIs, capability descriptors, support/lowering reports, closeable streams, and error taxonomy.
 - [ ] Add Java/TypeScript usage-contract tests before freezing public API; confirm platform compilation.
-- [ ] Implement `:test-core` reusable contracts, Kotest property tests with fixed seeds, and IR round-trip checks.
+- [ ] Extend `:test-core` contracts as the algebra grows; add IR round-trip checks when a portable format exists.
 - [ ] Add benchmark task and record baseline model-construction/compiler costs.
 
 **P0 acceptance:** Core/DSL usable without a solver, immutable snapshots, explicit variable identity and sort rules;

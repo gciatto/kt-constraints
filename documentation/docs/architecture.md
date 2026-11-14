@@ -35,11 +35,41 @@ Model construction copies declaration and constraint collections into Kotlin `bu
 contents cannot be changed through mutable collection casts, and subsequent builder edits cannot affect them.
 This freezes the collections; custom expression and domain implementations must themselves be immutable.
 
-Integer is mathematical, bounded Long representation in the first P0 prototype only. Later representation must
-be arbitrary precision with range validation when compiling for CP-SAT. `Sort.BitVector` is a separate bitwise sort.
+Each assertion has an optional unique name, immutable string annotations and an optional source location.
+The existing Boolean constraint list remains a projection of those entries. Output projection defaults to all
+declared variables; an explicit projection preserves its supplied order and may be empty. Scope ownership and
+typed expression sorts are validated before accepting assertions, objectives or projections. Satisfaction is
+represented by a null objective and `satisfy()` explicitly clears a previous objective.
+
+Integer expressions, finite-domain bounds and assignment values use kt-math's immutable multiplatform
+`BigInteger`. Long and Int factories are convenience inputs; conversion to a bounded backend must be checked.
+`Sort.BitVector` is a separate bitwise sort.
+
+Finite integer domains are canonical unions of sorted, disjoint, non-adjacent closed intervals. Sparse values
+are singleton intervals; empty domains have no bounds and cardinality zero. Explicit inverted intervals are
+invalid, while an empty Kotlin range denotes the empty domain. Union, intersection and cardinality operate on
+intervals without enumerating their values. Infinite domains are not implemented by this finite-domain type.
+
+Expression construction preserves the typed AST and structural equality without eager simplification.
+Ordered `children` and a bottom-up fold expose traversal without depending on a backend. The ground evaluator
+uses exact integer arithmetic and classical Boolean semantics; variables and unknown extension nodes are
+rejected explicitly. Division and modulo are deferred until their cross-backend semantics are specified.
 
 `allDifferent` etc. remain IR nodes until a compiler decides whether native global support, lossless decomposition
 or rejection is appropriate.
+
+The first globals are all-different, zero-based element selection, allowed-tuple tables, exact weighted sums,
+and Boolean cardinalities. Their operand and tuple collections are detached immutable snapshots with structural
+equality. An element expression requires a non-empty array and rejects an out-of-range ground index; tables
+validate tuple arity. Empty all-different is true and an empty allowed-tuple table is false, including at arity zero.
+
+## Portable representation design
+
+No serialization format or portable model fingerprint is implemented yet. A future format must encode exact
+integers losslessly, preserve declaration/operand order and globals, and use model-local variable indices.
+Decoding must allocate a fresh identity owner and remap all references, objectives and output variables.
+The current in-memory owner object and hash codes must never serve as serialized identity or a portable cache
+key. Round-trip tests will accompany an actual versioned format; none are claimed for this milestone.
 
 A `ConstraintSolver` performs one-shot solving. An `IncrementalSession` offers assertion scopes and satisfiability
 queries. A `PropagatingSession` is a stronger capability, reporting domain reductions and entailment. It is incorrect

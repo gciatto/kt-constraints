@@ -5,11 +5,13 @@
 [Architecture](docs/ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Releasing](docs/RELEASING.md)
 
 [Bootstrap verification](docs/BOOTSTRAP.md) records build, wrapper, publication and platform evidence.
+[M1 validation](docs/M1.md) records the exact finite-domain modelling foundation and its API changes.
 
 ## Project status
 
 Early **repository bootstrap / P0**, not a released constraint solver. The `:core`, `:model`, and `:dsl` modules
-contain the first working pieces of a typed symbolic algebra and model builder, with Kotest tests. The backend
+contain an exact Boolean/integer algebra, finite domains, global nodes, a ground evaluator and a model builder,
+with shared Kotest property contracts. The backend
 modules are intentionally empty integration slots; **Z3, MiniZinc, Choco, CP-SAT, HiGHS and FlatZinc do not yet run**.
 
 ## Design
@@ -26,13 +28,13 @@ modules are intentionally empty integration slots; **Z3, MiniZinc, Choco, CP-SAT
 
 | Category | Modules | Status |
 |---|---|---|
-| Representation | `:core`, `:model`, `:dsl` | Initial code and tests |
+| Representation | `:core`, `:model`, `:dsl` | Exact integer/Boolean IR, finite domains, globals and immutable models |
 | Solver contracts | `:solve`, `:solve-spi` | Initial contract types |
 | Compiler routes | `:solve-minizinc`, `:solve-flatzinc` | Placeholder modules |
 | Direct solver adapters | `:solve-z3`, `:solve-choco`, `:solve-cpsat`, `:solve-highs` | Placeholder modules |
 | Orchestration | `:solve-portfolio` | Placeholder module |
 | Language interoperability | `:interop-java`, `:interop-js` | Placeholder modules |
-| Testing and documentation | `:test-core`, `:test-solve`, `:documentation` | Contract slots / MkDocs |
+| Testing and documentation | `:test-core`, `:test-solve`, `:documentation` | Shared representation contracts / solver-contract slot / MkDocs |
 
 ## Minimal Kotlin modelling example (P0)
 
@@ -53,6 +55,12 @@ println(model.constraints.size) // 1
 ```
 
 Solving is **not yet implemented**. See [ROADMAP.md](ROADMAP.md) for exact milestones and acceptance criteria.
+
+Integer constants and finite-domain bounds use multiplatform kt-math `BigInteger`; `Int` and `Long` are
+convenience inputs. Domains support empty sets, sparse values, unions and intersections without enumerating
+intervals. The core retains `AllDifferent`, zero-based `Element`, allowed-tuple `Table`, `LinearSum` and
+Boolean cardinality nodes for later backend lowering. `GroundEvaluator` checks constant expressions only;
+it is not a solver. Models support named assertions, annotations, source locations and output projection.
 
 ## Build
 
