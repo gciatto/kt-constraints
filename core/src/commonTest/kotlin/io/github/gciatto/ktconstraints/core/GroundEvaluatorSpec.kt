@@ -60,4 +60,36 @@ class GroundEvaluatorSpec :
             val expression = IntSum(IntProduct(IntLiteral(-4), IntLiteral(3)), IntNegation(IntLiteral(-2)))
             GroundEvaluator.evaluate(expression) shouldBe BigInteger.of(-10)
         }
+
+        test("evaluation/binds-typed-variables-without-rewriting-the-expression") {
+            val factory = VariableFactory.empty()
+            val x = factory.intVar("x", IntDomain.of(0, 3))
+            val flag = factory.boolVar("flag")
+            val values = object : Valuation {
+                override fun valueOf(variable: IntVar): BigInteger? = if (variable == x) BigInteger.TWO else null
+                override fun valueOf(variable: BoolVar): Boolean? = if (variable == flag) true else null
+            }
+            GroundEvaluator.evaluate(IntSum(x, IntLiteral(1)), values) shouldBe BigInteger.of(3)
+            GroundEvaluator.evaluate(BoolAnd(flag, IntEquality(x, IntLiteral(2))), values) shouldBe true
+        }
+
+        test("evaluation/rejects-missing-and-out-of-domain-bindings") {
+            val x = VariableFactory.empty().intVar("x", IntDomain.values(1, 3))
+            val missing = object : Valuation {
+                override fun valueOf(variable: IntVar): BigInteger? = null
+                override fun valueOf(variable: BoolVar): Boolean? = null
+            }
+            val invalid = object : Valuation {
+                override fun valueOf(variable: IntVar): BigInteger? = BigInteger.TWO
+                override fun valueOf(variable: BoolVar): Boolean? = null
+            }
+            shouldThrow<IllegalArgumentException> { GroundEvaluator.evaluate(x, missing) }
+            shouldThrow<IllegalArgumentException> { GroundEvaluator.evaluate(x, invalid) }
+        }
+
+        test("element/undefined-indices-have-a-distinct-error") {
+            shouldThrow<UndefinedExpressionException> {
+                GroundEvaluator.evaluate(Element(IntLiteral(-1), listOf(IntLiteral(2))))
+            }
+        }
     })
