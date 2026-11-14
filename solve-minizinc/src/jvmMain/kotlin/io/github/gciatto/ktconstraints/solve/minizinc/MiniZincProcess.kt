@@ -38,63 +38,87 @@ internal class MiniZincProcess(
 
     suspend fun exitCode(): Int = io { requireNotNull(process).waitFor() }
 
-    fun stderr(): String = synchronized(lock) {
-        workspace?.resolve("stderr.log")?.let { Files.readString(it) }.orEmpty()
-    }
-
-    internal fun start() = synchronized(lock) {
-        check(!closed) { "MiniZinc process is closed" }
-        if (process != null) return@synchronized
-        val directory = Files.createTempDirectory("kt-constraints-minizinc-")
-        workspace = directory
-        try {
-            val model = directory.resolve("model.mzn")
-            Files.writeString(model, source)
-            process = ProcessBuilder(executable, "--solver", "org.gecode.gecode", "--json-stream", "--all-solutions",
-                "--statistics", model.toString()).redirectError(directory.resolve("stderr.log").toFile()).start()
-            reader = requireNotNull(process).inputStream.bufferedReader(Charsets.UTF_8)
-            executor = Executors.newSingleThreadExecutor { task -> Thread(task, "kt-constraints-minizinc-output").apply { isDaemon = true } }
-            if (timeoutMillis != null) {
-                timer = Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "kt-constraints-minizinc-deadline").apply { isDaemon = true } }
-                deadline = timer!!.schedule(onTimeout, timeoutMillis, TimeUnit.MILLISECONDS)
-            }
-        } catch (failure: Exception) {
-            close()
-            throw BackendExecutionException("Cannot start MiniZinc: ${failure.message}", failure)
+    fun stderr(): String =
+        synchronized(lock) {
+            workspace?.resolve("stderr.log")?.let { Files.readString(it) }.orEmpty()
         }
-    }
 
-    private suspend fun <T> io(action: () -> T): T = suspendCancellableCoroutine { continuation ->
-        val worker = synchronized(lock) {
+    internal fun start() =
+        synchronized(lock) {
             check(!closed) { "MiniZinc process is closed" }
-            requireNotNull(executor).submit {
+            if (process != null) return@synchronized
+            val directory = Files.createTempDirectory("kt-constraints-minizinc-")
+            workspace = directory
+            try {
+                val model = directory.resolve("model.mzn")
+                Files.writeString(model, source)
+                process =
+                    ProcessBuilder(
+                        executable,
+                        "--solver",
+                        "org.gecode.gecode",
+                        "--json-stream",
+                        "--all-solutions",
+                        "--statistics",
+                        model.toString(),
+                    ).redirectError(directory.resolve("stderr.log").toFile()).start()
+                reader = requireNotNull(process).inputStream.bufferedReader(Charsets.UTF_8)
+                executor =
+                    Executors.newSingleThreadExecutor { task -> Thread(task, "kt-constraints-minizinc-output").apply { isDaemon = true } }
+                if (timeoutMillis != null) {
+                    timer =
+                        Executors.newSingleThreadScheduledExecutor { task ->
+                            Thread(task, "kt-constraints-minizinc-deadline").apply {
+                                isDaemon =
+                                    true
+                            }
+                        }
+                    deadline = timer!!.schedule(onTimeout, timeoutMillis, TimeUnit.MILLISECONDS)
+                }
+            } catch (failure: Exception) {
+                close()
+                throw BackendExecutionException("Cannot start MiniZinc: ${failure.message}", failure)
+            }
+        }
+
+    private suspend fun <T> io(action: () -> T): T =
+        suspendCancellableCoroutine { continuation ->
+            val worker =
+                synchronized(lock) {
+                    check(!closed) { "MiniZinc process is closed" }
+                    requireNotNull(executor).submit {
+                        try {
+                            val value = action()
+                            continuation.resume(value)
+                        } catch (failure: Exception) {
+                            continuation.resumeWithException(failure)
+                        }
+                    }
+                }
+            continuation.invokeOnCancellation {
                 try {
-                    val value = action()
-                    continuation.resume(value)
-                } catch (failure: Exception) {
-                    continuation.resumeWithException(failure)
+                    onCancel()
+                } finally {
+                    worker.cancel(true)
                 }
             }
         }
-        continuation.invokeOnCancellation {
-            try { onCancel() } finally { worker.cancel(true) }
-        }
-    }
 
-    override fun close() = synchronized(lock) {
-        if (closed) return@synchronized
-        closed = true
-        deadline?.cancel(false)
-        timer?.shutdown()
-        try {
-            process?.let { terminateMiniZinc(it) }
-        } finally {
+    override fun close() =
+        synchronized(lock) {
+            if (closed) return@synchronized
+            closed = true
+            deadline?.cancel(false)
+            timer?.shutdown()
             try {
-                reader?.close()
+                process?.let { terminateMiniZinc(it) }
             } finally {
-                executor?.shutdownNow()
-                workspace?.let { check(it.toFile().deleteRecursively()) { "Cannot delete MiniZinc workspace: $it" } }
+                try {
+                    reader?.close()
+                } finally {
+                    executor?.shutdownNow()
+                    workspace?.let { check(it.toFile().deleteRecursively()) { "Cannot delete MiniZinc workspace: $it" } }
+                }
             }
         }
-    }
 }

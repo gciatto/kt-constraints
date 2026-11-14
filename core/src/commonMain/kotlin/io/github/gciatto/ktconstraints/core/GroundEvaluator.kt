@@ -15,19 +15,29 @@ object GroundEvaluator {
 
     /** Evaluates an integer expression under complete, domain-valid variable bindings. */
     @JvmStatic
-    fun evaluate(expression: IntExpr, valuation: Valuation): BigInteger = evaluateGround(expression, valuation) as BigInteger
+    fun evaluate(
+        expression: IntExpr,
+        valuation: Valuation,
+    ): BigInteger = evaluateGround(expression, valuation) as BigInteger
 
     /** Evaluates a Boolean expression under complete, domain-valid variable bindings. */
     @JvmStatic
-    fun evaluate(expression: BoolExpr, valuation: Valuation): Boolean = evaluateGround(expression, valuation) as Boolean
+    fun evaluate(
+        expression: BoolExpr,
+        valuation: Valuation,
+    ): Boolean = evaluateGround(expression, valuation) as Boolean
 
-    private fun evaluateGround(expression: Expr, valuation: Valuation? = null): Any {
+    private fun evaluateGround(
+        expression: Expr,
+        valuation: Valuation? = null,
+    ): Any {
         require(valuation != null || expression.variables.isEmpty()) { "Ground evaluation does not accept variables" }
         return expression.fold { node, values: List<Any> ->
             when (node) {
-                is IntVar -> requireNotNull(valuation?.valueOf(node)) { "Missing integer binding: ${node.name}" }.also {
-                    require(it in node.domain) { "Integer binding outside domain: ${node.name}" }
-                }
+                is IntVar ->
+                    requireNotNull(valuation?.valueOf(node)) { "Missing integer binding: ${node.name}" }.also {
+                        require(it in node.domain) { "Integer binding outside domain: ${node.name}" }
+                    }
                 is BoolVar -> requireNotNull(valuation?.valueOf(node)) { "Missing Boolean binding: ${node.name}" }
                 is IntExpr -> evaluateInteger(node, values)
                 is BoolExpr -> evaluateBoolean(node, values)

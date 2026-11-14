@@ -18,7 +18,10 @@ class MiniZincGecodeBackend(
 
     override fun availability(): BackendAvailability = probeMiniZinc(executable)
 
-    override fun support(model: ConstraintModel, options: SolveOptions): SupportReport = compiler.support(model, options)
+    override fun support(
+        model: ConstraintModel,
+        options: SolveOptions,
+    ): SupportReport = compiler.support(model, options)
 
     override fun create(): ConstraintSolver {
         val probe = availability()

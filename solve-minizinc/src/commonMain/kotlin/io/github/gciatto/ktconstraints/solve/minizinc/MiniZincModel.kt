@@ -11,9 +11,10 @@ class MiniZincModel internal constructor(
     /** Deterministic executable MiniZinc source. */
     val source: String,
 ) : CompiledModel {
-    override val sourceVariables: Map<String, Variable> = buildMap {
-        model.variables.forEachIndexed { index, variable -> put("v$index", variable) }
-    }
+    override val sourceVariables: Map<String, Variable> =
+        buildMap {
+            model.variables.forEachIndexed { index, variable -> put("v$index", variable) }
+        }
 
     override fun close() = Unit
 }

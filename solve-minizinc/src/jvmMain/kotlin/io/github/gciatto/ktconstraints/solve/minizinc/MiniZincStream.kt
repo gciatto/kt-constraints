@@ -14,8 +14,14 @@ internal class MiniZincStream(
     onClosed: () -> Unit,
 ) : ManagedSolutionStream(gecodeDescriptor, onClosed) {
     private val decoder = MiniZincDecoder(compiled)
-    private val process = MiniZincProcess(executable, compiled.source, options.timeoutMillis,
-        onTimeout = { stop(TerminationReason.TIMEOUT) }, onCancel = { cancel() })
+    private val process =
+        MiniZincProcess(
+            executable,
+            compiled.source,
+            options.timeoutMillis,
+            onTimeout = { stop(TerminationReason.TIMEOUT) },
+            onCancel = { cancel() },
+        )
     private var emitted = 0
     internal val workDirectory: Path? get() = process.directory
     internal val processId: Long? get() = process.processId
@@ -39,6 +45,10 @@ internal class MiniZincStream(
     }
 
     override fun release() {
-        try { process.close() } finally { compiled.close() }
+        try {
+            process.close()
+        } finally {
+            compiled.close()
+        }
     }
 }

@@ -37,21 +37,22 @@ abstract class ManagedSolutionStream(
         check(reading.compareAndSet(false, true)) { "Only one consumer may read a solution stream" }
         try {
             if (terminalResult != null) return deliverTerminal()
-            val event = try {
-                currentCoroutineContext().ensureActive()
-                readNext().also {
+            val event =
+                try {
                     currentCoroutineContext().ensureActive()
-                    if (it is SolveCompleted) require(it.result.descriptor == descriptor) { "Completion from another backend route" }
-                }
-            } catch (failure: Throwable) {
-                if (failure is CancellationException) {
-                    fail(failure, TerminationReason.CANCELLED)
+                    readNext().also {
+                        currentCoroutineContext().ensureActive()
+                        if (it is SolveCompleted) require(it.result.descriptor == descriptor) { "Completion from another backend route" }
+                    }
+                } catch (failure: Throwable) {
+                    if (failure is CancellationException) {
+                        fail(failure, TerminationReason.CANCELLED)
+                        throw failure
+                    }
+                    if (terminalResult != null) return deliverTerminal()
+                    fail(failure, TerminationReason.SOLVER_FAILURE)
                     throw failure
                 }
-                if (terminalResult != null) return deliverTerminal()
-                fail(failure, TerminationReason.SOLVER_FAILURE)
-                throw failure
-            }
             return when (event) {
                 is SolutionFound -> if (record(event)) event else deliverTerminal()
                 is SolveCompleted -> {
@@ -74,7 +75,10 @@ abstract class ManagedSolutionStream(
         finish { interrupted(it, reason) }
     }
 
-    private fun fail(failure: Throwable, reason: TerminationReason) {
+    private fun fail(
+        failure: Throwable,
+        reason: TerminationReason,
+    ) {
         try {
             finish { interrupted(it, reason) }
         } catch (cleanup: Throwable) {
@@ -114,11 +118,15 @@ abstract class ManagedSolutionStream(
         }
     }
 
-    private fun interrupted(current: StreamState, reason: TerminationReason): SolveResult = SolveResult(
-        if (current.incumbent == null) SolveStatus.UNKNOWN else SolveStatus.FEASIBLE,
-        current.incumbent?.assignment,
-        descriptor,
-        reason,
-        objectiveValue = current.incumbent?.objectiveValue,
-    )
+    private fun interrupted(
+        current: StreamState,
+        reason: TerminationReason,
+    ): SolveResult =
+        SolveResult(
+            if (current.incumbent == null) SolveStatus.UNKNOWN else SolveStatus.FEASIBLE,
+            current.incumbent?.assignment,
+            descriptor,
+            reason,
+            objectiveValue = current.incumbent?.objectiveValue,
+        )
 }

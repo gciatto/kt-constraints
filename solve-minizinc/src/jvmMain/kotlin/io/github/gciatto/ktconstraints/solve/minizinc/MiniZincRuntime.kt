@@ -28,9 +28,15 @@ internal fun probeMiniZinc(executable: String): BackendAvailability {
         val model = directory.resolve("probe.mzn")
         Files.writeString(model, "var 0..1: v; solve satisfy; output [show(v)];")
         val output = run("--solver", "org.gecode.gecode", "--json-stream", "--all-solutions", model.toString())
-        check(output.lineSequence().filter { it.isNotBlank() }.any {
-            Json.parseToJsonElement(it).jsonObject["type"]?.jsonPrimitive?.content == "solution"
-        }) { "Gecode startup probe produced no solution" }
+        check(
+            output.lineSequence().filter { it.isNotBlank() }.any {
+                Json
+                    .parseToJsonElement(it)
+                    .jsonObject["type"]
+                    ?.jsonPrimitive
+                    ?.content == "solution"
+            },
+        ) { "Gecode startup probe produced no solution" }
         return BackendAvailability(true)
     } catch (failure: Exception) {
         return BackendAvailability(false, failure.message ?: "MiniZinc runtime probe failed")

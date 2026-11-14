@@ -21,7 +21,10 @@ abstract class ManagedConstraintSolver : ConstraintSolver {
         onClosed: () -> Unit,
     ): ManagedSolutionStream
 
-    final override fun solutions(model: ConstraintModel, options: SolveOptions): SolutionStream {
+    final override fun solutions(
+        model: ConstraintModel,
+        options: SolveOptions,
+    ): SolutionStream {
         check(!state.load().closed) { "Solver is closed" }
         lateinit var stream: ManagedSolutionStream
         stream = openStream(model, options) { remove(stream) }
@@ -35,7 +38,10 @@ abstract class ManagedConstraintSolver : ConstraintSolver {
         }
     }
 
-    final override suspend fun solve(model: ConstraintModel, options: SolveOptions): SolveResult {
+    final override suspend fun solve(
+        model: ConstraintModel,
+        options: SolveOptions,
+    ): SolveResult {
         val stream = solutions(model, options)
         try {
             while (true) {
