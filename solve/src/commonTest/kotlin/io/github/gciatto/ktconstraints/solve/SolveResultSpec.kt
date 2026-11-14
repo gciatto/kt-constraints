@@ -59,4 +59,17 @@ class SolveResultSpec :
                 bestBound = BigInteger.ONE,
             ).status shouldBe SolveStatus.OPTIMAL
         }
+
+        test("result/optimal-objective-and-provided-bound-must-agree") {
+            val descriptor = SolverDescriptor("example", "direct", emptySet())
+            shouldThrow<IllegalArgumentException> {
+                SolveResult(
+                    SolveStatus.OPTIMAL,
+                    Assignment.empty(),
+                    descriptor,
+                    objectiveValue = BigInteger.ONE,
+                    bestBound = BigInteger.ZERO,
+                )
+            }
+        }
     })
