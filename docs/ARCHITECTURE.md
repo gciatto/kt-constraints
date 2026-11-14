@@ -44,6 +44,11 @@ are singleton intervals; empty domains have no bounds and cardinality zero. Expl
 invalid, while an empty Kotlin range denotes the empty domain. Union, intersection and cardinality operate on
 intervals without enumerating their values. Infinite domains are not implemented by this finite-domain type.
 
+Expression construction preserves the typed AST and structural equality without eager simplification.
+Ordered `children` and a bottom-up fold expose traversal without depending on a backend. The ground evaluator
+uses exact integer arithmetic and classical Boolean semantics; variables and unknown extension nodes are
+rejected explicitly. Division and modulo are deferred until their cross-backend semantics are specified.
+
 `allDifferent` etc. remain IR nodes until a compiler decides whether native global support, lossless decomposition
 or rejection is appropriate.
 
