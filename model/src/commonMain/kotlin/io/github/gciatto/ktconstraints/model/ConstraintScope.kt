@@ -53,7 +53,7 @@ class ConstraintScope private constructor() {
         }
 
     /** Produces a detached read-only snapshot of the current model. */
-    fun build(): ConstraintModel = ConstraintModel(variables.values.toList(), constraints.toList(), objective)
+    fun build(): ConstraintModel = ConstraintModel(variables.values, constraints, objective)
 
     private fun requireOwned(referenced: Set<Variable>) {
         val localIds = variables.values.mapTo(hashSetOf()) { it.id }
