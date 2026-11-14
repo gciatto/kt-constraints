@@ -10,6 +10,16 @@ import org.gciatto.kt.math.BigInteger
 /** Assignments preserve exact values, domain membership and variable identity. */
 class AssignmentSpec :
     FunSpec({
+        test("assignment/projection-requires-values-and-hides-other-variables") {
+            val factory = VariableFactory.empty()
+            val x = factory.intVar("x", IntDomain.of(0, 2))
+            val flag = factory.boolVar("flag")
+            val assignment = Assignment.of(mapOf(flag to true), mapOf(x to BigInteger.ONE))
+            val projected = assignment.project(listOf(x))
+            projected.valueOf(x) shouldBe BigInteger.ONE
+            projected.valueOf(flag) shouldBe null
+            shouldThrow<IllegalArgumentException> { projected.project(listOf(flag)) }
+        }
         test("assignment/snapshots-typed-input-maps") {
             val factory = VariableFactory.empty()
             val flag = factory.boolVar("flag")
