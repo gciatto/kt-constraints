@@ -20,6 +20,8 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
 import java.nio.file.Files
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 
 /** Actual MiniZinc/Gecode tests; CI explicitly installs and requests the runtime. */
 class MiniZincIntegrationSpec : FunSpec({
@@ -73,6 +75,17 @@ class MiniZincIntegrationSpec : FunSpec({
             scope.intVar("x", 0..1_000_000_000)
             MiniZincGecodeBackend(executable).create().use { solver ->
                 solver.solve(scope.build(), SolveOptions(timeoutMillis = 20)).terminationReason shouldBe TerminationReason.TIMEOUT
+            }
+        }
+        test("integration/early-close-also-releases-a-long-deadline-timer") {
+            val scope = ConstraintScope.empty()
+            scope.intVar("x", 0..1_000_000)
+            MiniZincGecodeBackend(executable).create().use { solver ->
+                val stream = solver.solutions(scope.build(), SolveOptions(timeoutMillis = 60_000))
+                stream.next()
+                val timers = Thread.getAllStackTraces().keys.filter { it.name == "kt-constraints-minizinc-deadline" && it.isAlive }
+                stream.close()
+                withTimeout(1_000) { while (timers.any { it.isAlive }) delay(10) }
             }
         }
     }
