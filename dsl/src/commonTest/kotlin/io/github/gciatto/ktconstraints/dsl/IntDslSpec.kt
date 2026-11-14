@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.IntEquality
 import io.github.gciatto.ktconstraints.core.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.IntEquality
 import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.kotest.core.spec.style.FunSpec

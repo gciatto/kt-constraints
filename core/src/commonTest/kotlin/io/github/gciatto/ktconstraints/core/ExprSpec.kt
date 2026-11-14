@@ -9,10 +9,11 @@ class ExprSpec :
         test("fold/visits-children-before-parent-in-operand-order") {
             val expression = IntSum(IntLiteral(1), IntNegation(IntLiteral(2)))
             val order = mutableListOf<Expr>()
-            val count = expression.fold { node, children: List<Int> ->
-                order += node
-                1 + children.sum()
-            }
+            val count =
+                expression.fold { node, children: List<Int> ->
+                    order += node
+                    1 + children.sum()
+                }
             count shouldBe 4
             order shouldBe listOf(IntLiteral(1), IntLiteral(2), IntNegation(IntLiteral(2)), expression)
         }
