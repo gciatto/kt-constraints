@@ -2,6 +2,9 @@
 
 **Status:** architectural bootstrap; backend slots exist but **no solver backend is operational yet**.
 
+M2 is in progress: exact assignment/result invariants and explicit capability-aware backend registration and
+selection have JVM contracts. Streams, the capped test oracle and runtime backends remain to be implemented.
+
 This roadmap is a work breakdown for a self-contained, Kotlin Multiplatform constraint modelling / solving
 framework. The project is independent of 2p-Kt. Similar Kotlin organization, testing and deployment conventions
 are a deliberate compatibility preference, **not** a runtime dependency.

@@ -29,7 +29,7 @@ modules are intentionally empty integration slots; **Z3, MiniZinc, Choco, CP-SAT
 | Category | Modules | Status |
 |---|---|---|
 | Representation | `:core`, `:model`, `:dsl` | Exact integer/Boolean IR, finite domains, globals and immutable models |
-| Solver contracts | `:solve`, `:solve-spi` | Initial contract types |
+| Solver contracts | `:solve`, `:solve-spi` | Exact results/assignments and explicit backend eligibility; execution in progress |
 | Compiler routes | `:solve-minizinc`, `:solve-flatzinc` | Placeholder modules |
 | Direct solver adapters | `:solve-z3`, `:solve-choco`, `:solve-cpsat`, `:solve-highs` | Placeholder modules |
 | Orchestration | `:solve-portfolio` | Placeholder module |
