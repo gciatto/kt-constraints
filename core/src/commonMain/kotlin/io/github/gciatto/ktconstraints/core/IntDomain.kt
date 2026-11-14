@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.core
 
-import kotlin.jvm.JvmStatic
 import org.gciatto.kt.math.BigInteger
+import kotlin.jvm.JvmStatic
 
 /** Finite set of exact integers, stored without enumerating its elements. */
 interface IntDomain : Domain {
@@ -94,10 +94,4 @@ interface IntDomain : Domain {
             return FiniteIntDomain(canonical)
         }
     }
-}
-
-private data class FiniteIntDomain(
-    override val intervals: List<IntInterval>,
-) : IntDomain {
-    override fun toString(): String = intervals.joinToString(prefix = "{", postfix = "}")
 }

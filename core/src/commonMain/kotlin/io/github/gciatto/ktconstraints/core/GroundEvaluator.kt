@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.core
 
-import kotlin.jvm.JvmStatic
 import org.gciatto.kt.math.BigInteger
+import kotlin.jvm.JvmStatic
 
 /** Pure exact evaluation of built-in ground expressions; never performs constraint search. */
 object GroundEvaluator {
@@ -24,7 +24,10 @@ object GroundEvaluator {
         }
     }
 
-    private fun evaluateInteger(node: IntExpr, values: List<Any>): BigInteger =
+    private fun evaluateInteger(
+        node: IntExpr,
+        values: List<Any>,
+    ): BigInteger =
         when (node) {
             is IntLiteral -> node.value
             is IntSum -> (values[0] as BigInteger) + (values[1] as BigInteger)
@@ -32,13 +35,17 @@ object GroundEvaluator {
             is IntProduct -> (values[0] as BigInteger) * (values[1] as BigInteger)
             is IntNegation -> -(values[0] as BigInteger)
             is Element -> evaluateElement(node, values)
-            is LinearSum -> values.zip(node.coefficients).fold(node.constant) { total, (value, coefficient) ->
-                total + (value as BigInteger) * coefficient
-            }
+            is LinearSum ->
+                values.zip(node.coefficients).fold(node.constant) { total, (value, coefficient) ->
+                    total + (value as BigInteger) * coefficient
+                }
             else -> throw IllegalArgumentException("Unsupported integer expression: $node")
         }
 
-    private fun evaluateBoolean(node: BoolExpr, values: List<Any>): Boolean =
+    private fun evaluateBoolean(
+        node: BoolExpr,
+        values: List<Any>,
+    ): Boolean =
         when (node) {
             is BoolLiteral -> node.value
             is BoolAnd -> (values[0] as Boolean) && (values[1] as Boolean)
@@ -55,13 +62,19 @@ object GroundEvaluator {
             else -> throw IllegalArgumentException("Unsupported Boolean expression: $node")
         }
 
-    private fun evaluateElement(node: Element, values: List<Any>): BigInteger {
+    private fun evaluateElement(
+        node: Element,
+        values: List<Any>,
+    ): BigInteger {
         val index = values[0] as BigInteger
         require(index >= BigInteger.ZERO && index < BigInteger.of(node.values.size)) { "Element index out of range: $index" }
         return values[index.toIntExact() + 1] as BigInteger
     }
 
-    private fun evaluateCardinality(node: BoolCardinality, values: List<Any>): Boolean {
+    private fun evaluateCardinality(
+        node: BoolCardinality,
+        values: List<Any>,
+    ): Boolean {
         val actual = values.count { it == true }
         return when (node.relation) {
             CardinalityRelation.AT_MOST -> actual <= node.count
