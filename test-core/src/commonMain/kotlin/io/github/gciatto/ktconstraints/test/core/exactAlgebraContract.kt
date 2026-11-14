@@ -16,15 +16,16 @@ import org.gciatto.kt.math.BigInteger
 
 /** Reusable exact algebra laws, including inputs whose sums/products overflow machine integers. */
 @OptIn(ExperimentalKotest::class)
-fun exactAlgebraContract(evaluate: (IntExpr) -> BigInteger) = funSpec {
-    test("algebra-contract/distributivity-and-cancellation") {
-        checkAll(PropTestConfig(iterations = 100, seed = 130363L), Arb.long(), Arb.long(), Arb.long()) { a, b, c ->
-            val x = IntLiteral(a)
-            val y = IntLiteral(b)
-            val z = IntLiteral(c)
-            evaluate(IntProduct(x, IntSum(y, z))) shouldBe evaluate(IntSum(IntProduct(x, y), IntProduct(x, z)))
-            evaluate(IntDifference(IntSum(x, y), y)) shouldBe BigInteger.of(a)
-            evaluate(IntSum(x, y)) shouldBe BigInteger.of(a) + BigInteger.of(b)
+fun exactAlgebraContract(evaluate: (IntExpr) -> BigInteger) =
+    funSpec {
+        test("algebra-contract/distributivity-and-cancellation") {
+            checkAll(PropTestConfig(iterations = 100, seed = 130363L), Arb.long(), Arb.long(), Arb.long()) { a, b, c ->
+                val x = IntLiteral(a)
+                val y = IntLiteral(b)
+                val z = IntLiteral(c)
+                evaluate(IntProduct(x, IntSum(y, z))) shouldBe evaluate(IntSum(IntProduct(x, y), IntProduct(x, z)))
+                evaluate(IntDifference(IntSum(x, y), y)) shouldBe BigInteger.of(a)
+                evaluate(IntSum(x, y)) shouldBe BigInteger.of(a) + BigInteger.of(b)
+            }
         }
     }
-}

@@ -17,8 +17,10 @@ class GroundEvaluatorSpec :
             GroundEvaluator.evaluate(IntNegation(large)).toString() shouldBe "-9223372036854775808"
         }
 
-        withTests(nameFn = { "boolean/truth-table/$it" }, listOf(false to false, false to true, true to false, true to true)) {
-            (left, right) ->
+        withTests(
+            nameFn = { "boolean/truth-table/$it" },
+            listOf(false to false, false to true, true to false, true to true),
+        ) { (left, right) ->
             val a = BoolLiteral(left)
             val b = BoolLiteral(right)
             GroundEvaluator.evaluate(BoolAnd(a, b)) shouldBe (left && right)
@@ -47,9 +49,10 @@ class GroundEvaluatorSpec :
         }
 
         test("evaluation/rejects-unknown-extension-nodes") {
-            val extension = object : IntExpr {
-                override val variables: Set<Variable> = emptySet()
-            }
+            val extension =
+                object : IntExpr {
+                    override val variables: Set<Variable> = emptySet()
+                }
             shouldThrow<IllegalArgumentException> { GroundEvaluator.evaluate(extension) }
         }
 

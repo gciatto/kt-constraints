@@ -65,16 +65,21 @@ class ModelMetadataSpec :
 
         test("sorts/reject-inconsistent-extension-nodes") {
             val scope = ConstraintScope.empty()
-            val invalidBoolean = object : BoolExpr {
-                override val sort: Sort = Sort.Integer
-            }
-            val invalidInteger = object : IntExpr {
-                override val sort: Sort = Sort.Bool
-            }
+            val invalidBoolean =
+                object : BoolExpr {
+                    override val sort: Sort = Sort.Integer
+                }
+            val invalidInteger =
+                object : IntExpr {
+                    override val sort: Sort = Sort.Bool
+                }
             shouldThrow<IllegalArgumentException> { scope.add(invalidBoolean) }
             shouldThrow<IllegalArgumentException> { scope.minimize(invalidInteger) }
             shouldThrow<IllegalArgumentException> { scope.maximize(invalidInteger) }
-            scope.add(BoolLiteral(true)).build().constraints.size shouldBe 1
+            scope
+                .add(BoolLiteral(true))
+                .build()
+                .constraints.size shouldBe 1
         }
 
         test("source/positions-are-one-based") {
