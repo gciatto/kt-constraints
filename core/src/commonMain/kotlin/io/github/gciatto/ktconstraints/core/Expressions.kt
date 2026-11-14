@@ -1,12 +1,5 @@
 package io.github.gciatto.ktconstraints.core
 
-/** Mathematical integer literal (no evaluation or overflow takes place). */
-data class IntLiteral(
-    val value: Long,
-) : IntExpr {
-    override val variables: Set<Variable> get() = emptySet()
-}
-
 /** Sum of two integer expressions. */
 data class IntSum(
     val left: IntExpr,
