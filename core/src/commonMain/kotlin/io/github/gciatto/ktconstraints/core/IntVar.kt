@@ -4,6 +4,7 @@ package io.github.gciatto.ktconstraints.core
 class IntVar internal constructor(
     override val id: VariableId,
     override val name: String,
+    /** Allowed exact integer values. */
     val domain: IntDomain,
 ) : IntExpr,
     Variable {

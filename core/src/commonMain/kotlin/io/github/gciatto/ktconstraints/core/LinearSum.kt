@@ -6,6 +6,7 @@ import org.gciatto.kt.math.BigInteger
 class LinearSum(
     terms: Collection<IntExpr>,
     coefficients: Collection<BigInteger>,
+    /** Exact additive constant. */
     val constant: BigInteger = BigInteger.ZERO,
 ) : IntExpr {
     /** Detached immutable terms; terms may themselves need nonlinear backend support. */

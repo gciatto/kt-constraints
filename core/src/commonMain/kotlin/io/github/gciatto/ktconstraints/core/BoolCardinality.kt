@@ -3,7 +3,9 @@ package io.github.gciatto.ktconstraints.core
 /** Global constraint comparing the number of true operands to a non-negative bound. */
 class BoolCardinality(
     operands: Collection<BoolExpr>,
+    /** Non-negative bound on the number of true operands. */
     val count: Int,
+    /** Comparison to apply to the count. */
     val relation: CardinalityRelation,
 ) : BoolExpr {
     /** Detached immutable operands; repeated operands count repeatedly. */

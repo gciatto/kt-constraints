@@ -4,9 +4,12 @@ import io.github.gciatto.ktconstraints.core.BoolExpr
 
 /** Immutable assertion and its optional diagnostic metadata. */
 class ConstraintEntry(
+    /** Asserted Boolean expression. */
     val expression: BoolExpr,
+    /** Optional diagnostic name, unique within a model. */
     val name: String? = null,
     annotations: Map<String, String> = emptyMap(),
+    /** Optional source provenance. */
     val source: SourceLocation? = null,
 ) {
     /** Detached immutable semantic tags, ordered by key. */
