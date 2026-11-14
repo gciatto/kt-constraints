@@ -4,6 +4,7 @@ import org.gciatto.kt.math.BigInteger
 
 /** Exact mathematical integer literal. Construction never narrows its value. */
 data class IntLiteral(
+    /** Exact constant value. */
     val value: BigInteger,
 ) : IntExpr {
     /** Creates an exact literal from a machine integer. */

@@ -2,6 +2,7 @@ package io.github.gciatto.ktconstraints.core
 
 /** Integer expression selecting a zero-based index from a non-empty array. */
 class Element(
+    /** Zero-based symbolic index. */
     val index: IntExpr,
     values: Collection<IntExpr>,
 ) : IntExpr {
