@@ -119,3 +119,10 @@ Registry registration is explicit and immutable on every platform. Selection pre
 checks required capabilities, runtime availability and the whole-model support report before returning a backend.
 An objective additionally requires optimization capability. Rejections retain route-scoped diagnostics; unknown
 or incompatible backends are never substituted silently and selection does not allocate solver resources.
+
+The first real route is Gecode through the JVM MiniZinc CLI. Its compiler emits deterministic internal names,
+preserves source-variable mappings and lets MiniZinc lower globals. It proves every integer intermediate fits
+Gecode's symmetric range `-2147483646..2147483646`; otherwise it rejects the whole model. Array selection uses
+zero-based arrays with independent index-definedness constraints. CLI output contains full assignments for
+independent validation before public projection. Runtime startup and temporary files belong to the stream,
+not to the common compiled representation. Other MiniZinc engines and JS/Native transports remain M3 work.
