@@ -14,6 +14,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.gciatto.kt.math.BigInteger
@@ -107,6 +109,23 @@ class ManagedSolutionStreamSpec : FunSpec({
         val stream = RecordingStream(listOf(SolveCompleted(result)))
         shouldThrow<IllegalArgumentException> { stream.next() }
         stream.terminalResult?.terminationReason shouldBe TerminationReason.SOLVER_FAILURE
+        stream.releases shouldBe 1
+    }
+
+    test("stream/detects-cancellation-even-when-the-producer-returns-without-suspending") {
+        val stream = RecordingStream(listOf(SolutionFound(Assignment.empty())), readHook = {
+            currentCoroutineContext().cancel()
+        })
+        coroutineScope { launch { stream.next() }.join() }
+        stream.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
+        stream.releases shouldBe 1
+    }
+
+    test("stream/cleanup-errors-do-not-hide-the-original-read-failure") {
+        val stream = RecordingStream(failure = IllegalStateException("read failed"), releaseHook = { error("cleanup failed") })
+        val failure = shouldThrow<IllegalStateException> { stream.next() }
+        failure.message shouldBe "read failed"
+        failure.suppressedExceptions.single().message shouldBe "cleanup failed"
         stream.releases shouldBe 1
     }
 })
