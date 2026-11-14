@@ -68,11 +68,38 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Test common representation modules on native target
-        run: ./gradlew :core:${{ matrix.target }}Test :model:${{ matrix.target }}Test :dsl:${{ matrix.target }}Test --parallel --continue
+      - name: Test portable representation and solver contracts on native target
+        run: >-
+          ./gradlew :core:${{ matrix.target }}Test :model:${{ matrix.target }}Test :dsl:${{ matrix.target }}Test
+          :solve:${{ matrix.target }}Test :solve-spi:${{ matrix.target }}Test
+          :test-solve:${{ matrix.target }}Test :solve-minizinc:${{ matrix.target }}Test --parallel --continue
       - name: Job summary
         if: always()
         uses: ./.github/actions/ci-summary
         with:
           title: Native tests / ${{ matrix.target }}
+          status: ${{ job.status }}
+
+  test-minizinc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install MiniZinc and Gecode
+        run: sudo apt-get update && sudo apt-get install -y minizinc
+      - name: Run actual Gecode conformance and differential tests
+        env:
+          MINIZINC_EXECUTABLE: minizinc
+        run: ./gradlew :solve-minizinc:jvmTest --continue
+      - name: Job summary
+        if: always()
+        uses: ./.github/actions/ci-summary
+        with:
+          title: MiniZinc / Gecode conformance
           status: ${{ job.status }}
