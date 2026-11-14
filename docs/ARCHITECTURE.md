@@ -35,8 +35,14 @@ Model construction copies declaration and constraint collections into Kotlin `bu
 contents cannot be changed through mutable collection casts, and subsequent builder edits cannot affect them.
 This freezes the collections; custom expression and domain implementations must themselves be immutable.
 
-Integer is mathematical, bounded Long representation in the first P0 prototype only. Later representation must
-be arbitrary precision with range validation when compiling for CP-SAT. `Sort.BitVector` is a separate bitwise sort.
+Integer expressions, finite-domain bounds and assignment values use kt-math's immutable multiplatform
+`BigInteger`. Long and Int factories are convenience inputs; conversion to a bounded backend must be checked.
+`Sort.BitVector` is a separate bitwise sort.
+
+Finite integer domains are canonical unions of sorted, disjoint, non-adjacent closed intervals. Sparse values
+are singleton intervals; empty domains have no bounds and cardinality zero. Explicit inverted intervals are
+invalid, while an empty Kotlin range denotes the empty domain. Union, intersection and cardinality operate on
+intervals without enumerating their values. Infinite domains are not implemented by this finite-domain type.
 
 `allDifferent` etc. remain IR nodes until a compiler decides whether native global support, lossless decomposition
 or rejection is appropriate.

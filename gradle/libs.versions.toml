@@ -12,7 +12,7 @@ kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", versio
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
 kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
-# Future arbitrary precision support (not yet linked by the bootstrap core):
+# Exact multiplatform integer representation used by the core:
 kt-math = "io.github.gciatto:kt-math:2.1.2"
 
 [plugins]
