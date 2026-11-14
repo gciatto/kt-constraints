@@ -16,6 +16,8 @@ data class SolveResult(
     val objectiveValue: BigInteger? = null,
     /** Exact proven objective bound, when supplied by the backend. */
     val bestBound: BigInteger? = null,
+    /** Immutable runtime messages and backend statistics, when provided. */
+    val metadata: SolveMetadata = SolveMetadata(),
 ) {
     init {
         val feasible = status == SolveStatus.FEASIBLE || status == SolveStatus.OPTIMAL
