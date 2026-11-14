@@ -2,19 +2,23 @@ package io.github.gciatto.ktconstraints.model
 
 import io.github.gciatto.ktconstraints.core.BoolExpr
 import io.github.gciatto.ktconstraints.core.BoolVar
+import io.github.gciatto.ktconstraints.core.Expr
 import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.core.IntExpr
 import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.Sort
 import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.VariableFactory
 import kotlin.jvm.JvmStatic
+import kotlin.jvm.JvmOverloads
 
 /** Stateful single-model builder; snapshots created by [build] are detached from later edits. */
 class ConstraintScope private constructor() {
     private val factory = VariableFactory.empty()
     private val variables = linkedMapOf<String, Variable>()
-    private val constraints = mutableListOf<BoolExpr>()
+    private val entries = mutableListOf<ConstraintEntry>()
     private var objective: Objective? = null
+    private var projection: List<Variable>? = null
 
     /** Declares a Boolean variable. Duplicate names are rejected. */
     fun boolVar(name: String): BoolVar = addVariable(name) { factory.boolVar(name) }
@@ -31,16 +35,25 @@ class ConstraintScope private constructor() {
         range: IntRange,
     ): IntVar = intVar(name, IntDomain.of(range))
 
-    /** Asserts a Boolean expression. */
-    fun add(constraint: BoolExpr): ConstraintScope =
+    /** Asserts a Boolean expression, optionally with a unique name and diagnostic metadata. */
+    @JvmOverloads
+    fun add(
+        constraint: BoolExpr,
+        name: String? = null,
+        annotations: Map<String, String> = emptyMap(),
+        source: SourceLocation? = null,
+    ): ConstraintScope =
         apply {
+            requireWellSorted(constraint)
             requireOwned(constraint.variables)
-            constraints += constraint
+            require(name == null || entries.none { it.name == name }) { "Duplicate constraint name: $name" }
+            entries += ConstraintEntry(constraint, name, annotations, source)
         }
 
     /** Replaces the model objective with a minimization. */
     fun minimize(expression: IntExpr): ConstraintScope =
         apply {
+            requireWellSorted(expression)
             requireOwned(expression.variables)
             objective = Objective.Minimize(expression)
         }
@@ -48,12 +61,31 @@ class ConstraintScope private constructor() {
     /** Replaces the model objective with a maximization. */
     fun maximize(expression: IntExpr): ConstraintScope =
         apply {
+            requireWellSorted(expression)
             requireOwned(expression.variables)
             objective = Objective.Maximize(expression)
         }
 
+    /** Clears any optimization objective, selecting satisfaction. */
+    fun satisfy(): ConstraintScope = apply { objective = null }
+
+    /** Replaces the output projection; an empty projection is permitted. */
+    fun project(vararg output: Variable): ConstraintScope = apply {
+        requireOwned(output.toSet())
+        require(output.map { it.id }.toSet().size == output.size) { "Duplicate projection variable" }
+        projection = buildList { addAll(output) }
+    }
+
     /** Produces a detached read-only snapshot of the current model. */
-    fun build(): ConstraintModel = ConstraintModel(variables.values, constraints, objective)
+    fun build(): ConstraintModel = ConstraintModel(variables.values, entries, objective, projection ?: variables.values)
+
+    private fun requireWellSorted(expression: Expr) {
+        when (expression) {
+            is IntExpr -> require(expression.sort == Sort.Integer) { "Inconsistent integer expression sort" }
+            is BoolExpr -> require(expression.sort == Sort.Bool) { "Inconsistent Boolean expression sort" }
+        }
+        expression.children.forEach { requireWellSorted(it) }
+    }
 
     private fun requireOwned(referenced: Set<Variable>) {
         val localIds = variables.values.mapTo(hashSetOf()) { it.id }

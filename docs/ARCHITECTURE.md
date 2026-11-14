@@ -35,6 +35,12 @@ Model construction copies declaration and constraint collections into Kotlin `bu
 contents cannot be changed through mutable collection casts, and subsequent builder edits cannot affect them.
 This freezes the collections; custom expression and domain implementations must themselves be immutable.
 
+Each assertion has an optional unique name, immutable string annotations and an optional source location.
+The existing Boolean constraint list remains a projection of those entries. Output projection defaults to all
+declared variables; an explicit projection preserves its supplied order and may be empty. Scope ownership and
+typed expression sorts are validated before accepting assertions, objectives or projections. Satisfaction is
+represented by a null objective and `satisfy()` explicitly clears a previous objective.
+
 Integer expressions, finite-domain bounds and assignment values use kt-math's immutable multiplatform
 `BigInteger`. Long and Int factories are convenience inputs; conversion to a bounded backend must be checked.
 `Sort.BitVector` is a separate bitwise sort.
