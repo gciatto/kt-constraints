@@ -95,6 +95,12 @@ close preserve the first definitive terminal result and release resources once, 
 read. Only one consumer may call `next` at a time. Closing a solver cancels its active streams. Shared lifecycle
 implementations use portable atomic state; coroutine cancellation is propagated rather than reported as UNSAT.
 
+The unpublished finite test oracle enumerates at most 10,000 candidates across at most 64 variables. It checks
+the whole supported IR before enumeration, uses exact sparse domains, validates all full assignments, and only
+then projects public outputs. Satisfaction enumeration removes duplicate projections; optimization emits strictly
+improving incumbents. Reaching a limit or timeout retains an incumbent without claiming optimality. Undefined
+element indices invalidate a candidate; other evaluation errors propagate. The oracle is never auto-registered.
+
 ## Platform boundaries
 
 - `commonMain`: pure typed IR, compiler contracts, generic descriptors.
