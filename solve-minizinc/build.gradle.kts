@@ -6,5 +6,8 @@ kotlin {
                 api(project(":model"))
             }
         }
+        commonTest {
+            dependencies { implementation(project(":test-solve")) }
+        }
     }
 }
