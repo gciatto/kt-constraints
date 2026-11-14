@@ -12,7 +12,10 @@ internal class FakeBackend(
 ) : SolverBackend {
     override fun availability(): BackendAvailability = availabilityReport
 
-    override fun support(model: ConstraintModel, options: SolveOptions): SupportReport = supportReport
+    override fun support(
+        model: ConstraintModel,
+        options: SolveOptions,
+    ): SupportReport = supportReport
 
     override fun create(): ConstraintSolver = error("Registry selection must not create solvers")
 }

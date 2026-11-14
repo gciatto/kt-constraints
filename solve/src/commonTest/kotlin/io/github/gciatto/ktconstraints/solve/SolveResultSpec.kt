@@ -11,21 +11,23 @@ class SolveResultSpec :
     FunSpec({
         test("result/timeout-can-retain-a-feasible-incumbent-with-an-exact-bound") {
             val descriptor = SolverDescriptor("example", "direct", emptySet())
-            val result = SolveResult(
-                SolveStatus.FEASIBLE,
-                Assignment.empty(),
-                descriptor,
-                TerminationReason.TIMEOUT,
-                objectiveValue = BigInteger.of("9223372036854775808"),
-                bestBound = BigInteger.ZERO,
-            )
+            val result =
+                SolveResult(
+                    SolveStatus.FEASIBLE,
+                    Assignment.empty(),
+                    descriptor,
+                    TerminationReason.TIMEOUT,
+                    objectiveValue = BigInteger.of("9223372036854775808"),
+                    bestBound = BigInteger.ZERO,
+                )
             result.status shouldBe SolveStatus.FEASIBLE
             result.terminationReason shouldBe TerminationReason.TIMEOUT
             result.objectiveValue.toString() shouldBe "9223372036854775808"
             result.bestBound shouldBe BigInteger.ZERO
         }
 
-        withTests(nameFn = { "result/proof-requires-completion/$it" },
+        withTests(
+            nameFn = { "result/proof-requires-completion/$it" },
             listOf(SolveStatus.OPTIMAL, SolveStatus.INFEASIBLE, SolveStatus.UNBOUNDED, SolveStatus.INFEASIBLE_OR_UNBOUNDED),
         ) { status ->
             val descriptor = SolverDescriptor("example", "direct", emptySet())

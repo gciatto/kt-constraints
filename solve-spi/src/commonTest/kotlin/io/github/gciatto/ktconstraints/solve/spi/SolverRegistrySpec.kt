@@ -11,14 +11,16 @@ import io.kotest.matchers.shouldBe
 class SolverRegistrySpec :
     FunSpec({
         test("registry/selects-first-available-whole-model-compatible-route") {
-            val unavailable = FakeBackend(
-                SolverDescriptor("example", "missing", setOf(SolverCapability.SATISFACTION)),
-                BackendAvailability(false, "Runtime missing"),
-            )
-            val unsupported = FakeBackend(
-                SolverDescriptor("example", "partial", setOf(SolverCapability.SATISFACTION)),
-                supportReport = SupportReport(unsupported = listOf("Coefficient exceeds native integer range")),
-            )
+            val unavailable =
+                FakeBackend(
+                    SolverDescriptor("example", "missing", setOf(SolverCapability.SATISFACTION)),
+                    BackendAvailability(false, "Runtime missing"),
+                )
+            val unsupported =
+                FakeBackend(
+                    SolverDescriptor("example", "partial", setOf(SolverCapability.SATISFACTION)),
+                    supportReport = SupportReport(unsupported = listOf("Coefficient exceeds native integer range")),
+                )
             val direct = FakeBackend(SolverDescriptor("example", "direct", setOf(SolverCapability.SATISFACTION)))
             val viaCompiler = FakeBackend(SolverDescriptor("example", "minizinc", setOf(SolverCapability.SATISFACTION)))
             val registry = SolverRegistry.of(unavailable, unsupported, direct, viaCompiler)
@@ -28,8 +30,14 @@ class SolverRegistrySpec :
 
         test("registry/objectives-require-optimization-capability") {
             val satisfaction = FakeBackend(SolverDescriptor("example", "batch", setOf(SolverCapability.SATISFACTION)))
-            val optimization = FakeBackend(SolverDescriptor("example", "optimizer",
-                setOf(SolverCapability.SATISFACTION, SolverCapability.OPTIMIZATION)))
+            val optimization =
+                FakeBackend(
+                    SolverDescriptor(
+                        "example",
+                        "optimizer",
+                        setOf(SolverCapability.SATISFACTION, SolverCapability.OPTIMIZATION),
+                    ),
+                )
             val model = ConstraintModel.of { minimize(intVar("x", 0..1)) }
             SolverRegistry.of(satisfaction, optimization).select(model) shouldBe optimization
             shouldThrow<NoCompatibleBackendException> { SolverRegistry.of(satisfaction).select(model) }
@@ -37,11 +45,15 @@ class SolverRegistrySpec :
 
         test("registry/rejects-requested-unsupported-operations-with-route-diagnostics") {
             val backend = FakeBackend(SolverDescriptor("example", "direct", setOf(SolverCapability.SATISFACTION)))
-            val error = shouldThrow<NoCompatibleBackendException> {
-                SolverRegistry.of(backend).select(ConstraintModel.of {}, requiredCapabilities = setOf(SolverCapability.ENUMERATION))
-            }
+            val error =
+                shouldThrow<NoCompatibleBackendException> {
+                    SolverRegistry.of(backend).select(ConstraintModel.of {}, requiredCapabilities = setOf(SolverCapability.ENUMERATION))
+                }
             error.rejections.keys shouldBe setOf("example/direct")
-            error.rejections.getValue("example/direct").single().contains("ENUMERATION") shouldBe true
+            error.rejections
+                .getValue("example/direct")
+                .single()
+                .contains("ENUMERATION") shouldBe true
         }
 
         test("registry/empty-means-no-backends-including-test-fakes") {
@@ -57,13 +69,20 @@ class SolverRegistrySpec :
         }
 
         test("registry/preserves-availability-and-support-diagnostics") {
-            val missing = FakeBackend(SolverDescriptor("example", "missing", setOf(SolverCapability.SATISFACTION)),
-                BackendAvailability(false, "Executable not installed"))
-            val unsupported = FakeBackend(SolverDescriptor("example", "direct", setOf(SolverCapability.SATISFACTION)),
-                supportReport = SupportReport(unsupported = listOf("Unsupported table constraint")))
-            val error = shouldThrow<NoCompatibleBackendException> {
-                SolverRegistry.of(missing, unsupported).select(ConstraintModel.of {})
-            }
+            val missing =
+                FakeBackend(
+                    SolverDescriptor("example", "missing", setOf(SolverCapability.SATISFACTION)),
+                    BackendAvailability(false, "Executable not installed"),
+                )
+            val unsupported =
+                FakeBackend(
+                    SolverDescriptor("example", "direct", setOf(SolverCapability.SATISFACTION)),
+                    supportReport = SupportReport(unsupported = listOf("Unsupported table constraint")),
+                )
+            val error =
+                shouldThrow<NoCompatibleBackendException> {
+                    SolverRegistry.of(missing, unsupported).select(ConstraintModel.of {})
+                }
             error.rejections.getValue("example/missing") shouldBe listOf("Executable not installed")
             error.rejections.getValue("example/direct") shouldBe listOf("Unsupported table constraint")
             runCatching { (error.rejections as MutableMap).clear() }
