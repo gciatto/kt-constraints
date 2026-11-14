@@ -11,12 +11,13 @@ class Table(
     val operands: List<IntExpr> = buildList { addAll(operands) }
 
     /** Detached immutable rows, each with the same arity as [operands]. */
-    val tuples: List<List<BigInteger>> = buildList {
-        tuples.forEach { row ->
-            require(row.size == this@Table.operands.size) { "Table tuple arity does not match operands" }
-            add(buildList { addAll(row) })
+    val tuples: List<List<BigInteger>> =
+        buildList {
+            tuples.forEach { row ->
+                require(row.size == this@Table.operands.size) { "Table tuple arity does not match operands" }
+                add(buildList { addAll(row) })
+            }
         }
-    }
 
     override val children: List<Expr> get() = operands
 

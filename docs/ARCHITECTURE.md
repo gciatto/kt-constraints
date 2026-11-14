@@ -63,6 +63,14 @@ and Boolean cardinalities. Their operand and tuple collections are detached immu
 equality. An element expression requires a non-empty array and rejects an out-of-range ground index; tables
 validate tuple arity. Empty all-different is true and an empty allowed-tuple table is false, including at arity zero.
 
+## Portable representation design
+
+No serialization format or portable model fingerprint is implemented yet. A future format must encode exact
+integers losslessly, preserve declaration/operand order and globals, and use model-local variable indices.
+Decoding must allocate a fresh identity owner and remap all references, objectives and output variables.
+The current in-memory owner object and hash codes must never serve as serialized identity or a portable cache
+key. Round-trip tests will accompany an actual versioned format; none are claimed for this milestone.
+
 A `ConstraintSolver` performs one-shot solving. An `IncrementalSession` offers assertion scopes and satisfiability
 queries. A `PropagatingSession` is a stronger capability, reporting domain reductions and entailment. It is incorrect
 to advertise general CLP propagation merely because a backend implements SMT push/pop.

@@ -13,19 +13,28 @@ import org.gciatto.kt.math.BigInteger
 fun allDifferent(vararg operands: IntExpr): AllDifferent = AllDifferent(operands.asList())
 
 /** Preserves a zero-based array selection expression. */
-fun element(index: IntExpr, vararg values: IntExpr): Element = Element(index, values.asList())
+fun element(
+    index: IntExpr,
+    vararg values: IntExpr,
+): Element = Element(index, values.asList())
 
 /** Preserves an exact integer sum, including the empty sum zero. */
 fun sum(vararg terms: IntExpr): LinearSum = LinearSum(terms.asList(), List(terms.size) { BigInteger.ONE })
 
 /** Requires at most [count] operands to be true. */
-fun atMost(count: Int, vararg operands: BoolExpr): BoolCardinality =
-    BoolCardinality(operands.asList(), count, CardinalityRelation.AT_MOST)
+fun atMost(
+    count: Int,
+    vararg operands: BoolExpr,
+): BoolCardinality = BoolCardinality(operands.asList(), count, CardinalityRelation.AT_MOST)
 
 /** Requires exactly [count] operands to be true. */
-fun exactly(count: Int, vararg operands: BoolExpr): BoolCardinality =
-    BoolCardinality(operands.asList(), count, CardinalityRelation.EXACTLY)
+fun exactly(
+    count: Int,
+    vararg operands: BoolExpr,
+): BoolCardinality = BoolCardinality(operands.asList(), count, CardinalityRelation.EXACTLY)
 
 /** Requires at least [count] operands to be true. */
-fun atLeast(count: Int, vararg operands: BoolExpr): BoolCardinality =
-    BoolCardinality(operands.asList(), count, CardinalityRelation.AT_LEAST)
+fun atLeast(
+    count: Int,
+    vararg operands: BoolExpr,
+): BoolCardinality = BoolCardinality(operands.asList(), count, CardinalityRelation.AT_LEAST)

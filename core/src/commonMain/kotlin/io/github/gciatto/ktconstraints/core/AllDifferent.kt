@@ -1,7 +1,9 @@
 package io.github.gciatto.ktconstraints.core
 
 /** Global constraint requiring pairwise distinct integer values; true for no operands. */
-class AllDifferent(operands: Collection<IntExpr>) : BoolExpr {
+class AllDifferent(
+    operands: Collection<IntExpr>,
+) : BoolExpr {
     /** Detached immutable operands, in declaration order. */
     val operands: List<IntExpr> = buildList { addAll(operands) }
 

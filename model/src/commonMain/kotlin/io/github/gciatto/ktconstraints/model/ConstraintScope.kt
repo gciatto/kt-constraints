@@ -9,8 +9,8 @@ import io.github.gciatto.ktconstraints.core.IntVar
 import io.github.gciatto.ktconstraints.core.Sort
 import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.VariableFactory
-import kotlin.jvm.JvmStatic
 import kotlin.jvm.JvmOverloads
+import kotlin.jvm.JvmStatic
 
 /** Stateful single-model builder; snapshots created by [build] are detached from later edits. */
 class ConstraintScope private constructor() {
@@ -70,11 +70,12 @@ class ConstraintScope private constructor() {
     fun satisfy(): ConstraintScope = apply { objective = null }
 
     /** Replaces the output projection; an empty projection is permitted. */
-    fun project(vararg output: Variable): ConstraintScope = apply {
-        requireOwned(output.toSet())
-        require(output.map { it.id }.toSet().size == output.size) { "Duplicate projection variable" }
-        projection = buildList { addAll(output) }
-    }
+    fun project(vararg output: Variable): ConstraintScope =
+        apply {
+            requireOwned(output.toSet())
+            require(output.map { it.id }.toSet().size == output.size) { "Duplicate projection variable" }
+            projection = buildList { addAll(output) }
+        }
 
     /** Produces a detached read-only snapshot of the current model. */
     fun build(): ConstraintModel = ConstraintModel(variables.values, entries, objective, projection ?: variables.values)
