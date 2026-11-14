@@ -12,4 +12,10 @@ interface ConstraintSolver : AutoCloseable {
         model: ConstraintModel,
         options: SolveOptions = SolveOptions.DEFAULT,
     ): SolveResult
+
+    /** Opens a single-pass search owned by this solver; the caller must close it when stopping early. */
+    fun solutions(
+        model: ConstraintModel,
+        options: SolveOptions = SolveOptions.DEFAULT,
+    ): SolutionStream
 }
