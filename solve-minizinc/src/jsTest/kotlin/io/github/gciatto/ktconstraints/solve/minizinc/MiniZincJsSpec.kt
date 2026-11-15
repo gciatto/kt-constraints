@@ -10,6 +10,10 @@ import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.yield
 import kotlin.time.Duration.Companion.seconds
 
 /** Same real contracts for Node CLI and browser Wasm; route identity records which actually ran. */
@@ -106,6 +110,29 @@ class MiniZincJsSpec :
                 } finally {
                     restore()
                     fs.rmSync(isolated, js("({recursive: true, force: true})"))
+                }
+            }
+            test("js/browser-close-while-a-run-starts-raises-no-page-error").config(enabled = browser) {
+                val errors = mutableListOf<String>()
+                val listener: (dynamic) -> Unit = { event -> errors += "${event.message}" }
+                js("window").addEventListener("error", listener)
+                try {
+                    val selected = loaded()
+                    val scope = ConstraintScope.empty()
+                    scope.intVar("x", 0..1_000_000)
+                    val stream = selected.create().solutions(scope.build())
+                    coroutineScope {
+                        // Starting a run spawns a replacement pool worker that loads asynchronously.
+                        val first = async { runCatching { stream.next() } }
+                        yield()
+                        selected.close()
+                        first.await()
+                    }
+                    backend = load()
+                    delay(1_000)
+                    errors shouldBe emptyList()
+                } finally {
+                    js("window").removeEventListener("error", listener)
                 }
             }
             test("js/node-missing-executable-is-unavailable-rather-than-a-process-crash").config(enabled = !browser) {

@@ -29,3 +29,10 @@ function BrowserConsoleFile() {
 }
 config.plugins.push({ 'reporter:browser-console-file': ['type', BrowserConsoleFile] });
 config.reporters = [...(config.reporters || []), 'browser-console-file'];
+// Simulated latency for the worker script makes lifecycle races with loading pool workers deterministic.
+function SlowWorkerScript() {
+    return (request, response, next) =>
+        request.url.includes('minizinc-worker.js') ? setTimeout(next, 300) : next();
+}
+config.plugins.push({ 'middleware:slow-minizinc-worker': ['factory', SlowWorkerScript] });
+config.beforeMiddleware = [...(config.beforeMiddleware || []), 'slow-minizinc-worker'];
