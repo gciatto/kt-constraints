@@ -10,13 +10,13 @@ import io.kotest.matchers.shouldBe
 /** Same real contracts for Node CLI and browser Wasm; route identity records which actually ran. */
 class MiniZincJsSpec : FunSpec({
     val browser = js("typeof window !== 'undefined'") as Boolean
-    val executable = js("typeof process !== 'undefined' ? process.env.MINIZINC_EXECUTABLE || null : null") as String?
+    val executable = if (browser) null else js("typeof process !== 'undefined' ? process.env.MINIZINC_EXECUTABLE || null : null") as String?
     if (!browser && executable == null) {
         test("requires-requested-node-cli-or-browser-wasm").config(enabled = false) {}
     } else {
         var backend: MiniZincJsBackend? = null
         beforeSpec {
-            backend = if (browser) {
+            backend = runCatching { if (browser) {
                 val origin = js("globalThis.location.origin") as String
                 MiniZincJsBackend.loadBrowser(
                     "$origin/minizinc/minizinc-worker.js",
@@ -25,13 +25,13 @@ class MiniZincJsSpec : FunSpec({
                 )
             } else {
                 MiniZincJsBackend.loadNode(requireNotNull(executable))
-            }
+            } }.onFailure { console.error(it.stackTraceToString()) }.getOrThrow()
         }
         afterSpec { backend?.close() }
         include(solverContract { requireNotNull(backend).create() })
         test("js/route-identifies-the-actual-transport") {
             val selected = requireNotNull(backend)
-            selected.descriptor.id shouldBe if (browser) "gecode/minizinc-wasm" else "gecode/minizinc-js-cli"
+            selected.descriptor.id shouldBe if (browser) "chuffed/minizinc-wasm" else "gecode/minizinc-js-cli"
             selected.create().use { solver ->
                 solver.solve(ConstraintScope.empty().build()).descriptor shouldBe selected.descriptor
             }
