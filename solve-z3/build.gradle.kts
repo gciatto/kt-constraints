@@ -53,3 +53,59 @@ tasks.matching { it.name == "jsNodeTest" || it.name == "jsBrowserTest" }.configu
         }
     }
 }
+
+// Native tests load the pinned z3-turnkey C library of the matching host, the same Z3 build as the JVM route.
+val z3NativeRuntime: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    isTransitive = false
+}
+dependencies { z3NativeRuntime(libs.z3.turnkey) }
+
+val hostOs = System.getProperty("os.name").lowercase()
+val hostArm = System.getProperty("os.arch").let { it == "aarch64" || it == "arm64" }
+val z3NativeHost: Triple<String, String, String>? =
+    when {
+        hostOs.startsWith("linux") && !hostArm -> Triple("linuxX64", "linux/amd64", "libz3.so")
+        hostOs.startsWith("mac") && hostArm -> Triple("macosArm64", "osx/aarch64", "libz3.dylib")
+        hostOs.startsWith("windows") && !hostArm -> Triple("mingwX64", "windows/amd64", "libz3.dll")
+        else -> null
+    }
+
+z3NativeHost?.let { (target, directory, library) ->
+    val extracted = layout.buildDirectory.dir("z3-native/$target")
+    val extractZ3Native =
+        tasks.register<Sync>("extractZ3Native") {
+            description = "Extracts the pinned Z3 C library for native tests on this host."
+            from({ zipTree(z3NativeRuntime.singleFile) }) {
+                include("com/microsoft/z3/$directory/*")
+                exclude("**/*java*", "**/*.xml")
+                eachFile { path = name }
+            }
+            includeEmptyDirs = false
+            into(extracted)
+        }
+    tasks
+        .withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>()
+        .matching { it.name == "${target}Test" }
+        .configureEach {
+            dependsOn(extractZ3Native)
+            environment(
+                "KT_CONSTRAINTS_Z3_LIBRARY",
+                extracted
+                    .get()
+                    .file(library)
+                    .asFile.absolutePath,
+            )
+            // Require the provisioned contract to have run, not only the unavailability check.
+            doLast {
+                val report =
+                    layout.buildDirectory
+                        .file("test-results/$name/TEST-$name.io.github.gciatto.ktconstraints.solve.z3.Z3NativeSpec.xml")
+                        .get()
+                        .asFile
+                check(report.isFile && report.readText().contains("z3-native/route-identifies-the-c-binding")) {
+                    "The Z3 C API contract did not execute in $name; inspect library loading failures"
+                }
+            }
+        }
+}
