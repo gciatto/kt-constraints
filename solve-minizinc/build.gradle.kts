@@ -33,8 +33,47 @@ tasks.register<JavaExec>("jvmBenchmark") {
 
 val miniZincExecutable = providers.environmentVariable("MINIZINC_EXECUTABLE")
 tasks.named<org.gradle.api.tasks.testing.Test>("jvmTest") {
+    testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     inputs.property("miniZincExecutable", miniZincExecutable.orElse(""))
     inputs.property("miniZincEngines", providers.environmentVariable("MINIZINC_ENGINES").orElse(""))
     outputs.upToDateWhen { !miniZincExecutable.isPresent }
     outputs.doNotCacheIf("The explicitly requested external solver runtime must be probed again") { miniZincExecutable.isPresent }
+}
+
+kotlin.js {
+    browser {
+        testTask {
+            useKarma { useChromeHeadless() }
+            onlyIf("Browser runtime verification is explicitly enabled") {
+                providers.environmentVariable("MINIZINC_BROWSER_TEST").isPresent
+            }
+        }
+    }
+}
+
+val miniZincBrowserTest = providers.environmentVariable("MINIZINC_BROWSER_TEST")
+tasks.matching { it.name == "jsNodeTest" || it.name == "jsBrowserTest" }.configureEach {
+    inputs.property("miniZincExecutable", miniZincExecutable.orElse(""))
+    inputs.property("miniZincBrowserTest", miniZincBrowserTest.orElse(""))
+    outputs.upToDateWhen { !miniZincExecutable.isPresent && !miniZincBrowserTest.isPresent }
+    outputs.doNotCacheIf("Explicit JS runtime verification must execute against its actual runtime") {
+        miniZincExecutable.isPresent || miniZincBrowserTest.isPresent
+    }
+}
+
+// Kotest setup failures can omit a JS spec without failing Karma; require the real contract report.
+tasks.matching { it.name == "jsNodeTest" || it.name == "jsBrowserTest" }.configureEach {
+    doLast {
+        if (name == "jsBrowserTest" || miniZincExecutable.isPresent) {
+            val report =
+                layout.buildDirectory
+                    .file(
+                        "test-results/$name/TEST-$name.io.github.gciatto.ktconstraints.solve.minizinc.MiniZincJsSpec.xml",
+                    ).get()
+                    .asFile
+            check(report.isFile && report.readText().contains("js/route-identifies-the-actual-transport")) {
+                "The requested MiniZinc JS runtime contract did not execute; inspect runtime setup failures"
+            }
+        }
+    }
 }
