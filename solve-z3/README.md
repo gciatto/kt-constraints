@@ -1,8 +1,14 @@
 # :solve-z3
 
-Direct Z3 route `z3/direct` on the JVM, using the official Java API bundled with native
-libraries for Linux, macOS and Windows by `tools.aqua:z3-turnkey`. It is distinct from
-every MiniZinc route. JS/Wasm and Kotlin/Native bindings are planned; publication stays disabled.
+Direct Z3 routes, distinct from every MiniZinc route:
+
+- `z3/direct` on the JVM: the official Java API with Linux, macOS and Windows native
+  libraries bundled by `tools.aqua:z3-turnkey` 4.14.0.
+- `z3/wasm` on Kotlin/JS: the official `z3-solver` 5.3.3 threaded Wasm module, verified on Node.
+  Browsers need cross-origin isolation (COOP/COEP) for `SharedArrayBuffer`; not yet verified.
+
+Both share one translation, stream and session implementation behind an internal platform port.
+Kotlin/Native bindings are planned; publication stays disabled.
 
 ```kotlin
 Z3Backend().create().use { solver ->
@@ -30,6 +36,11 @@ Z3Backend().create().use { solver ->
   for one check. Capabilities: incremental assertions, backtracking, assumptions and unsat
   cores. Repeated checks are not domain propagation or entailment.
 
+```kotlin
+// Kotlin/JS: owns the module's worker threads; close it to terminate them.
+Z3JsBackend.load().use { backend -> backend.create().use { solver -> solver.solve(model) } }
+```
+
 ```bash
-./gradlew :solve-z3:jvmTest
+./gradlew :solve-z3:jvmTest :solve-z3:jsNodeTest
 ```

@@ -62,6 +62,12 @@ high-level API. Its route is `z3/wasm`; a closeable, asynchronously loaded backe
 module's worker threads, terminated through the package's `killThreads` on close.
 Browser support is advertised only after a cross-origin-isolated browser test passes.
 
+Status: Node is implemented and runs the same solver and incremental contracts as the JVM.
+The pinned package is 5.3.3, a newer Z3 than the JVM's 4.14.0 bundle; each route reports
+only its own validated behaviour. Contexts are released by the package's garbage-collection
+finalizers, as its API has no explicit context disposal. Interrupted checks leave sessions
+usable on both platforms. Browser execution is disabled until COOP/COEP serving is set up.
+
 ## Later slices
 
 1. Kotlin/Native through the Z3 C API on hosts with reproducible binaries.

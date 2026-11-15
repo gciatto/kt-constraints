@@ -108,7 +108,7 @@ Gecode/Chuffed/CP-SAT/HiGHS/CBC routes tested when installed; no backend capabil
 ## P2 — SMT and portable execution
 
 - [ ] `:solve-z3`: direct JVM binding and native C integration; browser JS/Wasm binding and incremental assertion API.
-  JVM binding and incremental API implemented (M4); JS/Wasm and native C pending.
+  JVM binding, Node Wasm binding and incremental API implemented (M4); browser verification and native C pending.
 - [ ] Add SMT sorts and constraints: integers, exact arithmetic, rationals, bitvectors, arrays, strings,
   uninterpreted symbols, quantified formula support only where semantically appropriate.
 - [x] Implement assumptions and unsat cores for engines supporting them, with source mapping (Z3 JVM; cores map to assumptions).
@@ -144,7 +144,7 @@ of any specific Prolog implementation. Any future 2p-Kt integration belongs outs
 | Chuffed | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | Native CP, no generic incremental API promised |
 | CP-SAT | MiniZinc and direct | MiniZinc implemented; direct planned | Custom wrapper | Via runtime if packaged | Incrementality not equivalent to CLP propagation |
 | Choco | Direct JVM | Planned | — | — | Propagation/backtracking planned |
-| Z3 | Direct | Implemented (`z3/direct`) | C API planned | Wasm binding planned | Incremental sessions implemented; no domain propagation |
+| Z3 | Direct | Implemented (`z3/direct`) | C API planned | Node Wasm implemented (`z3/wasm`); browser pending | Incremental sessions implemented; no domain propagation |
 | HiGHS | MiniZinc and direct | MiniZinc implemented; direct planned | C API planned | Wasm conditional | LP/MIP; not CLP(FD) propagation |
 | CBC | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | MIP batch |
 
