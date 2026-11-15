@@ -70,9 +70,32 @@ usable on both platforms. Browsers run the same contracts when the page is cross
 isolated: the Karma setup serves `z3-built.js` as a page script and the Wasm with COOP/COEP
 headers, and CI verifies it in headless Chrome. Applications must do the same.
 
-## Later slices
+## Kotlin/Native slice
 
-1. Kotlin/Native through the Z3 C API on hosts with reproducible binaries.
+Native targets reuse the shared port through Z3's C API. The C library is **loaded at run
+time** (`dlopen` / `LoadLibraryEx`) by a small cinterop shim that declares only the stable
+C prototypes it calls, instead of being linked into executables:
+
+- Kotlin/Native links against an old glibc sysroot, while released `libz3` builds need a
+  recent glibc and libstdc++; linking would either fail or produce binaries that cannot start
+  where Z3 is absent. Run-time loading keeps every executable startable and turns a missing
+  or incompatible library into a truthful `BackendAvailability` with the loader's reason.
+- No Z3 headers or archives are downloaded at build time; the shim compiles on every native
+  target from the repository alone.
+
+The route is `z3/native`, with the same capabilities as the other routes. The library is
+`KT_CONSTRAINTS_Z3_LIBRARY` when set, else the platform's default name on the loader path.
+One library is loaded per process; a backend asking for a different path is unavailable.
+Contexts are created with `Z3_mk_context` (term lifetime bound to the context, which the
+solver-level push/pop never shortens) and confined to one dedicated thread; solvers, models,
+parameters and vectors are reference counted explicitly. Z3's error handler is disabled and
+every error is checked and raised as `BackendExecutionException`. Cancellation and close call
+the thread-safe `Z3_interrupt`.
+
+Reproducible test binaries: the Linux x64, macOS arm64 and Windows x64 `libz3` of the same
+pinned z3-turnkey artifact used on the JVM (Z3 4.14.0), extracted by Gradle for the native
+test task of the matching host. iOS targets compile the route but no library is provisioned,
+so it reports itself unavailable there; mobile packaging is deferred.
 
 ## Reference evidence
 
