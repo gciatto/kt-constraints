@@ -47,6 +47,7 @@ class Z3Spec :
     FunSpec({
         include(solverContract { Z3Backend().create() })
         include(incrementalContract { Z3Backend().create() })
+        include(z3OptimizationContract { Z3Backend().create() })
 
         test("z3/runtime-is-available-and-identifies-the-direct-route") {
             val backend = Z3Backend()

@@ -44,6 +44,7 @@ class Z3JsSpec :
 
             include(solverContract { loaded().create() })
             include(incrementalContract { loaded().create() })
+            include(z3OptimizationContract { loaded().create() })
 
             test("z3-js/route-identifies-the-wasm-binding") {
                 val selected = loaded()
