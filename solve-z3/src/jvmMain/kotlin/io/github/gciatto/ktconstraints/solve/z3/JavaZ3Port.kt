@@ -4,6 +4,8 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
 import com.microsoft.z3.ArithExpr
+import com.microsoft.z3.BitVecNum
+import com.microsoft.z3.BitVecSort
 import com.microsoft.z3.BoolExpr
 import com.microsoft.z3.Context
 import com.microsoft.z3.Expr
@@ -11,6 +13,8 @@ import com.microsoft.z3.IntNum
 import com.microsoft.z3.IntSort
 import com.microsoft.z3.Model
 import com.microsoft.z3.Status
+import io.github.gciatto.ktconstraints.core.BitVecOperator
+import io.github.gciatto.ktconstraints.core.BitVecRelation
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.solve.CheckStatus
 import org.gciatto.kt.math.BigInteger
@@ -36,6 +40,61 @@ internal class JavaZ3Port(
     override fun real(value: Rational): Expr<*> = context.mkReal(value.toString())
 
     override fun toReal(operand: Expr<*>): Expr<*> = context.mkInt2Real(operand as Expr<IntSort>)
+
+    override fun bitVecConst(
+        name: String,
+        width: Int,
+    ): Expr<*> = context.mkBVConst(name, width)
+
+    override fun bitVec(
+        value: BigInteger,
+        width: Int,
+    ): Expr<*> = context.mkBV(value.toString(), width)
+
+    override fun bitVecBinary(
+        operator: BitVecOperator,
+        left: Expr<*>,
+        right: Expr<*>,
+    ): Expr<*> {
+        val a = left as Expr<BitVecSort>
+        val b = right as Expr<BitVecSort>
+        return when (operator) {
+            BitVecOperator.ADD -> context.mkBVAdd(a, b)
+            BitVecOperator.SUBTRACT -> context.mkBVSub(a, b)
+            BitVecOperator.MULTIPLY -> context.mkBVMul(a, b)
+            BitVecOperator.AND -> context.mkBVAND(a, b)
+            BitVecOperator.OR -> context.mkBVOR(a, b)
+            BitVecOperator.XOR -> context.mkBVXOR(a, b)
+            BitVecOperator.SHIFT_LEFT -> context.mkBVSHL(a, b)
+            BitVecOperator.LOGICAL_SHIFT_RIGHT -> context.mkBVLSHR(a, b)
+            BitVecOperator.ARITHMETIC_SHIFT_RIGHT -> context.mkBVASHR(a, b)
+        }
+    }
+
+    override fun bitVecNot(operand: Expr<*>): Expr<*> = context.mkBVNot(operand as Expr<BitVecSort>)
+
+    override fun bitVecNegate(operand: Expr<*>): Expr<*> = context.mkBVNeg(operand as Expr<BitVecSort>)
+
+    override fun bitVecCompare(
+        relation: BitVecRelation,
+        left: Expr<*>,
+        right: Expr<*>,
+    ): Expr<*> {
+        val a = left as Expr<BitVecSort>
+        val b = right as Expr<BitVecSort>
+        return when (relation) {
+            BitVecRelation.EQUAL -> context.mkEq(a, b)
+            BitVecRelation.UNSIGNED_LESS_THAN -> context.mkBVULT(a, b)
+            BitVecRelation.UNSIGNED_LESS_OR_EQUAL -> context.mkBVULE(a, b)
+            BitVecRelation.SIGNED_LESS_THAN -> context.mkBVSLT(a, b)
+            BitVecRelation.SIGNED_LESS_OR_EQUAL -> context.mkBVSLE(a, b)
+        }
+    }
+
+    override fun bitVecToInt(
+        operand: Expr<*>,
+        signed: Boolean,
+    ): Expr<*> = context.mkBV2Int(operand as Expr<BitVecSort>, signed)
 
     override fun add(operands: List<Expr<*>>): Expr<*> = context.mkAdd(*ints(operands))
 
@@ -127,6 +186,8 @@ internal class JavaZ3Port(
                 if (it.isRatNum) it.toString() else null
             },
         )
+
+    override fun bitVecValue(term: Expr<*>): BigInteger = BigInteger.of((checkNotNull(model).eval(term, true) as BitVecNum).toString())
 
     override fun unsatCore(assumptions: List<Expr<*>>): Set<Int> {
         val core = solver.unsatCore.toSet()

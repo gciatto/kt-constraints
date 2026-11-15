@@ -24,6 +24,17 @@ object GroundEvaluator {
         valuation: Valuation,
     ): Rational = evaluateGround(expression, valuation) as Rational
 
+    /** Evaluates a bit-vector expression to its unsigned value, rejecting variables and unsupported extension nodes. */
+    @JvmStatic
+    fun evaluate(expression: BitVecExpr): BigInteger = evaluateGround(expression) as BigInteger
+
+    /** Evaluates a bit-vector expression to its unsigned value under complete, in-range variable bindings. */
+    @JvmStatic
+    fun evaluate(
+        expression: BitVecExpr,
+        valuation: Valuation,
+    ): BigInteger = evaluateGround(expression, valuation) as BigInteger
+
     /** Evaluates an integer expression under complete, domain-valid variable bindings. */
     @JvmStatic
     fun evaluate(
@@ -51,6 +62,11 @@ object GroundEvaluator {
                     }
                 is BoolVar -> requireNotNull(valuation?.valueOf(node)) { "Missing Boolean binding: ${node.name}" }
                 is RealVar -> requireNotNull(valuation?.valueOf(node)) { "Missing real binding: ${node.name}" }
+                is BitVecVar ->
+                    requireNotNull(valuation?.valueOf(node)) { "Missing bit-vector binding: ${node.name}" }.also {
+                        require(BitVectors.fits(it, node.width)) { "Bit-vector binding outside its width: ${node.name}" }
+                    }
+                is BitVecExpr -> BitVectors.evaluate(node, values)
                 is RealExpr -> evaluateReal(node, values)
                 is IntExpr -> evaluateInteger(node, values)
                 is BoolExpr -> evaluateBoolean(node, values)
@@ -70,6 +86,7 @@ object GroundEvaluator {
             is IntProduct -> (values[0] as BigInteger) * (values[1] as BigInteger)
             is IntNegation -> -(values[0] as BigInteger)
             is Element -> evaluateElement(node, values)
+            is BitVecToInt -> BitVectors.toInt(values[0] as BigInteger, node.operand.width, node.signed)
             is LinearSum ->
                 values.zip(node.coefficients).fold(node.constant) { total, (value, coefficient) ->
                     total + (value as BigInteger) * coefficient
@@ -106,6 +123,7 @@ object GroundEvaluator {
             is IntLessThan -> (values[0] as BigInteger) < (values[1] as BigInteger)
             is IntLessOrEqual -> (values[0] as BigInteger) <= (values[1] as BigInteger)
             is RealEquality -> values[0] == values[1]
+            is BitVecComparison -> BitVectors.compare(node, values[0] as BigInteger, values[1] as BigInteger)
             is RealLessThan -> (values[0] as Rational) < (values[1] as Rational)
             is RealLessOrEqual -> (values[0] as Rational) <= (values[1] as Rational)
             is AllDifferent -> values.toSet().size == values.size

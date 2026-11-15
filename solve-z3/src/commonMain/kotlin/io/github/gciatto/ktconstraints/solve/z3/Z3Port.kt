@@ -1,5 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
+import io.github.gciatto.ktconstraints.core.BitVecOperator
+import io.github.gciatto.ktconstraints.core.BitVecRelation
 import io.github.gciatto.ktconstraints.core.Rational
 import org.gciatto.kt.math.BigInteger
 
@@ -17,6 +19,38 @@ internal interface Z3Port<T> {
 
     /** Exact embedding of an integer term into the reals. */
     fun toReal(operand: T): T
+
+    fun bitVecConst(
+        name: String,
+        width: Int,
+    ): T
+
+    /** Unsigned [value] below 2^[width]. */
+    fun bitVec(
+        value: BigInteger,
+        width: Int,
+    ): T
+
+    fun bitVecBinary(
+        operator: BitVecOperator,
+        left: T,
+        right: T,
+    ): T
+
+    fun bitVecNot(operand: T): T
+
+    fun bitVecNegate(operand: T): T
+
+    fun bitVecCompare(
+        relation: BitVecRelation,
+        left: T,
+        right: T,
+    ): T
+
+    fun bitVecToInt(
+        operand: T,
+        signed: Boolean,
+    ): T
 
     fun int(value: BigInteger): T
 
@@ -104,6 +138,9 @@ internal interface Z3Port<T> {
 
     /** Exact rational value of a real [term] in the model of the last satisfiable check, with model completion. */
     fun realValue(term: T): Rational
+
+    /** Unsigned value of a bit-vector [term] in the model of the last satisfiable check, with model completion. */
+    fun bitVecValue(term: T): BigInteger
 
     /** Positions of [assumptions] in the core of the last unsatisfiable check. */
     fun unsatCore(assumptions: List<T>): Set<Int>

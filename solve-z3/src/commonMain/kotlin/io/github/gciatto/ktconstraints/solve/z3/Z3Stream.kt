@@ -1,5 +1,6 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
+import io.github.gciatto.ktconstraints.core.BitVecVar
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.GroundEvaluator
 import io.github.gciatto.ktconstraints.core.IntVar
@@ -121,6 +122,7 @@ internal class Z3Stream<T>(
                     is BoolVar -> port.not(current.translation.binding(variable, requireNotNull(projected.valueOf(variable))))
                     is IntVar -> port.not(current.translation.binding(variable, requireNotNull(projected.valueOf(variable))))
                     is RealVar -> port.not(current.translation.binding(variable, requireNotNull(projected.valueOf(variable))))
+                    is BitVecVar -> port.not(current.translation.binding(variable, requireNotNull(projected.valueOf(variable))))
                     else -> error("Unsupported projection: ${variable.name}")
                 }
             }

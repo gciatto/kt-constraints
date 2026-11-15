@@ -1,5 +1,6 @@
 package io.github.gciatto.ktconstraints.solve
 
+import io.github.gciatto.ktconstraints.core.BitVecVar
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.IntVar
 import io.github.gciatto.ktconstraints.core.Rational
@@ -20,16 +21,20 @@ interface Assignment : Valuation {
     /** Returns the exact real value, or null when outside the assignment projection. */
     override fun valueOf(variable: RealVar): Rational?
 
+    /** Returns the unsigned bit-vector value, or null when outside the assignment projection. */
+    override fun valueOf(variable: BitVecVar): BigInteger?
+
     /** Factories for detached typed assignments. */
     companion object {
-        /** Copies values and rejects integer values outside their declared domains. */
+        /** Copies values and rejects integer values outside their domains and bit-vector values outside their widths. */
         @JvmStatic
         @JvmOverloads
         fun of(
             booleans: Map<BoolVar, Boolean> = emptyMap(),
             integers: Map<IntVar, BigInteger> = emptyMap(),
             reals: Map<RealVar, Rational> = emptyMap(),
-        ): Assignment = ImmutableAssignment(booleans, integers, reals)
+            bitVectors: Map<BitVecVar, BigInteger> = emptyMap(),
+        ): Assignment = ImmutableAssignment(booleans, integers, reals, bitVectors)
 
         /** Creates an assignment with no projected variables. */
         @JvmStatic

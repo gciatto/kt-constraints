@@ -35,6 +35,23 @@ typedef void Z3_error_handler(Z3_context c, Z3_error_code e);
     F(Z3_sort, Z3_mk_int_sort, (Z3_context c), (c)) \
     F(Z3_sort, Z3_mk_real_sort, (Z3_context c), (c)) \
     F(Z3_ast, Z3_mk_int2real, (Z3_context c, Z3_ast a), (c, a)) \
+    F(Z3_sort, Z3_mk_bv_sort, (Z3_context c, unsigned w), (c, w)) \
+    F(Z3_ast, Z3_mk_bvadd, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvsub, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvmul, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvand, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvor, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvxor, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvshl, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvlshr, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvashr, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvult, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvule, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvslt, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvsle, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_bvnot, (Z3_context c, Z3_ast a), (c, a)) \
+    F(Z3_ast, Z3_mk_bvneg, (Z3_context c, Z3_ast a), (c, a)) \
+    F(Z3_ast, Z3_mk_bv2int, (Z3_context c, Z3_ast a, bool s), (c, a, s)) \
     F(bool, Z3_is_numeral_ast, (Z3_context c, Z3_ast a), (c, a)) \
     F(Z3_ast, Z3_mk_const, (Z3_context c, Z3_symbol s, Z3_sort t), (c, s, t)) \
     F(Z3_ast, Z3_mk_true, (Z3_context c), (c)) \

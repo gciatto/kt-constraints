@@ -2,6 +2,8 @@
 
 package io.github.gciatto.ktconstraints.solve.z3
 
+import io.github.gciatto.ktconstraints.core.BitVecOperator
+import io.github.gciatto.ktconstraints.core.BitVecRelation
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.solve.CheckStatus
 import io.github.gciatto.ktconstraints.solve.spi.BackendExecutionException
@@ -23,6 +25,23 @@ import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_and
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_atleast
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_atmost
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bool_sort
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bv2int
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bv_sort
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvadd
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvand
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvashr
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvlshr
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvmul
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvneg
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvnot
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvor
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvshl
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvsle
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvslt
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvsub
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvule
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvult
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_bvxor
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_const
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_distinct
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_eq
@@ -95,6 +114,59 @@ internal class NativeZ3Port(
     override fun real(value: Rational): Z3_ast = ast(Z3_mk_numeral(context, value.toString(), realSort))
 
     override fun toReal(operand: Z3_ast): Z3_ast = ast(Z3_mk_int2real(context, operand))
+
+    override fun bitVecConst(
+        name: String,
+        width: Int,
+    ): Z3_ast = ast(Z3_mk_const(context, Z3_mk_string_symbol(context, name), Z3_mk_bv_sort(context, width.toUInt())))
+
+    override fun bitVec(
+        value: BigInteger,
+        width: Int,
+    ): Z3_ast = ast(Z3_mk_numeral(context, value.toString(), Z3_mk_bv_sort(context, width.toUInt())))
+
+    override fun bitVecBinary(
+        operator: BitVecOperator,
+        left: Z3_ast,
+        right: Z3_ast,
+    ): Z3_ast =
+        ast(
+            when (operator) {
+                BitVecOperator.ADD -> Z3_mk_bvadd(context, left, right)
+                BitVecOperator.SUBTRACT -> Z3_mk_bvsub(context, left, right)
+                BitVecOperator.MULTIPLY -> Z3_mk_bvmul(context, left, right)
+                BitVecOperator.AND -> Z3_mk_bvand(context, left, right)
+                BitVecOperator.OR -> Z3_mk_bvor(context, left, right)
+                BitVecOperator.XOR -> Z3_mk_bvxor(context, left, right)
+                BitVecOperator.SHIFT_LEFT -> Z3_mk_bvshl(context, left, right)
+                BitVecOperator.LOGICAL_SHIFT_RIGHT -> Z3_mk_bvlshr(context, left, right)
+                BitVecOperator.ARITHMETIC_SHIFT_RIGHT -> Z3_mk_bvashr(context, left, right)
+            },
+        )
+
+    override fun bitVecNot(operand: Z3_ast): Z3_ast = ast(Z3_mk_bvnot(context, operand))
+
+    override fun bitVecNegate(operand: Z3_ast): Z3_ast = ast(Z3_mk_bvneg(context, operand))
+
+    override fun bitVecCompare(
+        relation: BitVecRelation,
+        left: Z3_ast,
+        right: Z3_ast,
+    ): Z3_ast =
+        ast(
+            when (relation) {
+                BitVecRelation.EQUAL -> Z3_mk_eq(context, left, right)
+                BitVecRelation.UNSIGNED_LESS_THAN -> Z3_mk_bvult(context, left, right)
+                BitVecRelation.UNSIGNED_LESS_OR_EQUAL -> Z3_mk_bvule(context, left, right)
+                BitVecRelation.SIGNED_LESS_THAN -> Z3_mk_bvslt(context, left, right)
+                BitVecRelation.SIGNED_LESS_OR_EQUAL -> Z3_mk_bvsle(context, left, right)
+            },
+        )
+
+    override fun bitVecToInt(
+        operand: Z3_ast,
+        signed: Boolean,
+    ): Z3_ast = ast(Z3_mk_bv2int(context, operand, signed))
 
     override fun add(operands: List<Z3_ast>): Z3_ast = ast(Z3_mk_add(context, operands.size.toUInt(), operands.toCValues()))
 
@@ -188,6 +260,9 @@ internal class NativeZ3Port(
         val value = evaluate(term)
         return exactRational(if (Z3_is_numeral_ast(context, value)) checked(Z3_get_numeral_string(context, value))?.toKString() else null)
     }
+
+    override fun bitVecValue(term: Z3_ast): BigInteger =
+        BigInteger.of(checkNotNull(checked(Z3_get_numeral_string(context, evaluate(term)))).toKString())
 
     override fun unsatCore(assumptions: List<Z3_ast>): Set<Int> {
         val core = checkNotNull(checked(Z3_solver_get_unsat_core(context, solver)))

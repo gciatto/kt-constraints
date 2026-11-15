@@ -1,5 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
+import io.github.gciatto.ktconstraints.core.BitVecOperator
+import io.github.gciatto.ktconstraints.core.BitVecRelation
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.solve.CheckStatus
 import kotlinx.coroutines.CancellationException
@@ -30,6 +32,59 @@ internal class JsZ3Port(
     override fun real(value: Rational): Any = context.Real.`val`(value.toString())
 
     override fun toReal(operand: Any): Any = context.ToReal(operand)
+
+    override fun bitVecConst(
+        name: String,
+        width: Int,
+    ): Any = context.BitVec.const(name, width)
+
+    override fun bitVec(
+        value: BigInteger,
+        width: Int,
+    ): Any = context.BitVec.`val`(value.toString(), width)
+
+    override fun bitVecBinary(
+        operator: BitVecOperator,
+        left: Any,
+        right: Any,
+    ): Any {
+        val a = left.asDynamic()
+        return when (operator) {
+            BitVecOperator.ADD -> a.add(right)
+            BitVecOperator.SUBTRACT -> a.sub(right)
+            BitVecOperator.MULTIPLY -> a.mul(right)
+            BitVecOperator.AND -> a.and(right)
+            BitVecOperator.OR -> a.or(right)
+            BitVecOperator.XOR -> a.xor(right)
+            BitVecOperator.SHIFT_LEFT -> a.shl(right)
+            BitVecOperator.LOGICAL_SHIFT_RIGHT -> a.lshr(right)
+            BitVecOperator.ARITHMETIC_SHIFT_RIGHT -> a.shr(right)
+        }.unsafeCast<Any>()
+    }
+
+    override fun bitVecNot(operand: Any): Any = operand.asDynamic().not()
+
+    override fun bitVecNegate(operand: Any): Any = operand.asDynamic().neg()
+
+    override fun bitVecCompare(
+        relation: BitVecRelation,
+        left: Any,
+        right: Any,
+    ): Any {
+        val a = left.asDynamic()
+        return when (relation) {
+            BitVecRelation.EQUAL -> a.eq(right)
+            BitVecRelation.UNSIGNED_LESS_THAN -> a.ult(right)
+            BitVecRelation.UNSIGNED_LESS_OR_EQUAL -> a.ule(right)
+            BitVecRelation.SIGNED_LESS_THAN -> a.slt(right)
+            BitVecRelation.SIGNED_LESS_OR_EQUAL -> a.sle(right)
+        }.unsafeCast<Any>()
+    }
+
+    override fun bitVecToInt(
+        operand: Any,
+        signed: Boolean,
+    ): Any = context.BV2Int(operand, signed)
 
     override fun add(operands: List<Any>): Any = operands.reduce { left, right -> left.asDynamic().add(right) }
 
@@ -143,6 +198,14 @@ internal class JsZ3Port(
         val value: dynamic = checkNotNull(model).eval(term, true)
         return exactRational(if (context.isRealVal(value).unsafeCast<Boolean>()) value.asString().unsafeCast<String>() else null)
     }
+
+    override fun bitVecValue(term: Any): BigInteger =
+        BigInteger.of(
+            checkNotNull(model)
+                .eval(term, true)
+                .asString()
+                .unsafeCast<String>(),
+        )
 
     override fun unsatCore(assumptions: List<Any>): Set<Int> {
         val core: dynamic = solver.unsatCore()

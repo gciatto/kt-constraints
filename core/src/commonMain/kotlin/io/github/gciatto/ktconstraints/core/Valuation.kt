@@ -12,4 +12,7 @@ interface Valuation {
 
     /** Returns an exact real binding, or null when absent (the default for valuations without reals). */
     fun valueOf(variable: RealVar): Rational? = null
+
+    /** Returns an unsigned bit-vector binding, or null when absent (the default for valuations without bit-vectors). */
+    fun valueOf(variable: BitVecVar): BigInteger? = null
 }

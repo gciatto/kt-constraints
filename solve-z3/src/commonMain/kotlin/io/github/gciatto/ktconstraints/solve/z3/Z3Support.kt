@@ -1,6 +1,13 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
 import io.github.gciatto.ktconstraints.core.AllDifferent
+import io.github.gciatto.ktconstraints.core.BitVecBinary
+import io.github.gciatto.ktconstraints.core.BitVecComparison
+import io.github.gciatto.ktconstraints.core.BitVecLiteral
+import io.github.gciatto.ktconstraints.core.BitVecNegation
+import io.github.gciatto.ktconstraints.core.BitVecNot
+import io.github.gciatto.ktconstraints.core.BitVecToInt
+import io.github.gciatto.ktconstraints.core.BitVecVar
 import io.github.gciatto.ktconstraints.core.BoolAnd
 import io.github.gciatto.ktconstraints.core.BoolCardinality
 import io.github.gciatto.ktconstraints.core.BoolEquality
@@ -55,7 +62,8 @@ internal object Z3Support {
                     is IntNegation, is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolAnd, is BoolOr,
                     is BoolNot, is BoolImplies, is BoolEquality, is LinearSum, is RealVar, is RealLiteral, is RealSum,
                     is RealDifference, is RealNegation, is RealScale, is IntToReal, is RealEquality, is RealLessThan,
-                    is RealLessOrEqual,
+                    is RealLessOrEqual, is BitVecVar, is BitVecLiteral, is BitVecBinary, is BitVecNot, is BitVecNegation,
+                    is BitVecComparison, is BitVecToInt,
                     -> Unit
                     else -> unsupported += "Unsupported expression: ${node::class.simpleName ?: node}"
                 }

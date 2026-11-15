@@ -19,6 +19,12 @@ class VariableFactory private constructor() {
     /** Creates a fresh unbounded real variable. */
     fun realVar(name: String): RealVar = RealVar(next(), name)
 
+    /** Creates a fresh bit-vector variable of a positive [width]. */
+    fun bitVecVar(
+        name: String,
+        width: Int,
+    ): BitVecVar = BitVecVar(next(), name, width)
+
     private fun next(): VariableId = VariableId(owner, nextId++)
 
     /** Factory methods. */

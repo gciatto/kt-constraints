@@ -1,5 +1,7 @@
 package io.github.gciatto.ktconstraints.model
 
+import io.github.gciatto.ktconstraints.core.BitVecExpr
+import io.github.gciatto.ktconstraints.core.BitVecVar
 import io.github.gciatto.ktconstraints.core.BoolExpr
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.Expr
@@ -39,6 +41,12 @@ class ConstraintScope private constructor() {
 
     /** Declares an unbounded exact real variable; routes without exact reals reject models declaring one. */
     fun realVar(name: String): RealVar = addVariable(name) { factory.realVar(name) }
+
+    /** Declares a fixed-width bit-vector variable; routes without bit-vectors reject models declaring one. */
+    fun bitVecVar(
+        name: String,
+        width: Int,
+    ): BitVecVar = addVariable(name) { factory.bitVecVar(name, width) }
 
     /** Asserts a Boolean expression, optionally with a unique name and diagnostic metadata. */
     @JvmOverloads
@@ -90,6 +98,7 @@ class ConstraintScope private constructor() {
             is IntExpr -> require(expression.sort == Sort.Integer) { "Inconsistent integer expression sort" }
             is BoolExpr -> require(expression.sort == Sort.Bool) { "Inconsistent Boolean expression sort" }
             is RealExpr -> require(expression.sort == Sort.Real) { "Inconsistent real expression sort" }
+            is BitVecExpr -> require(expression.sort == Sort.BitVector(expression.width)) { "Inconsistent bit-vector expression sort" }
         }
         expression.children.forEach { requireWellSorted(it) }
     }

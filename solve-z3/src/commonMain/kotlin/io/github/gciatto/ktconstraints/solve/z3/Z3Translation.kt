@@ -1,6 +1,14 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
 import io.github.gciatto.ktconstraints.core.AllDifferent
+import io.github.gciatto.ktconstraints.core.BitVecBinary
+import io.github.gciatto.ktconstraints.core.BitVecComparison
+import io.github.gciatto.ktconstraints.core.BitVecExpr
+import io.github.gciatto.ktconstraints.core.BitVecLiteral
+import io.github.gciatto.ktconstraints.core.BitVecNegation
+import io.github.gciatto.ktconstraints.core.BitVecNot
+import io.github.gciatto.ktconstraints.core.BitVecToInt
+import io.github.gciatto.ktconstraints.core.BitVecVar
 import io.github.gciatto.ktconstraints.core.BoolAnd
 import io.github.gciatto.ktconstraints.core.BoolCardinality
 import io.github.gciatto.ktconstraints.core.BoolEquality
@@ -52,6 +60,7 @@ internal class Z3Translation<T>(
     private val booleans = linkedMapOf<BoolVar, T>()
     private val integers = linkedMapOf<IntVar, T>()
     private val reals = linkedMapOf<RealVar, T>()
+    private val bitVectors = linkedMapOf<BitVecVar, T>()
     private val indexDefinedness = mutableListOf<T>()
 
     /** Domain, model-constraint and their element-definedness assertions. */
@@ -65,6 +74,7 @@ internal class Z3Translation<T>(
                 is BoolVar -> booleans[variable] = port.boolConst("b$index")
                 is IntVar -> integers[variable] = port.intConst("i$index")
                 is RealVar -> reals[variable] = port.realConst("r$index")
+                is BitVecVar -> bitVectors[variable] = port.bitVecConst("v$index", variable.width)
                 else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported variable: ${variable.name}")))
             }
         }
@@ -82,6 +92,7 @@ internal class Z3Translation<T>(
             when (node) {
                 is IntExpr -> integer(node, children)
                 is RealExpr -> real(node, children)
+                is BitVecExpr -> bitVec(node, children)
                 is BoolExpr -> boolean(node, children)
                 else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported expression: $node")))
             }
@@ -105,12 +116,19 @@ internal class Z3Translation<T>(
         value: Rational,
     ): T = port.equal(reals.getValue(variable), port.real(value))
 
+    /** Term equal to [value] for the projected [variable]. */
+    fun binding(
+        variable: BitVecVar,
+        value: BigInteger,
+    ): T = port.equal(bitVectors.getValue(variable), port.bitVec(value, variable.width))
+
     /** Complete assignment of every declared variable from the last satisfiable check. */
     fun assignment(): Assignment =
         Assignment.of(
             booleans.mapValues { (_, term) -> port.boolValue(term) },
             integers.mapValues { (_, term) -> port.intValue(term) },
             reals.mapValues { (_, term) -> port.realValue(term) },
+            bitVectors.mapValues { (_, term) -> port.bitVecValue(term) },
         )
 
     private fun integer(
@@ -126,6 +144,7 @@ internal class Z3Translation<T>(
             is IntNegation -> port.negate(children.single())
             is LinearSum -> linear(node, children)
             is Element -> element(children)
+            is BitVecToInt -> port.bitVecToInt(children.single(), node.signed)
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported integer expression: $node")))
         }
 
@@ -144,6 +163,19 @@ internal class Z3Translation<T>(
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported real expression: $node")))
         }
 
+    private fun bitVec(
+        node: BitVecExpr,
+        children: List<T>,
+    ): T =
+        when (node) {
+            is BitVecVar -> bitVectors.getValue(node)
+            is BitVecLiteral -> port.bitVec(node.value, node.width)
+            is BitVecBinary -> port.bitVecBinary(node.operator, children[0], children[1])
+            is BitVecNot -> port.bitVecNot(children.single())
+            is BitVecNegation -> port.bitVecNegate(children.single())
+            else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported bit-vector expression: $node")))
+        }
+
     private fun boolean(
         node: BoolExpr,
         children: List<T>,
@@ -158,6 +190,7 @@ internal class Z3Translation<T>(
             is BoolEquality, is IntEquality, is RealEquality -> port.equal(children[0], children[1])
             is IntLessThan, is RealLessThan -> port.less(children[0], children[1])
             is IntLessOrEqual, is RealLessOrEqual -> port.lessOrEqual(children[0], children[1])
+            is BitVecComparison -> port.bitVecCompare(node.relation, children[0], children[1])
             else -> global(node, children)
         }
 
