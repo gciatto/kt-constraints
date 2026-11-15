@@ -102,6 +102,26 @@ pinned z3-turnkey artifact used on the JVM (Z3 4.14.0), extracted by Gradle for 
 test task of the matching host. iOS targets compile the route but no library is provisioned,
 so it reports itself unavailable there; mobile packaging is deferred.
 
+## Exact reals slice
+
+The first sort beyond Boolean/integer is `Sort.Real`, restricted to **linear** real
+arithmetic so every model value is rational and nothing is approximated:
+
+- `Rational` (core) is an exact, always-normalized value: lowest terms, positive denominator,
+  structural equality. kt-math's `BigRational` is not used because it does not normalize
+  (`2/4 != 1/2`, `1/3 * 3` prints `3/3`), which breaks structural equality of IR nodes.
+- Nodes: `RealVar` (unbounded; bounds are ordinary constraints), `RealLiteral`, `RealSum`,
+  `RealDifference`, `RealNegation`, `RealScale` (rational coefficient times a real
+  expression), `IntToReal`, and `RealEquality` / `RealLessThan` / `RealLessOrEqual`.
+  There is no real product, division or real objective: products of variables can force
+  irrational (algebraic) models, and a real supremum need not be attained.
+- `Valuation` gains a real binding with a default of "absent", and `Assignment.of` a trailing
+  `reals` map, so existing Kotlin and Java callers are unaffected.
+- Routes without exact reals (MiniZinc, the finite oracle) reject models declaring or using
+  them before execution. Z3 maps them to its `Real` sort on every route, reads model values
+  as exact numerals, and validates each assignment with the evaluator like integer models.
+  A non-rational model value is a `BackendExecutionException`, never a rounded number.
+
 ## Reference evidence
 
 - [Z3 Java API](https://z3prover.github.io/api/html/namespacecom_1_1microsoft_1_1z3.html)
