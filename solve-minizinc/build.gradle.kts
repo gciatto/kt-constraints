@@ -10,6 +10,12 @@ kotlin {
         commonTest {
             dependencies { implementation(project(":test-solve")) }
         }
+        jsMain {
+            dependencies {
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(npm("minizinc", libs.versions.minizincJs.get()))
+            }
+        }
         jvmMain {
             dependencies { implementation(libs.kotlinx.coroutines.core) }
         }
