@@ -51,10 +51,20 @@ model's variables; the model's constraints form the irremovable root frame. Sess
   inside a temporary native frame. Repeated checks are not domain propagation: Z3 does
   not advertise `DOMAIN_PROPAGATION` or `ENTAILMENT`.
 
+## JS/Wasm slice
+
+The official `z3-solver` package runs Z3 as threaded Wasm (`SharedArrayBuffer`); Node
+supports it directly, while browsers require cross-origin isolation (COOP/COEP headers).
+To avoid two divergent implementations, translation, enumeration/optimization and session
+logic move to `commonMain` behind an internal per-context port with suspending checks:
+the JVM port wraps the Java API on its confined thread, and the JS port wraps the
+high-level API. Its route is `z3/wasm`; a closeable, asynchronously loaded backend owns the
+module's worker threads, terminated through the package's `killThreads` on close.
+Browser support is advertised only after a cross-origin-isolated browser test passes.
+
 ## Later slices
 
-1. JS/Wasm through the official `z3-solver` npm package, loaded asynchronously.
-2. Kotlin/Native through the Z3 C API on hosts with reproducible binaries.
+1. Kotlin/Native through the Z3 C API on hosts with reproducible binaries.
 
 ## Reference evidence
 
