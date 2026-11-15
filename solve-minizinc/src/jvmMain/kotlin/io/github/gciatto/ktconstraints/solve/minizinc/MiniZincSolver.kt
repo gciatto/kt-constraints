@@ -8,12 +8,13 @@ import io.github.gciatto.ktconstraints.solve.spi.ManagedSolutionStream
 
 internal class MiniZincSolver(
     private val executable: String,
+    private val engine: MiniZincEngine = MiniZincEngine.GECODE,
 ) : ManagedConstraintSolver() {
-    override val descriptor: SolverDescriptor = gecodeDescriptor
+    override val descriptor: SolverDescriptor = engine.descriptor
 
     override fun openStream(
         model: ConstraintModel,
         options: SolveOptions,
         onClosed: () -> Unit,
-    ): ManagedSolutionStream = MiniZincStream(executable, MiniZincCompiler().compile(model, options), options, onClosed)
+    ): ManagedSolutionStream = MiniZincStream(executable, MiniZincCompiler(engine).compile(model, options), options, onClosed)
 }

@@ -12,7 +12,7 @@ internal class MiniZincStream(
     private val compiled: MiniZincModel,
     private val options: SolveOptions,
     onClosed: () -> Unit,
-) : ManagedSolutionStream(gecodeDescriptor, onClosed) {
+) : ManagedSolutionStream(compiled.engine.descriptor, onClosed) {
     private val decoder = MiniZincDecoder(compiled)
     private val process =
         MiniZincProcess(
@@ -21,6 +21,7 @@ internal class MiniZincStream(
             options.timeoutMillis,
             onTimeout = { stop(TerminationReason.TIMEOUT) },
             onCancel = { cancel() },
+            engine = compiled.engine,
         )
     private var emitted = 0
     internal val workDirectory: Path? get() = process.directory

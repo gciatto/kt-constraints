@@ -34,10 +34,11 @@ import org.gciatto.kt.math.BigInteger
 
 internal class MiniZincLowering(
     private val names: Map<VariableId, String>,
+    private val engine: MiniZincEngine,
 ) {
     val includes = linkedSetOf<String>()
     val definedness = linkedSetOf<String>()
-    private val maximum = BigInteger.of(2_147_483_646)
+    private val maximum = engine.maximumInteger
 
     fun lower(expression: Expr): LoweredExpression =
         expression.fold { node, children: List<LoweredExpression> ->
@@ -176,7 +177,7 @@ internal class MiniZincLowering(
     }
 
     private fun checkValue(value: BigInteger) {
-        if (value < -maximum || value > maximum) reject("Gecode integer range exceeded: $value")
+        if (value < -maximum || value > maximum) reject("${engine.engineId} integer range exceeded: $value")
     }
 
     private fun name(id: VariableId): String = names[id] ?: reject("Foreign variable identity")

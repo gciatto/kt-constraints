@@ -9,8 +9,10 @@ import io.github.gciatto.ktconstraints.solve.spi.ConstraintCompiler
 import io.github.gciatto.ktconstraints.solve.spi.SupportReport
 import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
 
-/** Pure compiler for the exact finite Gecode subset, using MiniZinc for flattening and global lowering. */
-class MiniZincCompiler : ConstraintCompiler<MiniZincModel> {
+/** Pure compiler for a selected engine's checked finite subset, using MiniZinc for flattening and global lowering. */
+class MiniZincCompiler(
+    private val engine: MiniZincEngine = MiniZincEngine.GECODE,
+) : ConstraintCompiler<MiniZincModel> {
     override fun support(
         model: ConstraintModel,
         options: SolveOptions,
@@ -27,7 +29,7 @@ class MiniZincCompiler : ConstraintCompiler<MiniZincModel> {
         options: SolveOptions,
     ): MiniZincModel {
         val names = model.variables.mapIndexed { index, variable -> variable.id to "v$index" }.toMap()
-        val lowering = MiniZincLowering(names)
+        val lowering = MiniZincLowering(names, engine)
         val declarations =
             model.variables.map { variable ->
                 lowering.lower(variable)
@@ -69,7 +71,7 @@ class MiniZincCompiler : ConstraintCompiler<MiniZincModel> {
                 appendLine(solve)
                 appendLine("output [${output.joinToString(", ")}];")
             }
-        return MiniZincModel(model, source)
+        return MiniZincModel(model, source, engine)
     }
 
     private fun quote(value: String): String = "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""

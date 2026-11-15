@@ -11,7 +11,10 @@ import java.util.concurrent.TimeUnit
 
 private const val PROBE_TIMEOUT_SECONDS = 10L
 
-internal fun probeMiniZinc(executable: String): BackendAvailability {
+internal fun probeMiniZinc(
+    executable: String,
+    engine: MiniZincEngine = MiniZincEngine.GECODE,
+): BackendAvailability {
     val directory = Files.createTempDirectory("kt-constraints-minizinc-probe-")
     var process: Process? = null
     return try {
@@ -25,12 +28,12 @@ internal fun probeMiniZinc(executable: String): BackendAvailability {
             return Files.readString(output)
         }
         val solvers = Json.parseToJsonElement(run("--solvers-json")).jsonArray
-        check(solvers.any { it.jsonObject["id"]?.jsonPrimitive?.content == "org.gecode.gecode" }) {
-            "Gecode is not configured in MiniZinc"
+        check(solvers.any { it.jsonObject["id"]?.jsonPrimitive?.content == engine.configurationId }) {
+            "${engine.configurationId} is not configured in MiniZinc"
         }
         val model = directory.resolve("probe.mzn")
         Files.writeString(model, "var 0..1: v; solve satisfy; output [show(v)];")
-        val output = run("--solver", "org.gecode.gecode", "--json-stream", "--all-solutions", model.toString())
+        val output = run("--solver", engine.configurationId, "--json-stream", "--all-solutions", model.toString())
         check(
             output.lineSequence().filter { it.isNotBlank() }.any {
                 Json
@@ -39,7 +42,7 @@ internal fun probeMiniZinc(executable: String): BackendAvailability {
                     ?.jsonPrimitive
                     ?.content == "solution"
             },
-        ) { "Gecode startup probe produced no solution" }
+        ) { "${engine.engineId} startup probe produced no solution" }
         BackendAvailability(true)
     } catch (failure: IOException) {
         unavailable(failure)

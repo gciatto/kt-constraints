@@ -20,6 +20,7 @@ internal class MiniZincProcess(
     private val timeoutMillis: Long?,
     private val onTimeout: () -> Unit,
     private val onCancel: () -> Unit,
+    private val engine: MiniZincEngine = MiniZincEngine.GECODE,
 ) : AutoCloseable {
     private val lock = Any()
     private var closed = false
@@ -61,7 +62,7 @@ internal class MiniZincProcess(
                     ProcessBuilder(
                         executable,
                         "--solver",
-                        "org.gecode.gecode",
+                        engine.configurationId,
                         "--json-stream",
                         "--all-solutions",
                         "--statistics",
