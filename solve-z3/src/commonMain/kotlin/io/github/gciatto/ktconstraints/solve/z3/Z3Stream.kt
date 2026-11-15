@@ -42,17 +42,26 @@ internal class Z3Stream<T>(
 
     private suspend fun step(port: Z3Port<T>): SolutionEvent {
         val current = search ?: open(port)
-        val remaining = options.timeoutMillis?.let { it - started.elapsedNow().inWholeMilliseconds }
-        return when {
-            options.solutionLimit?.let { emitted >= it } == true -> complete(TerminationReason.RESOURCE_LIMIT)
-            remaining != null && remaining <= 0 -> complete(TerminationReason.TIMEOUT)
-            else -> {
-                val outcome = port.check(emptyList(), remaining)
-                when (outcome.status) {
-                    CheckStatus.UNSATISFIABLE -> complete(TerminationReason.COMPLETED)
-                    CheckStatus.SATISFIABLE -> solution(port, current)
-                    CheckStatus.UNKNOWN -> unknown(outcome.reason)
+        while (true) {
+            val remaining = options.timeoutMillis?.let { it - started.elapsedNow().inWholeMilliseconds }
+            if (options.solutionLimit?.let { emitted >= it } == true) return complete(TerminationReason.RESOURCE_LIMIT)
+            if (remaining != null && remaining <= 0) return complete(TerminationReason.TIMEOUT)
+            if (current.isProven(incumbent?.objectiveValue)) return complete(TerminationReason.COMPLETED)
+            val target = current.target(incumbent?.objectiveValue)
+            // An optimizing check probes a tentative bound in its own frame; only refutations and incumbents persist.
+            if (target != null) port.push()
+            val (outcome, found) =
+                try {
+                    target?.let { port.assert(listOf(current.atLeast(port, it))) }
+                    val outcome = port.check(emptyList(), remaining)
+                    outcome to if (outcome.status == CheckStatus.SATISFIABLE) read(current) else null
+                } finally {
+                    if (target != null) port.pop(1)
                 }
+            when (outcome.status) {
+                CheckStatus.SATISFIABLE -> return emit(port, current, requireNotNull(found))
+                CheckStatus.UNKNOWN -> return unknown(outcome.reason)
+                CheckStatus.UNSATISFIABLE -> if (target == null) return complete(TerminationReason.COMPLETED) else current.refuted = target
             }
         }
     }
@@ -66,13 +75,10 @@ internal class Z3Stream<T>(
                 null -> null
             }
         port.assert(translation.assertions + translation.drainDefinedness())
-        return Search(translation, objective).also { search = it }
+        return Search(translation, objective, model.objective is Objective.Maximize).also { search = it }
     }
 
-    private fun solution(
-        port: Z3Port<T>,
-        current: Search<T>,
-    ): SolutionEvent {
+    private fun read(current: Search<T>): SolutionFound {
         val full = current.translation.assignment()
         if (!model.constraints.all { GroundEvaluator.evaluate(it, full) }) {
             throw BackendExecutionException("${descriptor.id} returned an assignment violating the model")
@@ -83,10 +89,18 @@ internal class Z3Stream<T>(
                 is Objective.Maximize -> GroundEvaluator.evaluate(objective.expression, full)
                 null -> null
             }
-        val projected = full.project(model.outputVariables)
-        port.assert(listOf(block(port, current, projected, value)))
+        return SolutionFound(full.project(model.outputVariables), value)
+    }
+
+    private fun emit(
+        port: Z3Port<T>,
+        current: Search<T>,
+        found: SolutionFound,
+    ): SolutionFound {
+        port.assert(listOf(block(port, current, found.assignment, found.objectiveValue)))
+        current.improved()
         emitted++
-        return SolutionFound(projected, value).also { incumbent = it }
+        return found.also { incumbent = it }
     }
 
     private fun block(
@@ -145,8 +159,43 @@ internal class Z3Stream<T>(
         )
     }
 
+    /** Search state; optimization gallops beyond the incumbent, then bisects below the least refuted score. */
     private class Search<T>(
         val translation: Z3Translation<T>,
         val objective: T?,
-    )
+        private val maximize: Boolean,
+    ) {
+        /** Least score proven unreachable (score is the objective, negated when minimizing). */
+        var refuted: BigInteger? = null
+        private var gap = BigInteger.ONE
+
+        /** Whether the score right after [incumbent] is refuted, so no better objective value exists. */
+        fun isProven(incumbent: BigInteger?): Boolean {
+            val limit = refuted ?: return false
+            return limit - score(requireNotNull(incumbent)) <= BigInteger.ONE
+        }
+
+        /** Next score to probe beyond [incumbent], or null for a check without a tentative bound. */
+        fun target(incumbent: BigInteger?): BigInteger? {
+            if (objective == null || incumbent == null) return null
+            val best = score(incumbent)
+            val limit = refuted ?: return best + gap
+            return best + (limit - best) / BigInteger.TWO
+        }
+
+        /** Objective at least as good as the score [target]. */
+        fun atLeast(
+            port: Z3Port<T>,
+            target: BigInteger,
+        ): T {
+            val term = requireNotNull(objective)
+            return if (maximize) port.lessOrEqual(port.int(target), term) else port.lessOrEqual(term, port.int(-target))
+        }
+
+        fun improved() {
+            if (refuted == null) gap += gap
+        }
+
+        private fun score(value: BigInteger): BigInteger = if (maximize) value else -value
+    }
 }
