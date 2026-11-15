@@ -8,15 +8,18 @@
 [M1 validation](docs/M1.md) records the exact finite-domain modelling foundation and its API changes.
 [M2 validation](docs/M2.md) records resource-safe solving, real Gecode execution and measured phases.
 [M3 validation](docs/M3.md) covers the engine catalogue, Node CLI and browser Wasm transports.
+[M4 design](docs/M4-DESIGN.md) covers direct Z3 and incremental sessions (in progress).
 
 ## Project status
 
-Experimental **P0 / M3 implementation**, not a stable release. The `:core`, `:model`, and `:dsl` modules
+Experimental **P0 / M4 implementation (in progress)**, not a stable release. The `:core`, `:model`, and `:dsl` modules
 contain an exact Boolean/integer algebra, finite domains, global nodes, a ground evaluator and a model builder,
 with shared Kotest property contracts. JVM MiniZinc routes execute Gecode, Chuffed, CP-SAT, HiGHS and CBC with shared
 conformance tests. MIP routes expose a bounded affine integer subset and do not enumerate all solutions.
 The official JS package runs Gecode through Node's CLI and Chuffed through browser Wasm.
-**Direct Z3/Choco/CP-SAT/HiGHS adapters, FlatZinc interchange and Native execution remain planned**.
+Direct JVM Z3 (`z3/direct`) solves the same IR with unbounded exact integers and offers incremental sessions
+with checkpoints, assumptions and unsat cores.
+**Z3 JS/Native, direct Choco/CP-SAT/HiGHS adapters, FlatZinc interchange and Native execution remain planned**.
 
 ## Design
 
@@ -36,7 +39,8 @@ The official JS package runs Gecode through Node's CLI and Chuffed through brows
 | Solver contracts | `:solve`, `:solve-spi` | Exact results/assignments and explicit backend eligibility; execution in progress |
 | Compiler/runtime route | `:solve-minizinc` | Portable checked compiler and five JVM engines, Node CLI and browser Chuffed Wasm |
 | FlatZinc interchange | `:solve-flatzinc` | Placeholder module |
-| Direct solver adapters | `:solve-z3`, `:solve-choco`, `:solve-cpsat`, `:solve-highs` | Placeholder modules |
+| Direct solver adapters | `:solve-z3` | JVM Z3: batch solving and incremental sessions; JS/Native planned |
+| Direct solver adapters | `:solve-choco`, `:solve-cpsat`, `:solve-highs` | Placeholder modules |
 | Orchestration | `:solve-portfolio` | Placeholder module |
 | Language interoperability | `:interop-java`, `:interop-js` | Placeholder modules |
 | Testing and documentation | `:test-core`, `:test-solve`, `:documentation` | Shared contracts, capped finite test oracle and MkDocs |

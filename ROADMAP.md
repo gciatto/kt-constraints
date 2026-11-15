@@ -108,10 +108,11 @@ Gecode/Chuffed/CP-SAT/HiGHS/CBC routes tested when installed; no backend capabil
 ## P2 — SMT and portable execution
 
 - [ ] `:solve-z3`: direct JVM binding and native C integration; browser JS/Wasm binding and incremental assertion API.
+  JVM binding and incremental API implemented (M4); JS/Wasm and native C pending.
 - [ ] Add SMT sorts and constraints: integers, exact arithmetic, rationals, bitvectors, arrays, strings,
   uninterpreted symbols, quantified formula support only where semantically appropriate.
-- [ ] Implement assumptions and unsat cores for engines supporting them, with source mapping.
-- [ ] Implement SMT-style incremental sessions, push/pop and stable checkpoint ownership, rollback safety tests.
+- [x] Implement assumptions and unsat cores for engines supporting them, with source mapping (Z3 JVM; cores map to assumptions).
+- [x] Implement SMT-style incremental sessions, push/pop and stable checkpoint ownership, rollback safety tests.
 - [ ] JVM, Linux/macOS/Windows native, Android/iOS native (where packaging works), JS and Kotlin/Wasm JS.
 - [ ] Add JS/TS `Promise` API and JVM Java builder/static factories + blocking/CompletionStage APIs.
 - [ ] `:solve-portfolio`: deterministic ordered selection, optional parallel portfolio, evidence-aware incumbent handling.
@@ -143,7 +144,7 @@ of any specific Prolog implementation. Any future 2p-Kt integration belongs outs
 | Chuffed | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | Native CP, no generic incremental API promised |
 | CP-SAT | MiniZinc and direct | MiniZinc implemented; direct planned | Custom wrapper | Via runtime if packaged | Incrementality not equivalent to CLP propagation |
 | Choco | Direct JVM | Planned | — | — | Propagation/backtracking planned |
-| Z3 | Direct | Planned | C API planned | Wasm binding planned | Incremental check; domain propagation separate |
+| Z3 | Direct | Implemented (`z3/direct`) | C API planned | Wasm binding planned | Incremental sessions implemented; no domain propagation |
 | HiGHS | MiniZinc and direct | MiniZinc implemented; direct planned | C API planned | Wasm conditional | LP/MIP; not CLP(FD) propagation |
 | CBC | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | MIP batch |
 

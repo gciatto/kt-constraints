@@ -138,3 +138,14 @@ pool once they exit (bounded grace) so CLI temporary-file cleanup is not preempt
 that release. Individual solver close leaves the shared runtime usable. Node and browser reuse the checked
 compiler, exact assignment decoder and shared contracts. JS statistics inherit upstream Number
 semantics, while assignment integers remain in a lossless JSON string. Native command execution remains planned.
+
+M4 adds direct JVM Z3 (`z3/direct`, bundled by `z3-turnkey`), a route distinct from every MiniZinc route.
+Integers map to Z3's unbounded `Int`, so no numeric range is imposed. Globals use declared lossless decompositions
+and the same element-definedness rule. Optimization is an exact improving search over `Solver` checks; only a
+final UNSAT check proves optimality. Each stream or session owns one Z3 context confined to a dedicated thread;
+close and coroutine cancellation interrupt the native call, and the context is closed on its own thread.
+
+Incremental sessions (`IncrementalConstraintSolver.openSession`) treat the model as an irremovable root frame.
+A shared `CheckpointStack` rejects stale and foreign checkpoints before any native change. Assumptions hold for a
+single check, and unsat cores are subsets of those assumptions, not necessarily minimal. Satisfiable checks are
+validated against every active constraint and assumption. Repeated checks are not advertised as propagation.
