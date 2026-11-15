@@ -23,8 +23,10 @@ import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolveCompleted
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolveStatus
+import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.TerminationReason
 import io.github.gciatto.ktconstraints.test.solve.FiniteOracle
+import io.github.gciatto.ktconstraints.test.solve.incrementalContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests
@@ -41,11 +43,16 @@ import kotlin.time.TimeSource
 class Z3Spec :
     FunSpec({
         include(solverContract { Z3Backend().create() })
+        include(incrementalContract { Z3Backend().create() })
 
         test("z3/runtime-is-available-and-identifies-the-direct-route") {
             val backend = Z3Backend()
             backend.availability().available shouldBe true
             backend.descriptor.id shouldBe "z3/direct"
+            backend.descriptor.capabilities.containsAll(
+                setOf(SolverCapability.INCREMENTAL_ASSERTIONS, SolverCapability.ASSUMPTIONS, SolverCapability.UNSAT_CORES),
+            ) shouldBe true
+            (SolverCapability.DOMAIN_PROPAGATION in backend.descriptor.capabilities) shouldBe false
         }
 
         test("z3/integers-beyond-64-bits-are-exact") {
