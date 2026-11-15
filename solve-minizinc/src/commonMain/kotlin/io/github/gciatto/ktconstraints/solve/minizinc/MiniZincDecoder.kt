@@ -9,6 +9,7 @@ import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolveMetadata
 import io.github.gciatto.ktconstraints.solve.SolveResult
 import io.github.gciatto.ktconstraints.solve.SolveStatus
+import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.project
 import io.github.gciatto.ktconstraints.solve.spi.BackendExecutionException
 import kotlinx.serialization.json.Json
@@ -20,6 +21,7 @@ import org.gciatto.kt.math.BigInteger
 
 internal class MiniZincDecoder(
     private val compiled: MiniZincModel,
+    private val descriptor: SolverDescriptor = compiled.engine.descriptor,
 ) {
     private val messages = mutableListOf<String>()
     private val statistics = linkedMapOf<String, String>()
@@ -72,7 +74,7 @@ internal class MiniZincDecoder(
         return SolveResult(
             outcome,
             best?.assignment,
-            compiled.engine.descriptor,
+            descriptor,
             objectiveValue = best?.objectiveValue,
             bestBound = if (outcome == SolveStatus.OPTIMAL) best?.objectiveValue else null,
             metadata = SolveMetadata(messages, statistics),
