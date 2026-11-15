@@ -3,7 +3,7 @@ package io.github.gciatto.ktconstraints.solve.z3
 import com.microsoft.z3.Context
 import com.microsoft.z3.Status
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.solve.ConstraintSolver
+import io.github.gciatto.ktconstraints.solve.IncrementalConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
@@ -34,7 +34,7 @@ class Z3Backend : SolverBackend {
         options: SolveOptions,
     ): SupportReport = Z3Support.report(model)
 
-    override fun create(): ConstraintSolver {
+    override fun create(): IncrementalConstraintSolver {
         val probe = availability()
         if (!probe.available) throw BackendUnavailableException("${descriptor.id}: ${probe.reason}")
         return Z3Solver(descriptor)
@@ -42,7 +42,7 @@ class Z3Backend : SolverBackend {
 
     /** Route identity shared by every JVM Z3 backend instance. */
     companion object {
-        /** `z3/direct`: batch satisfaction, exact improving optimization and projected enumeration. */
+        /** `z3/direct`: batch solving plus incremental sessions with checkpoints, assumptions and unsat cores. */
         @JvmField
         val DESCRIPTOR: SolverDescriptor =
             SolverDescriptor(
@@ -54,6 +54,10 @@ class Z3Backend : SolverBackend {
                     SolverCapability.ENUMERATION,
                     SolverCapability.INTEGER_ARITHMETIC,
                     SolverCapability.GLOBAL_CONSTRAINTS,
+                    SolverCapability.INCREMENTAL_ASSERTIONS,
+                    SolverCapability.BACKTRACKING,
+                    SolverCapability.ASSUMPTIONS,
+                    SolverCapability.UNSAT_CORES,
                 ),
             )
     }

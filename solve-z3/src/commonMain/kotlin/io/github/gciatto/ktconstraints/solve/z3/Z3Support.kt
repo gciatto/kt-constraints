@@ -29,10 +29,12 @@ import io.github.gciatto.ktconstraints.solve.spi.SupportReport
 
 /** Platform-independent assessment of the IR subset every Z3 route translates exactly. */
 internal object Z3Support {
-    fun report(model: ConstraintModel): SupportReport {
+    fun report(model: ConstraintModel): SupportReport = report(roots(model))
+
+    fun report(roots: List<Expr>): SupportReport {
         val unsupported = linkedSetOf<String>()
         val decompositions = linkedSetOf<String>()
-        for (root in roots(model)) {
+        for (root in roots) {
             root.fold { node, _: List<Unit> ->
                 when (node) {
                     is AllDifferent -> decompositions += "allDifferent -> distinct"
@@ -50,7 +52,7 @@ internal object Z3Support {
         return SupportReport(unsupported, decompositions)
     }
 
-    fun roots(model: ConstraintModel): List<Expr> =
+    private fun roots(model: ConstraintModel): List<Expr> =
         model.variables + model.constraints +
             when (val objective = model.objective) {
                 is Objective.Minimize -> listOf(objective.expression)

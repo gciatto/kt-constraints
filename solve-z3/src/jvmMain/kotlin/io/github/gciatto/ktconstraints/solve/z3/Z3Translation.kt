@@ -50,7 +50,7 @@ internal class Z3Translation(
     private val integers = linkedMapOf<IntVar, Z3Int>()
     private val indexDefinedness = mutableListOf<Z3Bool>()
 
-    /** Domain, constraint and element-definedness assertions. */
+    /** Domain, model-constraint and their element-definedness assertions. */
     val assertions: List<Z3Bool>
 
     init {
@@ -65,11 +65,11 @@ internal class Z3Translation(
         }
         val domains = integers.map { (variable, term) -> context.domain(variable, term) }
         val constraints = model.constraints.map { boolean(it) }
-        assertions = domains + constraints
+        assertions = domains + constraints + drainDefinedness()
     }
 
-    /** Element-index definedness assertions collected by every translation so far. */
-    val definedness: List<Z3Bool> get() = indexDefinedness.toList()
+    /** Returns and forgets element-index definedness assertions collected since the previous call. */
+    fun drainDefinedness(): List<Z3Bool> = indexDefinedness.toList().also { indexDefinedness.clear() }
 
     /** Every declared Boolean variable with its Z3 term. */
     val booleanTerms: Map<BoolVar, Z3Bool> get() = booleans

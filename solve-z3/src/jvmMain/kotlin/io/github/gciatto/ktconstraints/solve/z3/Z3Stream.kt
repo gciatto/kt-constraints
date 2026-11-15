@@ -29,13 +29,10 @@ import io.github.gciatto.ktconstraints.solve.TerminationReason
 import io.github.gciatto.ktconstraints.solve.project
 import io.github.gciatto.ktconstraints.solve.spi.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.ManagedSolutionStream
-import kotlinx.coroutines.suspendCancellableCoroutine
 import org.gciatto.kt.math.BigInteger
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import kotlin.time.TimeSource
 
-/** One Z3 context confined to a dedicated thread; interrupted from any thread and closed on its own. */
+/** Z3 search stream owning one thread-confined context; enumerates projections or improving incumbents. */
 internal class Z3Stream(
     private val model: ConstraintModel,
     private val options: SolveOptions,
@@ -43,32 +40,18 @@ internal class Z3Stream(
     onClosed: () -> Unit,
 ) : ManagedSolutionStream(descriptor, onClosed) {
     private val started = TimeSource.Monotonic.markNow()
-    private val executor: ExecutorService =
-        Executors.newSingleThreadExecutor { task -> Thread(task, "kt-constraints-z3").apply { isDaemon = true } }
-
-    @Volatile private var context: Context? = null
-
-    @Volatile private var released = false
+    private val worker = Z3Worker()
     private var search: Search? = null
     private var incumbent: SolutionFound? = null
     private var emitted = 0
     private val messages = mutableListOf<String>()
 
-    override suspend fun readNext(): SolutionEvent =
-        suspendCancellableCoroutine { continuation ->
-            continuation.invokeOnCancellation { context?.interrupt() }
-            executor.execute { continuation.resumeWith(runCatching { step() }) }
-        }
+    override suspend fun readNext(): SolutionEvent = worker.await { step(it) }
 
-    override fun release() {
-        released = true
-        context?.interrupt()
-        executor.execute { context?.close() }
-        executor.shutdown()
-    }
+    override fun release() = worker.close()
 
-    private fun step(): SolutionEvent {
-        val current = search ?: open()
+    private fun step(context: Context): SolutionEvent {
+        val current = search ?: open(context)
         val remaining = options.timeoutMillis?.let { it - started.elapsedNow().inWholeMilliseconds }
         return when {
             options.solutionLimit?.let { emitted >= it } == true -> complete(TerminationReason.RESOURCE_LIMIT)
@@ -93,11 +76,7 @@ internal class Z3Stream(
         }
     }
 
-    private fun open(): Search {
-        check(!released) { "Stream is released" }
-        val owned = Context()
-        context = owned
-        check(!released) { "Stream is released" }
+    private fun open(owned: Context): Search {
         val translation = Z3Translation(owned, model)
         val objective =
             when (val objective = model.objective) {
@@ -106,7 +85,7 @@ internal class Z3Stream(
                 null -> null
             }
         val solver = owned.mkSolver()
-        solver.add(*(translation.assertions + translation.definedness).toTypedArray())
+        solver.add(*(translation.assertions + translation.drainDefinedness()).toTypedArray())
         return Search(owned, solver, translation, objective).also { search = it }
     }
 
@@ -165,7 +144,7 @@ internal class Z3Stream(
         messages += "Z3 unknown: $reason"
         val expired = options.timeoutMillis?.let { started.elapsedNow().inWholeMilliseconds >= it } == true
         return when {
-            released -> complete(TerminationReason.CANCELLED)
+            worker.isClosed -> complete(TerminationReason.CANCELLED)
             expired || reason == "timeout" -> complete(TerminationReason.TIMEOUT)
             else -> complete(TerminationReason.COMPLETED, proven = false)
         }

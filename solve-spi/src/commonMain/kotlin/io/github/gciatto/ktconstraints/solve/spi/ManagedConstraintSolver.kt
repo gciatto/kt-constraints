@@ -53,12 +53,23 @@ abstract class ManagedConstraintSolver : ConstraintSolver {
         }
     }
 
+    /** Whether [close] has started; solvers must reject new resources once true. */
+    protected val isClosed: Boolean get() = state.load().closed
+
+    /** Releases solver-owned resources other than streams, such as sessions; invoked once by [close]. */
+    protected open fun onClose() = Unit
+
     final override fun close() {
         while (true) {
             val current = state.load()
             if (current.closed) return
             if (state.compareAndSet(current, SolverState(closed = true))) {
                 var failure: Throwable? = null
+                try {
+                    onClose()
+                } catch (problem: Throwable) {
+                    failure = problem
+                }
                 for (stream in current.streams) {
                     try {
                         stream.close()

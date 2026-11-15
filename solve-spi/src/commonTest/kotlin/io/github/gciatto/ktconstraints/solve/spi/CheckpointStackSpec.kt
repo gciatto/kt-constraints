@@ -34,5 +34,4 @@ class CheckpointStackSpec :
             shouldThrow<IllegalArgumentException> { stack.popTo(foreign) }
             stack.depth shouldBe 1
         }
-
     })

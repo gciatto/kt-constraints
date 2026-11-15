@@ -14,4 +14,5 @@ enum class SolverCapability {
     REAL_ARITHMETIC,
     BITVECTORS,
     GLOBAL_CONSTRAINTS,
+    UNSAT_CORES,
 }
