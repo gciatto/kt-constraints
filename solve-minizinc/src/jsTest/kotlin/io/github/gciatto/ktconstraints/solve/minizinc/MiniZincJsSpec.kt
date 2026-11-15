@@ -80,6 +80,25 @@ class MiniZincJsSpec :
                 backend = load()
                 requireNotNull(backend).availability().available shouldBe true
             }
+            test("js/node-backend-close-lets-cancelled-cli-runs-remove-temporary-files").config(enabled = !browser) {
+                val fs = js("require('node:fs')")
+                val previous = js("process.env.TMPDIR")
+                val isolated = fs.mkdtempSync(js("require('node:os').tmpdir()") + "/kt-constraints-") as String
+                js("process.env").TMPDIR = isolated
+                try {
+                    val selected = requireNotNull(backend)
+                    val scope = ConstraintScope.empty()
+                    scope.intVar("x", 0..1_000_000)
+                    val stream = selected.create().solutions(scope.build())
+                    (stream.next() is SolutionFound) shouldBe true
+                    selected.close()
+                    backend = load()
+                    (fs.readdirSync(isolated) as Array<String>).toList() shouldBe emptyList()
+                } finally {
+                    if (previous == null) js("delete process.env.TMPDIR") else js("process.env").TMPDIR = previous
+                    fs.rmSync(isolated, js("({recursive: true, force: true})"))
+                }
+            }
             test("js/owned-deadline-stops-real-execution") {
                 val scope = ConstraintScope.empty()
                 scope.intVar("x", 0..1_000_000)
