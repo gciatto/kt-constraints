@@ -1,10 +1,11 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
 import io.github.gciatto.ktconstraints.solve.CheckStatus
-import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.asDeferred
+import kotlinx.coroutines.withContext
 import org.gciatto.kt.math.BigInteger
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlin.js.Promise
 
 /** Binding of one high-level z3-solver context and solver; terms are opaque JS objects. */
@@ -103,10 +104,15 @@ internal class JsZ3Port(
         solver.set("timeout", (timeoutMillis?.coerceAtMost(MAX_TIMEOUT) ?: MAX_TIMEOUT).toDouble())
         model = null
         val promise: Promise<String> = spread(solver.check, assumptions, solver).unsafeCast<Promise<String>>()
+        val pending = promise.asDeferred()
         val result =
-            suspendCancellableCoroutine { continuation ->
-                continuation.invokeOnCancellation { context.interrupt() }
-                promise.then({ continuation.resume(it) }, { continuation.resumeWithException(it) })
+            try {
+                pending.await()
+            } catch (cancellation: CancellationException) {
+                // The native check keeps running on a worker thread; release the context only once it has stopped.
+                context.interrupt()
+                withContext(NonCancellable) { runCatching { pending.await() } }
+                throw cancellation
             }
         return when (result) {
             "sat" -> Z3Outcome(CheckStatus.SATISFIABLE).also { model = solver.model() }
