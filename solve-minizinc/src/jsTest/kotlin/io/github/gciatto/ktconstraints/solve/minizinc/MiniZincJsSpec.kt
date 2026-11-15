@@ -39,11 +39,14 @@ class MiniZincJsSpec :
                     MiniZincJsBackend.loadNode(requireNotNull(executable))
                 }
             }
-            beforeSpec { backend = runCatching { load() }.onFailure { console.error(it.stackTraceToString()) }.getOrThrow() }
+            var loadFailure: Throwable? = null
+            // Kotest JS drops a spec whose beforeSpec throws, so report load failures from every test instead.
+            beforeSpec { backend = runCatching { load() }.onFailure { loadFailure = it }.getOrNull() }
+            val loaded = { backend ?: throw IllegalStateException("MiniZinc JS runtime did not load: $loadFailure", loadFailure) }
             afterSpec { backend?.close() }
-            include(solverContract { requireNotNull(backend).create() })
+            include(solverContract { loaded().create() })
             test("js/route-identifies-the-actual-transport") {
-                val selected = requireNotNull(backend)
+                val selected = loaded()
                 selected.descriptor.id shouldBe if (browser) "chuffed/minizinc-wasm" else "gecode/minizinc-js-cli"
                 selected.create().use { solver ->
                     solver.solve(ConstraintScope.empty().build()).descriptor shouldBe selected.descriptor
@@ -52,7 +55,7 @@ class MiniZincJsSpec :
             test("js/early-close-cancels-a-real-enumeration") {
                 val scope = ConstraintScope.empty()
                 scope.intVar("x", 0..1_000_000)
-                requireNotNull(backend).create().use { solver ->
+                loaded().create().use { solver ->
                     val stream = solver.solutions(scope.build())
                     (stream.next() is SolutionFound) shouldBe true
                     stream.close()
@@ -67,7 +70,7 @@ class MiniZincJsSpec :
                 failure.message shouldBe if (browser) "Node CLI loading requires Node.js" else "Wasm loading requires a browser"
             }
             test("js/backend-close-cancels-streams-and-allows-a-new-runtime-owner") {
-                val selected = requireNotNull(backend)
+                val selected = loaded()
                 val solver = selected.create()
                 val scope = ConstraintScope.empty()
                 scope.intVar("x", 0..1_000_000)
@@ -80,16 +83,16 @@ class MiniZincJsSpec :
                 shouldThrow<IllegalStateException> { solver.solutions(ConstraintScope.empty().build()) }
                 solver.close()
                 backend = load()
-                requireNotNull(backend).availability().available shouldBe true
+                loaded().availability().available shouldBe true
             }
             test("js/node-backend-close-lets-cancelled-cli-runs-remove-temporary-files").config(enabled = !browser) {
-                val fs = js("require('node:fs')")
+                val fs = js("process.getBuiltinModule('node:fs')")
                 val previous = js("process.env.TMPDIR")
-                val isolated = fs.mkdtempSync(js("require('node:os').tmpdir()") + "/kt-constraints-") as String
+                val isolated = fs.mkdtempSync(js("process.getBuiltinModule('node:os').tmpdir()") + "/kt-constraints-") as String
                 val restore = { if (previous == null) js("delete process.env.TMPDIR") else js("process.env").TMPDIR = previous }
                 js("process.env").TMPDIR = isolated
                 try {
-                    val selected = requireNotNull(backend)
+                    val selected = loaded()
                     val scope = ConstraintScope.empty()
                     scope.intVar("x", 0..1_000_000)
                     val stream = selected.create().solutions(scope.build())
@@ -107,7 +110,7 @@ class MiniZincJsSpec :
             test("js/owned-deadline-stops-real-execution") {
                 val scope = ConstraintScope.empty()
                 scope.intVar("x", 0..1_000_000)
-                requireNotNull(backend).create().use { solver ->
+                loaded().create().use { solver ->
                     solver.solve(scope.build(), SolveOptions(timeoutMillis = 10)).terminationReason shouldBe TerminationReason.TIMEOUT
                 }
             }
