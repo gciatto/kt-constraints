@@ -90,7 +90,9 @@ its SIGKILL would otherwise preempt MiniZinc's own temporary-file cleanup; the n
 load awaits that release. Individual solver close leaves the runtime available;
 closing and reloading a backend is tested. A missing Node CLI fails loading with
 `BackendUnavailableException`. Upstream limitation: a run cancelled before its CLI
-process spawns leaves the SDK's small `mzn*` temporary directory behind. JS statistics inherit
+process spawns leaves the SDK's small `mzn*` temporary directory behind.
+In the browser the pool keeps one worker and each run first waits for it to finish loading,
+so closing or cancelling never terminates a worker mid-load (which raised uncaught page errors). JS statistics inherit
 the upstream API's Number semantics; integer assignments retain lossless string output.
 The upstream event API has no backpressure, so large enumerations may buffer output;
 consume or close streams promptly.
