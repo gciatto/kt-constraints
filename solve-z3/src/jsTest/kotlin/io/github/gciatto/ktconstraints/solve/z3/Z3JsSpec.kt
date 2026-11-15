@@ -54,7 +54,9 @@ class Z3JsSpec :
                 val huge = BigInteger.of("1000000000000000000000000000001")
                 val scope = ConstraintScope.empty()
                 val x = scope.intVar("x", IntDomain.of(-huge, huge))
-                scope.add(IntEquality(LinearSum(listOf(x), listOf(BigInteger.TWO), BigInteger.ONE), IntLiteral(huge + huge + BigInteger.ONE)))
+                scope.add(
+                    IntEquality(LinearSum(listOf(x), listOf(BigInteger.TWO), BigInteger.ONE), IntLiteral(huge + huge + BigInteger.ONE)),
+                )
                 loaded().create().use { solver ->
                     val result = solver.solve(scope.build())
                     result.status shouldBe SolveStatus.FEASIBLE
