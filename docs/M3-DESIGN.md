@@ -33,3 +33,30 @@ These routes do not advertise enumeration: satisfaction streams contain a witnes
 and optimization streams contain improving incumbents. A validated satisfaction witness
 plus clean process exit establishes feasibility even when MiniZinc emits no status;
 optimization and no-witness completion still require an explicit terminal status.
+
+## Reference evidence
+
+- [MiniZinc CLI and solver configuration](https://docs.minizinc.dev/en/stable/command_line.html)
+- [MiniZinc JSON stream](https://docs.minizinc.dev/en/stable/json-stream.html)
+- [Chuffed integer sentinels](https://github.com/chuffed/chuffed/blob/develop/chuffed/vars/int-var.h)
+- [Official JS runtime: browser Wasm versus Node CLI](https://github.com/MiniZinc/minizinc-js)
+
+Direct boundary runs against bundled Chuffed 0.14.0 failed at both +/-500,000,000
+with `Cannot initialise vals in unbounded IntVar`; +/-499,999,999 succeeded.
+Regression tests reject the former and solve both signs of the supported boundary.
+
+## JS transport ownership
+
+The JS slice uses the official `minizinc` npm runtime. A closeable, asynchronously loaded
+`MiniZincJsBackend` owns the package's global worker/process pool and its active streams;
+only one instance may own that global runtime at once. Individual solvers own their
+streams but do not shut down another solver's shared runtime. Backend close cancels all
+active streams and shuts down the official runtime. Browser loading accepts explicit
+worker/wasm/data URLs; Node loading accepts an executable. Initial JS execution supports
+Gecode only, after discovery and a real startup solve.
+
+Browser and Node descriptors use `gecode/minizinc-wasm` and
+`gecode/minizinc-js-cli`. Both reuse the checked common compiler, exact assignment
+validation and stream contracts. The Node route must never be labelled Wasm. JS messages
+arrive as parsed objects from the upstream API; assignment values remain inside our
+lossless output string, while statistics have upstream JavaScript number semantics.
