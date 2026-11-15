@@ -43,4 +43,11 @@ class MiniZincMipSpec :
             decoder.accept("""{"type":"solution","output":{"default":"{\"v0\":1}"}}""")
             shouldThrow<BackendExecutionException> { decoder.finish(0, "") }
         }
+        test("mip/does-not-treat-a-wire-satisfied-status-as-an-exhaustion-proof") {
+            val compiled = MiniZincCompiler().compile(ConstraintScope.empty().build())
+            val decoder = MiniZincDecoder(compiled)
+            decoder.accept("""{"type":"solution","output":{"default":"{}"}}""")
+            decoder.accept("""{"type":"status","status":"SATISFIED"}""")
+            shouldThrow<BackendExecutionException> { decoder.finish(0, "") }
+        }
     })
