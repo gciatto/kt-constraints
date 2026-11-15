@@ -68,27 +68,7 @@ internal class MiniZincDecoder(
         if (exitCode != 0) fail("MiniZinc exited with $exitCode: $stderr")
         if (stderr.isNotBlank()) messages += "stderr: $stderr"
         val best = incumbent
-        val outcome =
-            when (status ?: fail("MiniZinc ended without a terminal status")) {
-                "ALL_SOLUTIONS" -> {
-                    if (compiled.model.objective != null) fail("Optimization ended without an optimality status")
-                    if (best == null) SolveStatus.INFEASIBLE else SolveStatus.FEASIBLE
-                }
-                "OPTIMAL_SOLUTION" -> {
-                    if (compiled.model.objective == null ||
-                        best?.objectiveValue == null
-                    ) {
-                        fail("Optimal status without an objective incumbent")
-                    }
-                    SolveStatus.OPTIMAL
-                }
-                "UNSATISFIABLE" -> {
-                    if (best != null) fail("Infeasibility contradicts a feasible assignment")
-                    SolveStatus.INFEASIBLE
-                }
-                "UNKNOWN" -> if (best == null) SolveStatus.UNKNOWN else SolveStatus.FEASIBLE
-                else -> fail("Unexpected status for finite ${compiled.engine.engineId} model: $status")
-            }
+        val outcome = outcome()
         return SolveResult(
             outcome,
             best?.assignment,
@@ -97,6 +77,33 @@ internal class MiniZincDecoder(
             bestBound = if (outcome == SolveStatus.OPTIMAL) best?.objectiveValue else null,
             metadata = SolveMetadata(messages, statistics),
         )
+    }
+
+    private fun outcome(): SolveStatus {
+        val best = incumbent
+        if (status == null && compiled.engine.isMip && compiled.model.objective == null && best != null) {
+            return SolveStatus.FEASIBLE
+        }
+        return when (status ?: fail("MiniZinc ended without a terminal status")) {
+            "ALL_SOLUTIONS" -> {
+                if (compiled.model.objective != null) fail("Optimization ended without an optimality status")
+                if (best == null) SolveStatus.INFEASIBLE else SolveStatus.FEASIBLE
+            }
+            "OPTIMAL_SOLUTION" -> {
+                if (compiled.model.objective == null ||
+                    best?.objectiveValue == null
+                ) {
+                    fail("Optimal status without an objective incumbent")
+                }
+                SolveStatus.OPTIMAL
+            }
+            "UNSATISFIABLE" -> {
+                if (best != null) fail("Infeasibility contradicts a feasible assignment")
+                SolveStatus.INFEASIBLE
+            }
+            "UNKNOWN" -> if (best == null) SolveStatus.UNKNOWN else SolveStatus.FEASIBLE
+            else -> fail("Unexpected status for finite ${compiled.engine.engineId} model: $status")
+        }
     }
 
     private fun solution(message: JsonObject): SolutionFound? {
