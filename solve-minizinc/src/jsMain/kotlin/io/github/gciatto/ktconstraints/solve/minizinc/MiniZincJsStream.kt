@@ -8,7 +8,9 @@ import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.ManagedSolutionStream
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -30,6 +32,10 @@ internal class MiniZincJsStream(
     private var emitted = 0
     private var deadline: Job? = null
     private val listeners = mutableMapOf<String, (dynamic) -> Unit>()
+    private val exit = CompletableDeferred<Unit>()
+
+    /** Completes once the upstream run has exited, including after cancellation. */
+    internal val exited: Deferred<Unit> get() = exit
 
     override suspend fun readNext(): SolutionEvent {
         val reason =
@@ -54,6 +60,7 @@ internal class MiniZincJsStream(
         val config = js("({jsonOutput:false, options:{solver:'org.gecode.gecode', 'all-solutions':true, statistics:true}})")
         config.options.solver = configurationId
         progress = model.solve(config)
+        progress.on("exit") { _: dynamic -> exit.complete(Unit) }
         for (type in listOf("solution", "status", "statistics", "warning", "error", "trace", "time", "exit")) {
             val listener: (dynamic) -> Unit = { message ->
                 try {
@@ -98,6 +105,8 @@ internal class MiniZincJsStream(
             listeners.forEach { (type, listener) -> progress.off(type, listener) }
             listeners.clear()
             progress.cancel()
+        } else {
+            exit.complete(Unit)
         }
         events.close(BackendExecutionException("MiniZinc JS stream is closed"))
         while (true) {

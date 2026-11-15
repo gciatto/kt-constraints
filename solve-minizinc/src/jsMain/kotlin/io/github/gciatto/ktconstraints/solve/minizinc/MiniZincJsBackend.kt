@@ -8,13 +8,25 @@ import io.github.gciatto.ktconstraints.solve.spi.BackendAvailability
 import io.github.gciatto.ktconstraints.solve.spi.BackendUnavailableException
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
 import io.github.gciatto.ktconstraints.solve.spi.SupportReport
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.await
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.js.Promise
 
 // shortcut: upstream owns one global pool; allow multiple owners when it exposes isolated runtimes.
 private var runtimeOwned = false
 
-/** Owns the official MiniZinc JS runtime and its active streams; close to release workers/processes. */
+// Upstream shutdown SIGKILLs CLI runs, preempting MiniZinc's own temporary-file cleanup after SIGINT.
+private const val CANCEL_GRACE_MILLIS = 5_000L
+private var pendingRelease: Job? = null
+
+/**
+ * Owns the official MiniZinc JS runtime and its active streams; close to release workers/processes.
+ * Closing cancels streams and releases the runtime after they exit; the next load awaits that release.
+ */
 class MiniZincJsBackend private constructor(
     /** Engine whose tested finite integer subset is compiled for this runtime. */
     val engine: MiniZincEngine,
@@ -56,14 +68,22 @@ class MiniZincJsBackend private constructor(
     override fun close() {
         if (closed) return
         closed = true
+        val active = streams.toList()
         try {
-            streams.toList().forEach { it.close() }
+            active.forEach { it.close() }
         } finally {
-            try {
-                miniZincApi.shutdown()
-            } finally {
-                runtimeOwned = false
-            }
+            pendingRelease =
+                CoroutineScope(Dispatchers.Default).launch {
+                    try {
+                        withTimeoutOrNull(CANCEL_GRACE_MILLIS) { active.forEach { it.exited.await() } }
+                    } finally {
+                        try {
+                            miniZincApi.shutdown()
+                        } finally {
+                            runtimeOwned = false
+                        }
+                    }
+                }
         }
     }
 
@@ -101,6 +121,7 @@ class MiniZincJsBackend private constructor(
             engine: MiniZincEngine,
             configurationId: String,
         ): MiniZincJsBackend {
+            pendingRelease?.join()
             check(!runtimeOwned) { "Close the previous MiniZinc JS backend before loading another global runtime" }
             runtimeOwned = true
             var loaded = false
