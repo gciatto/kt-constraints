@@ -87,12 +87,12 @@ internal class MiniZincDecoder(
                     SolveStatus.INFEASIBLE
                 }
                 "UNKNOWN" -> if (best == null) SolveStatus.UNKNOWN else SolveStatus.FEASIBLE
-                else -> fail("Unexpected status for finite Gecode model: $status")
+                else -> fail("Unexpected status for finite ${compiled.engine.engineId} model: $status")
             }
         return SolveResult(
             outcome,
             best?.assignment,
-            gecodeDescriptor,
+            compiled.engine.descriptor,
             objectiveValue = best?.objectiveValue,
             bestBound = if (outcome == SolveStatus.OPTIMAL) best?.objectiveValue else null,
             metadata = SolveMetadata(messages, statistics),

@@ -28,6 +28,7 @@ tasks.register<JavaExec>("jvmBenchmark") {
 val miniZincExecutable = providers.environmentVariable("MINIZINC_EXECUTABLE")
 tasks.named<org.gradle.api.tasks.testing.Test>("jvmTest") {
     inputs.property("miniZincExecutable", miniZincExecutable.orElse(""))
+    inputs.property("miniZincEngines", providers.environmentVariable("MINIZINC_ENGINES").orElse(""))
     outputs.upToDateWhen { !miniZincExecutable.isPresent }
     outputs.doNotCacheIf("The explicitly requested external solver runtime must be probed again") { miniZincExecutable.isPresent }
 }

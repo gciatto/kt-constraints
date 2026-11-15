@@ -10,6 +10,8 @@ class MiniZincModel internal constructor(
     val model: ConstraintModel,
     /** Deterministic executable MiniZinc source. */
     val source: String,
+    /** Engine whose numeric and protocol contract was used to compile this source. */
+    val engine: MiniZincEngine = MiniZincEngine.GECODE,
 ) : CompiledModel {
     override val sourceVariables: Map<String, Variable> =
         buildMap {
