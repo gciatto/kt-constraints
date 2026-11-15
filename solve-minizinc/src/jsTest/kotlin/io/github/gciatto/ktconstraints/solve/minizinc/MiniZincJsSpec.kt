@@ -5,9 +5,11 @@ import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.TerminationReason
 import io.github.gciatto.ktconstraints.test.solve.solverContract
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import kotlin.time.Duration.Companion.seconds
 
 /** Same real contracts for Node CLI and browser Wasm; route identity records which actually ran. */
 class MiniZincJsSpec :
@@ -84,6 +86,7 @@ class MiniZincJsSpec :
                 val fs = js("require('node:fs')")
                 val previous = js("process.env.TMPDIR")
                 val isolated = fs.mkdtempSync(js("require('node:os').tmpdir()") + "/kt-constraints-") as String
+                val restore = { if (previous == null) js("delete process.env.TMPDIR") else js("process.env").TMPDIR = previous }
                 js("process.env").TMPDIR = isolated
                 try {
                     val selected = requireNotNull(backend)
@@ -92,10 +95,12 @@ class MiniZincJsSpec :
                     val stream = selected.create().solutions(scope.build())
                     (stream.next() is SolutionFound) shouldBe true
                     selected.close()
+                    restore()
                     backend = load()
-                    (fs.readdirSync(isolated) as Array<String>).toList() shouldBe emptyList()
+                    // The SDK removes its own run directory asynchronously after emitting exit.
+                    eventually(2.seconds) { (fs.readdirSync(isolated) as Array<String>).toList() shouldBe emptyList() }
                 } finally {
-                    if (previous == null) js("delete process.env.TMPDIR") else js("process.env").TMPDIR = previous
+                    restore()
                     fs.rmSync(isolated, js("({recursive: true, force: true})"))
                 }
             }
