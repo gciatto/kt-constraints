@@ -100,8 +100,9 @@ jobs:
           mkdir "$RUNNER_TEMP/minizinc"
           tar -xzf "$RUNNER_TEMP/minizinc.tgz" -C "$RUNNER_TEMP/minizinc" --strip-components=1
           echo "$RUNNER_TEMP/minizinc/bin" >> "$GITHUB_PATH"
-          # Gecode links Qt, whose bundled ICU libraries need the transitive search path.
-          echo "LD_LIBRARY_PATH=$RUNNER_TEMP/minizinc/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+          # fzn-gecode finds bundled Qt/ICU via its RUNPATH but needs the system EGL library.
+          # A global LD_LIBRARY_PATH would break host tools such as git (pcre2 symbol clash).
+          sudo apt-get update -qq && sudo apt-get install -y -qq libegl1
       - name: Run five actual engine conformance and differential suites
         env:
           MINIZINC_EXECUTABLE: minizinc
