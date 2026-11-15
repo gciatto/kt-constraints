@@ -65,4 +65,16 @@ class AssignmentSpec :
             projected.valueOf(y) shouldBe null
             Assignment.empty().valueOf(x) shouldBe null
         }
+
+        test("assignment/bit-vector-values-are-in-range-and-projected") {
+            val factory = VariableFactory.empty()
+            val b = factory.bitVecVar("b", 8)
+            val c = factory.bitVecVar("c", 100)
+            val wide = BigInteger.TWO.pow(100) - BigInteger.ONE
+            val assignment = Assignment.of(bitVectors = mapOf(b to BigInteger.of(255), c to wide))
+            assignment.valueOf(c) shouldBe wide
+            assignment.project(listOf(b)).valueOf(b) shouldBe BigInteger.of(255)
+            assignment.project(listOf(b)).valueOf(c) shouldBe null
+            shouldThrow<IllegalArgumentException> { Assignment.of(bitVectors = mapOf(b to BigInteger.of(256))) }
+        }
     })

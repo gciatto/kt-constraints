@@ -137,6 +137,12 @@ class FiniteOracleSpec :
             }
         }
 
+        test("oracle/rejects-bit-vector-variables") {
+            val scope = ConstraintScope.empty()
+            scope.bitVecVar("b", 8)
+            FiniteOracle().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(scope.build()) } }
+        }
+
         test("oracle/rejects-large-products-before-enumerating") {
             val scope = ConstraintScope.empty()
             scope.intVar("x", IntDomain.of(Long.MIN_VALUE, Long.MAX_VALUE))

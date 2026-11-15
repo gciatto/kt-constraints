@@ -1,5 +1,8 @@
 package io.github.gciatto.ktconstraints.model
 
+import io.github.gciatto.ktconstraints.core.BitVecComparison
+import io.github.gciatto.ktconstraints.core.BitVecLiteral
+import io.github.gciatto.ktconstraints.core.BitVecRelation
 import io.github.gciatto.ktconstraints.core.IntEquality
 import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -55,5 +58,14 @@ class ConstraintScopeSpec :
             val foreign = VariableFactory.empty().realVar("y")
             shouldThrow<IllegalArgumentException> { scope.add(RealLessThan(foreign, RealLiteral(Rational.ONE))) }
             shouldThrow<IllegalArgumentException> { scope.realVar("x") }
+        }
+
+        test("scope/bit-vector-variables-are-declared-and-owned") {
+            val scope = ConstraintScope.empty()
+            val b = scope.bitVecVar("b", 8)
+            scope.add(BitVecComparison(BitVecRelation.UNSIGNED_LESS_THAN, b, BitVecLiteral(3, 8)))
+            scope.build().variables shouldBe listOf(b)
+            val foreign = VariableFactory.empty().bitVecVar("c", 8)
+            shouldThrow<IllegalArgumentException> { scope.add(BitVecComparison(BitVecRelation.EQUAL, foreign, b)) }
         }
     })

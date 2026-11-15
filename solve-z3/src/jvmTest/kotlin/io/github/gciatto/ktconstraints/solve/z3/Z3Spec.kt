@@ -49,6 +49,7 @@ class Z3Spec :
         include(incrementalContract { Z3Backend().create() })
         include(z3OptimizationContract { Z3Backend().create() })
         include(z3RealContract { Z3Backend().create() })
+        include(z3BitVecContract { Z3Backend().create() })
 
         test("z3/runtime-is-available-and-identifies-the-direct-route") {
             val backend = Z3Backend()

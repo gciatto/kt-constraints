@@ -68,6 +68,13 @@ class MiniZincCompilerSpec :
             compiler.support(constrained.build()).isSupported shouldBe false
         }
 
+        test("compiler/rejects-bit-vectors") {
+            val scope = ConstraintScope.empty()
+            scope.bitVecVar("b", 8)
+            MiniZincCompiler().support(scope.build()).isSupported shouldBe false
+            shouldThrow<UnsupportedModelException> { MiniZincCompiler().compile(scope.build()) }
+        }
+
         test("compiler/empty-domains-remain-explicitly-unsatisfiable") {
             val scope = ConstraintScope.empty()
             scope.intVar("x", IntDomain.empty())
