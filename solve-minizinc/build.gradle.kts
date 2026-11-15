@@ -18,7 +18,7 @@ kotlin {
 
 tasks.register<JavaExec>("jvmBenchmark") {
     group = "benchmark"
-    description = "Measures model, compiler, startup, runtime, decoding and projection phases using real Gecode."
+    description = "Measures model, compiler, startup, runtime, decoding and projection phases using the selected real MiniZinc engine."
     val compilation = kotlin.jvm().compilations.getByName("test")
     dependsOn("jvmTestClasses")
     classpath(compilation.output.allOutputs, compilation.runtimeDependencyFiles)
