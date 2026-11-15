@@ -3,6 +3,7 @@ package io.github.gciatto.ktconstraints.solve.z3
 import io.github.gciatto.ktconstraints.core.AllDifferent
 import io.github.gciatto.ktconstraints.core.BoolCardinality
 import io.github.gciatto.ktconstraints.core.BoolExpr
+import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.BoolOr
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.CardinalityRelation
@@ -18,6 +19,7 @@ import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
+import io.github.gciatto.ktconstraints.solve.CheckStatus
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolveCompleted
@@ -145,6 +147,50 @@ class Z3Spec :
                 (read.await() as SolveCompleted).result.terminationReason shouldBe TerminationReason.CANCELLED
             }
             started.elapsedNow().inWholeMilliseconds shouldBeLessThan 10_000L
+        }
+
+        test("z3/session-deadline-is-unknown-not-unsatisfiable") {
+            Z3Backend().create().use { solver ->
+                solver.openSession(pigeonhole()).use { session ->
+                    val result = session.check(timeoutMillis = 200)
+                    result.status shouldBe CheckStatus.UNKNOWN
+                    result.terminationReason shouldBe TerminationReason.TIMEOUT
+                    session.check(listOf(BoolLiteral(false))).status shouldBe CheckStatus.UNSATISFIABLE
+                }
+            }
+        }
+
+        test("z3/session-close-interrupts-an-active-check") {
+            val started = TimeSource.Monotonic.markNow()
+            val solver = Z3Backend().create()
+            val session = solver.openSession(pigeonhole())
+            coroutineScope {
+                val check = async { session.check() }
+                delay(300)
+                solver.close()
+                val result = check.await()
+                result.status shouldBe CheckStatus.UNKNOWN
+                result.terminationReason shouldBe TerminationReason.CANCELLED
+            }
+            started.elapsedNow().inWholeMilliseconds shouldBeLessThan 10_000L
+        }
+
+        test("z3/repeated-frames-stay-consistent") {
+            val scope = ConstraintScope.empty()
+            val x = scope.intVar("x", 0..1_000)
+            Z3Backend().create().use { solver ->
+                solver.openSession(scope.build()).use { session ->
+                    repeat(200) { round ->
+                        val checkpoint = session.push()
+                        session.add(IntEquality(x, IntLiteral(round.toLong())))
+                        session.check().assignment?.valueOf(x) shouldBe BigInteger.of(round.toLong())
+                        session.add(IntLessThan(x, IntLiteral(round.toLong())))
+                        session.check().status shouldBe CheckStatus.UNSATISFIABLE
+                        session.popTo(checkpoint)
+                    }
+                    session.check().status shouldBe CheckStatus.SATISFIABLE
+                }
+            }
         }
     })
 
