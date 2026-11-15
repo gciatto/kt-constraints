@@ -22,6 +22,7 @@ internal class MiniZincJsStream(
     descriptor: SolverDescriptor,
     private val configurationId: String,
     private val options: SolveOptions,
+    private val settled: suspend (() -> Unit) -> Unit,
     onClosed: () -> Unit,
 ) : ManagedSolutionStream(descriptor, onClosed) {
     private val decoder = MiniZincDecoder(compiled, descriptor)
@@ -31,6 +32,7 @@ internal class MiniZincJsStream(
     private var progress: dynamic = null
     private var emitted = 0
     private var deadline: Job? = null
+    private var released = false
     private val listeners = mutableMapOf<String, (dynamic) -> Unit>()
     private val exit = CompletableDeferred<Unit>()
 
@@ -48,7 +50,7 @@ internal class MiniZincJsStream(
             stop(reason)
             return SolveCompleted(requireNotNull(terminalResult))
         }
-        if (progress == null) start()
+        if (progress == null) settled { if (!released && progress == null) start() }
         val event = events.receive()
         if (event is SolutionFound) emitted++
         return event
@@ -100,6 +102,7 @@ internal class MiniZincJsStream(
     }
 
     override fun release() {
+        released = true
         deadline?.cancel()
         if (progress != null) {
             listeners.forEach { (type, listener) -> progress.off(type, listener) }

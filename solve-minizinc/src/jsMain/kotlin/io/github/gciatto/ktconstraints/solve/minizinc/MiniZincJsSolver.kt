@@ -19,7 +19,9 @@ internal class MiniZincJsSolver(
         backend.requireOpen()
         lateinit var stream: MiniZincJsStream
         stream =
-            MiniZincJsStream(MiniZincCompiler(backend.engine).compile(model, options), descriptor, backend.configurationId, options) {
+            MiniZincJsStream(MiniZincCompiler(backend.engine).compile(model, options), descriptor, backend.configurationId, options, {
+                backend.withSettledPool(it)
+            }) {
                 backend.remove(stream)
                 onClosed()
             }
