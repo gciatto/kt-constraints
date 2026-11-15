@@ -28,14 +28,7 @@ object MiniZincBenchmark {
                 lateinit var model: ConstraintModel
                 val modelNanos =
                     measureNanoTime {
-                        model =
-                            ConstraintModel.of {
-                                val x = intVar("x", 0..10)
-                                val y = intVar("y", 0..10)
-                                val sum = IntSum(x, y)
-                                add(IntLessOrEqual(sum, IntLiteral(12)))
-                                maximize(sum)
-                            }
+                        model = createModel()
                     }
                 lateinit var compiled: MiniZincModel
                 val translationNanos = measureNanoTime { compiled = MiniZincCompiler().compile(model) }
@@ -81,5 +74,14 @@ object MiniZincBenchmark {
                     compiled.close()
                 }
             }
+        }
+
+    private fun createModel(): ConstraintModel =
+        ConstraintModel.of {
+            val x = intVar("x", 0..10)
+            val y = intVar("y", 0..10)
+            val sum = IntSum(x, y)
+            add(IntLessOrEqual(sum, IntLiteral(12)))
+            maximize(sum)
         }
 }

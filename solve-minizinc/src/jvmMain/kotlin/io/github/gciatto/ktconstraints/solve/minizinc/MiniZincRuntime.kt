@@ -5,25 +5,28 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.io.IOException
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
+
+private const val PROBE_TIMEOUT_SECONDS = 10L
 
 internal fun probeMiniZinc(executable: String): BackendAvailability {
     val directory = Files.createTempDirectory("kt-constraints-minizinc-probe-")
     var process: Process? = null
-    try {
+    return try {
         fun run(vararg arguments: String): String {
             val output = directory.resolve("stdout.log")
             val error = directory.resolve("stderr.log")
             val child = ProcessBuilder(executable, *arguments).redirectOutput(output.toFile()).redirectError(error.toFile()).start()
             process = child
-            check(child.waitFor(10, TimeUnit.SECONDS)) { "MiniZinc runtime probe timed out" }
+            check(child.waitFor(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)) { "MiniZinc runtime probe timed out" }
             check(child.exitValue() == 0) { "MiniZinc runtime probe failed: ${Files.readString(error)}" }
             return Files.readString(output)
         }
         val solvers = Json.parseToJsonElement(run("--solvers-json")).jsonArray
-        if (solvers.none { it.jsonObject["id"]?.jsonPrimitive?.content == "org.gecode.gecode" }) {
-            return BackendAvailability(false, "Gecode is not configured in MiniZinc")
+        check(solvers.any { it.jsonObject["id"]?.jsonPrimitive?.content == "org.gecode.gecode" }) {
+            "Gecode is not configured in MiniZinc"
         }
         val model = directory.resolve("probe.mzn")
         Files.writeString(model, "var 0..1: v; solve satisfy; output [show(v)];")
@@ -37,9 +40,16 @@ internal fun probeMiniZinc(executable: String): BackendAvailability {
                     ?.content == "solution"
             },
         ) { "Gecode startup probe produced no solution" }
-        return BackendAvailability(true)
-    } catch (failure: Exception) {
-        return BackendAvailability(false, failure.message ?: "MiniZinc runtime probe failed")
+        BackendAvailability(true)
+    } catch (failure: IOException) {
+        unavailable(failure)
+    } catch (failure: IllegalArgumentException) {
+        unavailable(failure)
+    } catch (failure: IllegalStateException) {
+        unavailable(failure)
+    } catch (interrupted: InterruptedException) {
+        Thread.currentThread().interrupt()
+        unavailable(interrupted)
     } finally {
         process?.let { terminateMiniZinc(it) }
         check(directory.toFile().deleteRecursively()) { "Cannot delete MiniZinc probe workspace" }
@@ -63,3 +73,6 @@ internal fun terminateMiniZinc(process: Process) {
         process.outputStream.close()
     }
 }
+
+private fun unavailable(failure: Throwable): BackendAvailability =
+    BackendAvailability(false, failure.message ?: "MiniZinc runtime probe failed")

@@ -1,8 +1,10 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
 import io.github.gciatto.ktconstraints.solve.spi.BackendExecutionException
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.BufferedReader
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.ExecutorService
@@ -10,8 +12,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.coroutineContext
 
 internal class MiniZincProcess(
     private val executable: String,
@@ -33,10 +34,14 @@ internal class MiniZincProcess(
 
     suspend fun readLine(): String? {
         start()
-        return io { requireNotNull(reader).readLine() }
+        val input = requireNotNull(reader)
+        return io { input.readLine() }
     }
 
-    suspend fun exitCode(): Int = io { requireNotNull(process).waitFor() }
+    suspend fun exitCode(): Int {
+        val child = requireNotNull(process)
+        return io { child.waitFor() }
+    }
 
     fun stderr(): String =
         synchronized(lock) {
@@ -66,33 +71,32 @@ internal class MiniZincProcess(
                 executor =
                     Executors.newSingleThreadExecutor { task -> Thread(task, "kt-constraints-minizinc-output").apply { isDaemon = true } }
                 if (timeoutMillis != null) {
-                    timer =
+                    val scheduler =
                         Executors.newSingleThreadScheduledExecutor { task ->
                             Thread(task, "kt-constraints-minizinc-deadline").apply {
                                 isDaemon =
                                     true
                             }
                         }
-                    deadline = timer!!.schedule(onTimeout, timeoutMillis, TimeUnit.MILLISECONDS)
+                    timer = scheduler
+                    deadline = scheduler.schedule(onTimeout, timeoutMillis, TimeUnit.MILLISECONDS)
                 }
-            } catch (failure: Exception) {
+            } catch (failure: IOException) {
                 close()
                 throw BackendExecutionException("Cannot start MiniZinc: ${failure.message}", failure)
             }
         }
 
-    private suspend fun <T> io(action: () -> T): T =
-        suspendCancellableCoroutine { continuation ->
+    // shortcut: detekt 1.23.8 misses suspend calls; remove this exception when its resolver supports Kotlin 2.4.
+    @Suppress("RedundantSuspendModifier")
+    private suspend fun <T> io(action: () -> T): T {
+        coroutineContext.ensureActive()
+        return suspendCancellableCoroutine { continuation ->
             val worker =
                 synchronized(lock) {
                     check(!closed) { "MiniZinc process is closed" }
                     requireNotNull(executor).submit {
-                        try {
-                            val value = action()
-                            continuation.resume(value)
-                        } catch (failure: Exception) {
-                            continuation.resumeWithException(failure)
-                        }
+                        continuation.resumeWith(runCatching(action))
                     }
                 }
             continuation.invokeOnCancellation {
@@ -103,6 +107,7 @@ internal class MiniZincProcess(
                 }
             }
         }
+    }
 
     override fun close() =
         synchronized(lock) {

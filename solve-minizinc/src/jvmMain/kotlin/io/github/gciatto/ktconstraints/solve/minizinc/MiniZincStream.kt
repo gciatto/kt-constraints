@@ -27,21 +27,23 @@ internal class MiniZincStream(
     internal val processId: Long? get() = process.processId
 
     override suspend fun readNext(): SolutionEvent {
-        if (options.timeoutMillis == 0L) {
-            stop(TerminationReason.TIMEOUT)
+        val interruption =
+            when {
+                options.timeoutMillis == 0L -> TerminationReason.TIMEOUT
+                options.solutionLimit?.let { emitted >= it } == true -> TerminationReason.RESOURCE_LIMIT
+                else -> null
+            }
+        if (interruption != null) {
+            stop(interruption)
             return SolveCompleted(requireNotNull(terminalResult))
         }
-        if (options.solutionLimit?.let { emitted >= it } == true) {
-            stop(TerminationReason.RESOURCE_LIMIT)
-            return SolveCompleted(requireNotNull(terminalResult))
-        }
-        while (true) {
+        var event: SolutionEvent? = null
+        while (event == null) {
             val line = process.readLine()
-            if (line == null) return SolveCompleted(decoder.finish(process.exitCode(), process.stderr()))
-            val event = decoder.accept(line) ?: continue
-            emitted++
-            return event
+            event = if (line == null) SolveCompleted(decoder.finish(process.exitCode(), process.stderr())) else decoder.accept(line)
         }
+        if (event is io.github.gciatto.ktconstraints.solve.SolutionFound) emitted++
+        return event
     }
 
     override fun release() {
