@@ -128,10 +128,14 @@ class MiniZincJsBackend private constructor(
             try {
                 miniZincApi.init(config).unsafeCast<Promise<dynamic>>().await()
                 // Upstream solvers() throws uncaught when the CLI cannot run; version() rejects safely first.
-                try {
-                    miniZincApi.version().unsafeCast<Promise<dynamic>>().await()
-                } catch (failure: Throwable) {
-                    throw BackendUnavailableException("MiniZinc JS runtime cannot start: ${failure.message}")
+                val startFailure =
+                    miniZincApi
+                        .version()
+                        .unsafeCast<Promise<dynamic>>()
+                        .then<Throwable?>({ null }, { failure -> failure })
+                        .await()
+                if (startFailure != null) {
+                    throw BackendUnavailableException("MiniZinc JS runtime cannot start: ${startFailure.message}")
                 }
                 if (miniZincApi
                         .solvers()
