@@ -100,14 +100,39 @@ jobs:
           mkdir "$RUNNER_TEMP/minizinc"
           tar -xzf "$RUNNER_TEMP/minizinc.tgz" -C "$RUNNER_TEMP/minizinc" --strip-components=1
           echo "$RUNNER_TEMP/minizinc/bin" >> "$GITHUB_PATH"
+          # Gecode links Qt, whose bundled ICU libraries need the transitive search path.
+          echo "LD_LIBRARY_PATH=$RUNNER_TEMP/minizinc/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
       - name: Run five actual engine conformance and differential suites
         env:
           MINIZINC_EXECUTABLE: minizinc
           MINIZINC_ENGINES: gecode,chuffed,cp-sat,highs,cbc
-        run: ./gradlew :solve-minizinc:jvmTest --continue
+        run: ./gradlew :solve-minizinc:jvmTest :solve-minizinc:jsNodeTest --continue
       - name: Job summary
         if: always()
         uses: ./.github/actions/ci-summary
         with:
           title: MiniZinc / five-engine conformance
+          status: ${{ job.status }}
+
+  test-minizinc-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run actual Chuffed browser Wasm contracts
+        env:
+          MINIZINC_BROWSER_TEST: 'true'
+          CHROME_BIN: /usr/bin/google-chrome
+        run: ./gradlew :solve-minizinc:jsBrowserTest --continue
+      - name: Job summary
+        if: always()
+        uses: ./.github/actions/ci-summary
+        with:
+          title: MiniZinc / Chuffed browser Wasm
           status: ${{ job.status }}
