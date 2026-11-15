@@ -18,22 +18,22 @@ internal fun probeMiniZinc(
     val directory = Files.createTempDirectory("kt-constraints-minizinc-probe-")
     var process: Process? = null
     return try {
-        fun run(vararg arguments: String): String {
+        fun run(arguments: List<String>): String {
             val output = directory.resolve("stdout.log")
             val error = directory.resolve("stderr.log")
-            val child = ProcessBuilder(executable, *arguments).redirectOutput(output.toFile()).redirectError(error.toFile()).start()
+            val child = ProcessBuilder(listOf(executable) + arguments).redirectOutput(output.toFile()).redirectError(error.toFile()).start()
             process = child
             check(child.waitFor(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)) { "MiniZinc runtime probe timed out" }
             check(child.exitValue() == 0) { "MiniZinc runtime probe failed: ${Files.readString(error)}" }
             return Files.readString(output)
         }
-        val solvers = Json.parseToJsonElement(run("--solvers-json")).jsonArray
+        val solvers = Json.parseToJsonElement(run(listOf("--solvers-json"))).jsonArray
         check(solvers.any { it.jsonObject["id"]?.jsonPrimitive?.content == engine.configurationId }) {
             "${engine.configurationId} is not configured in MiniZinc"
         }
         val model = directory.resolve("probe.mzn")
         Files.writeString(model, "var 0..1: v; solve satisfy; output [show(v)];")
-        val output = run("--solver", engine.configurationId, "--json-stream", "--all-solutions", model.toString())
+        val output = run(listOf("--solver", engine.configurationId, "--json-stream") + engine.searchArguments() + model.toString())
         check(
             output.lineSequence().filter { it.isNotBlank() }.any {
                 Json
@@ -79,3 +79,10 @@ internal fun terminateMiniZinc(process: Process) {
 
 private fun unavailable(failure: Throwable): BackendAvailability =
     BackendAvailability(false, failure.message ?: "MiniZinc runtime probe failed")
+
+internal fun MiniZincEngine.searchArguments(): List<String> =
+    when (this) {
+        MiniZincEngine.HIGHS -> listOf("--intermediate-solutions", "--highs-mip_rel_gap", "0", "--highs-mip_abs_gap", "0")
+        MiniZincEngine.CBC -> listOf("--intermediate-solutions", "--cbc-allowableGap", "0", "--cbc-ratioGap", "0")
+        else -> listOf("--all-solutions")
+    }

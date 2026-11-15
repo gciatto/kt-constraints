@@ -58,7 +58,12 @@ internal class MiniZincLowering(
             is IntLiteral -> checked(node.value.toString(), node.value, node.value)
             is IntSum -> binary(children, "+") { a, b -> IntInterval(a.min + b.min, a.max + b.max) }
             is IntDifference -> binary(children, "-") { a, b -> IntInterval(a.min - b.max, a.max - b.min) }
-            is IntProduct -> binary(children, "*") { a, b -> product(a, b) }
+            is IntProduct -> {
+                if (engine.isMip && children.all { requireNotNull(it.bounds).let { bounds -> bounds.min != bounds.max } }) {
+                    reject("${engine.engineId} supports only affine integer multiplication")
+                }
+                binary(children, "*") { a, b -> product(a, b) }
+            }
             is IntNegation -> {
                 val bounds = requireNotNull(children.single().bounds)
                 checked("(-${children.single().text})", -bounds.max, -bounds.min)

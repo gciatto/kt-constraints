@@ -60,13 +60,8 @@ internal class MiniZincProcess(
                 Files.writeString(model, source)
                 process =
                     ProcessBuilder(
-                        executable,
-                        "--solver",
-                        engine.configurationId,
-                        "--json-stream",
-                        "--all-solutions",
-                        "--statistics",
-                        model.toString(),
+                        listOf(executable, "--solver", engine.configurationId, "--json-stream") +
+                            engine.searchArguments() + listOf("--statistics", model.toString()),
                     ).redirectError(directory.resolve("stderr.log").toFile()).start()
                 reader = requireNotNull(process).inputStream.bufferedReader(Charsets.UTF_8)
                 executor =

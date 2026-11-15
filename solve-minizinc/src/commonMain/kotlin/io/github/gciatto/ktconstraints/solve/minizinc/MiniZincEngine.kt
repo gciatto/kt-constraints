@@ -12,15 +12,23 @@ enum class MiniZincEngine(
     val configurationId: String,
     /** Conservative symmetric bound applied to literals, domains and all integer intermediates. */
     val maximumInteger: BigInteger,
+    /** Whether this route accepts affine arithmetic and non-enumerating MIP search. */
+    val isMip: Boolean = false,
 ) {
     /** Gecode's finite integer subset. */
     GECODE("gecode", "org.gecode.gecode", BigInteger.of(2_147_483_646)),
 
-    /** Chuffed's deliberately conservative finite integer subset. */
-    CHUFFED("chuffed", "org.chuffed.chuffed", BigInteger.of(500_000_000)),
+    /** Chuffed excludes +/-500,000,000, which are reserved as unbounded sentinels. */
+    CHUFFED("chuffed", "org.chuffed.chuffed", BigInteger.of(499_999_999)),
 
     /** CP-SAT initially shares Gecode's checked subset, rather than claiming its full int64 capacity. */
     CP_SAT("cp-sat", "cp-sat", BigInteger.of(2_147_483_646)),
+
+    /** HiGHS integer MIP subset, without exhaustive enumeration. */
+    HIGHS("highs", "org.minizinc.mip.highs", BigInteger.of(1_000_000), true),
+
+    /** CBC integer MIP subset, without exhaustive enumeration. */
+    CBC("cbc", "org.minizinc.mip.coin-bc", BigInteger.of(1_000_000), true),
     ;
 
     /** Capabilities covered by the shared contracts for this engine/route. */
@@ -31,9 +39,8 @@ enum class MiniZincEngine(
             setOf(
                 SolverCapability.SATISFACTION,
                 SolverCapability.OPTIMIZATION,
-                SolverCapability.ENUMERATION,
                 SolverCapability.INTEGER_ARITHMETIC,
                 SolverCapability.GLOBAL_CONSTRAINTS,
-            ),
+            ) + if (isMip) emptySet() else setOf(SolverCapability.ENUMERATION),
         )
 }
