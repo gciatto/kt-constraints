@@ -1,0 +1,114 @@
+# Z3 C API loaded at run time: only the stable prototypes the binding calls, no Z3 headers or link-time library.
+package = io.github.gciatto.ktconstraints.solve.z3.capi
+linkerOpts.linux = -ldl
+
+---
+
+#include <stdbool.h>
+
+typedef struct _Z3_config *Z3_config;
+typedef struct _Z3_context *Z3_context;
+typedef struct _Z3_symbol *Z3_symbol;
+typedef struct _Z3_sort *Z3_sort;
+typedef struct _Z3_ast *Z3_ast;
+typedef struct _Z3_solver *Z3_solver;
+typedef struct _Z3_model *Z3_model;
+typedef struct _Z3_ast_vector *Z3_ast_vector;
+typedef struct _Z3_params *Z3_params;
+typedef int Z3_lbool;
+typedef int Z3_error_code;
+typedef const char *Z3_string;
+typedef void Z3_error_handler(Z3_context c, Z3_error_code e);
+
+#define KZ3_API(F, V) \
+    F(Z3_config, Z3_mk_config, (void), ()) \
+    V(Z3_del_config, (Z3_config c), (c)) \
+    F(Z3_context, Z3_mk_context, (Z3_config c), (c)) \
+    V(Z3_del_context, (Z3_context c), (c)) \
+    V(Z3_interrupt, (Z3_context c), (c)) \
+    V(Z3_set_error_handler, (Z3_context c, Z3_error_handler *h), (c, h)) \
+    F(Z3_error_code, Z3_get_error_code, (Z3_context c), (c)) \
+    F(Z3_string, Z3_get_error_msg, (Z3_context c, Z3_error_code e), (c, e)) \
+    F(Z3_string, Z3_get_full_version, (void), ()) \
+    F(Z3_symbol, Z3_mk_string_symbol, (Z3_context c, Z3_string s), (c, s)) \
+    F(Z3_sort, Z3_mk_bool_sort, (Z3_context c), (c)) \
+    F(Z3_sort, Z3_mk_int_sort, (Z3_context c), (c)) \
+    F(Z3_ast, Z3_mk_const, (Z3_context c, Z3_symbol s, Z3_sort t), (c, s, t)) \
+    F(Z3_ast, Z3_mk_true, (Z3_context c), (c)) \
+    F(Z3_ast, Z3_mk_false, (Z3_context c), (c)) \
+    F(Z3_ast, Z3_mk_numeral, (Z3_context c, Z3_string n, Z3_sort t), (c, n, t)) \
+    F(Z3_ast, Z3_mk_add, (Z3_context c, unsigned n, Z3_ast const a[]), (c, n, a)) \
+    F(Z3_ast, Z3_mk_sub, (Z3_context c, unsigned n, Z3_ast const a[]), (c, n, a)) \
+    F(Z3_ast, Z3_mk_mul, (Z3_context c, unsigned n, Z3_ast const a[]), (c, n, a)) \
+    F(Z3_ast, Z3_mk_unary_minus, (Z3_context c, Z3_ast a), (c, a)) \
+    F(Z3_ast, Z3_mk_and, (Z3_context c, unsigned n, Z3_ast const a[]), (c, n, a)) \
+    F(Z3_ast, Z3_mk_or, (Z3_context c, unsigned n, Z3_ast const a[]), (c, n, a)) \
+    F(Z3_ast, Z3_mk_not, (Z3_context c, Z3_ast a), (c, a)) \
+    F(Z3_ast, Z3_mk_implies, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_eq, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_lt, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_le, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_ast, Z3_mk_ite, (Z3_context c, Z3_ast i, Z3_ast t, Z3_ast e), (c, i, t, e)) \
+    F(Z3_ast, Z3_mk_distinct, (Z3_context c, unsigned n, Z3_ast const a[]), (c, n, a)) \
+    F(Z3_ast, Z3_mk_atmost, (Z3_context c, unsigned n, Z3_ast const a[], unsigned k), (c, n, a, k)) \
+    F(Z3_ast, Z3_mk_atleast, (Z3_context c, unsigned n, Z3_ast const a[], unsigned k), (c, n, a, k)) \
+    F(Z3_ast, Z3_mk_pbeq, (Z3_context c, unsigned n, Z3_ast const a[], int const w[], int k), (c, n, a, w, k)) \
+    F(Z3_solver, Z3_mk_solver, (Z3_context c), (c)) \
+    V(Z3_solver_inc_ref, (Z3_context c, Z3_solver s), (c, s)) \
+    V(Z3_solver_dec_ref, (Z3_context c, Z3_solver s), (c, s)) \
+    V(Z3_solver_assert, (Z3_context c, Z3_solver s, Z3_ast a), (c, s, a)) \
+    V(Z3_solver_push, (Z3_context c, Z3_solver s), (c, s)) \
+    V(Z3_solver_pop, (Z3_context c, Z3_solver s, unsigned n), (c, s, n)) \
+    F(Z3_lbool, Z3_solver_check_assumptions, (Z3_context c, Z3_solver s, unsigned n, Z3_ast const a[]), (c, s, n, a)) \
+    F(Z3_string, Z3_solver_get_reason_unknown, (Z3_context c, Z3_solver s), (c, s)) \
+    F(Z3_model, Z3_solver_get_model, (Z3_context c, Z3_solver s), (c, s)) \
+    V(Z3_model_inc_ref, (Z3_context c, Z3_model m), (c, m)) \
+    V(Z3_model_dec_ref, (Z3_context c, Z3_model m), (c, m)) \
+    F(bool, Z3_model_eval, (Z3_context c, Z3_model m, Z3_ast t, bool complete, Z3_ast *v), (c, m, t, complete, v)) \
+    F(Z3_lbool, Z3_get_bool_value, (Z3_context c, Z3_ast a), (c, a)) \
+    F(Z3_string, Z3_get_numeral_string, (Z3_context c, Z3_ast a), (c, a)) \
+    F(Z3_ast_vector, Z3_solver_get_unsat_core, (Z3_context c, Z3_solver s), (c, s)) \
+    V(Z3_ast_vector_inc_ref, (Z3_context c, Z3_ast_vector v), (c, v)) \
+    V(Z3_ast_vector_dec_ref, (Z3_context c, Z3_ast_vector v), (c, v)) \
+    F(unsigned, Z3_ast_vector_size, (Z3_context c, Z3_ast_vector v), (c, v)) \
+    F(Z3_ast, Z3_ast_vector_get, (Z3_context c, Z3_ast_vector v, unsigned i), (c, v, i)) \
+    F(bool, Z3_is_eq_ast, (Z3_context c, Z3_ast l, Z3_ast r), (c, l, r)) \
+    F(Z3_params, Z3_mk_params, (Z3_context c), (c)) \
+    V(Z3_params_inc_ref, (Z3_context c, Z3_params p), (c, p)) \
+    V(Z3_params_dec_ref, (Z3_context c, Z3_params p), (c, p)) \
+    V(Z3_params_set_uint, (Z3_context c, Z3_params p, Z3_symbol k, unsigned v), (c, p, k, v)) \
+    V(Z3_solver_set_params, (Z3_context c, Z3_solver s, Z3_params p), (c, s, p))
+
+#define KZ3_POINTER(ret, name, params, args) static ret (*kz3p_##name) params;
+#define KZ3_VOID_POINTER(name, params, args) static void (*kz3p_##name) params;
+KZ3_API(KZ3_POINTER, KZ3_VOID_POINTER)
+
+#define KZ3_CALL(ret, name, params, args) static inline ret name params { return kz3p_##name args; }
+#define KZ3_VOID_CALL(name, params, args) static inline void name params { kz3p_##name args; }
+KZ3_API(KZ3_CALL, KZ3_VOID_CALL)
+
+/** Detail of the last kz3_load failure: the loader message or the missing symbol. */
+static const char *kz3_failure;
+
+/** Loads the Z3 library at [path] once per process; returns false and sets kz3_failure when it cannot. */
+static inline bool kz3_load(const char *path) {
+#ifdef _WIN32
+    void *LoadLibraryExA(const char *, void *, unsigned long);
+    void *GetProcAddress(void *, const char *);
+    void *library = LoadLibraryExA(path, 0, 0x00000008UL); /* LOAD_WITH_ALTERED_SEARCH_PATH: dependencies beside it */
+    if (!library) { kz3_failure = "LoadLibraryEx could not load the library or its dependencies"; return false; }
+#define KZ3_SYMBOL(library, name) GetProcAddress(library, name)
+#else
+    void *dlopen(const char *, int);
+    void *dlsym(void *, const char *);
+    char *dlerror(void);
+    void *library = dlopen(path, 2); /* RTLD_NOW */
+    if (!library) { kz3_failure = dlerror(); return false; }
+#define KZ3_SYMBOL(library, name) dlsym(library, name)
+#endif
+#define KZ3_RESOLVE(ret, name, params, args) \
+    if (!(*(void **) &kz3p_##name = KZ3_SYMBOL(library, #name))) { kz3_failure = #name; return false; }
+#define KZ3_VOID_RESOLVE(name, params, args) KZ3_RESOLVE(void, name, params, args)
+    KZ3_API(KZ3_RESOLVE, KZ3_VOID_RESOLVE)
+    return true;
+}

@@ -21,6 +21,13 @@ kotlin {
                 implementation(libs.z3.turnkey)
             }
         }
+        nativeMain {
+            dependencies { implementation(libs.kotlinx.coroutines.core) }
+        }
+    }
+    // The shim in src/nativeInterop/cinterop/z3.def loads Z3 at run time, so no target links against it.
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+        compilations.getByName("main").cinterops.create("z3")
     }
 }
 
