@@ -127,6 +127,12 @@ class MiniZincJsBackend private constructor(
             var loaded = false
             try {
                 miniZincApi.init(config).unsafeCast<Promise<dynamic>>().await()
+                // Upstream solvers() throws uncaught when the CLI cannot run; version() rejects safely first.
+                try {
+                    miniZincApi.version().unsafeCast<Promise<dynamic>>().await()
+                } catch (failure: Throwable) {
+                    throw BackendUnavailableException("MiniZinc JS runtime cannot start: ${failure.message}")
+                }
                 if (miniZincApi
                         .solvers()
                         .unsafeCast<Promise<Array<dynamic>>>()
