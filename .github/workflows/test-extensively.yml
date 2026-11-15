@@ -139,6 +139,7 @@ jobs:
           path: |
             solve-minizinc/build/test-results/jsBrowserTest
             solve-minizinc/build/reports/tests/jsBrowserTest
+            build/js/packages/kt-constraints-solve-minizinc-test/browser-console.log
       - name: Job summary
         if: always()
         uses: ./.github/actions/ci-summary

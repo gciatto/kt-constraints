@@ -20,3 +20,12 @@ config.set({
     failOnEmptyTestSuite: true,
     browserConsoleLogOptions: { level: 'debug', terminal: true },
 });
+// The Kotlin reporter drops browser output emitted outside a test; keep all of it for diagnosis.
+const consoleLog = path.join(process.cwd(), 'browser-console.log');
+fs.writeFileSync(consoleLog, '');
+function BrowserConsoleFile() {
+    this.onBrowserLog = (browser, log, type) => fs.appendFileSync(consoleLog, `[${type}] ${log}\n`);
+    this.onBrowserError = (browser, error) => fs.appendFileSync(consoleLog, `[browser-error] ${JSON.stringify(error)}\n`);
+}
+config.plugins.push({ 'reporter:browser-console-file': ['type', BrowserConsoleFile] });
+config.reporters = [...(config.reporters || []), 'browser-console-file'];
