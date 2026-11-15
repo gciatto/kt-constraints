@@ -25,4 +25,11 @@ class MiniZincEngineSpec :
             MiniZincCompiler(MiniZincEngine.GECODE).support(scope.build()).isSupported shouldBe true
             MiniZincCompiler(MiniZincEngine.CHUFFED).support(scope.build()).isSupported shouldBe false
         }
+        test("engine/chuffed-rejects-its-reserved-unbounded-sentinels") {
+            for (value in listOf(-500_000_000L, 500_000_000L)) {
+                val scope = ConstraintScope.empty()
+                scope.intVar("x", IntDomain.of(value, value))
+                MiniZincCompiler(MiniZincEngine.CHUFFED).support(scope.build()).isSupported shouldBe false
+            }
+        }
     })
