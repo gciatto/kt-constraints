@@ -37,7 +37,7 @@ class Z3Backend : SolverBackend {
     override fun create(): IncrementalConstraintSolver {
         val probe = availability()
         if (!probe.available) throw BackendUnavailableException("${descriptor.id}: ${probe.reason}")
-        return Z3Solver(descriptor)
+        return Z3Solver(descriptor) { JavaZ3Owner() }
     }
 
     /** Route identity shared by every JVM Z3 backend instance. */

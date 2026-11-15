@@ -1,16 +1,8 @@
-// Z3's Java API accepts operand lists only as varargs, so building them requires a spread copy.
-@file:Suppress("SpreadOperator")
-
 package io.github.gciatto.ktconstraints.solve.z3
 
-import com.microsoft.z3.Context
-import com.microsoft.z3.IntNum
-import com.microsoft.z3.Solver
-import com.microsoft.z3.Status
 import io.github.gciatto.ktconstraints.core.BoolExpr
 import io.github.gciatto.ktconstraints.core.GroundEvaluator
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.solve.Assignment
 import io.github.gciatto.ktconstraints.solve.CheckResult
 import io.github.gciatto.ktconstraints.solve.CheckStatus
 import io.github.gciatto.ktconstraints.solve.Checkpoint
@@ -22,44 +14,41 @@ import io.github.gciatto.ktconstraints.solve.project
 import io.github.gciatto.ktconstraints.solve.spi.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.CheckpointStack
 import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
-import org.gciatto.kt.math.BigInteger
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.TimeSource
 
 /** Incremental Z3 session mapping checkpoints to native frames and assumptions to indicator constants. */
-internal class Z3Session(
+@OptIn(ExperimentalAtomicApi::class)
+internal class Z3Session<T>(
     private val model: ConstraintModel,
     override val descriptor: SolverDescriptor,
-    private val onClosed: (Z3Session) -> Unit,
+    private val owner: Z3Owner<T>,
+    private val onClosed: (Z3Session<T>) -> Unit,
 ) : IncrementalSession {
-    private val worker = Z3Worker()
     private val busy = AtomicBoolean(false)
     private val checkpoints = CheckpointStack()
     private val frames = mutableListOf(model.constraints.toMutableList())
-    private lateinit var solver: Solver
-    private lateinit var translation: Z3Translation
+    private val translation: Z3Translation<T>
     private var checks = 0
 
     init {
-        exclusive {
-            worker.run { context ->
-                translation = Z3Translation(context, model)
-                solver = context.mkSolver()
-                solver.add(*translation.assertions.toTypedArray())
+        translation =
+            owner.confinedNow { port ->
+                Z3Translation(port, model).also { port.assert(it.assertions) }
             }
-        }
     }
 
     override fun add(constraint: BoolExpr) =
         exclusive {
             requireAccepted(listOf(constraint))
-            worker.run { solver.add(*(listOf(translation.boolean(constraint)) + translation.drainDefinedness()).toTypedArray()) }
+            owner.confinedNow { port -> port.assert(listOf(translation.translate(constraint)) + translation.drainDefinedness()) }
             frames.last() += constraint
         }
 
     override fun push(): Checkpoint =
         exclusive {
-            worker.run { solver.push() }
+            owner.confinedNow { it.push() }
             frames += mutableListOf<BoolExpr>()
             checkpoints.push()
         }
@@ -67,7 +56,7 @@ internal class Z3Session(
     override fun popTo(checkpoint: Checkpoint) =
         exclusive {
             val popped = checkpoints.popTo(checkpoint)
-            worker.run { solver.pop(popped) }
+            owner.confinedNow { it.pop(popped) }
             repeat(popped) { frames.removeAt(frames.lastIndex) }
         }
 
@@ -82,52 +71,56 @@ internal class Z3Session(
                 CheckResult(CheckStatus.UNKNOWN, null, descriptor, TerminationReason.TIMEOUT)
             } else {
                 val started = TimeSource.Monotonic.markNow()
-                worker.await { context -> checkNative(context, assumptions, timeoutMillis, started) }
+                owner.confined { port -> checkNative(port, assumptions, timeoutMillis, started) }
             }
         }
     }
 
     override fun close() {
-        if (worker.isClosed) return
-        worker.close()
+        if (owner.isClosed) return
+        owner.close()
         onClosed(this)
     }
 
-    private fun checkNative(
-        context: Context,
+    private suspend fun checkNative(
+        port: Z3Port<T>,
         assumptions: List<BoolExpr>,
         timeoutMillis: Long?,
         started: TimeSource.Monotonic.ValueTimeMark,
     ): CheckResult {
         val round = checks++
-        val indicators = assumptions.indices.map { context.mkBoolConst("assumption-$round-$it") }
-        solver.push()
+        val indicators = assumptions.indices.map { port.boolConst("assumption-$round-$it") }
+        port.push()
         try {
             assumptions.zip(indicators) { assumption, indicator ->
-                val guarded = listOf(translation.boolean(assumption)) + translation.drainDefinedness()
-                solver.add(context.mkImplies(indicator, context.mkAnd(*guarded.toTypedArray())))
+                val guarded = listOf(translation.translate(assumption)) + translation.drainDefinedness()
+                port.assert(listOf(port.implies(indicator, port.and(guarded))))
             }
-            val timeout = timeoutMillis?.coerceAtMost(Int.MAX_VALUE.toLong())?.toInt() ?: Int.MAX_VALUE
-            solver.setParameters(context.mkParams().apply { add("timeout", timeout) })
-            return when (solver.check(*indicators.toTypedArray())) {
-                Status.SATISFIABLE -> satisfiable(assumptions)
-                Status.UNSATISFIABLE -> {
-                    val core = solver.unsatCore.toSet()
-                    val relevant = assumptions.filterIndexed { index, _ -> indicators[index] in core }
-                    CheckResult(CheckStatus.UNSATISFIABLE, null, descriptor, unsatCore = relevant)
+            val outcome = port.check(indicators, timeoutMillis)
+            return when (outcome.status) {
+                CheckStatus.SATISFIABLE -> satisfiable(assumptions)
+                CheckStatus.UNSATISFIABLE -> {
+                    val core = port.unsatCore(indicators)
+                    CheckResult(
+                        CheckStatus.UNSATISFIABLE,
+                        null,
+                        descriptor,
+                        unsatCore =
+                            assumptions.filterIndexed { index, _ ->
+                                index in
+                                    core
+                            },
+                    )
                 }
-                else -> unknown(solver.reasonUnknown, timeoutMillis, started)
+                CheckStatus.UNKNOWN -> unknown(outcome.reason, timeoutMillis, started)
             }
         } finally {
-            solver.pop()
+            if (!owner.isClosed) port.pop(1)
         }
     }
 
     private fun satisfiable(assumptions: List<BoolExpr>): CheckResult {
-        val found = solver.model
-        val booleans = translation.booleanTerms.mapValues { (_, term) -> found.eval(term, true).isTrue }
-        val integers = translation.integerTerms.mapValues { (_, term) -> BigInteger.of((found.eval(term, true) as IntNum).toString()) }
-        val full = Assignment.of(booleans, integers)
+        val full = translation.assignment()
         if (!(frames.flatten() + assumptions).all { GroundEvaluator.evaluate(it, full) }) {
             throw BackendExecutionException("${descriptor.id} returned an assignment violating the session")
         }
@@ -141,7 +134,7 @@ internal class Z3Session(
     ): CheckResult {
         val termination =
             when {
-                worker.isClosed -> TerminationReason.CANCELLED
+                owner.isClosed -> TerminationReason.CANCELLED
                 timeoutMillis != null && started.elapsedNow().inWholeMilliseconds >= timeoutMillis -> TerminationReason.TIMEOUT
                 reason == "timeout" -> TerminationReason.TIMEOUT
                 reason == "canceled" -> TerminationReason.CANCELLED
@@ -158,13 +151,13 @@ internal class Z3Session(
         if (!report.isSupported) throw UnsupportedModelException(report)
     }
 
-    private inline fun <T> exclusive(block: () -> T): T {
-        check(!worker.isClosed) { "Session is closed" }
+    private inline fun <R> exclusive(block: () -> R): R {
+        check(!owner.isClosed) { "Session is closed" }
         check(busy.compareAndSet(false, true)) { "Only one caller may use a session at a time" }
         try {
             return block()
         } finally {
-            busy.set(false)
+            busy.store(false)
         }
     }
 }

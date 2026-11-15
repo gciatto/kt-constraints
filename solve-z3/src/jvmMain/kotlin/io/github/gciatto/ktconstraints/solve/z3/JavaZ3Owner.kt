@@ -1,6 +1,8 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
 import com.microsoft.z3.Context
+import com.microsoft.z3.Expr
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutionException
@@ -9,30 +11,29 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** One lazily created Z3 context confined to a dedicated thread; interrupted from any thread, closed on its own. */
-internal class Z3Worker : AutoCloseable {
+internal class JavaZ3Owner : Z3Owner<Expr<*>> {
     private val executor =
         Executors.newSingleThreadExecutor { task -> Thread(task, "kt-constraints-z3").apply { isDaemon = true } }
     private val closed = AtomicBoolean(false)
 
     @Volatile private var context: Context? = null
+    private var port: JavaZ3Port? = null
 
-    /** Whether [close] has been called. */
-    val isClosed: Boolean get() = closed.get()
+    override val isClosed: Boolean get() = closed.get()
 
-    /** Runs [block] on the context thread; coroutine cancellation interrupts the native call. */
     @Suppress("RedundantSuspendModifier") // detekt misses the suspending suspendCancellableCoroutine call.
-    suspend fun <T> await(block: (Context) -> T): T =
+    override suspend fun <R> confined(block: suspend (Z3Port<Expr<*>>) -> R): R =
         suspendCancellableCoroutine { continuation ->
             continuation.invokeOnCancellation { context?.interrupt() }
             try {
-                executor.execute { continuation.resumeWith(runCatching { block(owned()) }) }
+                // The dedicated thread only ever blocks on this owner's own native calls.
+                executor.execute { continuation.resumeWith(runCatching { runBlocking { block(owned()) } }) }
             } catch (_: RejectedExecutionException) {
                 error("Z3 context is closed")
             }
         }
 
-    /** Runs a short non-suspending [block] on the context thread, blocking the caller. */
-    fun <T> run(block: (Context) -> T): T =
+    override fun <R> confinedNow(block: (Z3Port<Expr<*>>) -> R): R =
         try {
             executor.submit(Callable { block(owned()) }).get()
         } catch (_: RejectedExecutionException) {
@@ -48,12 +49,13 @@ internal class Z3Worker : AutoCloseable {
         executor.shutdown()
     }
 
-    private fun owned(): Context {
+    private fun owned(): JavaZ3Port {
         check(!closed.get()) { "Z3 context is closed" }
-        return context ?: Context().also {
-            context = it
-            // A concurrent close may have missed the new context; its queued task closes it after this block.
-            check(!closed.get()) { "Z3 context is closed" }
-        }
+        port?.let { return it }
+        val created = Context()
+        context = created
+        // A concurrent close may have missed the new context; its queued task closes it after this block.
+        check(!closed.get()) { "Z3 context is closed" }
+        return JavaZ3Port(created).also { port = it }
     }
 }

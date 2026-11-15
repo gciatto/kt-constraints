@@ -1,22 +1,12 @@
-// Z3's Java API accepts operand lists only as varargs, so building them requires a spread copy.
-@file:Suppress("SpreadOperator")
-
 package io.github.gciatto.ktconstraints.solve.z3
 
-import com.microsoft.z3.ArithExpr
-import com.microsoft.z3.BoolExpr
-import com.microsoft.z3.Context
-import com.microsoft.z3.IntNum
-import com.microsoft.z3.IntSort
-import com.microsoft.z3.Model
-import com.microsoft.z3.Solver
-import com.microsoft.z3.Status
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.GroundEvaluator
 import io.github.gciatto.ktconstraints.core.IntVar
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.Assignment
+import io.github.gciatto.ktconstraints.solve.CheckStatus
 import io.github.gciatto.ktconstraints.solve.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolveCompleted
@@ -32,71 +22,58 @@ import io.github.gciatto.ktconstraints.solve.spi.ManagedSolutionStream
 import org.gciatto.kt.math.BigInteger
 import kotlin.time.TimeSource
 
-/** Z3 search stream owning one thread-confined context; enumerates projections or improving incumbents. */
-internal class Z3Stream(
+/** Z3 search stream owning one port; enumerates distinct projections or strictly improving incumbents. */
+internal class Z3Stream<T>(
     private val model: ConstraintModel,
     private val options: SolveOptions,
     descriptor: SolverDescriptor,
+    private val owner: Z3Owner<T>,
     onClosed: () -> Unit,
 ) : ManagedSolutionStream(descriptor, onClosed) {
     private val started = TimeSource.Monotonic.markNow()
-    private val worker = Z3Worker()
-    private var search: Search? = null
+    private var search: Search<T>? = null
     private var incumbent: SolutionFound? = null
     private var emitted = 0
     private val messages = mutableListOf<String>()
 
-    override suspend fun readNext(): SolutionEvent = worker.await { step(it) }
+    override suspend fun readNext(): SolutionEvent = owner.confined { step(it) }
 
-    override fun release() = worker.close()
+    override fun release() = owner.close()
 
-    private fun step(context: Context): SolutionEvent {
-        val current = search ?: open(context)
+    private suspend fun step(port: Z3Port<T>): SolutionEvent {
+        val current = search ?: open(port)
         val remaining = options.timeoutMillis?.let { it - started.elapsedNow().inWholeMilliseconds }
         return when {
             options.solutionLimit?.let { emitted >= it } == true -> complete(TerminationReason.RESOURCE_LIMIT)
             remaining != null && remaining <= 0 -> complete(TerminationReason.TIMEOUT)
-            else -> check(current, remaining)
+            else -> {
+                val outcome = port.check(emptyList(), remaining)
+                when (outcome.status) {
+                    CheckStatus.UNSATISFIABLE -> complete(TerminationReason.COMPLETED)
+                    CheckStatus.SATISFIABLE -> solution(port, current)
+                    CheckStatus.UNKNOWN -> unknown(outcome.reason)
+                }
+            }
         }
     }
 
-    private fun check(
-        current: Search,
-        remaining: Long?,
-    ): SolutionEvent {
-        if (remaining != null) {
-            current.solver.setParameters(
-                current.context.mkParams().apply { add("timeout", remaining.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) },
-            )
-        }
-        return when (current.solver.check()) {
-            Status.UNSATISFIABLE -> complete(TerminationReason.COMPLETED)
-            Status.SATISFIABLE -> solution(current, current.solver.model)
-            else -> unknown(current.solver.reasonUnknown)
-        }
-    }
-
-    private fun open(owned: Context): Search {
-        val translation = Z3Translation(owned, model)
+    private fun open(port: Z3Port<T>): Search<T> {
+        val translation = Z3Translation(port, model)
         val objective =
             when (val objective = model.objective) {
-                is Objective.Minimize -> translation.integer(objective.expression)
-                is Objective.Maximize -> translation.integer(objective.expression)
+                is Objective.Minimize -> translation.translate(objective.expression)
+                is Objective.Maximize -> translation.translate(objective.expression)
                 null -> null
             }
-        val solver = owned.mkSolver()
-        solver.add(*(translation.assertions + translation.drainDefinedness()).toTypedArray())
-        return Search(owned, solver, translation, objective).also { search = it }
+        port.assert(translation.assertions + translation.drainDefinedness())
+        return Search(translation, objective).also { search = it }
     }
 
     private fun solution(
-        current: Search,
-        found: Model,
+        port: Z3Port<T>,
+        current: Search<T>,
     ): SolutionEvent {
-        val booleans = current.translation.booleanTerms.mapValues { (_, term) -> found.eval(term, true).isTrue }
-        val integers =
-            current.translation.integerTerms.mapValues { (_, term) -> BigInteger.of((found.eval(term, true) as IntNum).toString()) }
-        val full = Assignment.of(booleans, integers)
+        val full = current.translation.assignment()
         if (!model.constraints.all { GroundEvaluator.evaluate(it, full) }) {
             throw BackendExecutionException("${descriptor.id} returned an assignment violating the model")
         }
@@ -107,44 +84,38 @@ internal class Z3Stream(
                 null -> null
             }
         val projected = full.project(model.outputVariables)
-        current.solver.add(block(current, projected, value))
+        port.assert(listOf(block(port, current, projected, value)))
         emitted++
         return SolutionFound(projected, value).also { incumbent = it }
     }
 
     private fun block(
-        current: Search,
+        port: Z3Port<T>,
+        current: Search<T>,
         projected: Assignment,
         value: BigInteger?,
-    ): BoolExpr {
-        val context = current.context
+    ): T {
         val objective = current.objective
         if (objective != null) {
-            val bound = current.translation.literal(requireNotNull(value))
-            return if (model.objective is Objective.Minimize) context.mkLt(objective, bound) else context.mkGt(objective, bound)
+            val bound = port.int(requireNotNull(value))
+            return if (model.objective is Objective.Minimize) port.less(objective, bound) else port.less(bound, objective)
         }
         val differences =
             model.outputVariables.map { variable ->
                 when (variable) {
-                    is BoolVar -> {
-                        val expected = context.mkBool(requireNotNull(projected.valueOf(variable)))
-                        context.mkNot(context.mkEq(current.translation.booleanTerms.getValue(variable), expected))
-                    }
-                    is IntVar -> {
-                        val expected = current.translation.literal(requireNotNull(projected.valueOf(variable)))
-                        context.mkNot(context.mkEq(current.translation.integerTerms.getValue(variable), expected))
-                    }
+                    is BoolVar -> port.not(current.translation.binding(variable, requireNotNull(projected.valueOf(variable))))
+                    is IntVar -> port.not(current.translation.binding(variable, requireNotNull(projected.valueOf(variable))))
                     else -> error("Unsupported projection: ${variable.name}")
                 }
             }
-        return context.mkOr(*differences.toTypedArray())
+        return port.or(differences)
     }
 
     private fun unknown(reason: String): SolveCompleted {
         messages += "Z3 unknown: $reason"
         val expired = options.timeoutMillis?.let { started.elapsedNow().inWholeMilliseconds >= it } == true
         return when {
-            worker.isClosed -> complete(TerminationReason.CANCELLED)
+            owner.isClosed -> complete(TerminationReason.CANCELLED)
             expired || reason == "timeout" -> complete(TerminationReason.TIMEOUT)
             else -> complete(TerminationReason.COMPLETED, proven = false)
         }
@@ -174,10 +145,8 @@ internal class Z3Stream(
         )
     }
 
-    private class Search(
-        val context: Context,
-        val solver: Solver,
-        val translation: Z3Translation,
-        val objective: ArithExpr<IntSort>?,
+    private class Search<T>(
+        val translation: Z3Translation<T>,
+        val objective: T?,
     )
 }
