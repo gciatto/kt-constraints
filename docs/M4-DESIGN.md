@@ -66,7 +66,9 @@ Status: Node is implemented and runs the same solver and incremental contracts a
 The pinned package is 5.3.3, a newer Z3 than the JVM's 4.14.0 bundle; each route reports
 only its own validated behaviour. Contexts are released by the package's garbage-collection
 finalizers, as its API has no explicit context disposal. Interrupted checks leave sessions
-usable on both platforms. Browser execution is disabled until COOP/COEP serving is set up.
+usable on both platforms. Browsers run the same contracts when the page is cross-origin
+isolated: the Karma setup serves `z3-built.js` as a page script and the Wasm with COOP/COEP
+headers, and CI verifies it in headless Chrome. Applications must do the same.
 
 ## Later slices
 

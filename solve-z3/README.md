@@ -4,8 +4,10 @@ Direct Z3 routes, distinct from every MiniZinc route:
 
 - `z3/direct` on the JVM: the official Java API with Linux, macOS and Windows native
   libraries bundled by `tools.aqua:z3-turnkey` 4.14.0.
-- `z3/wasm` on Kotlin/JS: the official `z3-solver` 5.3.3 threaded Wasm module, verified on Node.
-  Browsers need cross-origin isolation (COOP/COEP) for `SharedArrayBuffer`; not yet verified.
+- `z3/wasm` on Kotlin/JS: the official `z3-solver` 5.3.3 threaded Wasm module, verified on Node
+  and in headless Chrome. Browser pages must load `z3-built.js` as a script (it defines
+  `initZ3`), serve `z3-built.wasm` beside it, and be cross-origin isolated (COOP `same-origin`,
+  COEP `require-corp`) for `SharedArrayBuffer`; see `karma.config.d/z3.js`.
 
 Both share one translation, stream and session implementation behind an internal platform port.
 Kotlin/Native bindings are planned; publication stays disabled.
@@ -43,4 +45,5 @@ Z3JsBackend.load().use { backend -> backend.create().use { solver -> solver.solv
 
 ```bash
 ./gradlew :solve-z3:jvmTest :solve-z3:jsNodeTest
+Z3_BROWSER_TEST=true ./gradlew :solve-z3:jsBrowserTest   # set CHROME_BIN when Chrome is outside PATH
 ```

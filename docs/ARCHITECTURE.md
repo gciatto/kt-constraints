@@ -149,5 +149,6 @@ Incremental sessions (`IncrementalConstraintSolver.openSession`) treat the model
 A shared `CheckpointStack` rejects stale and foreign checkpoints before any native change. Assumptions hold for a
 single check, and unsat cores are subsets of those assumptions, not necessarily minimal. Satisfiable checks are
 validated against every active constraint and assumption. Repeated checks are not advertised as propagation.
-Translation, streams and sessions are common code behind an internal per-context port, so the Node route
-`z3/wasm` (official `z3-solver` module, owned and terminated by a closeable `Z3JsBackend`) shares them.
+Translation, streams and sessions are common code behind an internal per-context port, so the Wasm route
+`z3/wasm` (official `z3-solver` module, owned and terminated by a closeable `Z3JsBackend`) shares them on Node
+and in cross-origin-isolated browsers.
