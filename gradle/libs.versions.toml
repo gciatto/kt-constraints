@@ -8,6 +8,7 @@ ksp = "2.3.14"
 kover = "0.9.11"
 coroutines = "1.11.0"
 serialization = "1.12.0"
+minizincJs = "4.5.2"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
