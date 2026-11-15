@@ -122,6 +122,23 @@ arithmetic so every model value is rational and nothing is approximated:
   as exact numerals, and validates each assignment with the evaluator like integer models.
   A non-rational model value is a `BackendExecutionException`, never a rounded number.
 
+## Bit-vector slice
+
+`Sort.BitVector(width)` follows SMT-LIB `QF_BV` semantics, never Kotlin machine integers:
+
+- Values are unsigned `BigInteger`s in `[0, 2^width)`; a literal outside that range is
+  rejected rather than truncated. Signed views use two's complement only where an operator
+  says so. Every width is supported, including widths beyond 64 bits.
+- Nodes: `BitVecVar`, `BitVecLiteral`, `BitVecBinary` with a `BitVecOperator` (wrapping add,
+  subtract and multiply; and, or, xor; shift left, logical and arithmetic shift right, where
+  shifting by the width or more yields zero or the sign fill), `BitVecNot`, `BitVecNegation`,
+  `BitVecComparison` with a `BitVecRelation` (equality, unsigned and signed orderings), and
+  `BitVecToInt` (unsigned or signed). Operand widths must match at construction.
+- Division, remainder, concatenation and extraction are deferred: division by zero has
+  backend-specific conventions that need their own conformance cases first.
+- As with reals, MiniZinc and the finite oracle reject such models; Z3 maps them to its
+  bit-vector theory on every route and assignments are validated by the evaluator.
+
 ## Reference evidence
 
 - [Z3 Java API](https://z3prover.github.io/api/html/namespacecom_1_1microsoft_1_1z3.html)
