@@ -10,6 +10,7 @@ coroutines = "1.11.0"
 serialization = "1.12.0"
 minizincJs = "4.5.2"
 z3Turnkey = "4.14.0"
+z3Js = "5.3.3"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
