@@ -7,10 +7,11 @@ import io.kotest.datatest.withTests
 import io.kotest.matchers.shouldBe
 
 /** Each requested installed configuration must pass the same independent contracts. */
-class MiniZincCatalogueSpec : FunSpec({
-    withTests(nameFn = { "catalogue/missing-executable/$it" }, MiniZincEngine.entries) { engine ->
-        val backend = MiniZincBackend(engine, "/nonexistent/kt-constraints/minizinc")
-        backend.availability().available shouldBe false
-        shouldThrow<BackendUnavailableException> { backend.create() }
-    }
-})
+class MiniZincCatalogueSpec :
+    FunSpec({
+        withTests(nameFn = { "catalogue/missing-executable/$it" }, MiniZincEngine.entries) { engine ->
+            val backend = MiniZincBackend(engine, "/nonexistent/kt-constraints/minizinc")
+            backend.availability().available shouldBe false
+            shouldThrow<BackendUnavailableException> { backend.create() }
+        }
+    })
