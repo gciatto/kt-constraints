@@ -7,13 +7,16 @@
 [Bootstrap verification](docs/BOOTSTRAP.md) records build, wrapper, publication and platform evidence.
 [M1 validation](docs/M1.md) records the exact finite-domain modelling foundation and its API changes.
 [M2 validation](docs/M2.md) records resource-safe solving, real Gecode execution and measured phases.
+[M3 validation](docs/M3.md) covers the engine catalogue, Node CLI and browser Wasm transports.
 
 ## Project status
 
-Experimental **P0 / M2 implementation**, not a stable release. The `:core`, `:model`, and `:dsl` modules
+Experimental **P0 / M3 implementation**, not a stable release. The `:core`, `:model`, and `:dsl` modules
 contain an exact Boolean/integer algebra, finite domains, global nodes, a ground evaluator and a model builder,
-with shared Kotest property contracts. The JVM MiniZinc/Gecode route runs real models and reuses shared solver
-conformance tests. **Z3, Choco, CP-SAT, HiGHS, FlatZinc and other MiniZinc engines remain planned**.
+with shared Kotest property contracts. JVM MiniZinc routes execute Gecode, Chuffed, CP-SAT, HiGHS and CBC with shared
+conformance tests. MIP routes expose a bounded affine integer subset and do not enumerate all solutions.
+The official JS package runs Gecode through Node's CLI and Chuffed through browser Wasm.
+**Direct Z3/Choco/CP-SAT/HiGHS adapters, FlatZinc interchange and Native execution remain planned**.
 
 ## Design
 
@@ -31,7 +34,7 @@ conformance tests. **Z3, Choco, CP-SAT, HiGHS, FlatZinc and other MiniZinc engin
 |---|---|---|
 | Representation | `:core`, `:model`, `:dsl` | Exact integer/Boolean IR, finite domains, globals and immutable models |
 | Solver contracts | `:solve`, `:solve-spi` | Exact results/assignments and explicit backend eligibility; execution in progress |
-| Compiler/runtime route | `:solve-minizinc` | Portable checked compiler and experimental JVM Gecode execution |
+| Compiler/runtime route | `:solve-minizinc` | Portable checked compiler and five JVM engines, Node CLI and browser Chuffed Wasm |
 | FlatZinc interchange | `:solve-flatzinc` | Placeholder module |
 | Direct solver adapters | `:solve-z3`, `:solve-choco`, `:solve-cpsat`, `:solve-highs` | Placeholder modules |
 | Orchestration | `:solve-portfolio` | Placeholder module |
@@ -56,7 +59,8 @@ println(model.variables.size)   // 2
 println(model.constraints.size) // 1
 ```
 
-JVM solving uses `MiniZincGecodeBackend` and requires an installed MiniZinc CLI with Gecode. The adapter is
+JVM solving uses `MiniZincBackend(MiniZincEngine.CHUFFED, executable)` for explicit engine selection;
+`MiniZincGecodeBackend(executable)` remains available. Install a matching MiniZinc solver configuration. The adapter is
 experimental and remains unpublished while packaging is finalized. See [ROADMAP.md](ROADMAP.md).
 
 Integer constants and finite-domain bounds use multiplatform kt-math `BigInteger`; `Int` and `Long` are
@@ -71,7 +75,10 @@ The finite oracle in `:test-solve` is only an unpublished test utility, capped a
 
 ```bash
 # Real JVM integration tests; normal tests explicitly skip these when the variable is absent.
-MINIZINC_EXECUTABLE=/path/to/minizinc ./gradlew :solve-minizinc:jvmTest
+MINIZINC_EXECUTABLE=/path/to/minizinc MINIZINC_ENGINES=gecode,chuffed,cp-sat,highs,cbc \
+  ./gradlew :solve-minizinc:jvmTest
+# Actual browser Wasm contracts (Chrome required); Node CLI is tested by jsNodeTest with the executable variable.
+MINIZINC_BROWSER_TEST=true ./gradlew :solve-minizinc:jsBrowserTest
 # Manual raw phase benchmark, excluded from routine check.
 MINIZINC_EXECUTABLE=/path/to/minizinc ./gradlew :solve-minizinc:jvmBenchmark
 ```

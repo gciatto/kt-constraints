@@ -1,6 +1,7 @@
 # Kt-Constraints roadmap
 
-**Status:** exact modelling foundation and an experimental JVM Gecode route through MiniZinc are implemented.
+**Status:** exact modelling foundation and experimental JVM MiniZinc routes for Gecode, Chuffed, CP-SAT,
+HiGHS and CBC are implemented. MIP support is a bounded affine integer subset, without exhaustive enumeration.
 Other solver routes and stable language facades remain planned.
 
 M2 adds resource-safe streams, exact assignment/result invariants, explicit capability-aware registration,
@@ -84,13 +85,17 @@ contract tests run on JVM and JS, CI fully green, Maven artifact IDs verified in
 
 ## P1 — Broad CP engines and MiniZinc route
 
-- [ ] `:solve-minizinc`: MiniZinc source generation, compiler subprocess/embedded bridge, JSON stream decoding,
-  solver registry/configuration, output projection; adapt to JS MiniZinc Wasm when available.
+- [x] `:solve-minizinc`: checked source generation, JVM subprocess execution, JSON stream decoding,
+  explicit engine configuration/discovery, startup validation and output projection.
+- [x] Official JS runtime: Node/Gecode CLI and browser/Chuffed Wasm, with actual shared contracts.
+- [ ] MiniZinc Native command transport.
 - [ ] `:solve-flatzinc`: parse/generate the subset actually needed; no replacing MiniZinc's optimizer/decomposer.
-- [ ] Gecode via MiniZinc/FlatZinc: satisfiability and finite-domain constraints.
-- [ ] Chuffed via MiniZinc/FlatZinc: clause-learning CP integration.
-- [ ] OR-Tools CP-SAT via MiniZinc; then `:solve-cpsat` direct JVM adapter for scheduling/advanced models.
-- [ ] HiGHS and CBC via MiniZinc; `:solve-highs` direct API for LP/MIP and improved solution/bound support.
+- [x] Gecode via MiniZinc/FlatZinc: satisfiability and finite-domain constraints.
+- [x] Chuffed via MiniZinc/FlatZinc: clause-learning CP integration.
+- [x] OR-Tools CP-SAT via MiniZinc for the checked finite integer/Boolean subset.
+- [ ] `:solve-cpsat` direct JVM adapter for scheduling/advanced models.
+- [x] HiGHS and CBC via MiniZinc for bounded affine integer/Boolean models.
+- [ ] `:solve-highs` direct API for LP/MIP and improved solution/bound support.
 - [ ] `:solve-choco` direct JVM: FD variables, globals, optimization, reversible propagation API where supported.
 - [ ] Define global-constraint registry (`allDifferent`, `element`, `table`, `cumulative`, `noOverlap`, `regular`,
   `globalCardinality`, graph constraints) with native translations and decompositions.
@@ -133,13 +138,13 @@ of any specific Prolog implementation. Any future 2p-Kt integration belongs outs
 
 | Engine | Route | JVM | Native desktop | JS/Wasm | Incremental / propagation |
 |---|---|---|---|---|---|
-| MiniZinc | Compiler/runtime | Planned | Planned | MiniZinc-JS planned | Batch; not a propagating store |
+| MiniZinc | Compiler/runtime | CLI implemented | Planned | Node CLI and browser Chuffed Wasm implemented | Batch; not a propagating store |
 | Gecode | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | Native CP, no generic incremental API promised |
 | Chuffed | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | Native CP, no generic incremental API promised |
-| CP-SAT | MiniZinc and direct | Both planned | Custom wrapper | Via runtime if packaged | Incrementality not equivalent to CLP propagation |
+| CP-SAT | MiniZinc and direct | MiniZinc implemented; direct planned | Custom wrapper | Via runtime if packaged | Incrementality not equivalent to CLP propagation |
 | Choco | Direct JVM | Planned | — | — | Propagation/backtracking planned |
 | Z3 | Direct | Planned | C API planned | Wasm binding planned | Incremental check; domain propagation separate |
-| HiGHS | MiniZinc and direct | Planned | C API planned | Wasm conditional | LP/MIP; not CLP(FD) propagation |
+| HiGHS | MiniZinc and direct | MiniZinc implemented; direct planned | C API planned | Wasm conditional | LP/MIP; not CLP(FD) propagation |
 | CBC | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | MIP batch |
 
 A backend is marked *available* only when its installed/embedded runtime passes a startup probe; marked
