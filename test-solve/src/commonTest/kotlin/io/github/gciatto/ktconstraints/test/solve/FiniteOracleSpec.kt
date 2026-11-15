@@ -25,6 +25,14 @@ import org.gciatto.kt.math.BigInteger
 class FiniteOracleSpec :
     FunSpec({
         include(solverContract { FiniteOracle() })
+
+        test("oracle/variable-cap-also-bounds-fixed-domain-models") {
+            val scope = ConstraintScope.empty()
+            repeat(FiniteOracle.MAX_VARIABLES + 1) { scope.intVar("x$it", 0..0) }
+            FiniteOracle().use { solver ->
+                shouldThrow<UnsupportedModelException> { solver.solve(scope.build()) }
+            }
+        }
         test("oracle/sat-and-unsat-with-boolean-variables") {
             val scope = ConstraintScope.empty()
             val flag = scope.boolVar("flag")
