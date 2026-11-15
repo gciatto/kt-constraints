@@ -1,9 +1,10 @@
 # Kt-Constraints roadmap
 
-**Status:** architectural bootstrap; backend slots exist but **no solver backend is operational yet**.
+**Status:** exact modelling foundation and an experimental JVM Gecode route through MiniZinc are implemented.
+Other solver routes and stable language facades remain planned.
 
-M2 is in progress: exact assignment/result invariants and explicit capability-aware backend registration and
-selection have JVM contracts. Streams, the capped test oracle and runtime backends remain to be implemented.
+M2 adds resource-safe streams, exact assignment/result invariants, explicit capability-aware registration,
+a capped test oracle, shared solver contracts and the first real MiniZinc/Gecode vertical slice.
 
 This roadmap is a work breakdown for a self-contained, Kotlin Multiplatform constraint modelling / solving
 framework. The project is independent of 2p-Kt. Similar Kotlin organization, testing and deployment conventions
@@ -69,13 +70,14 @@ are a deliberate compatibility preference, **not** a runtime dependency.
 - [x] Add exact integer literals/domains, Boolean/integer operations, preserved CP globals, folds and ground evaluation.
 - [x] Add immutable assertion metadata, source labels and output projection; retain scope-owned variable identities.
 - [x] Add reusable seeded representation contracts and a separately compiled Java core consumer.
+- [x] Add resource-safe streams, support/compiler contracts, an exact finite test oracle and real JVM MiniZinc/Gecode conformance.
 - [ ] Complete numeric types (BigInteger via kt-math or an equivalent MPP abstraction), sort checking, domain operations.
 - [ ] Finalize AST coverage, normalization, canonicalization and algebraic simplifications.
 - [ ] Complete immutable model metadata, objective semantics, variable projections, model cloning and diagnostics.
 - [ ] Stabilize runtime SPIs, capability descriptors, support/lowering reports, closeable streams, and error taxonomy.
 - [ ] Add Java/TypeScript usage-contract tests before freezing public API; confirm platform compilation.
 - [ ] Extend `:test-core` contracts as the algebra grows; add IR round-trip checks when a portable format exists.
-- [ ] Add benchmark task and record baseline model-construction/compiler costs.
+- [x] Add benchmark task and record baseline model-construction/compiler costs.
 
 **P0 acceptance:** Core/DSL usable without a solver, immutable snapshots, explicit variable identity and sort rules;
 contract tests run on JVM and JS, CI fully green, Maven artifact IDs verified in local POMs. No false backends.

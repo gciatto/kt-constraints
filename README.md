@@ -6,13 +6,14 @@
 
 [Bootstrap verification](docs/BOOTSTRAP.md) records build, wrapper, publication and platform evidence.
 [M1 validation](docs/M1.md) records the exact finite-domain modelling foundation and its API changes.
+[M2 validation](docs/M2.md) records resource-safe solving, real Gecode execution and measured phases.
 
 ## Project status
 
-Early **repository bootstrap / P0**, not a released constraint solver. The `:core`, `:model`, and `:dsl` modules
+Experimental **P0 / M2 implementation**, not a stable release. The `:core`, `:model`, and `:dsl` modules
 contain an exact Boolean/integer algebra, finite domains, global nodes, a ground evaluator and a model builder,
-with shared Kotest property contracts. The backend
-modules are intentionally empty integration slots; **Z3, MiniZinc, Choco, CP-SAT, HiGHS and FlatZinc do not yet run**.
+with shared Kotest property contracts. The JVM MiniZinc/Gecode route runs real models and reuses shared solver
+conformance tests. **Z3, Choco, CP-SAT, HiGHS, FlatZinc and other MiniZinc engines remain planned**.
 
 ## Design
 
@@ -30,11 +31,12 @@ modules are intentionally empty integration slots; **Z3, MiniZinc, Choco, CP-SAT
 |---|---|---|
 | Representation | `:core`, `:model`, `:dsl` | Exact integer/Boolean IR, finite domains, globals and immutable models |
 | Solver contracts | `:solve`, `:solve-spi` | Exact results/assignments and explicit backend eligibility; execution in progress |
-| Compiler routes | `:solve-minizinc`, `:solve-flatzinc` | Placeholder modules |
+| Compiler/runtime route | `:solve-minizinc` | Portable checked compiler and experimental JVM Gecode execution |
+| FlatZinc interchange | `:solve-flatzinc` | Placeholder module |
 | Direct solver adapters | `:solve-z3`, `:solve-choco`, `:solve-cpsat`, `:solve-highs` | Placeholder modules |
 | Orchestration | `:solve-portfolio` | Placeholder module |
 | Language interoperability | `:interop-java`, `:interop-js` | Placeholder modules |
-| Testing and documentation | `:test-core`, `:test-solve`, `:documentation` | Shared representation contracts / solver-contract slot / MkDocs |
+| Testing and documentation | `:test-core`, `:test-solve`, `:documentation` | Shared contracts, capped finite test oracle and MkDocs |
 
 ## Minimal Kotlin modelling example (P0)
 
@@ -54,13 +56,25 @@ println(model.variables.size)   // 2
 println(model.constraints.size) // 1
 ```
 
-Solving is **not yet implemented**. See [ROADMAP.md](ROADMAP.md) for exact milestones and acceptance criteria.
+JVM solving uses `MiniZincGecodeBackend` and requires an installed MiniZinc CLI with Gecode. The adapter is
+experimental and remains unpublished while packaging is finalized. See [ROADMAP.md](ROADMAP.md).
 
 Integer constants and finite-domain bounds use multiplatform kt-math `BigInteger`; `Int` and `Long` are
 convenience inputs. Domains support empty sets, sparse values, unions and intersections without enumerating
 intervals. The core retains `AllDifferent`, zero-based `Element`, allowed-tuple `Table`, `LinearSum` and
-Boolean cardinality nodes for later backend lowering. `GroundEvaluator` checks constant expressions only;
+Boolean cardinality nodes for later backend lowering. `GroundEvaluator` checks constants or complete typed bindings;
 it is not a solver. Models support named assertions, annotations, source locations and output projection.
+
+Streams distinguish solutions/incumbents from one definitive completion event. Close and cancellation release
+their processes and temporary files; timeout/limit outcomes retain incumbents without inventing optimality.
+The finite oracle in `:test-solve` is only an unpublished test utility, capped at 10,000 candidates and 64 variables.
+
+```bash
+# Real JVM integration tests; normal tests explicitly skip these when the variable is absent.
+MINIZINC_EXECUTABLE=/path/to/minizinc ./gradlew :solve-minizinc:jvmTest
+# Manual raw phase benchmark, excluded from routine check.
+MINIZINC_EXECUTABLE=/path/to/minizinc ./gradlew :solve-minizinc:jvmBenchmark
+```
 
 ## Build
 

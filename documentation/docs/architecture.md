@@ -86,6 +86,21 @@ assignment, and proof statuses require completed search rather than a timeout/ca
 values and bounds remain exact. Assignment factories snapshot typed maps and reject out-of-domain values;
 solver descriptors snapshot their capabilities and identify each engine/route with a distinct `engine/route` ID.
 
+Pure evaluation may bind variables through a solver-independent typed `Valuation`; an `Assignment` supplies
+those bindings. Missing or out-of-domain values are errors. Undefined element indices have a distinct error
+so a finite test oracle can reject invalid candidates without swallowing unsupported-node failures.
+
+Streams emit solution/incumbent events and exactly one completion event, then return null. Cancellation and
+close preserve the first definitive terminal result and release resources once, including during an in-flight
+read. Only one consumer may call `next` at a time. Closing a solver cancels its active streams. Shared lifecycle
+implementations use portable atomic state; coroutine cancellation is propagated rather than reported as UNSAT.
+
+The unpublished finite test oracle enumerates at most 10,000 candidates across at most 64 variables. It checks
+the whole supported IR before enumeration, uses exact sparse domains, validates all full assignments, and only
+then projects public outputs. Satisfaction enumeration removes duplicate projections; optimization emits strictly
+improving incumbents. Reaching a limit or timeout retains an incumbent without claiming optimality. Undefined
+element indices invalidate a candidate; other evaluation errors propagate. The oracle is never auto-registered.
+
 ## Platform boundaries
 
 - `commonMain`: pure typed IR, compiler contracts, generic descriptors.
@@ -104,3 +119,10 @@ Registry registration is explicit and immutable on every platform. Selection pre
 checks required capabilities, runtime availability and the whole-model support report before returning a backend.
 An objective additionally requires optimization capability. Rejections retain route-scoped diagnostics; unknown
 or incompatible backends are never substituted silently and selection does not allocate solver resources.
+
+The first real route is Gecode through the JVM MiniZinc CLI. Its compiler emits deterministic internal names,
+preserves source-variable mappings and lets MiniZinc lower globals. It proves every integer intermediate fits
+Gecode's symmetric range `-2147483646..2147483646`; otherwise it rejects the whole model. Array selection uses
+zero-based arrays with independent index-definedness constraints. CLI output contains full assignments for
+independent validation before public projection. Runtime startup and temporary files belong to the stream,
+not to the common compiled representation. Other MiniZinc engines and JS/Native transports remain M3 work.
