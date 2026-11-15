@@ -4,6 +4,7 @@ import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.spi.BackendUnavailableException
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
@@ -106,6 +107,11 @@ class MiniZincJsSpec :
                     restore()
                     fs.rmSync(isolated, js("({recursive: true, force: true})"))
                 }
+            }
+            test("js/node-missing-executable-is-unavailable-rather-than-a-process-crash").config(enabled = !browser) {
+                loaded().close()
+                shouldThrow<BackendUnavailableException> { MiniZincJsBackend.loadNode("/nonexistent/kt-constraints/minizinc") }
+                backend = load()
             }
             test("js/owned-deadline-stops-real-execution") {
                 val scope = ConstraintScope.empty()
