@@ -34,6 +34,19 @@ fun z3RealContract(create: () -> IncrementalConstraintSolver): TestFactory =
             }
         }
 
+        test("z3-real/negative-and-integral-numerals-round-trip") {
+            val scope = ConstraintScope.empty()
+            val x = scope.realVar("x")
+            val y = scope.realVar("y")
+            scope.add(RealEquality(x, RealLiteral(Rational.of(-7, 3))))
+            scope.add(RealEquality(y, RealScale(Rational.of(-3), x)))
+            create().use { solver ->
+                val result = solver.solve(scope.build())
+                result.assignment?.valueOf(x) shouldBe Rational.of(-7, 3)
+                result.assignment?.valueOf(y) shouldBe Rational.of(7)
+            }
+        }
+
         test("z3-real/strict-bounds-are-unsatisfiable") {
             val scope = ConstraintScope.empty()
             val x = scope.realVar("x")
