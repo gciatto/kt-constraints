@@ -8,6 +8,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.io.IOException
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 private const val PROBE_TIMEOUT_SECONDS = 10L
 
@@ -73,7 +74,19 @@ internal fun terminateMiniZinc(process: Process) {
         process.destroyForcibly()
     } finally {
         descendants.filter { it.isAlive }.forEach { it.destroyForcibly() }
+        // SIGKILL is asynchronous: close must not return while solver descendants are still alive.
+        descendants.forEach { awaitExit(it) }
         process.outputStream.close()
+    }
+}
+
+private fun awaitExit(handle: ProcessHandle) {
+    try {
+        handle.onExit().get(2, TimeUnit.SECONDS)
+    } catch (interrupted: InterruptedException) {
+        Thread.currentThread().interrupt()
+    } catch (timeout: TimeoutException) {
+        check(!handle.isAlive) { "MiniZinc descendant ${handle.pid()} survived SIGKILL: $timeout" }
     }
 }
 
