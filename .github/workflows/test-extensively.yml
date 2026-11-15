@@ -91,15 +91,23 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Install MiniZinc and Gecode
-        run: sudo apt-get update && sudo apt-get install -y minizinc
-      - name: Run actual Gecode conformance and differential tests
+      - name: Install pinned MiniZinc multi-engine bundle
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 -o "$RUNNER_TEMP/minizinc.tgz" \
+            https://github.com/MiniZinc/MiniZincIDE/releases/download/2.10.1/MiniZincIDE-2.10.1-x86_64-linux-gnu.tgz
+          echo "b63dd88491d47b05d0eb0ff4aa1112d1e6f77292c023800b20b98851458ce01c  $RUNNER_TEMP/minizinc.tgz" | sha256sum --check
+          mkdir "$RUNNER_TEMP/minizinc"
+          tar -xzf "$RUNNER_TEMP/minizinc.tgz" -C "$RUNNER_TEMP/minizinc" --strip-components=1
+          echo "$RUNNER_TEMP/minizinc/bin" >> "$GITHUB_PATH"
+      - name: Run five actual engine conformance and differential suites
         env:
           MINIZINC_EXECUTABLE: minizinc
+          MINIZINC_ENGINES: gecode,chuffed,cp-sat,highs,cbc
         run: ./gradlew :solve-minizinc:jvmTest --continue
       - name: Job summary
         if: always()
         uses: ./.github/actions/ci-summary
         with:
-          title: MiniZinc / Gecode conformance
+          title: MiniZinc / five-engine conformance
           status: ${{ job.status }}
