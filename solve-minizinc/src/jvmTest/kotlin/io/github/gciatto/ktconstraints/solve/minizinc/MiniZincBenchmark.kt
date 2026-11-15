@@ -19,11 +19,8 @@ object MiniZincBenchmark {
         runBlocking {
             check(args.isEmpty()) { "Configure MINIZINC_EXECUTABLE rather than passing arguments" }
             val executable = System.getenv("MINIZINC_EXECUTABLE") ?: "minizinc"
-            println(
-                "| sample | model ns | translation ns | availability/setup ns | spawn ns | runtime wall ns | " +
-                    "decode/validate ns | projection ns | flatTime s | solveTime s |",
-            )
-            println("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
+            val engine = benchmarkEngine()
+            printHeader(engine)
             repeat(3) { sample ->
                 lateinit var model: ConstraintModel
                 val modelNanos =
@@ -31,9 +28,9 @@ object MiniZincBenchmark {
                         model = createModel()
                     }
                 lateinit var compiled: MiniZincModel
-                val translationNanos = measureNanoTime { compiled = MiniZincCompiler().compile(model) }
-                val setupNanos = measureNanoTime { MiniZincGecodeBackend(executable).create().close() }
-                val process = MiniZincProcess(executable, compiled.source, null, {}, {})
+                val translationNanos = measureNanoTime { compiled = MiniZincCompiler(engine).compile(model) }
+                val setupNanos = measureNanoTime { MiniZincBackend(engine, executable).create().close() }
+                val process = MiniZincProcess(executable, compiled.source, null, {}, {}, engine)
                 try {
                     val spawnNanos = measureNanoTime { process.start() }
                     val lines = mutableListOf<String>()
@@ -75,6 +72,18 @@ object MiniZincBenchmark {
                 }
             }
         }
+
+    private fun printHeader(engine: MiniZincEngine) {
+        println("Engine: ${engine.descriptor.id}")
+        println(
+            "| sample | model ns | translation ns | availability/setup ns | spawn ns | runtime wall ns | " +
+                "decode/validate ns | projection ns | flatTime s | solveTime s |",
+        )
+        println("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
+    }
+
+    private fun benchmarkEngine(): MiniZincEngine =
+        MiniZincEngine.entries.single { it.engineId == (System.getenv("MINIZINC_BENCHMARK_ENGINE") ?: "gecode") }
 
     private fun createModel(): ConstraintModel =
         ConstraintModel.of {
