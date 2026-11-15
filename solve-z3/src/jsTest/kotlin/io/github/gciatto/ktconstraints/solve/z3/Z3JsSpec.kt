@@ -1,6 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
 import io.github.gciatto.ktconstraints.core.AllDifferent
+import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.core.IntEquality
@@ -24,6 +25,7 @@ import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import org.gciatto.kt.math.BigInteger
 
 /** Official z3-solver Wasm on Node: shared contracts, exact integers, oracle differential and interruption. */
@@ -78,6 +80,15 @@ class Z3JsSpec :
                     val result = solver.solve(pigeonhole(), SolveOptions(timeoutMillis = 200))
                     result.status shouldBe SolveStatus.UNKNOWN
                     result.terminationReason shouldBe TerminationReason.TIMEOUT
+                }
+            }
+
+            test("z3-js/session-stays-usable-after-a-cancelled-check") {
+                loaded().create().use { solver ->
+                    solver.openSession(pigeonhole()).use { session ->
+                        withTimeoutOrNull(300) { session.check() } shouldBe null
+                        session.check(listOf(BoolLiteral(false))).status shouldBe CheckStatus.UNSATISFIABLE
+                    }
                 }
             }
 

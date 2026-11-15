@@ -38,6 +38,7 @@ import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import org.gciatto.kt.math.BigInteger
 import kotlin.time.TimeSource
 
@@ -173,6 +174,16 @@ class Z3Spec :
                 result.terminationReason shouldBe TerminationReason.CANCELLED
             }
             started.elapsedNow().inWholeMilliseconds shouldBeLessThan 10_000L
+        }
+
+        test("z3/session-stays-usable-after-a-cancelled-check") {
+            Z3Backend().create().use { solver ->
+                solver.openSession(pigeonhole()).use { session ->
+                    withTimeoutOrNull(300) { session.check() } shouldBe null
+                    session.check(listOf(BoolLiteral(false))).status shouldBe CheckStatus.UNSATISFIABLE
+                    session.check(listOf(BoolLiteral(true)), timeoutMillis = 100).terminationReason shouldBe TerminationReason.TIMEOUT
+                }
+            }
         }
 
         test("z3/repeated-frames-stay-consistent") {
