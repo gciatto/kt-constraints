@@ -28,19 +28,20 @@ tasks.named<org.gradle.api.tasks.testing.Test>("jvmTest") {
     testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 }
 
-// The official z3-solver needs SharedArrayBuffer: browsers require cross-origin isolation, not yet configured.
+// The official z3-solver needs SharedArrayBuffer; karma.config.d/z3.js serves it with COOP/COEP isolation.
 kotlin.js {
     browser {
         testTask {
-            onlyIf("Cross-origin-isolated browser verification is explicitly enabled") {
+            useKarma { useChromeHeadless() }
+            onlyIf("Browser runtime verification is explicitly enabled") {
                 providers.environmentVariable("Z3_BROWSER_TEST").isPresent
             }
         }
     }
 }
 
-// Kotest setup failures can omit a JS spec without failing the task; require the real Node contract report.
-tasks.matching { it.name == "jsNodeTest" }.configureEach {
+// Kotest setup failures can omit a JS spec without failing the task; require the real contract report.
+tasks.matching { it.name == "jsNodeTest" || it.name == "jsBrowserTest" }.configureEach {
     doLast {
         val report =
             layout.buildDirectory
@@ -48,7 +49,7 @@ tasks.matching { it.name == "jsNodeTest" }.configureEach {
                 .get()
                 .asFile
         check(report.isFile && report.readText().contains("z3-js/route-identifies-the-wasm-binding")) {
-            "The z3-solver Node contract did not execute; inspect runtime setup failures"
+            "The z3-solver contract did not execute in $name; inspect runtime setup failures"
         }
     }
 }

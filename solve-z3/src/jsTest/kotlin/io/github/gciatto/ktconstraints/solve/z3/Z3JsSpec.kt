@@ -28,11 +28,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import org.gciatto.kt.math.BigInteger
 
-/** Official z3-solver Wasm on Node: shared contracts, exact integers, oracle differential and interruption. */
+/** Official z3-solver Wasm on Node or an isolated browser: shared contracts, exact integers, oracle differential and interruption. */
 class Z3JsSpec :
     FunSpec({
-        val node = js("typeof window === 'undefined'") as Boolean
-        if (!node) {
+        val isolated = js("typeof window === 'undefined' || globalThis.crossOriginIsolated === true") as Boolean
+        if (!isolated) {
             test("z3-js/requires-node-or-a-cross-origin-isolated-browser").config(enabled = false) {}
         } else {
             var backend: Z3JsBackend? = null
