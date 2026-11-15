@@ -155,6 +155,7 @@ private fun pigeonhole(holes: Int = 12): ConstraintModel {
     return scope.build()
 }
 
+@Suppress("RedundantSuspendModifier")
 private suspend fun answers(
     solver: ConstraintSolver,
     model: ConstraintModel,
