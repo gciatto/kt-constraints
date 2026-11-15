@@ -130,7 +130,7 @@ jobs:
         env:
           MINIZINC_BROWSER_TEST: 'true'
           CHROME_BIN: /usr/bin/google-chrome
-        run: ./gradlew :solve-minizinc:jsBrowserTest --continue --info
+        run: ./gradlew :solve-minizinc:jsBrowserTest --continue
       - name: Upload browser test reports
         if: failure()
         uses: actions/upload-artifact@v4
