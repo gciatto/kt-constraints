@@ -112,6 +112,8 @@ Gecode/Chuffed/CP-SAT/HiGHS/CBC routes tested when installed; no backend capabil
   Windows x64; library loaded at run time) and incremental API implemented (M4).
 - [ ] Add SMT sorts and constraints: integers, exact arithmetic, rationals, bitvectors, arrays, strings,
   uninterpreted symbols, quantified formula support only where semantically appropriate.
+  Exact linear real arithmetic (`Rational`, `RealVar`, linear real nodes) implemented and solved by every Z3 route;
+  real products, bitvectors, arrays, strings and uninterpreted symbols pending.
 - [x] Implement assumptions and unsat cores for engines supporting them, with source mapping (Z3 JVM, Wasm and Native; cores map to assumptions).
 - [x] Implement SMT-style incremental sessions, push/pop and stable checkpoint ownership, rollback safety tests.
 - [ ] JVM, Linux/macOS/Windows native, Android/iOS native (where packaging works), JS and Kotlin/Wasm JS.

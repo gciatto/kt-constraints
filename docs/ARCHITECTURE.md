@@ -45,6 +45,12 @@ Integer expressions, finite-domain bounds and assignment values use kt-math's im
 `BigInteger`. Long and Int factories are convenience inputs; conversion to a bounded backend must be checked.
 `Sort.BitVector` is a separate bitwise sort.
 
+Real expressions are linear: unbounded `RealVar`s, exact `Rational` literals (normalized, so structural equality
+is numeric), sums, differences, negation, rational scaling and an explicit `IntToReal` embedding, compared with
+real equality and orderings. Without products of variables every model value is rational, so evaluation and
+assignments stay exact. Objectives remain integer, because a real supremum need not be attained. Routes without
+exact reals (MiniZinc floats, the finite oracle) reject models that declare or use them.
+
 Finite integer domains are canonical unions of sorted, disjoint, non-adjacent closed intervals. Sparse values
 are singleton intervals; empty domains have no bounds and cardinality zero. Explicit inverted intervals are
 invalid, while an empty Kotlin range denotes the empty domain. Union, intersection and cardinality operate on
