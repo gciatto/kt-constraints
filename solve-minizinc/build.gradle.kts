@@ -24,3 +24,10 @@ tasks.register<JavaExec>("jvmBenchmark") {
     classpath(compilation.output.allOutputs, compilation.runtimeDependencyFiles)
     mainClass.set("io.github.gciatto.ktconstraints.solve.minizinc.MiniZincBenchmark")
 }
+
+val miniZincExecutable = providers.environmentVariable("MINIZINC_EXECUTABLE")
+tasks.named<org.gradle.api.tasks.testing.Test>("jvmTest") {
+    inputs.property("miniZincExecutable", miniZincExecutable.orElse(""))
+    outputs.upToDateWhen { !miniZincExecutable.isPresent }
+    outputs.doNotCacheIf("The explicitly requested external solver runtime must be probed again") { miniZincExecutable.isPresent }
+}
