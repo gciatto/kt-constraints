@@ -17,7 +17,7 @@ contain an exact Boolean/integer algebra, finite domains, global nodes, a ground
 with shared Kotest property contracts. JVM MiniZinc routes execute Gecode, Chuffed, CP-SAT, HiGHS and CBC with shared
 conformance tests. MIP routes expose a bounded affine integer subset and do not enumerate all solutions.
 The official JS package runs Gecode through Node's CLI and Chuffed through browser Wasm.
-Direct Z3 (`z3/direct` on the JVM, `z3/wasm` on Node and isolated browsers, `z3/native` through the C API on desktop Kotlin/Native) solves the same IR with unbounded exact integers and exact linear reals and offers
+Direct Z3 (`z3/direct` on the JVM, `z3/wasm` on Node and isolated browsers, `z3/native` through the C API on desktop Kotlin/Native) solves the same IR with unbounded exact integers, exact linear reals and fixed-width bit-vectors and offers
 incremental sessions with checkpoints, assumptions and unsat cores.
 **Direct Choco/CP-SAT/HiGHS adapters, FlatZinc interchange and Native execution remain planned**.
 

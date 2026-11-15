@@ -51,6 +51,11 @@ real equality and orderings. Without products of variables every model value is 
 assignments stay exact. Objectives remain integer, because a real supremum need not be attained. Routes without
 exact reals (MiniZinc floats, the finite oracle) reject models that declare or use them.
 
+Bit-vectors follow SMT-LIB `QF_BV`: values are unsigned `BigInteger`s below `2^width` for any positive width,
+literals out of range are rejected, arithmetic wraps, shifts saturate at the width, and signed relations and the
+signed integer conversion read two's complement. Operand widths are checked at construction. Division,
+remainder, concatenation and extraction are deferred until their conventions have conformance cases.
+
 Finite integer domains are canonical unions of sorted, disjoint, non-adjacent closed intervals. Sparse values
 are singleton intervals; empty domains have no bounds and cardinality zero. Explicit inverted intervals are
 invalid, while an empty Kotlin range denotes the empty domain. Union, intersection and cardinality operate on

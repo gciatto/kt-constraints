@@ -33,6 +33,8 @@ Z3Backend().create().use { solver ->
 - Integers are Z3's unbounded `Int`: literals of any size are exact; there is no range limit.
 - Linear reals are Z3's `Real`, with exact `Rational` literals and model values; a model value
   that is not a rational numeral fails as a backend error instead of being rounded.
+- Bit-vectors are Z3's fixed-width `BitVec` with SMT-LIB semantics; values are exact unsigned
+  integers of any width.
 - Supports every current Boolean/integer IR node; globals use lossless decompositions listed
   in the support report. Element indices must be in range, as on every other route.
 - Optimization gallops beyond each incumbent, then bisects, with tentative bounds in pushed
