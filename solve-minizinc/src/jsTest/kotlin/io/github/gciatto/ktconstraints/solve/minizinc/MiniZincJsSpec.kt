@@ -5,6 +5,7 @@ import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.TerminationReason
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 
 /** Same real contracts for Node CLI and browser Wasm; route identity records which actually ran. */
@@ -15,8 +16,7 @@ class MiniZincJsSpec : FunSpec({
         test("requires-requested-node-cli-or-browser-wasm").config(enabled = false) {}
     } else {
         var backend: MiniZincJsBackend? = null
-        beforeSpec {
-            backend = runCatching { if (browser) {
+        val load: suspend () -> MiniZincJsBackend = { if (browser) {
                 val origin = js("globalThis.location.origin") as String
                 MiniZincJsBackend.loadBrowser(
                     "$origin/minizinc/minizinc-worker.js",
@@ -25,8 +25,8 @@ class MiniZincJsSpec : FunSpec({
                 )
             } else {
                 MiniZincJsBackend.loadNode(requireNotNull(executable))
-            } }.onFailure { console.error(it.stackTraceToString()) }.getOrThrow()
-        }
+            } }
+        beforeSpec { backend = runCatching { load() }.onFailure { console.error(it.stackTraceToString()) }.getOrThrow() }
         afterSpec { backend?.close() }
         include(solverContract { requireNotNull(backend).create() })
         test("js/route-identifies-the-actual-transport") {
@@ -45,6 +45,25 @@ class MiniZincJsSpec : FunSpec({
                 stream.close()
                 stream.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
             }
+        }
+        test("js/rejects-a-transport-for-the-wrong-environment") {
+            val failure = shouldThrow<IllegalStateException> {
+                if (browser) MiniZincJsBackend.loadNode() else MiniZincJsBackend.loadBrowser("worker", "wasm", "data")
+            }
+            failure.message shouldBe if (browser) "Node CLI loading requires Node.js" else "Wasm loading requires a browser"
+        }
+        test("js/backend-close-cancels-streams-and-allows-a-new-runtime-owner") {
+            val selected = requireNotNull(backend)
+            val solver = selected.create()
+            val stream = solver.solutions(ConstraintScope.empty().build())
+            selected.close()
+            selected.close()
+            selected.availability().available shouldBe false
+            stream.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
+            shouldThrow<IllegalStateException> { solver.solutions(ConstraintScope.empty().build()) }
+            solver.close()
+            backend = load()
+            requireNotNull(backend).availability().available shouldBe true
         }
     }
 })
