@@ -3,6 +3,7 @@ package io.github.gciatto.ktconstraints.solve.minizinc
 import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolveStatus
+import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests
 import io.kotest.matchers.shouldBe
@@ -31,5 +32,11 @@ class MiniZincEngineSpec :
                 scope.intVar("x", IntDomain.of(value, value))
                 MiniZincCompiler(MiniZincEngine.CHUFFED).support(scope.build()).isSupported shouldBe false
             }
+        }
+        test("engine/decoder-retains-the-explicit-execution-route") {
+            val descriptor = SolverDescriptor("gecode", "minizinc-wasm", MiniZincEngine.GECODE.descriptor.capabilities)
+            val decoder = MiniZincDecoder(MiniZincCompiler().compile(ConstraintScope.empty().build()), descriptor)
+            decoder.accept("""{"type":"status","status":"UNSATISFIABLE"}""")
+            decoder.finish(0, "").descriptor shouldBe descriptor
         }
     })
