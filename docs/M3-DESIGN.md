@@ -52,10 +52,10 @@ The JS slice uses the official `minizinc` npm runtime. A closeable, asynchronous
 only one instance may own that global runtime at once. Individual solvers own their
 streams but do not shut down another solver's shared runtime. Backend close cancels all
 active streams and shuts down the official runtime. Browser loading accepts explicit
-worker/wasm/data URLs; Node loading accepts an executable. Initial JS execution supports
-Gecode only, after discovery and a real startup solve.
+worker/wasm/data URLs; Node loading accepts an executable. The pinned browser package contains Chuffed (`org.minizinc.chuffed`), while
+Node initially uses Gecode. Both require discovery and a real startup solve.
 
-Browser and Node descriptors use `gecode/minizinc-wasm` and
+Browser and Node descriptors use `chuffed/minizinc-wasm` and
 `gecode/minizinc-js-cli`. Both reuse the checked common compiler, exact assignment
 validation and stream contracts. The Node route must never be labelled Wasm. JS messages
 arrive as parsed objects from the upstream API; assignment values remain inside our
