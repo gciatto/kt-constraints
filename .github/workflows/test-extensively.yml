@@ -131,6 +131,11 @@ jobs:
           MINIZINC_BROWSER_TEST: 'true'
           CHROME_BIN: /usr/bin/google-chrome
         run: ./gradlew :solve-minizinc:jsBrowserTest --continue
+      - name: Run actual Z3 browser Wasm contracts (cross-origin isolated)
+        env:
+          Z3_BROWSER_TEST: 'true'
+          CHROME_BIN: /usr/bin/google-chrome
+        run: ./gradlew :solve-z3:jsBrowserTest --continue
       - name: Upload browser test reports
         if: failure()
         uses: actions/upload-artifact@v4
@@ -140,9 +145,11 @@ jobs:
             solve-minizinc/build/test-results/jsBrowserTest
             solve-minizinc/build/reports/tests/jsBrowserTest
             build/js/packages/kt-constraints-solve-minizinc-test/browser-console.log
+            solve-z3/build/test-results/jsBrowserTest
+            solve-z3/build/reports/tests/jsBrowserTest
       - name: Job summary
         if: always()
         uses: ./.github/actions/ci-summary
         with:
-          title: MiniZinc / Chuffed browser Wasm
+          title: Browser Wasm / MiniZinc Chuffed and Z3
           status: ${{ job.status }}
