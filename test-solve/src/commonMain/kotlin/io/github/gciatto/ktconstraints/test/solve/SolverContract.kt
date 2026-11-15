@@ -21,7 +21,10 @@ import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
 
 /** Shared SAT/UNSAT, optimization, enumeration and lifecycle contracts; every leaf owns fresh fixtures. */
-fun solverContract(create: () -> ConstraintSolver) =
+fun solverContract(
+    enumeration: Boolean = true,
+    create: () -> ConstraintSolver,
+) =
     funSpec {
         test("solver-contract/satisfiable-assignment-is-independently-validated") {
             val scope = ConstraintScope.empty()
@@ -57,7 +60,7 @@ fun solverContract(create: () -> ConstraintSolver) =
                 result.assignment?.valueOf(x) shouldBe result.objectiveValue
             }
         }
-        test("solver-contract/enumeration-is-unique-and-valid") {
+        test("solver-contract/enumeration-is-unique-and-valid").config(enabled = enumeration) {
             val scope = ConstraintScope.empty()
             val x = scope.intVar("x", 0..2)
             val flag = scope.boolVar("flag")
@@ -81,7 +84,7 @@ fun solverContract(create: () -> ConstraintSolver) =
             answers.size shouldBe 2
             answers.toSet() shouldBe setOf(false, true)
         }
-        test("solver-contract/output-projection-hides-variables-and-deduplicates-solutions") {
+        test("solver-contract/output-projection-hides-variables-and-deduplicates-solutions").config(enabled = enumeration) {
             val scope = ConstraintScope.empty()
             val x = scope.intVar("x", 0..2)
             val hidden = scope.boolVar("hidden")
