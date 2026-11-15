@@ -1,8 +1,8 @@
 # M4 design: direct Z3
 
 M4 adds Z3 as a direct engine, distinct from every MiniZinc route. The first slice is the
-JVM binding; incremental sessions, JS/Wasm and Native C follow as separate slices, each
-advertised only after its own tests pass.
+JVM binding with incremental sessions; JS/Wasm and Native C follow as separate slices,
+each advertised only after its own tests pass.
 
 ## JVM batch route
 
@@ -29,13 +29,32 @@ advertised only after its own tests pass.
   context from any thread; the context is closed on its own thread once the active check
   returns. An `unknown` result is never reported as infeasible.
 
+## Incremental sessions
+
+`IncrementalConstraintSolver.openSession(model)` returns an `IncrementalSession` over the
+model's variables; the model's constraints form the irremovable root frame. Sessions are
+`AutoCloseable`, single-consumer and closed by their solver.
+
+- `add` asserts a constraint in the current frame. Variables not declared by the model are
+  rejected, and unsupported nodes throw `UnsupportedModelException` before any change.
+- `push` returns an opaque `Checkpoint`; `popTo` restores the assertions present when it
+  was pushed and invalidates it and every newer checkpoint. Stale checkpoints and those
+  of another session are rejected with `IllegalArgumentException`. A shared SPI
+  `CheckpointStack` implements this ownership logic once for all backends.
+- `check(assumptions, timeoutMillis)` returns a `CheckResult`: `SATISFIABLE` with an
+  assignment validated against every active constraint and assumption, `UNSATISFIABLE`,
+  or `UNKNOWN` with its termination reason. Assumptions hold for that check only.
+- With assumptions, an `UNSATISFIABLE` result may carry an unsat core: a subset of the
+  assumptions sufficient for unsatisfiability, not necessarily minimal. Cores and
+  assumptions are separate capabilities (`UNSAT_CORES`, `ASSUMPTIONS`).
+- Z3 maps frames to native `push`/`pop` and assumptions to fresh indicator constants
+  inside a temporary native frame. Repeated checks are not domain propagation: Z3 does
+  not advertise `DOMAIN_PROPAGATION` or `ENTAILMENT`.
+
 ## Later slices
 
-1. `IncrementalConstraintSolver`/`IncrementalSession`: assertion scopes, checkpoints owned
-   by exactly one session, assumptions and optional unsat cores. Repeated `check` is not
-   advertised as domain propagation.
-2. JS/Wasm through the official `z3-solver` npm package, loaded asynchronously.
-3. Kotlin/Native through the Z3 C API on hosts with reproducible binaries.
+1. JS/Wasm through the official `z3-solver` npm package, loaded asynchronously.
+2. Kotlin/Native through the Z3 C API on hosts with reproducible binaries.
 
 ## Reference evidence
 
