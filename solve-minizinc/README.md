@@ -1,22 +1,109 @@
 # :solve-minizinc
 
-Experimental MiniZinc/Gecode route. The compiler and JSON decoder are portable; CLI execution is JVM-only.
-The module remains unpublished pending packaging decisions; there is no JS/Native engine implementation yet.
+Experimental JVM execution of Gecode, Chuffed, CP-SAT, HiGHS and CBC through MiniZinc.
+The checked compiler and JSON decoder are portable. The official JS runtime provides
+Node/Gecode CLI and browser/Chuffed Wasm execution. Native execution is not implemented,
+and backend publication remains disabled.
 
-`MiniZincGecodeBackend(executable)` discovers Gecode, probes a real solve, reports whole-model compatibility
-and creates a closeable solver. Engine/route identity is `gecode/minizinc`. Install MiniZinc with Gecode and
-pass its executable path, or use `minizinc` from PATH. No shell interpolation or model-name interpolation is used.
+```kotlin
+val backend = MiniZincBackend(MiniZincEngine.CHUFFED, executable = "/path/to/minizinc")
+val availability = backend.availability()
+val support = backend.support(model)
+backend.create().use { solver ->
+    val result = solver.solve(model)
+}
+```
 
-The supported IR includes finite integer/Boolean operations, all-different, zero-based element, allowed-tuple
-tables, weighted sums and Boolean cardinality. Integer expressions are conservatively range-checked against
-[Gecode's integer limits](https://www.gecode.org/doc-latest/reference/gecode_2int_8hh_source).
-An unprovable range is rejected instead of truncated. MiniZinc handles flattening and global lowering.
+`MiniZincGecodeBackend(executable)` remains source-compatible. Discovery uses the
+selected engine's exact `--solvers-json` ID, followed by an actual startup probe;
+configuration presence alone does not establish availability. No fallback is used.
+Register backends explicitly with `SolverRegistry.of(...)` when selection is wanted.
 
-The JSON stream is parsed with full source assignments independently validated before projection. Messages
-and raw JSON statistics are retained at successful process completion. Early close, cancellation, owned deadlines
-and solution limits release child processes, executors and temporary files. Incomplete runs never claim optimality.
+| Engine | Route ID | Checked symmetric integer range | Complete satisfaction enumeration |
+|---|---|---:|---|
+| Gecode | `gecode/minizinc` | +/-2,147,483,646 | Yes |
+| Chuffed | `chuffed/minizinc` | +/-499,999,999 | Yes |
+| CP-SAT | `cp-sat/minizinc` | +/-2,147,483,646 | Yes |
+| HiGHS | `highs/minizinc` | +/-1,000,000, affine arithmetic | No |
+| CBC | `cbc/minizinc` | +/-1,000,000, affine arithmetic | No |
 
-Run real conformance tests with `MINIZINC_EXECUTABLE=/path/to/minizinc ./gradlew :solve-minizinc:jvmTest`.
-Without that variable the real-runtime spec is explicitly skipped; pure compiler/protocol tests still run.
-CI installs MiniZinc/Gecode in a dedicated Ubuntu job. `:solve-minizinc:jvmBenchmark` reports raw phase samples
-and native-reported flatten/solve times; it is excluded from routine verification.
+These are deliberately supported subsets, not complete engine limits. Every literal,
+coefficient, domain and integer intermediate is checked. Chuffed's +/-500,000,000
+values are reserved sentinels. MIP variable-by-variable products are rejected before
+launch. MiniZinc handles flattening and global lowering; no independent FlatZinc parser
+is required. All routes support the tested Boolean/integer nodes and CP globals.
+
+Full returned assignments are independently checked before projection. Integer output
+is parsed exactly; fractional output is rejected rather than rounded. HiGHS/CBC run
+with zero relative/absolute objective gaps; optimality and infeasibility rely on the
+numerical engine's proof evidence, rather than exact rational certificates. Their
+streams produce a satisfaction witness or improving optimization incumbents, not all
+satisfying assignments. Consumers must check `ENUMERATION` before requiring exhaustive
+search. A validated MIP satisfaction witness and clean exit establish feasibility even
+without a wire status. Other completion cases require a definitive status.
+
+Malformed output, contradictory statuses and failed processes are errors. Stream close,
+cancellation, timeout and limits retain the existing owned-process/workspace cleanup.
+Messages and raw JSON statistics are retained on normal completion.
+
+```bash
+MINIZINC_EXECUTABLE=/path/to/minizinc \
+  MINIZINC_ENGINES=gecode,chuffed,cp-sat,highs,cbc ./gradlew :solve-minizinc:jvmTest
+MINIZINC_EXECUTABLE=/path/to/minizinc MINIZINC_BENCHMARK_ENGINE=chuffed \
+  ./gradlew :solve-minizinc:jvmBenchmark
+```
+
+The default requested real runtime is Gecode. Other engine suites are explicitly skipped
+unless requested by `MINIZINC_ENGINES`. Requested engines must pass; absence is a failure.
+The two enumeration cases are explicitly disabled for each MIP engine. A dedicated
+Ubuntu CI job downloads a checksum-pinned MiniZinc 2.10.1 bundle and requires all five.
+Explicit runtime tests disable up-to-date/build-cache reuse.
+
+The manual benchmark self-checks an exact optimum of 12, with a fresh native process
+per sample. It separates model construction, translation, availability/setup, process
+spawn, runtime wall, decode/validation and projection; native flatten/solve statistics
+are reported independently. Raw observations are not regression thresholds or confidence
+intervals. See [M2 measurements](../docs/M2.md).
+
+## JavaScript execution
+
+The pinned official npm runtime is 4.5.2. Its browser package contains Chuffed;
+Node invokes an installed Gecode configuration through a native CLI.
+
+```kotlin
+// Kotlin/JS browser; serve the official package's three assets from your web server.
+MiniZincJsBackend.loadBrowser(workerURL, wasmURL, dataURL).use { backend ->
+    backend.create().use { solver -> solver.solve(model) }
+}
+// Kotlin/JS on Node; executes a native CLI, not browser Wasm.
+MiniZincJsBackend.loadNode("/path/to/minizinc").use { backend ->
+    backend.create().use { solver -> solver.solve(model) }
+}
+```
+
+Factories suspend until initialization, discovery and a real startup solve succeed.
+The routes are `chuffed/minizinc-wasm` and `gecode/minizinc-js-cli`. The backend owns
+the upstream global pool and active streams; close it to release workers/processes.
+Only one JS backend may own that pool at once. Individual solver close leaves the
+runtime available; closing and reloading a backend is tested. JS statistics inherit
+the upstream API's Number semantics; integer assignments retain lossless string output.
+The upstream event API has no backpressure, so large enumerations may buffer output;
+consume or close streams promptly.
+
+```bash
+MINIZINC_EXECUTABLE=/path/to/minizinc ./gradlew :solve-minizinc:jsNodeTest
+MINIZINC_BROWSER_TEST=true ./gradlew :solve-minizinc:jsBrowserTest
+```
+
+The browser task is explicitly enabled and uses ChromeHeadless (set `CHROME_BIN` when
+Chrome is outside PATH). CI serves worker/Wasm/data from the pinned npm package and
+runs actual shared contracts in Chrome. Runtime tasks require the transport contract
+report, so a setup failure omitted by Kotest cannot silently pass. A missing requested
+Node executable was verified to fail. Ordinary portable JS tests explicitly skip the
+runtime spec when its environment is absent.
+
+## Boundaries
+
+This is Kotlin/JS invoking solver Wasm, not a Kotlin/Wasm or WASI target. Native execution,
+direct engines, incremental sessions, native propagation and stable Java/TypeScript
+facades remain planned. Backend publication stays disabled.

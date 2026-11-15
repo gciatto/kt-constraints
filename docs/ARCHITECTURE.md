@@ -125,4 +125,15 @@ preserves source-variable mappings and lets MiniZinc lower globals. It proves ev
 Gecode's symmetric range `-2147483646..2147483646`; otherwise it rejects the whole model. Array selection uses
 zero-based arrays with independent index-definedness constraints. CLI output contains full assignments for
 independent validation before public projection. Runtime startup and temporary files belong to the stream,
-not to the common compiled representation. Other MiniZinc engines and JS/Native transports remain M3 work.
+not to the common compiled representation. M3 adds explicit Chuffed, CP-SAT, HiGHS and CBC configurations. Each is discovered by exact configuration ID
+and validated with an actual startup solve. The existing Gecode entry point remains source-compatible.
+Chuffed excludes its reserved +/-500,000,000 sentinels; CP-SAT initially shares Gecode's conservative range.
+HiGHS/CBC use a +/-1,000,000 affine integer subset, zero objective gaps and exact returned-assignment
+validation; their proof statuses rely on numerical MIP evidence. They do not advertise exhaustive enumeration.
+A validated MIP satisfaction witness plus successful exit establishes feasibility even without a terminal status.
+No-witness completion and optimization still require explicit statuses. JS execution uses the official npm runtime: Node/Gecode is `gecode/minizinc-js-cli`, while browser/Chuffed
+is `chuffed/minizinc-wasm`. A closeable, asynchronously loaded backend owns the global upstream pool;
+only one backend may own that pool at a time. Backend close cancels active streams and shuts down the
+pool; individual solver close leaves the shared runtime usable. Node and browser reuse the checked
+compiler, exact assignment decoder and shared contracts. JS statistics inherit upstream Number
+semantics, while assignment integers remain in a lossless JSON string. Native command execution remains planned.
