@@ -54,6 +54,7 @@ class Z3NativeSpec :
             include(solverContract { Z3NativeBackend().create() })
             include(incrementalContract { Z3NativeBackend().create() })
             include(z3OptimizationContract { Z3NativeBackend().create() })
+            include(z3RealContract { Z3NativeBackend().create() })
 
             test("z3-native/route-identifies-the-c-binding") {
                 val backend = Z3NativeBackend()

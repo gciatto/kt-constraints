@@ -9,6 +9,9 @@ import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.core.IntEquality
 import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.core.IntProduct
+import io.github.gciatto.ktconstraints.core.Rational
+import io.github.gciatto.ktconstraints.core.RealLessThan
+import io.github.gciatto.ktconstraints.core.RealLiteral
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
 import io.kotest.assertions.throwables.shouldThrow
@@ -54,6 +57,17 @@ class MiniZincCompilerSpec :
             unknown.add(BoolAnd(BoolLiteral(false), object : BoolExpr {}))
             compiler.support(unknown.build()).isSupported shouldBe false
         }
+        test("compiler/rejects-exact-reals-instead-of-approximating-them-as-floats") {
+            val compiler = MiniZincCompiler()
+            val declared = ConstraintScope.empty()
+            declared.realVar("x")
+            compiler.support(declared.build()).isSupported shouldBe false
+            shouldThrow<UnsupportedModelException> { compiler.compile(declared.build()) }
+            val constrained = ConstraintScope.empty()
+            constrained.add(RealLessThan(constrained.realVar("y"), RealLiteral(Rational.of(1, 3))))
+            compiler.support(constrained.build()).isSupported shouldBe false
+        }
+
         test("compiler/empty-domains-remain-explicitly-unsatisfiable") {
             val scope = ConstraintScope.empty()
             scope.intVar("x", IntDomain.empty())

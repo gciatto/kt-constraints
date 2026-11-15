@@ -3,6 +3,10 @@ package io.github.gciatto.ktconstraints.model
 import io.github.gciatto.ktconstraints.core.IntEquality
 import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.core.IntSum
+import io.github.gciatto.ktconstraints.core.Rational
+import io.github.gciatto.ktconstraints.core.RealLessThan
+import io.github.gciatto.ktconstraints.core.RealLiteral
+import io.github.gciatto.ktconstraints.core.VariableFactory
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -41,5 +45,15 @@ class ConstraintScopeSpec :
             val scope = ConstraintScope.empty()
             scope.boolVar("x")
             shouldThrow<IllegalArgumentException> { scope.intVar("x", 0..10) }
+        }
+
+        test("scope/real-variables-are-declared-and-owned") {
+            val scope = ConstraintScope.empty()
+            val x = scope.realVar("x")
+            scope.add(RealLessThan(x, RealLiteral(Rational.of(1, 2))))
+            scope.build().variables shouldBe listOf(x)
+            val foreign = VariableFactory.empty().realVar("y")
+            shouldThrow<IllegalArgumentException> { scope.add(RealLessThan(foreign, RealLiteral(Rational.ONE))) }
+            shouldThrow<IllegalArgumentException> { scope.realVar("x") }
         }
     })

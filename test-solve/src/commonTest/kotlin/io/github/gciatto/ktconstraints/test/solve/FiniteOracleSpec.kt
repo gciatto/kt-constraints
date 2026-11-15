@@ -9,6 +9,9 @@ import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.core.IntEquality
 import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.core.IntProduct
+import io.github.gciatto.ktconstraints.core.Rational
+import io.github.gciatto.ktconstraints.core.RealLessThan
+import io.github.gciatto.ktconstraints.core.RealLiteral
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolveCompleted
@@ -120,6 +123,17 @@ class FiniteOracleSpec :
             scope.add(BoolAnd(BoolLiteral(false), unknown))
             FiniteOracle().use { solver ->
                 shouldThrow<UnsupportedModelException> { solver.solve(scope.build()) }
+            }
+        }
+
+        test("oracle/rejects-real-variables-even-when-unconstrained") {
+            val declared = ConstraintScope.empty()
+            declared.realVar("x")
+            val constrained = ConstraintScope.empty()
+            constrained.add(RealLessThan(constrained.realVar("y"), RealLiteral(Rational.ONE)))
+            FiniteOracle().use { solver ->
+                shouldThrow<UnsupportedModelException> { solver.solve(declared.build()) }
+                shouldThrow<UnsupportedModelException> { solver.solve(constrained.build()) }
             }
         }
 

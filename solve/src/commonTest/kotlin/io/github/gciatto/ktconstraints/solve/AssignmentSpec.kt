@@ -1,6 +1,7 @@
 package io.github.gciatto.ktconstraints.solve
 
 import io.github.gciatto.ktconstraints.core.IntDomain
+import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.VariableFactory
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
@@ -51,5 +52,17 @@ class AssignmentSpec :
             val empty = factory.intVar("empty", IntDomain.empty())
             shouldThrow<IllegalArgumentException> { Assignment.of(integers = mapOf(x to BigInteger.TWO)) }
             shouldThrow<IllegalArgumentException> { Assignment.of(integers = mapOf(empty to BigInteger.ZERO)) }
+        }
+
+        test("assignment/real-values-are-exact-and-projected") {
+            val factory = VariableFactory.empty()
+            val x = factory.realVar("x")
+            val y = factory.realVar("y")
+            val assignment = Assignment.of(reals = mapOf(x to Rational.of(2, 3), y to Rational.of(-1, 7)))
+            assignment.valueOf(x) shouldBe Rational.of(2, 3)
+            val projected = assignment.project(listOf(x))
+            projected.valueOf(x) shouldBe Rational.of(2, 3)
+            projected.valueOf(y) shouldBe null
+            Assignment.empty().valueOf(x) shouldBe null
         }
     })
