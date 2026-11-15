@@ -6,6 +6,8 @@ import io.github.gciatto.ktconstraints.core.Expr
 import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.core.IntExpr
 import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.RealExpr
+import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Sort
 import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.VariableFactory
@@ -34,6 +36,9 @@ class ConstraintScope private constructor() {
         name: String,
         range: IntRange,
     ): IntVar = intVar(name, IntDomain.of(range))
+
+    /** Declares an unbounded exact real variable; routes without exact reals reject models declaring one. */
+    fun realVar(name: String): RealVar = addVariable(name) { factory.realVar(name) }
 
     /** Asserts a Boolean expression, optionally with a unique name and diagnostic metadata. */
     @JvmOverloads
@@ -84,6 +89,7 @@ class ConstraintScope private constructor() {
         when (expression) {
             is IntExpr -> require(expression.sort == Sort.Integer) { "Inconsistent integer expression sort" }
             is BoolExpr -> require(expression.sort == Sort.Bool) { "Inconsistent Boolean expression sort" }
+            is RealExpr -> require(expression.sort == Sort.Real) { "Inconsistent real expression sort" }
         }
         expression.children.forEach { requireWellSorted(it) }
     }

@@ -22,8 +22,20 @@ import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
+import io.github.gciatto.ktconstraints.core.IntToReal
 import io.github.gciatto.ktconstraints.core.IntVar
 import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.Rational
+import io.github.gciatto.ktconstraints.core.RealDifference
+import io.github.gciatto.ktconstraints.core.RealEquality
+import io.github.gciatto.ktconstraints.core.RealExpr
+import io.github.gciatto.ktconstraints.core.RealLessOrEqual
+import io.github.gciatto.ktconstraints.core.RealLessThan
+import io.github.gciatto.ktconstraints.core.RealLiteral
+import io.github.gciatto.ktconstraints.core.RealNegation
+import io.github.gciatto.ktconstraints.core.RealScale
+import io.github.gciatto.ktconstraints.core.RealSum
+import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.core.fold
 import io.github.gciatto.ktconstraints.model.ConstraintModel
@@ -39,6 +51,7 @@ internal class Z3Translation<T>(
 ) {
     private val booleans = linkedMapOf<BoolVar, T>()
     private val integers = linkedMapOf<IntVar, T>()
+    private val reals = linkedMapOf<RealVar, T>()
     private val indexDefinedness = mutableListOf<T>()
 
     /** Domain, model-constraint and their element-definedness assertions. */
@@ -51,6 +64,7 @@ internal class Z3Translation<T>(
             when (variable) {
                 is BoolVar -> booleans[variable] = port.boolConst("b$index")
                 is IntVar -> integers[variable] = port.intConst("i$index")
+                is RealVar -> reals[variable] = port.realConst("r$index")
                 else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported variable: ${variable.name}")))
             }
         }
@@ -67,6 +81,7 @@ internal class Z3Translation<T>(
         expression.fold { node, children: List<T> ->
             when (node) {
                 is IntExpr -> integer(node, children)
+                is RealExpr -> real(node, children)
                 is BoolExpr -> boolean(node, children)
                 else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported expression: $node")))
             }
@@ -84,11 +99,18 @@ internal class Z3Translation<T>(
         value: BigInteger,
     ): T = port.equal(integers.getValue(variable), port.int(value))
 
+    /** Term equal to [value] for the projected [variable]. */
+    fun binding(
+        variable: RealVar,
+        value: Rational,
+    ): T = port.equal(reals.getValue(variable), port.real(value))
+
     /** Complete assignment of every declared variable from the last satisfiable check. */
     fun assignment(): Assignment =
         Assignment.of(
             booleans.mapValues { (_, term) -> port.boolValue(term) },
             integers.mapValues { (_, term) -> port.intValue(term) },
+            reals.mapValues { (_, term) -> port.realValue(term) },
         )
 
     private fun integer(
@@ -107,6 +129,21 @@ internal class Z3Translation<T>(
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported integer expression: $node")))
         }
 
+    private fun real(
+        node: RealExpr,
+        children: List<T>,
+    ): T =
+        when (node) {
+            is RealVar -> reals.getValue(node)
+            is RealLiteral -> port.real(node.value)
+            is RealSum -> port.add(children)
+            is RealDifference -> port.subtract(children[0], children[1])
+            is RealNegation -> port.negate(children.single())
+            is RealScale -> port.multiply(listOf(port.real(node.coefficient), children.single()))
+            is IntToReal -> port.toReal(children.single())
+            else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported real expression: $node")))
+        }
+
     private fun boolean(
         node: BoolExpr,
         children: List<T>,
@@ -118,9 +155,9 @@ internal class Z3Translation<T>(
             is BoolOr -> port.or(children)
             is BoolImplies -> port.implies(children[0], children[1])
             is BoolNot -> port.not(children.single())
-            is BoolEquality, is IntEquality -> port.equal(children[0], children[1])
-            is IntLessThan -> port.less(children[0], children[1])
-            is IntLessOrEqual -> port.lessOrEqual(children[0], children[1])
+            is BoolEquality, is IntEquality, is RealEquality -> port.equal(children[0], children[1])
+            is IntLessThan, is RealLessThan -> port.less(children[0], children[1])
+            is IntLessOrEqual, is RealLessOrEqual -> port.lessOrEqual(children[0], children[1])
             else -> global(node, children)
         }
 

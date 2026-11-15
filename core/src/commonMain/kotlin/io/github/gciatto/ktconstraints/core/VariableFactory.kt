@@ -16,6 +16,9 @@ class VariableFactory private constructor() {
         domain: IntDomain,
     ): IntVar = IntVar(next(), name, domain)
 
+    /** Creates a fresh unbounded real variable. */
+    fun realVar(name: String): RealVar = RealVar(next(), name)
+
     private fun next(): VariableId = VariableId(owner, nextId++)
 
     /** Factory methods. */

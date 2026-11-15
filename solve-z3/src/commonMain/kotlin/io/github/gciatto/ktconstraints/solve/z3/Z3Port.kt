@@ -1,5 +1,6 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
+import io.github.gciatto.ktconstraints.core.Rational
 import org.gciatto.kt.math.BigInteger
 
 /** Platform binding of one Z3 context and solver; [T] is the platform term type. Use only inside its owner's confinement. */
@@ -9,6 +10,13 @@ internal interface Z3Port<T> {
     fun intConst(name: String): T
 
     fun bool(value: Boolean): T
+
+    fun realConst(name: String): T
+
+    fun real(value: Rational): T
+
+    /** Exact embedding of an integer term into the reals. */
+    fun toReal(operand: T): T
 
     fun int(value: BigInteger): T
 
@@ -93,6 +101,9 @@ internal interface Z3Port<T> {
 
     /** Exact value of [term] in the model of the last satisfiable check, with model completion. */
     fun intValue(term: T): BigInteger
+
+    /** Exact rational value of a real [term] in the model of the last satisfiable check, with model completion. */
+    fun realValue(term: T): Rational
 
     /** Positions of [assumptions] in the core of the last unsatisfiable check. */
     fun unsatCore(assumptions: List<T>): Set<Int>

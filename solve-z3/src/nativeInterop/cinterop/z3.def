@@ -33,6 +33,9 @@ typedef void Z3_error_handler(Z3_context c, Z3_error_code e);
     F(Z3_symbol, Z3_mk_string_symbol, (Z3_context c, Z3_string s), (c, s)) \
     F(Z3_sort, Z3_mk_bool_sort, (Z3_context c), (c)) \
     F(Z3_sort, Z3_mk_int_sort, (Z3_context c), (c)) \
+    F(Z3_sort, Z3_mk_real_sort, (Z3_context c), (c)) \
+    F(Z3_ast, Z3_mk_int2real, (Z3_context c, Z3_ast a), (c, a)) \
+    F(bool, Z3_is_numeral_ast, (Z3_context c, Z3_ast a), (c, a)) \
     F(Z3_ast, Z3_mk_const, (Z3_context c, Z3_symbol s, Z3_sort t), (c, s, t)) \
     F(Z3_ast, Z3_mk_true, (Z3_context c), (c)) \
     F(Z3_ast, Z3_mk_false, (Z3_context c), (c)) \

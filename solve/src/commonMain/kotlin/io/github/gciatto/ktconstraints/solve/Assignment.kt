@@ -2,6 +2,8 @@ package io.github.gciatto.ktconstraints.solve
 
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.Rational
+import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Valuation
 import org.gciatto.kt.math.BigInteger
 import kotlin.jvm.JvmOverloads
@@ -15,6 +17,9 @@ interface Assignment : Valuation {
     /** Returns the exact integer value, or null when outside the assignment projection. */
     override fun valueOf(variable: IntVar): BigInteger?
 
+    /** Returns the exact real value, or null when outside the assignment projection. */
+    override fun valueOf(variable: RealVar): Rational?
+
     /** Factories for detached typed assignments. */
     companion object {
         /** Copies values and rejects integer values outside their declared domains. */
@@ -23,7 +28,8 @@ interface Assignment : Valuation {
         fun of(
             booleans: Map<BoolVar, Boolean> = emptyMap(),
             integers: Map<IntVar, BigInteger> = emptyMap(),
-        ): Assignment = ImmutableAssignment(booleans, integers)
+            reals: Map<RealVar, Rational> = emptyMap(),
+        ): Assignment = ImmutableAssignment(booleans, integers, reals)
 
         /** Creates an assignment with no projected variables. */
         @JvmStatic

@@ -11,6 +11,7 @@ import com.microsoft.z3.IntNum
 import com.microsoft.z3.IntSort
 import com.microsoft.z3.Model
 import com.microsoft.z3.Status
+import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.solve.CheckStatus
 import org.gciatto.kt.math.BigInteger
 
@@ -29,6 +30,12 @@ internal class JavaZ3Port(
     override fun bool(value: Boolean): Expr<*> = context.mkBool(value)
 
     override fun int(value: BigInteger): Expr<*> = context.mkInt(value.toString())
+
+    override fun realConst(name: String): Expr<*> = context.mkRealConst(name)
+
+    override fun real(value: Rational): Expr<*> = context.mkReal(value.toString())
+
+    override fun toReal(operand: Expr<*>): Expr<*> = context.mkInt2Real(operand as Expr<IntSort>)
 
     override fun add(operands: List<Expr<*>>): Expr<*> = context.mkAdd(*ints(operands))
 
@@ -113,6 +120,13 @@ internal class JavaZ3Port(
     override fun boolValue(term: Expr<*>): Boolean = checkNotNull(model).eval(term, true).isTrue
 
     override fun intValue(term: Expr<*>): BigInteger = BigInteger.of((checkNotNull(model).eval(term, true) as IntNum).toString())
+
+    override fun realValue(term: Expr<*>): Rational =
+        exactRational(
+            checkNotNull(model).eval(term, true).let {
+                if (it.isRatNum) it.toString() else null
+            },
+        )
 
     override fun unsatCore(assumptions: List<Expr<*>>): Set<Int> {
         val core = solver.unsatCore.toSet()

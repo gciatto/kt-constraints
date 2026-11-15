@@ -1,5 +1,6 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
+import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.solve.CheckStatus
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
@@ -23,6 +24,12 @@ internal class JsZ3Port(
     override fun bool(value: Boolean): Any = context.Bool.`val`(value)
 
     override fun int(value: BigInteger): Any = context.Int.`val`(value.toString())
+
+    override fun realConst(name: String): Any = context.Real.const(name)
+
+    override fun real(value: Rational): Any = context.Real.`val`(value.toString())
+
+    override fun toReal(operand: Any): Any = context.ToReal(operand)
 
     override fun add(operands: List<Any>): Any = operands.reduce { left, right -> left.asDynamic().add(right) }
 
@@ -131,6 +138,11 @@ internal class JsZ3Port(
                 .toString()
                 .unsafeCast<String>(),
         )
+
+    override fun realValue(term: Any): Rational {
+        val value: dynamic = checkNotNull(model).eval(term, true)
+        return exactRational(if (context.isRealVal(value).unsafeCast<Boolean>()) value.asString().unsafeCast<String>() else null)
+    }
 
     override fun unsatCore(assumptions: List<Any>): Set<Int> {
         val core: dynamic = solver.unsatCore()

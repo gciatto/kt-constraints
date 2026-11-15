@@ -9,4 +9,7 @@ interface Valuation {
 
     /** Returns an exact integer binding, or null when absent. */
     fun valueOf(variable: IntVar): BigInteger?
+
+    /** Returns an exact real binding, or null when absent (the default for valuations without reals). */
+    fun valueOf(variable: RealVar): Rational? = null
 }

@@ -19,8 +19,18 @@ import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
+import io.github.gciatto.ktconstraints.core.IntToReal
 import io.github.gciatto.ktconstraints.core.IntVar
 import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.RealDifference
+import io.github.gciatto.ktconstraints.core.RealEquality
+import io.github.gciatto.ktconstraints.core.RealLessOrEqual
+import io.github.gciatto.ktconstraints.core.RealLessThan
+import io.github.gciatto.ktconstraints.core.RealLiteral
+import io.github.gciatto.ktconstraints.core.RealNegation
+import io.github.gciatto.ktconstraints.core.RealScale
+import io.github.gciatto.ktconstraints.core.RealSum
+import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.core.fold
 import io.github.gciatto.ktconstraints.model.ConstraintModel
@@ -43,7 +53,9 @@ internal object Z3Support {
                     is BoolCardinality -> decompositions += "cardinality -> pseudo-Boolean constraint"
                     is BoolVar, is IntVar, is BoolLiteral, is IntLiteral, is IntSum, is IntDifference, is IntProduct,
                     is IntNegation, is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolAnd, is BoolOr,
-                    is BoolNot, is BoolImplies, is BoolEquality, is LinearSum,
+                    is BoolNot, is BoolImplies, is BoolEquality, is LinearSum, is RealVar, is RealLiteral, is RealSum,
+                    is RealDifference, is RealNegation, is RealScale, is IntToReal, is RealEquality, is RealLessThan,
+                    is RealLessOrEqual,
                     -> Unit
                     else -> unsupported += "Unsupported expression: ${node::class.simpleName ?: node}"
                 }

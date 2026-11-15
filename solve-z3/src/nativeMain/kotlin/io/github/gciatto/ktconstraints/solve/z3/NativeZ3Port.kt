@@ -2,6 +2,7 @@
 
 package io.github.gciatto.ktconstraints.solve.z3
 
+import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.solve.CheckStatus
 import io.github.gciatto.ktconstraints.solve.spi.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_ast
@@ -16,6 +17,7 @@ import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_get_error_code
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_get_error_msg
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_get_numeral_string
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_is_eq_ast
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_is_numeral_ast
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_add
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_and
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_atleast
@@ -26,6 +28,7 @@ import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_distinct
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_eq
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_false
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_implies
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_int2real
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_int_sort
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_ite
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_le
@@ -36,6 +39,7 @@ import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_numeral
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_or
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_params
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_pbeq
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_real_sort
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_solver
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_string_symbol
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_sub
@@ -74,6 +78,7 @@ internal class NativeZ3Port(
 ) : Z3Port<Z3_ast> {
     private val boolSort = checked(Z3_mk_bool_sort(context))
     private val intSort = checked(Z3_mk_int_sort(context))
+    private val realSort = checked(Z3_mk_real_sort(context))
     private val solver = checkNotNull(checked(Z3_mk_solver(context))).also { Z3_solver_inc_ref(context, it) }
     private var model: Z3_model? = null
 
@@ -84,6 +89,12 @@ internal class NativeZ3Port(
     override fun bool(value: Boolean): Z3_ast = ast(if (value) Z3_mk_true(context) else Z3_mk_false(context))
 
     override fun int(value: BigInteger): Z3_ast = ast(Z3_mk_numeral(context, value.toString(), intSort))
+
+    override fun realConst(name: String): Z3_ast = ast(Z3_mk_const(context, Z3_mk_string_symbol(context, name), realSort))
+
+    override fun real(value: Rational): Z3_ast = ast(Z3_mk_numeral(context, value.toString(), realSort))
+
+    override fun toReal(operand: Z3_ast): Z3_ast = ast(Z3_mk_int2real(context, operand))
 
     override fun add(operands: List<Z3_ast>): Z3_ast = ast(Z3_mk_add(context, operands.size.toUInt(), operands.toCValues()))
 
@@ -172,6 +183,11 @@ internal class NativeZ3Port(
 
     override fun intValue(term: Z3_ast): BigInteger =
         BigInteger.of(checkNotNull(checked(Z3_get_numeral_string(context, evaluate(term)))).toKString())
+
+    override fun realValue(term: Z3_ast): Rational {
+        val value = evaluate(term)
+        return exactRational(if (Z3_is_numeral_ast(context, value)) checked(Z3_get_numeral_string(context, value))?.toKString() else null)
+    }
 
     override fun unsatCore(assumptions: List<Z3_ast>): Set<Int> {
         val core = checkNotNull(checked(Z3_solver_get_unsat_core(context, solver)))
