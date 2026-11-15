@@ -17,9 +17,9 @@ contain an exact Boolean/integer algebra, finite domains, global nodes, a ground
 with shared Kotest property contracts. JVM MiniZinc routes execute Gecode, Chuffed, CP-SAT, HiGHS and CBC with shared
 conformance tests. MIP routes expose a bounded affine integer subset and do not enumerate all solutions.
 The official JS package runs Gecode through Node's CLI and Chuffed through browser Wasm.
-Direct Z3 (`z3/direct` on the JVM, `z3/wasm` on Node and isolated browsers) solves the same IR with unbounded exact integers and offers
+Direct Z3 (`z3/direct` on the JVM, `z3/wasm` on Node and isolated browsers, `z3/native` through the C API on desktop Kotlin/Native) solves the same IR with unbounded exact integers and offers
 incremental sessions with checkpoints, assumptions and unsat cores.
-**Z3 Native, direct Choco/CP-SAT/HiGHS adapters, FlatZinc interchange and Native execution remain planned**.
+**Direct Choco/CP-SAT/HiGHS adapters, FlatZinc interchange and Native execution remain planned**.
 
 ## Design
 
@@ -39,7 +39,7 @@ incremental sessions with checkpoints, assumptions and unsat cores.
 | Solver contracts | `:solve`, `:solve-spi` | Exact results/assignments and explicit backend eligibility; execution in progress |
 | Compiler/runtime route | `:solve-minizinc` | Portable checked compiler and five JVM engines, Node CLI and browser Chuffed Wasm |
 | FlatZinc interchange | `:solve-flatzinc` | Placeholder module |
-| Direct solver adapters | `:solve-z3` | JVM and Wasm (Node, isolated browsers) Z3: batch and incremental; Native planned |
+| Direct solver adapters | `:solve-z3` | JVM, Wasm (Node, isolated browsers) and desktop Native Z3: batch and incremental |
 | Direct solver adapters | `:solve-choco`, `:solve-cpsat`, `:solve-highs` | Placeholder modules |
 | Orchestration | `:solve-portfolio` | Placeholder module |
 | Language interoperability | `:interop-java`, `:interop-js` | Placeholder modules |

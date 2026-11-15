@@ -18,11 +18,13 @@ each advertised only after its own tests pass.
   definedness constraint as the MiniZinc route and the finite oracle. Unknown nodes are
   rejected before execution.
 - Satisfaction enumeration blocks each projected output assignment, so streams contain
-  exactly the distinct projections. Optimization is a linear improving search with
-  `Solver` checks: each incumbent adds a strict objective bound, and only a final UNSAT
-  check proves optimality. Z3 `Optimize` is not used until its semantics are separately
-  tested; unbounded objectives are therefore reported as feasible incumbents at timeout,
-  never as `UNBOUNDED`.
+  exactly the distinct projections. Optimization uses plain `Solver` checks: each
+  incumbent adds a permanent strict objective bound, and tentative bounds are probed in a
+  pushed frame, galloping (doubling steps) beyond the incumbent until one is refuted, then
+  bisecting. Optimality is claimed only when the score right after the incumbent is refuted,
+  so wide domains need a logarithmic number of checks. Z3 `Optimize` is not used: every
+  domain is finite, so `UNBOUNDED` cannot arise, and refutation-based proofs need no
+  separate trust in its optimality claims.
 - Every full model is validated with the pure evaluator before projection.
 - Each stream owns one Z3 `Context`, confined to one dedicated thread. The deadline is the
   remaining stream budget passed as Z3's `timeout` per check. Cancellation interrupts the
@@ -91,6 +93,9 @@ solver-level push/pop never shortens) and confined to one dedicated thread; solv
 parameters and vectors are reference counted explicitly. Z3's error handler is disabled and
 every error is checked and raised as `BackendExecutionException`. Cancellation and close call
 the thread-safe `Z3_interrupt`.
+
+Status: implemented; the Linux x64 host runs the same solver, incremental and optimization
+contracts as the JVM and Wasm routes, and CI runs them on Linux, macOS and Windows hosts.
 
 Reproducible test binaries: the Linux x64, macOS arm64 and Windows x64 `libz3` of the same
 pinned z3-turnkey artifact used on the JVM (Z3 4.14.0), extracted by Gradle for the native

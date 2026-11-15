@@ -141,8 +141,8 @@ semantics, while assignment integers remain in a lossless JSON string. Native co
 
 M4 adds direct JVM Z3 (`z3/direct`, bundled by `z3-turnkey`), a route distinct from every MiniZinc route.
 Integers map to Z3's unbounded `Int`, so no numeric range is imposed. Globals use declared lossless decompositions
-and the same element-definedness rule. Optimization is an exact improving search over `Solver` checks; only a
-final UNSAT check proves optimality. Each stream or session owns one Z3 context confined to a dedicated thread;
+and the same element-definedness rule. Optimization gallops and then bisects tentative objective bounds over
+`Solver` checks; optimality is claimed only once the next better score is refuted. Each stream or session owns one Z3 context confined to a dedicated thread;
 close and coroutine cancellation interrupt the native call, and the context is closed on its own thread.
 
 Incremental sessions (`IncrementalConstraintSolver.openSession`) treat the model as an irremovable root frame.
@@ -151,4 +151,5 @@ single check, and unsat cores are subsets of those assumptions, not necessarily 
 validated against every active constraint and assumption. Repeated checks are not advertised as propagation.
 Translation, streams and sessions are common code behind an internal per-context port, so the Wasm route
 `z3/wasm` (official `z3-solver` module, owned and terminated by a closeable `Z3JsBackend`) shares them on Node
-and in cross-origin-isolated browsers.
+and in cross-origin-isolated browsers, and the Kotlin/Native route `z3/native` shares them through a cinterop
+shim that loads the Z3 C library at run time, so a missing library is a reported unavailability, not a link failure.
