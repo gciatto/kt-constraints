@@ -105,6 +105,9 @@ Streams emit solution/incumbent events and exactly one completion event, then re
 close preserve the first definitive terminal result and release resources once, including during an in-flight
 read. Only one consumer may call `next` at a time. Closing a solver cancels its active streams. Shared lifecycle
 implementations use portable atomic state; coroutine cancellation is propagated rather than reported as UNSAT.
+Batch `solve` is lazy: for a satisfaction model it returns the first validated solution as a completed
+`FEASIBLE` result and closes the stream, which stops the search; enumerating more solutions is the stream's job.
+Optimization reads the stream until its completion, so optimality still needs the backend's proof.
 
 The unpublished finite test oracle enumerates at most 10,000 candidates across at most 64 variables. It checks
 the whole supported IR before enumeration, uses exact sparse domains, validates all full assignments, and only
