@@ -1,12 +1,14 @@
 package io.github.gciatto.ktconstraints.solve.spi
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
+import io.github.gciatto.ktconstraints.solve.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 
 internal class RecordingSolver(
     private val onOpen: () -> Unit = {},
     private val releaseHook: () -> Unit = {},
+    private val events: List<SolutionEvent> = emptyList(),
 ) : ManagedConstraintSolver() {
     override val descriptor = SolverDescriptor("fake", "stream", emptySet())
     val created = mutableListOf<RecordingStream>()
@@ -16,7 +18,7 @@ internal class RecordingSolver(
         options: SolveOptions,
         onClosed: () -> Unit,
     ): ManagedSolutionStream {
-        val stream = RecordingStream(releaseHook = releaseHook, onClosed = onClosed)
+        val stream = RecordingStream(events, releaseHook = releaseHook, onClosed = onClosed)
         created += stream
         onOpen()
         return stream
