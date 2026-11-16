@@ -12,14 +12,16 @@
 
 ## Project status
 
-Experimental **P0 / M4 implementation (in progress)**, not a stable release. The `:core`, `:model`, and `:dsl` modules
+Experimental **P0 / M5 implementation (in progress)**, not a stable release. The `:core`, `:model`, and `:dsl` modules
 contain an exact Boolean/integer algebra, finite domains, global nodes, a ground evaluator and a model builder,
 with shared Kotest property contracts. JVM MiniZinc routes execute Gecode, Chuffed, CP-SAT, HiGHS and CBC with shared
 conformance tests. MIP routes expose a bounded affine integer subset and do not enumerate all solutions.
 The official JS package runs Gecode through Node's CLI and Chuffed through browser Wasm.
 Direct Z3 (`z3/direct` on the JVM, `z3/wasm` on Node and isolated browsers, `z3/native` through the C API on desktop Kotlin/Native) solves the same IR with unbounded exact integers, exact linear reals and fixed-width bit-vectors and offers
 incremental sessions with checkpoints, assumptions and unsat cores.
-**Direct Choco/CP-SAT/HiGHS adapters, FlatZinc interchange and Native execution remain planned**.
+Direct OR-Tools CP-SAT (`cp-sat/direct`, JVM) solves the Boolean/integer IR within a conservative int64 margin
+with native globals, callback enumeration and proven optima.
+**Direct Choco/HiGHS adapters, FlatZinc interchange and Native MiniZinc execution remain planned**.
 
 ## Design
 
@@ -40,7 +42,8 @@ incremental sessions with checkpoints, assumptions and unsat cores.
 | Compiler/runtime route | `:solve-minizinc` | Portable checked compiler and five JVM engines, Node CLI and browser Chuffed Wasm |
 | FlatZinc interchange | `:solve-flatzinc` | Placeholder module |
 | Direct solver adapters | `:solve-z3` | JVM, Wasm (Node, isolated browsers) and desktop Native Z3: batch and incremental |
-| Direct solver adapters | `:solve-choco`, `:solve-cpsat`, `:solve-highs` | Placeholder modules |
+| Direct solver adapters | `:solve-cpsat` | JVM OR-Tools CP-SAT: batch satisfaction, enumeration and optimization |
+| Direct solver adapters | `:solve-choco`, `:solve-highs` | Placeholder modules |
 | Orchestration | `:solve-portfolio` | Placeholder module |
 | Language interoperability | `:interop-java`, `:interop-js` | Placeholder modules |
 | Testing and documentation | `:test-core`, `:test-solve`, `:documentation` | Shared contracts, capped finite test oracle and MkDocs |

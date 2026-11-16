@@ -93,7 +93,8 @@ contract tests run on JVM and JS, CI fully green, Maven artifact IDs verified in
 - [x] Gecode via MiniZinc/FlatZinc: satisfiability and finite-domain constraints.
 - [x] Chuffed via MiniZinc/FlatZinc: clause-learning CP integration.
 - [x] OR-Tools CP-SAT via MiniZinc for the checked finite integer/Boolean subset.
-- [ ] `:solve-cpsat` direct JVM adapter for scheduling/advanced models.
+- [x] `:solve-cpsat` direct JVM adapter (`cp-sat/direct`) for the Boolean/integer IR within an int64 margin.
+- [ ] CP-SAT scheduling globals (intervals, `cumulative`, `noOverlap`) once the core IR has them.
 - [x] HiGHS and CBC via MiniZinc for bounded affine integer/Boolean models.
 - [ ] `:solve-highs` direct API for LP/MIP and improved solution/bound support.
 - [ ] `:solve-choco` direct JVM: FD variables, globals, optimization, reversible propagation API where supported.
@@ -147,7 +148,7 @@ of any specific Prolog implementation. Any future 2p-Kt integration belongs outs
 | MiniZinc | Compiler/runtime | CLI implemented | Planned | Node CLI and browser Chuffed Wasm implemented | Batch; not a propagating store |
 | Gecode | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | Native CP, no generic incremental API promised |
 | Chuffed | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | Native CP, no generic incremental API promised |
-| CP-SAT | MiniZinc and direct | MiniZinc implemented; direct planned | Custom wrapper | Via runtime if packaged | Incrementality not equivalent to CLP propagation |
+| CP-SAT | MiniZinc and direct | MiniZinc and direct JVM implemented | Custom wrapper | Via runtime if packaged | Incrementality not equivalent to CLP propagation |
 | Choco | Direct JVM | Planned | — | — | Propagation/backtracking planned |
 | Z3 | Direct | Implemented (`z3/direct`) | C API implemented (`z3/native`; desktop, run-time loaded) | Wasm implemented (`z3/wasm`; Node, isolated browsers) | Incremental sessions implemented; no domain propagation |
 | HiGHS | MiniZinc and direct | MiniZinc implemented; direct planned | C API implemented (`z3/native`; desktop, run-time loaded) | Wasm conditional | LP/MIP; not CLP(FD) propagation |
