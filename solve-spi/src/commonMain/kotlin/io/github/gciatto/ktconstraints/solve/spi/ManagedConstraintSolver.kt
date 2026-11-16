@@ -2,14 +2,19 @@ package io.github.gciatto.ktconstraints.solve.spi
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
+import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolutionStream
 import io.github.gciatto.ktconstraints.solve.SolveCompleted
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolveResult
+import io.github.gciatto.ktconstraints.solve.SolveStatus
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
-/** Owns active streams and implements batch solving by consuming a resource-safe stream. */
+/**
+ * Owns active streams and implements batch solving by consuming a resource-safe stream: satisfaction stops at the
+ * first solution, optimization reads until the stream completes.
+ */
 @OptIn(ExperimentalAtomicApi::class)
 abstract class ManagedConstraintSolver : ConstraintSolver {
     private val state = AtomicReference(SolverState())
@@ -45,8 +50,12 @@ abstract class ManagedConstraintSolver : ConstraintSolver {
         val stream = solutions(model, options)
         try {
             while (true) {
-                val event = checkNotNull(stream.next()) { "Stream ended without completion" }
-                if (event is SolveCompleted) return event.result
+                when (val event = checkNotNull(stream.next()) { "Stream ended without completion" }) {
+                    is SolveCompleted -> return event.result
+                    // A satisfaction witness completes the batch request; closing the stream stops the search.
+                    is SolutionFound ->
+                        if (model.objective == null) return SolveResult(SolveStatus.FEASIBLE, event.assignment, descriptor)
+                }
             }
         } finally {
             stream.close()

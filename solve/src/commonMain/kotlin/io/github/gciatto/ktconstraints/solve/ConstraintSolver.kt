@@ -7,7 +7,10 @@ interface ConstraintSolver : AutoCloseable {
     /** Discoverable backend and execution-route description. */
     val descriptor: SolverDescriptor
 
-    /** Solves a frozen model; may suspend while a native, subprocess or Wasm backend executes. */
+    /**
+     * Solves a frozen model; may suspend while a native, subprocess or Wasm backend executes. Satisfaction returns the
+     * first solution found (`FEASIBLE`, completed) without enumerating others; optimization returns the final result.
+     */
     suspend fun solve(
         model: ConstraintModel,
         options: SolveOptions = SolveOptions.DEFAULT,
