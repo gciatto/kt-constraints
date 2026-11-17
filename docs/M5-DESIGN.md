@@ -4,6 +4,42 @@ M5 adds direct routes to engines that M3 already reaches through MiniZinc. Each 
 route is a separate backend with its own descriptor and conformance gate, and is checked
 against the finite oracle (and, where both run, the MiniZinc route) on shared models.
 
+## M5a: direct Choco (JVM)
+
+- Route: `choco/direct`, a pure-Java engine (`org.choco-solver:choco-solver` 6.0.2,
+  BSD-4-Clause, Java 17). Availability is a trivial solve, so a broken classpath is a
+  reported unavailability. Only `jvmMain` has a backend.
+- **Integers are 32-bit.** Choco variables live within `±IntVar.MAX_INT_BOUND`
+  (`21474836`). Every literal, domain bound, coefficient, subexpression interval and
+  accumulated linear magnitude must stay within `10^7`, so the difference of the two sides
+  of any relation still fits Choco's bounds; anything else is reported unsupported before
+  execution. Domains with holes are an interval variable plus `notMember` gaps; an empty
+  domain posts `false`.
+- **Booleans and globals.** A top-level constraint posts one native constraint (`scalar`
+  for linear relations, `sum` for cardinalities, `allDifferent`, `table`, clause
+  constraints). A nested Boolean expression is that same constraint reified by Choco
+  (`Constraint.reify()`, an equivalence), so nested globals keep native semantics and no
+  decomposition is declared. Sums, differences, negations and linear sums are flattened
+  into one linear form; products and elements become auxiliary variables over their exact
+  intervals (`times`, `element` with index offset 0, posted at top level for the shared
+  element-definedness rule). Reals and bit-vectors are rejected.
+- **Search.** Each stream builds its own `Model`, so no solver state is shared between
+  calls, models or threads. Every `next` runs `Solver.solve()` once on the default
+  dispatcher, so the search advances only when the consumer asks. Satisfaction streams
+  enumerate distinct projections; optimization relies on Choco's strict objective cuts,
+  and `OPTIMAL` is claimed only when the search ends without a stop criterion firing.
+  Solutions are read from the source variables, validated with the pure evaluator and
+  scored exactly.
+- **Termination.** One stop criterion observes close/cancellation (including thread
+  interruption from coroutine cancellation) and the stream deadline; a search stopped by
+  the deadline reports `TIMEOUT`, never infeasibility. A solution limit stops after the
+  limit-th solution (`RESOURCE_LIMIT`). No thread outlives a read.
+- **Propagating sessions are deferred.** Choco's public API does expose what a
+  `PropagatingSession` needs (`Solver.propagate()`, domain reflection on variables, and
+  `getEnvironment().worldPush()/worldPop()` for reversible state), but the common
+  session API does not exist yet and must first be designed against Kotlin, Java and
+  TypeScript usage examples. This slice offers batch solving and enumeration only.
+
 ## M5b: direct OR-Tools CP-SAT (JVM)
 
 - Route: `cp-sat/direct`, distinct from `cp-sat/minizinc`. Runtime:
