@@ -91,3 +91,41 @@ against the finite oracle (and, where both run, the MiniZinc route) on shared mo
 - **Out of scope for this slice:** scheduling globals (intervals, `cumulative`,
   `noOverlap`) need new core IR first; incremental sessions are not offered because CP-SAT
   has no incremental solving API.
+
+## M5c: SCIP and HiGHS through OR-Tools (JVM)
+
+- Routes: `scip/or-tools` and `highs/or-tools`, in the new module `:solve-mip`. Both use
+  OR-Tools' `MPSolver`, already bundled by `ortools-java` for every CI platform (HiGHS
+  1.12, MIT; SCIP, Apache-2.0), so they are not the direct HiGHS C API: `:solve-highs`
+  stays reserved for that route, which is postponed with the other native bindings.
+  Gurobi needs a licence that CI cannot provide yet, so it is deferred.
+- **Exact linear lowering (common code).** `MipLowering` turns the Boolean/integer IR
+  into a pure integer program (`MipProgram`: integer variables with exact bounds, linear
+  rows with exact integer coefficients, an affine objective). It is common code, so a
+  future native HiGHS route can reuse it, and the support report is the lowering itself.
+  - Integers stay within `±10^6` (the MiniZinc MIP margin): every literal, coefficient,
+    domain bound and affine magnitude, so every big-M term is exactly representable and
+    far from the solvers' tolerances. Products need one fixed factor; reals and
+    bit-vectors are rejected.
+  - Booleans are 0/1 variables. A nested relation `e ≤ 0` over `e ∈ [lo, hi]` becomes a
+    binary `r` with `e + hi·r ≤ hi` and `e − (lo − 1)·r ≥ 1`, so `r` is determined both
+    ways; strict relations use integrality (`e < 0` is `e + 1 ≤ 0`), equality is the
+    conjunction of two inequalities, and conjunctions, disjunctions and cardinalities
+    use their standard exact linear forms.
+  - Declared lossless decompositions: domains with holes select one interval with
+    binaries; all-different is pairwise disequality; a table is a disjunction of tuple
+    conjunctions; an element selects its index with top-level one-hot binaries (the
+    shared element-definedness rule) and links the value with exact big-M rows.
+- **Search.** One `MPSolver` per stream solves once on its own daemon thread with a zero
+  relative gap. The rounded solution is validated exactly against the source model before
+  it is emitted, and the objective is evaluated exactly. There is no enumeration: a
+  stream emits at most one solution and then its completion. `OPTIMAL` and `INFEASIBLE`
+  rest on the solver's numerical proof, as on the MiniZinc MIP routes.
+- **Termination.** The stream deadline becomes the solver time limit and a stop under it
+  reports `TIMEOUT`. SCIP supports `interruptSolve`, so close and cancellation stop the
+  search and join its thread. OR-Tools cannot interrupt HiGHS (`MPSolver` says so, and
+  `ModelBuilder`'s interrupt does not stop it), so `OrToolsMipBackend.highs(limit)`
+  requires a positive per-solve time limit: every HiGHS solve is bounded, close returns
+  at once, and the abandoned solve ends at that limit. Hitting the backend limit before
+  the stream deadline reports `RESOURCE_LIMIT`.
+
