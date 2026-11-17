@@ -6,6 +6,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.longs.shouldBeLessThan
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlin.time.TimeSource
 
 /** HiGHS through OR-Tools: shared MIP route tests plus the mandatory per-solve limit that bounds abandoned solves. */
@@ -29,17 +32,20 @@ class HighsSpec :
         }
 
         test("highs/or-tools/close-returns-at-once-and-the-solve-ends-at-its-limit") {
-            OrToolsMipBackend.highs(500).create().use { solver ->
+            OrToolsMipBackend.highs(2_000).create().use { solver ->
                 val stream = solver.solutions(marketSplit())
-                val reader = Thread { kotlinx.coroutines.runBlocking { runCatching { stream.next() } } }.apply { start() }
-                Thread.sleep(100)
-                val closing = TimeSource.Monotonic.markNow()
-                stream.close()
-                closing.elapsedNow().inWholeMilliseconds shouldBeLessThan 1_000L
-                stream.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
-                reader.join(5_000)
+                coroutineScope {
+                    val reading = async { runCatching { stream.next() } }
+                    delay(100)
+                    val closing = TimeSource.Monotonic.markNow()
+                    stream.close()
+                    closing.elapsedNow().inWholeMilliseconds shouldBeLessThan 1_000L
+                    stream.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
+                    reading.await()
+                    closing.elapsedNow().inWholeMilliseconds shouldBeLessThan 300L
+                }
                 val abandoned = TimeSource.Monotonic.markNow()
-                while (mipThreads() > 0 && abandoned.elapsedNow().inWholeMilliseconds < 10_000) Thread.sleep(50)
+                while (mipThreads() > 0 && abandoned.elapsedNow().inWholeMilliseconds < 10_000) delay(50)
                 mipThreads() shouldBe 0
             }
         }
