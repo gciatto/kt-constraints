@@ -7,7 +7,7 @@ against the finite oracle (and, where both run, the MiniZinc route) on shared mo
 ## M5a: direct Choco (JVM)
 
 - Route: `choco/direct`, a pure-Java engine (`org.choco-solver:choco-solver` 6.0.2,
-  BSD-4-Clause, Java 17). Availability is a trivial solve, so a broken classpath is a
+  BSD-3-Clause, Java 17). Availability is a trivial solve, so a broken classpath is a
   reported unavailability. Only `jvmMain` has a backend.
 - **Integers are 32-bit.** Choco variables live within `±IntVar.MAX_INT_BOUND`
   (`21474836`). Every literal, domain bound, coefficient, subexpression interval and
