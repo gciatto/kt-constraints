@@ -22,7 +22,9 @@ incremental sessions with checkpoints, assumptions and unsat cores.
 Direct OR-Tools CP-SAT (`cp-sat/direct`, JVM) solves the Boolean/integer IR within a conservative int64 margin
 with native globals, callback enumeration and proven optima.
 Direct Choco (`choco/direct`, JVM) solves it within `±10^7` with natively reified globals and lazy enumeration.
-**A direct HiGHS adapter, Choco propagating sessions, FlatZinc interchange and Native MiniZinc execution remain planned**.
+SCIP and HiGHS through OR-Tools (`scip/or-tools`, `highs/or-tools`, JVM) solve it within `±10^6` through an exact
+linear lowering; HiGHS solves are always bounded by a backend limit, since OR-Tools cannot interrupt them.
+**A direct HiGHS C API adapter, Gurobi, Choco propagating sessions, FlatZinc interchange and Native MiniZinc execution remain planned**.
 
 ## Design
 
@@ -45,7 +47,8 @@ Direct Choco (`choco/direct`, JVM) solves it within `±10^7` with natively reifi
 | Direct solver adapters | `:solve-z3` | JVM, Wasm (Node, isolated browsers) and desktop Native Z3: batch and incremental |
 | Direct solver adapters | `:solve-cpsat` | JVM OR-Tools CP-SAT: batch satisfaction, enumeration and optimization |
 | Direct solver adapters | `:solve-choco` | JVM Choco: batch satisfaction, enumeration and optimization |
-| Direct solver adapters | `:solve-highs` | Placeholder module |
+| Direct solver adapters | `:solve-mip` | JVM SCIP and HiGHS through OR-Tools: batch satisfaction and optimization |
+| Direct solver adapters | `:solve-highs` | Placeholder module for the direct HiGHS C API |
 | Orchestration | `:solve-portfolio` | Placeholder module |
 | Language interoperability | `:interop-java`, `:interop-js` | Placeholder modules |
 | Testing and documentation | `:test-core`, `:test-solve`, `:documentation` | Shared contracts, capped finite test oracle and MkDocs |

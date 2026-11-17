@@ -127,5 +127,7 @@ against the finite oracle (and, where both run, the MiniZinc route) on shared mo
   `ModelBuilder`'s interrupt does not stop it), so `OrToolsMipBackend.highs(limit)`
   requires a positive per-solve time limit: every HiGHS solve is bounded, close returns
   at once, and the abandoned solve ends at that limit. Hitting the backend limit before
-  the stream deadline reports `RESOURCE_LIMIT`.
+  the stream deadline reports `RESOURCE_LIMIT`. OR-Tools reports a HiGHS stop at its time
+  limit with a status its Java enum cannot map, so such a stop exposes no incumbent and
+  reports `UNKNOWN`; the stream never guesses a solution or infeasibility from it.
 

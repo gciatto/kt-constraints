@@ -96,7 +96,9 @@ contract tests run on JVM and JS, CI fully green, Maven artifact IDs verified in
 - [x] `:solve-cpsat` direct JVM adapter (`cp-sat/direct`) for the Boolean/integer IR within an int64 margin.
 - [ ] CP-SAT scheduling globals (intervals, `cumulative`, `noOverlap`) once the core IR has them.
 - [x] HiGHS and CBC via MiniZinc for bounded affine integer/Boolean models.
-- [ ] `:solve-highs` direct API for LP/MIP and improved solution/bound support.
+- [x] `:solve-mip` SCIP and HiGHS through OR-Tools (`scip/or-tools`, `highs/or-tools`) over an exact common lowering.
+- [ ] `:solve-highs` direct C API for LP/MIP and improved solution/bound support (postponed: no maintained JVM binding).
+- [ ] Gurobi direct route once CI has a licence (the Maven jar ships no size-limited licence).
 - [x] `:solve-choco` direct JVM adapter (`choco/direct`): FD variables, native globals, enumeration and optimization.
 - [ ] Choco `PropagatingSession` (propagate, domain reflection, reversible world push/pop) once the common API exists.
 - [ ] Define global-constraint registry (`allDifferent`, `element`, `table`, `cumulative`, `noOverlap`, `regular`,
@@ -152,7 +154,8 @@ of any specific Prolog implementation. Any future 2p-Kt integration belongs outs
 | CP-SAT | MiniZinc and direct | MiniZinc and direct JVM implemented | Custom wrapper | Via runtime if packaged | Incrementality not equivalent to CLP propagation |
 | Choco | Direct JVM | Direct JVM implemented (`choco/direct`) | — | — | Batch only; propagation/backtracking planned |
 | Z3 | Direct | Implemented (`z3/direct`) | C API implemented (`z3/native`; desktop, run-time loaded) | Wasm implemented (`z3/wasm`; Node, isolated browsers) | Incremental sessions implemented; no domain propagation |
-| HiGHS | MiniZinc and direct | MiniZinc implemented; direct planned | C API implemented (`z3/native`; desktop, run-time loaded) | Wasm conditional | LP/MIP; not CLP(FD) propagation |
+| HiGHS | MiniZinc, OR-Tools and direct | MiniZinc and OR-Tools (`highs/or-tools`, limit-bounded) implemented; direct C API postponed | C API postponed | Wasm conditional | LP/MIP; not CLP(FD) propagation |
+| SCIP | OR-Tools | Implemented (`scip/or-tools`) | — | — | MIP batch, interruptible |
 | CBC | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | MIP batch |
 
 A backend is marked *available* only when its installed/embedded runtime passes a startup probe; marked

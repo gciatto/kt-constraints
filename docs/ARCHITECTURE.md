@@ -145,7 +145,9 @@ Chuffed excludes its reserved +/-500,000,000 sentinels; CP-SAT initially shares 
 The direct `cp-sat/direct` route (M5) instead bounds every integer subexpression and accumulated linear
 magnitude by `2^61`, so each posted relation fits CP-SAT's int64 arithmetic; see `docs/M5-DESIGN.md`.
 The direct `choco/direct` route bounds them by `10^7` (inside Choco's `IntVar.MAX_INT_BOUND`), reifies nested
-globals natively and builds one Choco model per stream, advanced one solution per read.
+globals natively and builds one Choco model per stream, advanced one solution per read. `scip/or-tools` and
+`highs/or-tools` share a common exact lowering to integer programs within `10^6`; HiGHS solves carry a mandatory
+backend limit because OR-Tools cannot interrupt them.
 HiGHS/CBC use a +/-1,000,000 affine integer subset, zero objective gaps and exact returned-assignment
 validation; their proof statuses rely on numerical MIP evidence. They do not advertise exhaustive enumeration.
 A validated MIP satisfaction witness plus successful exit establishes feasibility even without a terminal status.

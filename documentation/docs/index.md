@@ -6,7 +6,7 @@ The experimental Boolean/integer model and resource-safe solving contracts are i
 JVM MiniZinc routes execute Gecode, Chuffed, CP-SAT, HiGHS and CBC. HiGHS/CBC support a
 bounded affine integer subset and do not enumerate all satisfying assignments.
 Direct OR-Tools CP-SAT (`cp-sat/direct`) runs on the JVM within a conservative int64 margin,
-and direct Choco (`choco/direct`) within `±10^7`.
+direct Choco (`choco/direct`) within `±10^7`, and SCIP/HiGHS through OR-Tools within `±10^6`.
 The official JS package provides Node/Gecode CLI and browser/Chuffed Wasm execution with
 shared runtime contracts. Direct Z3 on the JVM, Wasm (Node and isolated browsers) and desktop Kotlin/Native adds unbounded exact integers, exact linear reals, bit-vectors and incremental sessions
 with checkpoints, assumptions and unsat cores. Other direct adapters and Native execution remain planned.
