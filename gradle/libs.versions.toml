@@ -12,6 +12,7 @@ minizincJs = "4.5.2"
 z3Turnkey = "4.14.0"
 z3Js = "5.3.3"
 ortools = "9.15.6755"
+choco = "6.0.2"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -22,6 +23,7 @@ kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref 
 kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
 z3-turnkey = { module = "tools.aqua:z3-turnkey", version.ref = "z3Turnkey" }
 ortools-java = { module = "com.google.ortools:ortools-java", version.ref = "ortools" }
+choco-solver = { module = "org.choco-solver:choco-solver", version.ref = "choco" }
 # Exact multiplatform integer representation used by the core:
 kt-math = "io.github.gciatto:kt-math:2.1.2"
 
