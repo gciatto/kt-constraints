@@ -97,7 +97,8 @@ contract tests run on JVM and JS, CI fully green, Maven artifact IDs verified in
 - [ ] CP-SAT scheduling globals (intervals, `cumulative`, `noOverlap`) once the core IR has them.
 - [x] HiGHS and CBC via MiniZinc for bounded affine integer/Boolean models.
 - [ ] `:solve-highs` direct API for LP/MIP and improved solution/bound support.
-- [ ] `:solve-choco` direct JVM: FD variables, globals, optimization, reversible propagation API where supported.
+- [x] `:solve-choco` direct JVM adapter (`choco/direct`): FD variables, native globals, enumeration and optimization.
+- [ ] Choco `PropagatingSession` (propagate, domain reflection, reversible world push/pop) once the common API exists.
 - [ ] Define global-constraint registry (`allDifferent`, `element`, `table`, `cumulative`, `noOverlap`, `regular`,
   `globalCardinality`, graph constraints) with native translations and decompositions.
 - [ ] Shared `:test-solve` tests for objective semantics, sat/unsat, limit/timeout, projection and result-stream closure.
@@ -149,7 +150,7 @@ of any specific Prolog implementation. Any future 2p-Kt integration belongs outs
 | Gecode | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | Native CP, no generic incremental API promised |
 | Chuffed | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | Native CP, no generic incremental API promised |
 | CP-SAT | MiniZinc and direct | MiniZinc and direct JVM implemented | Custom wrapper | Via runtime if packaged | Incrementality not equivalent to CLP propagation |
-| Choco | Direct JVM | Planned | — | — | Propagation/backtracking planned |
+| Choco | Direct JVM | Direct JVM implemented (`choco/direct`) | — | — | Batch only; propagation/backtracking planned |
 | Z3 | Direct | Implemented (`z3/direct`) | C API implemented (`z3/native`; desktop, run-time loaded) | Wasm implemented (`z3/wasm`; Node, isolated browsers) | Incremental sessions implemented; no domain propagation |
 | HiGHS | MiniZinc and direct | MiniZinc implemented; direct planned | C API implemented (`z3/native`; desktop, run-time loaded) | Wasm conditional | LP/MIP; not CLP(FD) propagation |
 | CBC | MiniZinc/FlatZinc | Via runtime | Via runtime | Conditional | MIP batch |

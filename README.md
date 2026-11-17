@@ -21,7 +21,8 @@ Direct Z3 (`z3/direct` on the JVM, `z3/wasm` on Node and isolated browsers, `z3/
 incremental sessions with checkpoints, assumptions and unsat cores.
 Direct OR-Tools CP-SAT (`cp-sat/direct`, JVM) solves the Boolean/integer IR within a conservative int64 margin
 with native globals, callback enumeration and proven optima.
-**Direct Choco/HiGHS adapters, FlatZinc interchange and Native MiniZinc execution remain planned**.
+Direct Choco (`choco/direct`, JVM) solves it within `±10^7` with natively reified globals and lazy enumeration.
+**A direct HiGHS adapter, Choco propagating sessions, FlatZinc interchange and Native MiniZinc execution remain planned**.
 
 ## Design
 
@@ -43,7 +44,8 @@ with native globals, callback enumeration and proven optima.
 | FlatZinc interchange | `:solve-flatzinc` | Placeholder module |
 | Direct solver adapters | `:solve-z3` | JVM, Wasm (Node, isolated browsers) and desktop Native Z3: batch and incremental |
 | Direct solver adapters | `:solve-cpsat` | JVM OR-Tools CP-SAT: batch satisfaction, enumeration and optimization |
-| Direct solver adapters | `:solve-choco`, `:solve-highs` | Placeholder modules |
+| Direct solver adapters | `:solve-choco` | JVM Choco: batch satisfaction, enumeration and optimization |
+| Direct solver adapters | `:solve-highs` | Placeholder module |
 | Orchestration | `:solve-portfolio` | Placeholder module |
 | Language interoperability | `:interop-java`, `:interop-js` | Placeholder modules |
 | Testing and documentation | `:test-core`, `:test-solve`, `:documentation` | Shared contracts, capped finite test oracle and MkDocs |

@@ -144,6 +144,8 @@ and validated with an actual startup solve. The existing Gecode entry point rema
 Chuffed excludes its reserved +/-500,000,000 sentinels; CP-SAT initially shares Gecode's conservative range.
 The direct `cp-sat/direct` route (M5) instead bounds every integer subexpression and accumulated linear
 magnitude by `2^61`, so each posted relation fits CP-SAT's int64 arithmetic; see `docs/M5-DESIGN.md`.
+The direct `choco/direct` route bounds them by `10^7` (inside Choco's `IntVar.MAX_INT_BOUND`), reifies nested
+globals natively and builds one Choco model per stream, advanced one solution per read.
 HiGHS/CBC use a +/-1,000,000 affine integer subset, zero objective gaps and exact returned-assignment
 validation; their proof statuses rely on numerical MIP evidence. They do not advertise exhaustive enumeration.
 A validated MIP satisfaction witness plus successful exit establishes feasibility even without a terminal status.
