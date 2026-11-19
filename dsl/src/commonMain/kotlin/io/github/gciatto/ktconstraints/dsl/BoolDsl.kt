@@ -1,3 +1,6 @@
+@file:JvmMultifileClass
+@file:JvmName("Expressions")
+
 package io.github.gciatto.ktconstraints.dsl
 
 import io.github.gciatto.ktconstraints.core.BoolAnd
@@ -6,6 +9,8 @@ import io.github.gciatto.ktconstraints.core.BoolExpr
 import io.github.gciatto.ktconstraints.core.BoolImplies
 import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
+import kotlin.jvm.JvmMultifileClass
+import kotlin.jvm.JvmName
 
 /** Creates a symbolic Boolean conjunction. */
 infix fun BoolExpr.and(other: BoolExpr): BoolExpr = BoolAnd(this, other)

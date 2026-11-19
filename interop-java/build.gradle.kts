@@ -4,6 +4,7 @@ dependencies {
     api(project(":dsl"))
     api(project(":solve"))
     api(project(":solve-spi"))
+    implementation(libs.kotlinx.coroutines.core)
     testImplementation(project(":solve-choco"))
     testImplementation(project(":solve-cpsat"))
     testImplementation(project(":solve-mip"))

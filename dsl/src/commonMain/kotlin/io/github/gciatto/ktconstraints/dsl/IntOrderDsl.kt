@@ -1,3 +1,6 @@
+@file:JvmMultifileClass
+@file:JvmName("Expressions")
+
 package io.github.gciatto.ktconstraints.dsl
 
 import io.github.gciatto.ktconstraints.core.BoolExpr
@@ -6,6 +9,8 @@ import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
 import org.gciatto.kt.math.BigInteger
+import kotlin.jvm.JvmMultifileClass
+import kotlin.jvm.JvmName
 
 /** Creates a symbolic integer strict ordering. */
 infix fun IntExpr.lt(other: IntExpr): BoolExpr = IntLessThan(this, other)

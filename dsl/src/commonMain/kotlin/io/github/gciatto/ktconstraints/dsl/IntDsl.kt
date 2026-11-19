@@ -1,3 +1,6 @@
+@file:JvmMultifileClass
+@file:JvmName("Expressions")
+
 package io.github.gciatto.ktconstraints.dsl
 
 import io.github.gciatto.ktconstraints.core.IntDifference
@@ -7,6 +10,8 @@ import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
 import org.gciatto.kt.math.BigInteger
+import kotlin.jvm.JvmMultifileClass
+import kotlin.jvm.JvmName
 
 /** Creates a symbolic integer sum. */
 operator fun IntExpr.plus(other: IntExpr): IntExpr = IntSum(this, other)

@@ -1,3 +1,6 @@
+@file:JvmMultifileClass
+@file:JvmName("Expressions")
+
 package io.github.gciatto.ktconstraints.dsl
 
 import io.github.gciatto.ktconstraints.core.AllDifferent
@@ -8,6 +11,8 @@ import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntExpr
 import io.github.gciatto.ktconstraints.core.LinearSum
 import org.gciatto.kt.math.BigInteger
+import kotlin.jvm.JvmMultifileClass
+import kotlin.jvm.JvmName
 
 /** Preserves a global pairwise-distinctness constraint. */
 fun allDifferent(vararg operands: IntExpr): AllDifferent = AllDifferent(operands.asList())
