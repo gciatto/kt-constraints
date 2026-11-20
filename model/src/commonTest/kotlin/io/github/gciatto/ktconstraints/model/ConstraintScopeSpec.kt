@@ -3,6 +3,7 @@ package io.github.gciatto.ktconstraints.model
 import io.github.gciatto.ktconstraints.core.BitVecComparison
 import io.github.gciatto.ktconstraints.core.BitVecLiteral
 import io.github.gciatto.ktconstraints.core.BitVecRelation
+import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.core.IntEquality
 import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -28,6 +29,11 @@ class ConstraintScopeSpec :
             scope.build().constraints.size shouldBe 2
         }
 
+        test("scope/machine-integer-bounds-declare-an-interval") {
+            val scope = ConstraintScope.empty()
+            scope.intVar("x", -3L, Long.MAX_VALUE).domain shouldBe IntDomain.of(-3, Long.MAX_VALUE)
+            shouldThrow<IllegalArgumentException> { scope.intVar("y", 2L, 1L) }
+        }
         test("scope/variable-identities-are-distinct") {
             val a = ConstraintScope.empty().intVar("x", 0..10)
             val b = ConstraintScope.empty().intVar("x", 0..10)

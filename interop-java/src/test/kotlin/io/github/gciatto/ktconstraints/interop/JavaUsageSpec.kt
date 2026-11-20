@@ -26,6 +26,7 @@ class JavaUsageSpec :
                 test("java/$id/iterated-enumeration") { JavaUsage.enumerate(backend()) }
             }
         }
+        test("java/numbers") { JavaUsage.numbers() }
         test("java/z3/direct/exact-integers") { JavaUsage.exactIntegers(Z3Backend()) }
         test("java/choco/direct/future-cancellation") { JavaUsage.cancelAsync(ChocoBackend()) }
     })

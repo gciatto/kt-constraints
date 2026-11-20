@@ -21,6 +21,29 @@ class AssignmentSpec :
             projected.valueOf(flag) shouldBe null
             shouldThrow<IllegalArgumentException> { projected.project(listOf(flag)) }
         }
+        test("assignment/machine-integer-reads-are-exact-or-fail") {
+            val factory = VariableFactory.empty()
+            val small = factory.intVar("small", IntDomain.of(-5, 5))
+            val wide = factory.intVar("wide", IntDomain.of(0, Long.MAX_VALUE))
+            val huge = factory.intVar("huge", IntDomain.of(BigInteger.ZERO, BigInteger.of("9223372036854775808")))
+            val unset = factory.intVar("unset", IntDomain.of(0, 1))
+            val assignment =
+                Assignment.of(
+                    integers =
+                        mapOf(
+                            small to BigInteger.of(-3),
+                            wide to BigInteger.of(Long.MAX_VALUE),
+                            huge to BigInteger.of("9223372036854775808"),
+                        ),
+                )
+            assignment.intValueOf(small) shouldBe -3
+            assignment.longValueOf(small) shouldBe -3L
+            assignment.longValueOf(wide) shouldBe Long.MAX_VALUE
+            assignment.intValueOf(unset) shouldBe null
+            assignment.longValueOf(unset) shouldBe null
+            shouldThrow<ArithmeticException> { assignment.intValueOf(wide) }
+            shouldThrow<ArithmeticException> { assignment.longValueOf(huge) }
+        }
         test("assignment/snapshots-typed-input-maps") {
             val factory = VariableFactory.empty()
             val flag = factory.boolVar("flag")

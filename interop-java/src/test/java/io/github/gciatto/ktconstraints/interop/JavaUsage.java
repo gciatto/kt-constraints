@@ -2,10 +2,12 @@ package io.github.gciatto.ktconstraints.interop;
 
 import io.github.gciatto.ktconstraints.core.BoolExpr;
 import io.github.gciatto.ktconstraints.core.IntDomain;
+import io.github.gciatto.ktconstraints.core.Rational;
 import io.github.gciatto.ktconstraints.core.IntVar;
 import io.github.gciatto.ktconstraints.dsl.Expressions;
 import io.github.gciatto.ktconstraints.model.ConstraintModel;
 import io.github.gciatto.ktconstraints.model.ConstraintScope;
+import io.github.gciatto.ktconstraints.solve.Assignment;
 import io.github.gciatto.ktconstraints.solve.SolutionEvent;
 import io.github.gciatto.ktconstraints.solve.SolutionFound;
 import io.github.gciatto.ktconstraints.solve.SolveCompleted;
@@ -14,8 +16,10 @@ import io.github.gciatto.ktconstraints.solve.SolveResult;
 import io.github.gciatto.ktconstraints.solve.SolveStatus;
 import io.github.gciatto.ktconstraints.solve.TerminationReason;
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -117,6 +121,25 @@ public final class JavaUsage {
             check(future.cancel(true) && future.isCancelled(), "future not cancelled");
         }
         check(TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 10, "cancellation did not stop the search");
+    }
+
+    /** Primitive bounds and reads, java.math conversions, and exact BigDecimal-to-Rational conversion. */
+    public static void numbers() {
+        ConstraintScope scope = ConstraintScope.empty();
+        IntVar x = scope.intVar("x", -3, Long.MAX_VALUE);
+        Assignment assignment = Assignment.of(Map.of(), Map.of(x, BigInteger.of(Long.MAX_VALUE)));
+        check(Long.valueOf(Long.MAX_VALUE).equals(assignment.longValueOf(x)), "long read");
+        try {
+            assignment.intValueOf(x);
+            throw new AssertionError("an int read must not truncate");
+        } catch (ArithmeticException expected) {
+            // the value does not fit an int
+        }
+        java.math.BigInteger huge = java.math.BigInteger.ONE.shiftLeft(70).negate();
+        check(JavaNumbers.toJava(JavaNumbers.integer(huge)).equals(huge), "java.math.BigInteger round trip");
+        check(JavaNumbers.rational(new BigDecimal("-2.50")).equals(Rational.of(-5, 2)), "negative decimal");
+        check(JavaNumbers.rational(new BigDecimal("0.125")).equals(Rational.of(1, 8)), "fractional decimal");
+        check(JavaNumbers.rational(new BigDecimal("1E+3")).equals(Rational.of(1000, 1)), "negative scale");
     }
 
     private static void check(boolean condition, String message) {
