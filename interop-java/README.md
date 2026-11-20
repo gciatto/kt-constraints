@@ -7,18 +7,21 @@ Java entry points; no Kotlin receivers, extension functions or `suspend` calls a
 - **Solving:** `BlockingSolver.of(backend)` owns one solver and offers `solve` (blocking), `solveAsync`
   (`CompletableFuture`; cancelling it cancels the search) and `solutions` (a closeable `Iterator` of solutions,
   then one `SolveCompleted`). Closing it cancels pending futures and open streams.
-- **Integers** are kt-math `org.gciatto.kt.math.BigInteger`s and stay exact. Convert from and to
-  `java.math.BigInteger` through the decimal form: `BigInteger.of(j.toString())`, `new java.math.BigInteger(k.toString())`.
+- **Numbers** stay exact. Model integers are kt-math `org.gciatto.kt.math.BigInteger`s, but primitives work where
+  they fit: `scope.intVar("x", 1, 10)`, `Expressions.plus(x, 3)`, and `assignment.longValueOf(x)` / `intValueOf(x)`,
+  which throw `ArithmeticException` rather than truncate. `JavaNumbers` converts `java.math.BigInteger` both ways and
+  `BigDecimal` to `Rational` exactly. There are deliberately no `double` overloads: binary floating point would either
+  turn `0.1` into a surprising fraction or need rounding.
 
 ```java
 ConstraintScope scope = ConstraintScope.empty();
-IntVar x = scope.intVar("x", IntDomain.of(BigInteger.of(1), BigInteger.of(10)));
-IntVar y = scope.intVar("y", IntDomain.of(BigInteger.of(1), BigInteger.of(10)));
+IntVar x = scope.intVar("x", 1, 10);
+IntVar y = scope.intVar("y", 1, 10);
 scope.add(Expressions.eq(Expressions.plus(x, y), 10));
 scope.add(Expressions.allDifferent(x, y));
 try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
     SolveResult result = solver.solve(scope.build());
-    BigInteger vx = result.getAssignment().valueOf(x);
+    long vx = result.getAssignment().longValueOf(x);
 }
 ```
 
