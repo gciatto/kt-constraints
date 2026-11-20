@@ -27,6 +27,7 @@ class JavaUsageSpec :
             }
         }
         test("java/numbers") { JavaUsage.numbers() }
+        test("java/z3/direct/exact-reals") { JavaUsage.reals(Z3Backend()) }
         test("java/z3/direct/exact-integers") { JavaUsage.exactIntegers(Z3Backend()) }
         test("java/choco/direct/future-cancellation") { JavaUsage.cancelAsync(ChocoBackend()) }
     })

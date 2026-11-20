@@ -3,6 +3,7 @@ package io.github.gciatto.ktconstraints.interop;
 import io.github.gciatto.ktconstraints.core.BoolExpr;
 import io.github.gciatto.ktconstraints.core.IntDomain;
 import io.github.gciatto.ktconstraints.core.Rational;
+import io.github.gciatto.ktconstraints.core.RealVar;
 import io.github.gciatto.ktconstraints.core.IntVar;
 import io.github.gciatto.ktconstraints.dsl.Expressions;
 import io.github.gciatto.ktconstraints.model.ConstraintModel;
@@ -140,6 +141,24 @@ public final class JavaUsage {
         check(JavaNumbers.rational(new BigDecimal("-2.50")).equals(Rational.of(-5, 2)), "negative decimal");
         check(JavaNumbers.rational(new BigDecimal("0.125")).equals(Rational.of(1, 8)), "fractional decimal");
         check(JavaNumbers.rational(new BigDecimal("1E+3")).equals(Rational.of(1000, 1)), "negative scale");
+    }
+
+    /** Exact reals from Java: maximize n subject to 0.1 * (n as real) + r <= 1.25 with r >= 0.5, so n = 7. */
+    public static void reals(SolverBackend backend) {
+        ConstraintScope scope = ConstraintScope.empty();
+        IntVar n = scope.intVar("n", 0, 100);
+        RealVar r = scope.realVar("r");
+        scope.add(Expressions.le(Expressions.plus(Expressions.times(Expressions.toReal(n), Rational.parse("0.1")), r),
+            JavaNumbers.rational(new BigDecimal("1.25"))));
+        scope.add(Expressions.ge(r, Rational.parse("0.5")));
+        scope.maximize(n);
+        try (BlockingSolver solver = BlockingSolver.of(backend)) {
+            SolveResult result = solver.solve(scope.build());
+            check(result.getStatus() == SolveStatus.OPTIMAL, "real optimization status " + result.getStatus());
+            check(Integer.valueOf(7).equals(result.getAssignment().intValueOf(n)), "n " + result.getAssignment().valueOf(n));
+            Rational value = result.getAssignment().valueOf(r);
+            check(value.compareTo(Rational.parse("0.5")) >= 0 && value.compareTo(Rational.parse("0.55")) <= 0, "r " + value);
+        }
     }
 
     private static void check(boolean condition, String message) {

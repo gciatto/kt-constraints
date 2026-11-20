@@ -45,7 +45,13 @@ class RationalSpec :
             Rational.parse("-2/4").toString() shouldBe "-1/2"
             Rational.parse("7").toString() shouldBe "7"
             Rational.parse("123456789012345678901234567890/11").toString() shouldBe "123456789012345678901234567890/11"
-            shouldThrow<IllegalArgumentException> { Rational.parse("1.5") }
+            Rational.parse("1.5") shouldBe Rational.of(3, 2)
+            Rational.parse("-0.125") shouldBe Rational.of(-1, 8)
+            Rational.parse("0.1") shouldBe Rational.of(1, 10)
+            Rational.parse("2.50") shouldBe Rational.of(5, 2)
+            listOf("1.", ".5", "1e3", "1.5/2", "+1", "").forEach { text ->
+                shouldThrow<IllegalArgumentException> { Rational.parse(text) }
+            }
             shouldThrow<IllegalArgumentException> { Rational.parse("1/0") }
         }
 
