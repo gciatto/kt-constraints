@@ -9,6 +9,7 @@ kotlin {
                 api(project(":solve"))
                 api(project(":solve-spi"))
                 implementation(project(":dsl"))
+                implementation(project(":solve-minizinc"))
                 implementation(project(":solve-z3"))
                 implementation(libs.kotlinx.coroutines.core)
             }
@@ -62,8 +63,17 @@ val bundleTypescriptBrowserUsage =
         dependsOn(typecheckTypescriptUsage)
         workingDir(typescriptUsage)
         commandLine(
-            npmExecutable, "exec", "--", "esbuild", "out/browser.mjs", "--bundle", "--format=esm", "--platform=browser",
-            "--target=es2022", "--outfile=site/browser.js",
+            npmExecutable,
+            "exec",
+            "--",
+            "esbuild",
+            "out/browser.mjs",
+            "--bundle",
+            "--format=esm",
+            "--platform=browser",
+            "--target=es2022",
+            "--define:global=globalThis",
+            "--outfile=site/browser.js",
         )
     }
 val prepareTypescriptBrowserUsage =

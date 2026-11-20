@@ -12,7 +12,9 @@ try {
     } finally {
         z3.close();
     }
-    const miniZinc = await loadMiniZincBrowser("minizinc-worker.js", "minizinc.wasm", "minizinc.data");
+    // The worker loads its assets from a blob, so the URLs must be absolute.
+    const asset = (name: string): string => new URL(name, location.href).href;
+    const miniZinc = await loadMiniZincBrowser(asset("minizinc-worker.js"), asset("minizinc.wasm"), asset("minizinc.data"));
     check(miniZinc.id === "chuffed/minizinc-wasm", `route ${miniZinc.id}`);
     try {
         await runChecks(miniZinc, { unboundedIntegers: false, reals: false, hardAbort: false }, report);
