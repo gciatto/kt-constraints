@@ -46,7 +46,17 @@ class Z3JsBackend private constructor(
         try {
             solvers.forEach { it.close() }
         } finally {
-            z3SolverModule.killThreads(api.em)
+            terminateThreads(api.em)
+        }
+    }
+
+    // Only the Node build exports killThreads; in browsers, terminate the workers the same way it does.
+    private fun terminateThreads(em: dynamic) {
+        if (jsTypeOf(z3SolverModule.killThreads) == "function") {
+            z3SolverModule.killThreads(em)
+        } else {
+            em.PThread.terminateAllThreads()
+            if (jsTypeOf(em.async_cancel) == "function") em.async_cancel(Error("Z3 threads were terminated"))
         }
     }
 
