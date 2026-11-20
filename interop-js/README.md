@@ -12,6 +12,13 @@ An ES module with generated TypeScript declarations (`kt-constraints-interop-js.
     cancels the search and rejects the promise;
   - `solutions(model, timeoutMillis?, solutionLimit?)` is an `AsyncIterable` of events, each carrying a `solution` or,
     last, the completion `outcome`; leaving `for await` early closes the search.
+- **Reals** are exact: `builder.realVar(name)`, constants `real("0.1")` or `real("1/3")`, `toReal(intExpression)`,
+  `scale("0.5")` for constant factors, and `solution.realValueOf(r)` returning exact `p/q` text.
+- **Sessions:** `solver.openSession(model)` (routes with `INCREMENTAL_ASSERTIONS` in `backend.capabilities`) offers
+  `add`, `push`/`popTo` checkpoints and `check(assumptions?, timeoutMillis?, signal?)`, whose `unsatCore` contains
+  the caller's own assumption objects.
+- **MiniZinc:** `loadMiniZincNode(executable?)` drives an installed CLI with Gecode; `loadMiniZincBrowser(workerURL,
+  wasmURL, dataURL)` runs Chuffed from MiniZinc's browser Wasm assets (absolute URLs). One MiniZinc backend at a time.
 - **Integers** are `bigint` both ways, so no value is rounded through `number`. `Outcome.status` and
   `Outcome.termination` are the Kotlin enum names as strings.
 
@@ -29,8 +36,16 @@ console.log(outcome.status, outcome.solution?.valueOf(x));
 backend.close();
 ```
 
-`src/test/typescript/usage.mts` is the executable reference: `jsTest` installs the packaged library as an npm
-consumer would, type-checks the file with `tsc` in strict mode and runs it on Node.
+In browsers, Z3 needs cross-origin isolation (`Cross-Origin-Opener-Policy: same-origin`,
+`Cross-Origin-Embedder-Policy: require-corp`), `z3-built.js` loaded as a classic script before the bundle, with
+`z3-built.wasm` beside it, and the bundler mapping Node's `global` to `globalThis` (esbuild: `--define:global=globalThis`).
 
-Not yet exposed: real and bit-vector expressions, incremental sessions, and the MiniZinc JS routes. The declarations
-also list kt-math's own exported number API, which this facade does not need.
+`src/test/typescript` is the executable reference. `checks.mts` holds backend-independent checks, which both
+entries run:
+- `node.mts` runs them on Z3, plus the MiniZinc CLI when `MINIZINC_EXECUTABLE` is set. `jsTest` installs the
+  packaged library as an npm consumer would, type-checks with `tsc` in strict mode and runs this entry.
+- `browser.mts` runs them in Chromium on Z3 and Chuffed. Run it with
+  `INTEROP_BROWSER_TEST=true CHROME_BIN=... ./gradlew :interop-js:typescriptBrowserUsageTest`.
+
+Not yet exposed: bit-vector expressions. The declarations also list kt-math's own exported number API, which this
+facade does not need.

@@ -5,6 +5,7 @@
 [Architecture](docs/ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Releasing](docs/RELEASING.md)
 
 [Bootstrap verification](docs/BOOTSTRAP.md) records build, wrapper, publication and platform evidence.
+[Backend availability](docs/AVAILABILITY.md) lists which solver routes are proven on which platforms, and by which CI job.
 [M1 validation](docs/M1.md) records the exact finite-domain modelling foundation and its API changes.
 [M2 validation](docs/M2.md) records resource-safe solving, real Gecode execution and measured phases.
 [M3 validation](docs/M3.md) covers the engine catalogue, Node CLI and browser Wasm transports.
@@ -50,7 +51,7 @@ linear lowering; HiGHS solves are always bounded by a backend limit, since OR-To
 | Direct solver adapters | `:solve-mip` | JVM SCIP and HiGHS through OR-Tools: batch satisfaction and optimization |
 | Direct solver adapters | `:solve-highs` | Placeholder module for the direct HiGHS C API |
 | Orchestration | `:solve-portfolio` | Placeholder module |
-| Language interoperability | `:interop-java`, `:interop-js` | Java: `Expressions` static modelling facade and `BlockingSolver` (blocking, `CompletableFuture`, iterator), tested from javac-compiled code against every bundled JVM backend; JS: ES module with TypeScript declarations, `bigint` integers, `Promise` solving with `AbortSignal` cancellation and `for await` iteration over the Z3 Wasm route, type-checked and run on Node against the packaged library |
+| Language interoperability | `:interop-java`, `:interop-js` | Java: `Expressions` static modelling facade and `BlockingSolver` (blocking, `CompletableFuture`, iterator), tested from javac-compiled code against every bundled JVM backend; JS: ES module with TypeScript declarations, `bigint` integers, `Promise` solving with `AbortSignal` cancellation and `for await` iteration over Z3 Wasm and MiniZinc (Node CLI, browser Wasm), with exact reals and incremental sessions, type-checked and run on Node and in Chromium against the packaged library |
 | Testing and documentation | `:test-core`, `:test-solve`, `:documentation` | Shared contracts, capped finite test oracle and MkDocs |
 
 ## Minimal Kotlin modelling example (P0)
