@@ -7,7 +7,10 @@ import io.github.gciatto.ktconstraints.core.BoolCardinality
 import io.github.gciatto.ktconstraints.core.CardinalityRelation
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntToReal
 import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.Rational
+import io.github.gciatto.ktconstraints.core.RealLiteral
 import org.gciatto.kt.math.BigInteger
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.JsBigInt
@@ -15,6 +18,14 @@ import kotlin.js.JsBigInt
 /** Exact integer constant. */
 @JsExport
 fun constant(value: JsBigInt): IntExpression = IntExpression(IntLiteral(value.toBigInteger()))
+
+/** Exact real constant written `p`, `p/q` or as a decimal such as `0.1`; other notations are rejected. */
+@JsExport
+fun real(value: String): RealExpression = RealExpression(RealLiteral(Rational.parse(value)))
+
+/** Embeds an integer expression into the reals. */
+@JsExport
+fun toReal(value: IntExpression): RealExpression = RealExpression(IntToReal(value.expr))
 
 /** Sum of [terms]; empty is zero. */
 @JsExport

@@ -22,6 +22,9 @@ class ModelBuilder {
     /** Declares a Boolean variable; names must be unique. */
     fun boolVar(name: String): BoolExpression = BoolExpression(scope.boolVar(name))
 
+    /** Declares an unbounded exact real variable; routes without exact reals reject models declaring one. */
+    fun realVar(name: String): RealExpression = RealExpression(scope.realVar(name))
+
     /** Asserts [constraint]. */
     fun add(constraint: BoolExpression): ModelBuilder = apply { scope.add(constraint.expr) }
 

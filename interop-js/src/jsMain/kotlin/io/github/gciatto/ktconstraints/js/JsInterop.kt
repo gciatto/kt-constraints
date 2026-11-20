@@ -2,6 +2,9 @@
 
 package io.github.gciatto.ktconstraints.js
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.promise
 import org.gciatto.kt.math.BigInteger
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.JsBigInt
@@ -53,3 +56,13 @@ internal fun <T : Any> asyncIterable(
     next: () -> Promise<T?>,
     close: () -> Unit,
 ): AsyncIterable<T> = iterable(next, close).unsafeCast<AsyncIterable<T>>()
+
+/** Runs [block] in this scope; aborting [signal] cancels it and rejects the returned promise. */
+internal fun <T> CoroutineScope.cancellable(
+    signal: AbortSignal?,
+    block: suspend () -> T,
+): Promise<T> {
+    val work = async { block() }
+    signal?.let { if (it.aborted) work.cancel() else it.addEventListener("abort") { work.cancel() } }
+    return promise { work.await() }
+}

@@ -1,12 +1,12 @@
 package io.github.gciatto.ktconstraints.js
 
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
+import io.github.gciatto.ktconstraints.solve.IncrementalConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolveCompleted
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.promise
 import kotlin.js.Promise
@@ -30,11 +30,7 @@ class Solver internal constructor(
         timeoutMillis: Int? = null,
         solutionLimit: Int? = null,
         signal: AbortSignal? = null,
-    ): Promise<Outcome> {
-        val search = scope.async { Outcome(solver.solve(model.model, options(timeoutMillis, solutionLimit))) }
-        signal?.let { if (it.aborted) search.cancel() else it.addEventListener("abort") { search.cancel() } }
-        return scope.promise { search.await() }
-    }
+    ): Promise<Outcome> = scope.cancellable(signal) { Outcome(solver.solve(model.model, options(timeoutMillis, solutionLimit))) }
 
     /** Iterates solutions or improving incumbents, then one completion event; leaving `for await` early closes it. */
     fun solutions(
@@ -55,6 +51,14 @@ class Solver internal constructor(
             },
             close = stream::close,
         )
+    }
+
+    /** Opens an incremental session over [model]; fails on routes without incremental assertions. */
+    fun openSession(model: Model): Session {
+        val incremental =
+            solver as? IncrementalConstraintSolver
+                ?: throw UnsupportedOperationException("${solver.descriptor.id} has no incremental sessions")
+        return Session(incremental.openSession(model.model))
     }
 
     /** Cancels pending work and releases the solver; idempotent. */

@@ -4,6 +4,7 @@ package io.github.gciatto.ktconstraints.js
 
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.solve.Assignment
 import org.gciatto.kt.math.BigInteger
 import kotlin.js.ExperimentalWasmJsInterop
@@ -22,6 +23,12 @@ class Solution internal constructor(
     fun valueOf(variable: IntExpression): JsBigInt? {
         val declared = variable.expr as? IntVar ?: throw IllegalArgumentException("Not an integer variable: ${variable.expr}")
         return assignment.valueOf(declared)?.toBigInt()
+    }
+
+    /** Exact value of a real variable as `p` or `p/q`, or null when it is not projected. */
+    fun realValueOf(variable: RealExpression): String? {
+        val declared = variable.expr as? RealVar ?: throw IllegalArgumentException("Not a real variable: ${variable.expr}")
+        return assignment.valueOf(declared)?.toString()
     }
 
     /** Value of a Boolean variable, or null when it is not projected; other expressions are rejected. */
