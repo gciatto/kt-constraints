@@ -1,0 +1,12 @@
+{
+  "name": "kt-constraints-interop-js-usage",
+  "private": true,
+  "type": "module",
+  "description": "Type-checks and runs TypeScript usage against the packaged kt-constraints-interop-js library",
+  "dependencies": {
+    "kt-constraints-interop-js": "file:../dist/js/productionLibrary"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
+  }
+}
