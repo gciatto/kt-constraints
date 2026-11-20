@@ -7,6 +7,8 @@
     "kt-constraints-interop-js": "file:../dist/js/productionLibrary"
   },
   "devDependencies": {
+    "esbuild": "0.24.0",
+    "playwright-core": "1.49.1",
     "typescript": "6.0.3"
   }
 }

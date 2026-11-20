@@ -52,6 +52,39 @@ val typescriptUsageTest =
         dependsOn(typecheckTypescriptUsage)
         workingDir(typescriptUsage)
         timeout.set(Duration.ofMinutes(10))
-        commandLine("node", "out/usage.mjs")
+        commandLine("node", "out/node.mjs")
     }
+
+// Bundles the browser entry and serves it, with the Z3 and MiniZinc Wasm assets, to Chromium (CHROME_BIN).
+val browserSite = typescriptUsage.map { it.dir("site") }
+val bundleTypescriptBrowserUsage =
+    tasks.register<Exec>("bundleTypescriptBrowserUsage") {
+        dependsOn(typecheckTypescriptUsage)
+        workingDir(typescriptUsage)
+        commandLine(
+            npmExecutable, "exec", "--", "esbuild", "out/browser.mjs", "--bundle", "--format=esm", "--platform=browser",
+            "--target=es2022", "--outfile=site/browser.js",
+        )
+    }
+val prepareTypescriptBrowserUsage =
+    tasks.register<Copy>("prepareTypescriptBrowserUsage") {
+        dependsOn(bundleTypescriptBrowserUsage)
+        from(typescriptUsage.map { it.file("index.html") })
+        from(typescriptUsage.map { it.dir("node_modules/z3-solver/build") }) { include("z3-built.*") }
+        from(typescriptUsage.map { it.dir("node_modules/minizinc/dist") }) {
+            include("minizinc-worker.js", "minizinc.wasm", "minizinc.data")
+        }
+        into(browserSite)
+    }
+tasks.register<Exec>("typescriptBrowserUsageTest") {
+    group = "verification"
+    description = "Runs the type-checked TypeScript usage in Chromium, cross-origin isolated (INTEROP_BROWSER_TEST)."
+    dependsOn(prepareTypescriptBrowserUsage)
+    onlyIf("Browser runtime verification is explicitly enabled") {
+        providers.environmentVariable("INTEROP_BROWSER_TEST").isPresent
+    }
+    timeout.set(Duration.ofMinutes(10))
+    workingDir(typescriptUsage)
+    commandLine("node", "browser-run.mjs", "site")
+}
 tasks.matching { it.name == "jsTest" }.configureEach { dependsOn(typescriptUsageTest) }
