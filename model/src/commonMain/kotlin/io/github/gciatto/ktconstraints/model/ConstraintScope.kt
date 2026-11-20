@@ -39,6 +39,13 @@ class ConstraintScope private constructor() {
         range: IntRange,
     ): IntVar = intVar(name, IntDomain.of(range))
 
+    /** Declares an integer variable over the inclusive interval [min]..[max]; usable from Java. */
+    fun intVar(
+        name: String,
+        min: Long,
+        max: Long,
+    ): IntVar = intVar(name, IntDomain.of(min, max))
+
     /** Declares an unbounded exact real variable; routes without exact reals reject models declaring one. */
     fun realVar(name: String): RealVar = addVariable(name) { factory.realVar(name) }
 

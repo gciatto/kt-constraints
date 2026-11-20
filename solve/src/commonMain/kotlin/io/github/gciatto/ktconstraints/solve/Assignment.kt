@@ -18,6 +18,12 @@ interface Assignment : Valuation {
     /** Returns the exact integer value, or null when outside the assignment projection. */
     override fun valueOf(variable: IntVar): BigInteger?
 
+    /** Returns the integer value as an Int, or null when unassigned; throws [ArithmeticException] if it does not fit. */
+    fun intValueOf(variable: IntVar): Int? = valueOf(variable)?.toIntExact()
+
+    /** Returns the integer value as a Long, or null when unassigned; throws [ArithmeticException] if it does not fit. */
+    fun longValueOf(variable: IntVar): Long? = valueOf(variable)?.toLongExact()
+
     /** Returns the exact real value, or null when outside the assignment projection. */
     override fun valueOf(variable: RealVar): Rational?
 
