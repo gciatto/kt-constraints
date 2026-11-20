@@ -98,7 +98,7 @@ class MiniZincJsBackend private constructor(
                         withSettledPool { }
                     } finally {
                         try {
-                            miniZincApi.shutdown()
+                            MiniZincApi.shutdown()
                         } finally {
                             runtimeOwned = false
                         }
@@ -148,10 +148,10 @@ class MiniZincJsBackend private constructor(
             runtimeOwned = true
             var loaded = false
             try {
-                miniZincApi.init(config).unsafeCast<Promise<dynamic>>().await()
+                MiniZincApi.init(config).unsafeCast<Promise<dynamic>>().await()
                 // Upstream solvers() throws uncaught when the CLI cannot run; version() rejects safely first.
                 val startFailure =
-                    miniZincApi
+                    MiniZincApi
                         .version()
                         .unsafeCast<Promise<dynamic>>()
                         .then<Throwable?>({ null }, { failure -> failure })
@@ -159,7 +159,7 @@ class MiniZincJsBackend private constructor(
                 if (startFailure != null) {
                     throw BackendUnavailableException("MiniZinc JS runtime cannot start: ${startFailure.message}")
                 }
-                if (miniZincApi
+                if (MiniZincApi
                         .solvers()
                         .unsafeCast<Promise<Array<dynamic>>>()
                         .await()
@@ -179,7 +179,7 @@ class MiniZincJsBackend private constructor(
             } finally {
                 if (!loaded) {
                     try {
-                        miniZincApi.shutdown()
+                        MiniZincApi.shutdown()
                     } finally {
                         runtimeOwned = false
                     }
@@ -191,7 +191,7 @@ class MiniZincJsBackend private constructor(
 
 private suspend fun awaitVersion() {
     // Failures surface from the run itself; this only waits for the pooled worker to finish loading.
-    miniZincApi
+    MiniZincApi
         .version()
         .unsafeCast<Promise<dynamic>>()
         .then<Unit>({}, {})
