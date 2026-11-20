@@ -10,7 +10,8 @@ Java entry points; no Kotlin receivers, extension functions or `suspend` calls a
 - **Numbers** stay exact. Model integers are kt-math `org.gciatto.kt.math.BigInteger`s, but primitives work where
   they fit: `scope.intVar("x", 1, 10)`, `Expressions.plus(x, 3)`, and `assignment.longValueOf(x)` / `intValueOf(x)`,
   which throw `ArithmeticException` rather than truncate. `JavaNumbers` converts `java.math.BigInteger` both ways and
-  `BigDecimal` to `Rational` exactly. There are deliberately no `double` overloads: binary floating point would either
+  `BigDecimal` to `Rational` exactly; `Rational.parse("0.1")` also reads decimals exactly. Real expressions use the
+  same `Expressions` methods (`plus`, `times(x, rational)`, `le`, ...), with `Expressions.toReal(n)` to embed integers. There are deliberately no `double` overloads: binary floating point would either
   turn `0.1` into a surprising fraction or need rounding.
 
 ```java

@@ -47,7 +47,8 @@ Integer expressions, finite-domain bounds and assignment values use kt-math's im
 
 Real expressions are linear: unbounded `RealVar`s, exact `Rational` literals (normalized, so structural equality
 is numeric), sums, differences, negation, rational scaling and an explicit `IntToReal` embedding, compared with
-real equality and orderings. Without products of variables every model value is rational, so evaluation and
+real equality and orderings; the DSL offers these as operators over real expressions, `Rational`s and machine
+integers, and `Rational.parse` reads `p`, `p/q` and decimals such as `0.1` exactly. Without products of variables every model value is rational, so evaluation and
 assignments stay exact. Objectives remain integer, because a real supremum need not be attained. Routes without
 exact reals (MiniZinc floats, the finite oracle) reject models that declare or use them.
 
