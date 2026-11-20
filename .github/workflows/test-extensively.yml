@@ -108,7 +108,7 @@ jobs:
         env:
           MINIZINC_EXECUTABLE: minizinc
           MINIZINC_ENGINES: gecode,chuffed,cp-sat,highs,cbc
-        run: ./gradlew :solve-minizinc:jvmTest :solve-minizinc:jsNodeTest --continue
+        run: ./gradlew :solve-minizinc:jvmTest :solve-minizinc:jsNodeTest :interop-js:typescriptUsageTest --continue
       - name: Job summary
         if: always()
         uses: ./.github/actions/ci-summary
@@ -137,6 +137,11 @@ jobs:
           Z3_BROWSER_TEST: 'true'
           CHROME_BIN: /usr/bin/google-chrome
         run: ./gradlew :solve-z3:jsBrowserTest --continue
+      - name: Run the TypeScript facade checks in Chromium against the packaged library (Z3 and Chuffed Wasm)
+        env:
+          INTEROP_BROWSER_TEST: 'true'
+          CHROME_BIN: /usr/bin/google-chrome
+        run: ./gradlew :interop-js:typescriptBrowserUsageTest --continue
       - name: Upload browser test reports
         if: failure()
         uses: actions/upload-artifact@v4
