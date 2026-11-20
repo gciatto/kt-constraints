@@ -49,7 +49,7 @@ class Rational private constructor(
         @JvmStatic
         val ONE: Rational = Rational(BigInteger.ONE, BigInteger.ONE)
 
-        private val TEXT = Regex("-?[0-9]+(/[0-9]+)?")
+        private val TEXT = Regex("-?[0-9]+(/[0-9]+|\\.[0-9]+)?")
 
         /** Normalizes [numerator] / [denominator]; a zero denominator is rejected. */
         @JvmStatic
@@ -71,10 +71,14 @@ class Rational private constructor(
             denominator: Long = 1,
         ): Rational = of(BigInteger.of(numerator), BigInteger.of(denominator))
 
-        /** Parses `p` or `p/q` with decimal digits; decimal points and exponents are rejected rather than rounded. */
+        /** Parses `p`, `p/q` or a decimal `p.d` exactly; exponents and other notations are rejected. */
         @JvmStatic
         fun parse(text: String): Rational {
             require(TEXT.matches(text)) { "Not an exact rational: $text" }
+            if ('.' in text) {
+                val (whole, fraction) = text.split('.')
+                return of(BigInteger.of(whole + fraction), BigInteger.TEN.pow(fraction.length))
+            }
             val parts = text.split('/')
             return of(BigInteger.of(parts[0]), if (parts.size == 2) BigInteger.of(parts[1]) else BigInteger.ONE)
         }
