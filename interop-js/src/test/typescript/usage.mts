@@ -61,7 +61,7 @@ await withSolver(async solver => {
     const y = builder.intVar("y", 0n, 2n);
     builder.add(x.lt(y));
     const found: string[] = [];
-    let completion: Outcome | null = null;
+    let completion: Outcome | null | undefined = null;
     for await (const event of solver.solutions(builder.build())) {
         if (event.solution != null) found.push(`${event.solution.valueOf(x)}<${event.solution.valueOf(y)}`);
         else completion = event.outcome;
@@ -104,13 +104,9 @@ await withSolver(async solver => {
     const started = Date.now();
     const pending = solver.solve(builder.build(), null, null, controller.signal);
     setTimeout(() => controller.abort(), 200);
-    let rejected = false;
-    try {
-        await pending;
-    } catch {
-        rejected = true;
-    }
-    check(rejected, "an aborted solve must reject");
+    const stuck = new Promise<"stuck">(resolve => setTimeout(() => resolve("stuck"), 10_000));
+    const settled = await Promise.race([pending.then(() => "resolved", () => "rejected"), stuck]);
+    check(settled === "rejected", `an aborted solve must reject promptly, but it was ${settled}`);
     check(Date.now() - started < 10_000, "abort did not stop the search");
 });
 

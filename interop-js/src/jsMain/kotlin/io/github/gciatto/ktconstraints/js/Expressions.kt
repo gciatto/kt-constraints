@@ -1,0 +1,59 @@
+@file:OptIn(ExperimentalWasmJsInterop::class)
+
+package io.github.gciatto.ktconstraints.js
+
+import io.github.gciatto.ktconstraints.core.AllDifferent
+import io.github.gciatto.ktconstraints.core.BoolCardinality
+import io.github.gciatto.ktconstraints.core.CardinalityRelation
+import io.github.gciatto.ktconstraints.core.Element
+import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.LinearSum
+import org.gciatto.kt.math.BigInteger
+import kotlin.js.ExperimentalWasmJsInterop
+import kotlin.js.JsBigInt
+
+/** Exact integer constant. */
+@JsExport
+fun constant(value: JsBigInt): IntExpression = IntExpression(IntLiteral(value.toBigInteger()))
+
+/** Sum of [terms]; empty is zero. */
+@JsExport
+fun sum(terms: Array<IntExpression>): IntExpression = IntExpression(LinearSum(terms.map { it.expr }, terms.map { BigInteger.ONE }))
+
+/** All [operands] take pairwise distinct values. */
+@JsExport
+fun allDifferent(operands: Array<IntExpression>): BoolExpression = BoolExpression(AllDifferent(operands.map { it.expr }))
+
+/** The zero-based [index]-th of [values]; the index is constrained to be in range. */
+@JsExport
+fun element(
+    index: IntExpression,
+    values: Array<IntExpression>,
+): IntExpression = IntExpression(Element(index.expr, values.map { it.expr }))
+
+/** At most [count] of [operands] hold. */
+@JsExport
+fun atMost(
+    count: Int,
+    operands: Array<BoolExpression>,
+): BoolExpression = cardinality(operands, count, CardinalityRelation.AT_MOST)
+
+/** At least [count] of [operands] hold. */
+@JsExport
+fun atLeast(
+    count: Int,
+    operands: Array<BoolExpression>,
+): BoolExpression = cardinality(operands, count, CardinalityRelation.AT_LEAST)
+
+/** Exactly [count] of [operands] hold. */
+@JsExport
+fun exactly(
+    count: Int,
+    operands: Array<BoolExpression>,
+): BoolExpression = cardinality(operands, count, CardinalityRelation.EXACTLY)
+
+private fun cardinality(
+    operands: Array<BoolExpression>,
+    count: Int,
+    relation: CardinalityRelation,
+) = BoolExpression(BoolCardinality(operands.map { it.expr }, count, relation))

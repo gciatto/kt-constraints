@@ -1,3 +1,5 @@
+import java.time.Duration
+
 // JS-only exported facade: an ES module with TypeScript declarations, Promise solving and async iteration.
 kotlin {
     sourceSets {
@@ -6,6 +8,9 @@ kotlin {
                 api(project(":model"))
                 api(project(":solve"))
                 api(project(":solve-spi"))
+                implementation(project(":dsl"))
+                implementation(project(":solve-z3"))
+                implementation(libs.kotlinx.coroutines.core)
             }
         }
     }
@@ -30,6 +35,8 @@ val installTypescriptUsage =
     tasks.register<Exec>("installTypescriptUsage") {
         dependsOn(prepareTypescriptUsage, "jsNodeProductionLibraryDistribution")
         workingDir(typescriptUsage)
+        // npm skips reinstalling an unchanged version, so drop the previous copy of the library first.
+        doFirst { delete(typescriptUsage.map { it.dir("node_modules/kt-constraints-interop-js") }) }
         commandLine(npmExecutable, "install", "--install-links", "--no-package-lock", "--no-audit", "--no-fund")
     }
 val typecheckTypescriptUsage =
@@ -44,6 +51,7 @@ val typescriptUsageTest =
         description = "Runs the type-checked TypeScript usage against the packaged ES module on Node."
         dependsOn(typecheckTypescriptUsage)
         workingDir(typescriptUsage)
+        timeout.set(Duration.ofMinutes(10))
         commandLine("node", "out/usage.mjs")
     }
 tasks.matching { it.name == "jsTest" }.configureEach { dependsOn(typescriptUsageTest) }
