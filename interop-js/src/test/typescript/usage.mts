@@ -8,6 +8,8 @@ import {
     allDifferent,
     constant,
     loadZ3,
+    real,
+    toReal,
 } from "kt-constraints-interop-js";
 
 function check(condition: boolean, message: string): void {
@@ -108,6 +110,54 @@ await withSolver(async solver => {
     const settled = await Promise.race([pending.then(() => "resolved", () => "rejected"), stuck]);
     check(settled === "rejected", `an aborted solve must reject promptly, but it was ${settled}`);
     check(Date.now() - started < 10_000, "abort did not stop the search");
+});
+
+// Exact reals: maximize n subject to 0.1 * n + r <= 1.25 and r >= 0.5, so n = 7 and 1/2 <= r <= 11/20.
+await withSolver(async solver => {
+    const builder = new ModelBuilder();
+    const n = builder.intVar("n", 0n, 100n);
+    const r = builder.realVar("r");
+    builder.add(toReal(n).scale("0.1").plus(r).le(real("1.25")));
+    builder.add(r.ge(real("1/2")));
+    builder.maximize(n);
+    const outcome = await solver.solve(builder.build());
+    check(outcome.status === "OPTIMAL" && outcome.solution?.valueOf(n) === 7n, `real optimization ${outcome.status}`);
+    const text: string | null | undefined = outcome.solution?.realValueOf(r);
+    const [numerator, denominator = "1"] = (text ?? "").split("/");
+    const p = BigInt(numerator), q = BigInt(denominator);
+    check(2n * p >= q && 20n * p <= 11n * q, `r ${text}`);
+});
+
+// Incremental session: frames, checkpoints, assumptions and unsat cores made of the caller's own expressions.
+await withSolver(async solver => {
+    const builder = new ModelBuilder();
+    const x = builder.intVar("x", 0n, 10n);
+    const session = solver.openSession(builder.build());
+    try {
+        session.add(x.ge(constant(3n)));
+        const before = session.push();
+        session.add(x.lt(constant(3n)));
+        check((await session.check()).status === "UNSATISFIABLE", "contradictory frame");
+        session.popTo(before);
+        let stale = false;
+        try {
+            session.popTo(before);
+        } catch {
+            stale = true;
+        }
+        check(stale, "a restored checkpoint must be stale");
+        const restored = await session.check();
+        const value = restored.solution?.valueOf(x);
+        check(restored.status === "SATISFIABLE" && value != null && value >= 3n, `restored ${restored.status} ${value}`);
+        const small = x.le(constant(1n));
+        const large = x.ge(constant(5n));
+        const assumed = await session.check([small, large]);
+        check(assumed.status === "UNSATISFIABLE", `assumptions ${assumed.status}`);
+        check(assumed.unsatCore?.includes(small) === true, "the core must contain the conflicting assumption");
+        check((await session.check([large])).status === "SATISFIABLE", "assumptions hold for one check only");
+    } finally {
+        session.close();
+    }
 });
 
 backend.close();
