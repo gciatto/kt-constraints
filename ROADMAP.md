@@ -125,7 +125,9 @@ Gecode/Chuffed/CP-SAT/HiGHS/CBC routes tested when installed; no backend capabil
 - [ ] JVM, Linux/macOS/Windows native, Android/iOS native (where packaging works), JS and Kotlin/Wasm JS.
 - [ ] Add JS/TS `Promise` API and JVM Java builder/static factories + blocking/CompletionStage APIs.
   Java implemented (`Expressions` facade, `BlockingSolver` with blocking, `CompletableFuture` and iterator solving;
-  javac-compiled consumer run against Choco, CP-SAT, Z3, SCIP and HiGHS); Java incremental sessions and JS pending.
+  javac-compiled consumer run against Choco, CP-SAT, Z3, SCIP and HiGHS). JS/TS implemented for the Z3 Wasm route
+  (ES module, generated declarations type-checked by `tsc`, `bigint`, `Promise` + `AbortSignal`, async iteration;
+  run on Node against the packaged library); Java/JS incremental sessions, JS reals and MiniZinc JS routes pending.
 - [ ] `:solve-portfolio`: deterministic ordered selection, optional parallel portfolio, evidence-aware incumbent handling.
 - [ ] Automatic discovery of installed/embedded runtimes and solver version/capability metadata.
 - [ ] CI host matrix + Java/JS/Native end-to-end usage tests, including solver bootstrap/install docs.
