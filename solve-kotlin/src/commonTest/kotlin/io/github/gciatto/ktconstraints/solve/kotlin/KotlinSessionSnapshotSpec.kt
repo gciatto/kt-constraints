@@ -21,13 +21,13 @@ class KotlinSessionSnapshotSpec :
                 coroutineScope {
                     val scope = ConstraintScope.empty()
                     val x = scope.intVar("x", 0..1)
-                    val assumptions = mutableListOf<BoolExpr>(IntEquality(x, IntLiteral.of(0)))
+                    val assumptions = mutableListOf<BoolExpr>(IntEquality(x, IntLiteral(0)))
                     KotlinBackend().create().use { solver ->
                         solver.openSession(scope.build()).use { session ->
                             // The single dispatcher lane keeps the yielded continuation queued until await below.
                             val pending = async(start = CoroutineStart.UNDISPATCHED) { session.check(assumptions) }
                             pending.isCompleted shouldBe false
-                            assumptions[0] = IntEquality(x, IntLiteral.of(1))
+                            assumptions[0] = IntEquality(x, IntLiteral(1))
                             val result = pending.await()
                             result.status shouldBe CheckStatus.SATISFIABLE
                             requireNotNull(result.assignment).intValueOf(x) shouldBe 0
