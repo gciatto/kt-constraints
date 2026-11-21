@@ -42,6 +42,16 @@ class MiniZincIntegrationSpec :
                     MiniZincGecodeBackend(executable).create()
                 },
             )
+            test("integration/tuning-options-keep-the-answers") {
+                val scope = ConstraintScope.empty()
+                val x = scope.intVar("x", 0..3)
+                val y = scope.intVar("y", 0..3)
+                scope.add(AllDifferent(listOf(x, y)))
+                scope.maximize(LinearSum(listOf(x, y), listOf(BigInteger.TWO, BigInteger.ONE)))
+                val tuned = SolveOptions() + MiniZincOptions(randomSeed = 5, threads = 2, freeSearch = true)
+                val result = MiniZincGecodeBackend(executable).create().use { it.solve(scope.build(), tuned) }
+                result.objectiveValue shouldBe BigInteger.of(8)
+            }
             test("integration/globals-match-the-independent-finite-oracle") {
                 val scope = ConstraintScope.empty()
                 val x = scope.intVar("x", 0..2)
