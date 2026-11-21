@@ -1,5 +1,6 @@
 // Backend-independent TypeScript checks of the packaged facade, shared by the Node and browser entry points.
 import {
+    Automaton,
     Backend,
     BoolExpression,
     IntExpression,
@@ -17,6 +18,9 @@ import {
     disjunctive,
     increasing,
     lexLess,
+    nValue,
+    regular,
+    subCircuit,
     max,
     min,
     real,
@@ -104,6 +108,24 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
         check(values.join(",") === "2,0,1", `circuit ${values}`);
         const [a, b] = starts.map(s => outcome.solution?.valueOf(s) ?? -1n);
         check(b - a >= 2n, `disjunctive ${a}, ${b}`);
+    });
+
+    // Automata, subcircuits, distinct values and soft constraints.
+    await step("sequencing-globals", async solver => {
+        const builder = new ModelBuilder();
+        const word = [0, 1, 2].map(i => builder.intVar(`w${i}`, 0n, 1n));
+        const next = [0, 1, 2].map(i => builder.intVar(`n${i}`, 0n, 2n));
+        const noDoubleOnes = new Automaton(0, [0, 1]).transition(0, 0n, 0).transition(0, 1n, 1).transition(1, 0n, 0);
+        builder.add(regular(word, noDoubleOnes));
+        builder.add(subCircuit(next));
+        builder.add(next[2].eq(constant(2n)).and(next[0].eq(constant(1n))));
+        builder.add(nValue(word).eq(constant(2n)));
+        builder.minimizeViolations([word[0].eq(constant(1n)), word[1].eq(constant(1n))], [3n, 1n]);
+        const outcome = await solver.solve(builder.build(), 60_000);
+        check(outcome.status === "OPTIMAL", `sequencing status ${outcome.status}`);
+        check(outcome.objective === 1n, `sequencing objective ${outcome.objective}`);
+        check(outcome.solution?.valueOf(word[0]) === 1n && outcome.solution?.valueOf(word[1]) === 0n, "sequencing word");
+        check(outcome.solution?.valueOf(next[1]) === 0n, "subcircuit");
     });
 
     // Optimization: maximize 3x - y subject to x + y <= 12 over 0..10; optimum 30.

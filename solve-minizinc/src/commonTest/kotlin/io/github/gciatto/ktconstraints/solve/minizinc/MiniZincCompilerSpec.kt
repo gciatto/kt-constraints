@@ -1,6 +1,8 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
 import io.github.gciatto.ktconstraints.core.AllDifferent
+import io.github.gciatto.ktconstraints.core.Automaton
+import io.github.gciatto.ktconstraints.core.BinPacking
 import io.github.gciatto.ktconstraints.core.BoolAnd
 import io.github.gciatto.ktconstraints.core.BoolEquality
 import io.github.gciatto.ktconstraints.core.BoolExpr
@@ -17,9 +19,13 @@ import io.github.gciatto.ktconstraints.core.IntMax
 import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.Inverse
+import io.github.gciatto.ktconstraints.core.NoOverlap2D
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.RealLessThan
 import io.github.gciatto.ktconstraints.core.RealLiteral
+import io.github.gciatto.ktconstraints.core.Regular
+import io.github.gciatto.ktconstraints.core.SubCircuit
+import io.github.gciatto.ktconstraints.core.Transition
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
 import io.kotest.assertions.throwables.shouldThrow
@@ -76,6 +82,20 @@ class MiniZincCompilerSpec :
             source.contains("cumulative([v0, v1, v2], [1, 1, 1], [1, 1, 1], 2)") shouldBe true
             source.contains("circuit(array1d(0..2, [v2") shouldBe false
             source.contains("bool2int(v3)") shouldBe true
+        }
+        test("compiler/routing-and-packing-globals-use-library-predicates") {
+            val scope = ConstraintScope.empty()
+            val xs = List(2) { scope.intVar("x$it", 0..1) }
+            val one = listOf(BigInteger.ONE, BigInteger.ONE)
+            scope.add(Regular(xs, Automaton(0, setOf(1), listOf(Transition(0, BigInteger.ZERO, 1), Transition(1, BigInteger.ONE, 1)))))
+            scope.add(SubCircuit(xs))
+            scope.add(BinPacking(xs, one, xs))
+            scope.add(NoOverlap2D(xs, xs, one, one))
+            val source = MiniZincCompiler().compile(scope.build()).source
+            source.contains("regular([(v0 + 1), (v1 + 1)], 2, 2, array2d(1..2, 1..2, [2, 0, 0, 2]), 1, {2})") shouldBe true
+            source.contains("subcircuit(array1d(0..1, [v0, v1]))") shouldBe true
+            source.contains("bin_packing_load(array1d(0..1, [v0, v1]), [v0, v1], [1, 1])") shouldBe true
+            source.contains("diffn([v0, v1], [v0, v1], [1, 1], [1, 1])") shouldBe true
         }
         test("compiler/rejects-native-range-overflow-and-unknown-nodes-in-all-branches") {
             val compiler = MiniZincCompiler()

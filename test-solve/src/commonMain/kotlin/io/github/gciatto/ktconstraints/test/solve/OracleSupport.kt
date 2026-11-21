@@ -1,6 +1,7 @@
 package io.github.gciatto.ktconstraints.test.solve
 
 import io.github.gciatto.ktconstraints.core.AllDifferent
+import io.github.gciatto.ktconstraints.core.BinPacking
 import io.github.gciatto.ktconstraints.core.BoolAnd
 import io.github.gciatto.ktconstraints.core.BoolCardinality
 import io.github.gciatto.ktconstraints.core.BoolEquality
@@ -27,6 +28,9 @@ import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.IntVar
 import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.NoOverlap2D
+import io.github.gciatto.ktconstraints.core.Regular
+import io.github.gciatto.ktconstraints.core.SubCircuit
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.core.fold
 import io.github.gciatto.ktconstraints.model.ConstraintModel
@@ -57,7 +61,7 @@ private fun knownOracleNode(node: Expr): Boolean =
         is BoolVar, is IntVar, is BoolLiteral, is IntLiteral, is IntSum, is IntDifference, is IntProduct,
         is IntNegation, is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolAnd, is BoolOr,
         is BoolNot, is BoolImplies, is BoolEquality, is AllDifferent, is Element, is Table,
-        is LinearSum, is BoolCardinality, is IntMin, is IntMax, is BoolToInt, is Inverse, is Circuit, is Cumulative,
+        is LinearSum, is BoolCardinality, is IntMin, is IntMax, is BoolToInt, is Inverse, is Circuit, is Cumulative, is Regular, is SubCircuit, is BinPacking, is NoOverlap2D,
         -> true
         else -> false
     }

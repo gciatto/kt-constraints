@@ -1,6 +1,8 @@
 package io.github.gciatto.ktconstraints.solve.spi
 
 import io.github.gciatto.ktconstraints.core.AllDifferent
+import io.github.gciatto.ktconstraints.core.Automaton
+import io.github.gciatto.ktconstraints.core.BinPacking
 import io.github.gciatto.ktconstraints.core.BitVecComparison
 import io.github.gciatto.ktconstraints.core.BitVecLiteral
 import io.github.gciatto.ktconstraints.core.BitVecRelation
@@ -19,9 +21,13 @@ import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.NoOverlap2D
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.RealLessThan
 import io.github.gciatto.ktconstraints.core.RealLiteral
+import io.github.gciatto.ktconstraints.core.Regular
+import io.github.gciatto.ktconstraints.core.SubCircuit
+import io.github.gciatto.ktconstraints.core.Transition
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests
@@ -144,6 +150,20 @@ class ModelFeaturesSpec :
             val features = ModelFeatures.of(model)
             features.globals shouldBe setOf(GlobalKind.INVERSE, GlobalKind.CIRCUIT, GlobalKind.CUMULATIVE)
             features.reified shouldBe true
+        }
+
+        test("model-features/routing-and-packing-globals") {
+            val model =
+                ConstraintModel.of {
+                    val xs = List(2) { intVar("x$it", 0..1) }
+                    val one = listOf(BigInteger.ONE, BigInteger.ONE)
+                    add(Regular(xs, Automaton(0, setOf(0), listOf(Transition(0, BigInteger.ZERO, 0)))))
+                    add(SubCircuit(xs))
+                    add(BinPacking(xs, one, xs))
+                    add(NoOverlap2D(xs, xs, one, one))
+                }
+            ModelFeatures.of(model).globals shouldBe
+                setOf(GlobalKind.REGULAR, GlobalKind.SUBCIRCUIT, GlobalKind.BIN_PACKING, GlobalKind.NO_OVERLAP_2D)
         }
 
         test("model-features/satisfaction-has-no-objective") {

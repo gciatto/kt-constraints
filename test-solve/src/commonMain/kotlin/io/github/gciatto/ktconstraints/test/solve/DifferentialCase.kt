@@ -1,6 +1,8 @@
 package io.github.gciatto.ktconstraints.test.solve
 
 import io.github.gciatto.ktconstraints.core.AllDifferent
+import io.github.gciatto.ktconstraints.core.Automaton
+import io.github.gciatto.ktconstraints.core.BinPacking
 import io.github.gciatto.ktconstraints.core.BoolAnd
 import io.github.gciatto.ktconstraints.core.BoolCardinality
 import io.github.gciatto.ktconstraints.core.BoolEquality
@@ -27,7 +29,11 @@ import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.NoOverlap2D
+import io.github.gciatto.ktconstraints.core.Regular
+import io.github.gciatto.ktconstraints.core.SubCircuit
 import io.github.gciatto.ktconstraints.core.Table
+import io.github.gciatto.ktconstraints.core.Transition
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import org.gciatto.kt.math.BigInteger
 
@@ -125,6 +131,36 @@ class DifferentialCase(
                     scope.add(Cumulative(starts, durations, big(2, 1, 1), BigInteger.TWO))
                     scope.minimize(IntMax(starts.zip(durations) { s, d -> IntSum(s, IntLiteral(d)) }))
                 },
+                DifferentialCase("regular-top-level-and-reified") { scope ->
+                    val word = (0 until 4).map { scope.intVar("w$it", -1..2) }
+                    val b = scope.boolVar("b")
+                    scope.add(Regular(word, NO_DOUBLE_ONES))
+                    scope.add(BoolEquality(b, Regular(word.drop(1).reversed(), NO_DOUBLE_ONES)))
+                    scope.add(IntLessOrEqual(IntLiteral(1), IntSum(word[0], word[3])))
+                },
+                DifferentialCase("subcircuit-top-level") { scope ->
+                    val next = (0 until 4).map { scope.intVar("n$it", 0..4) }
+                    scope.add(SubCircuit(next))
+                },
+                DifferentialCase("subcircuit-reified") { scope ->
+                    val next = (0 until 3).map { scope.intVar("n$it", -1..3) }
+                    val b = scope.boolVar("b")
+                    scope.add(BoolEquality(b, SubCircuit(next)))
+                },
+                DifferentialCase("bin-packing-top-level-and-reified") { scope ->
+                    val bins = (0 until 3).map { scope.intVar("bin$it", -1..2) }
+                    val loads = (0 until 2).map { scope.intVar("load$it", 0..4) }
+                    val b = scope.boolVar("b")
+                    scope.add(BinPacking(bins, big(2, 1, 2), loads))
+                    scope.add(BoolEquality(b, BinPacking(bins.take(2), big(1, 1), listOf(IntLiteral(1), IntLiteral(1)))))
+                },
+                DifferentialCase("no-overlap-2d-top-level-and-reified") { scope ->
+                    val xs = (0 until 3).map { scope.intVar("x$it", 0..2) }
+                    val ys = (0 until 3).map { scope.intVar("y$it", 0..1) }
+                    val b = scope.boolVar("b")
+                    scope.add(NoOverlap2D(xs, ys, big(2, 1, 1), big(1, 2, 1)))
+                    scope.add(BoolEquality(b, NoOverlap2D(xs.take(2), ys.take(2), big(1, 1), big(1, 1))))
+                },
                 DifferentialCase("products-and-negative-values") { scope ->
                     val x = scope.intVar("x", -3..3)
                     val y = scope.intVar("y", -3..3)
@@ -173,6 +209,10 @@ class DifferentialCase(
                     scope.minimize(x)
                 },
             )
+
+        /** Words over {0, 1} without two consecutive ones. */
+        private val NO_DOUBLE_ONES =
+            Automaton(0, setOf(0, 1), listOf(Transition(0, BigInteger.ZERO, 0), Transition(0, BigInteger.ONE, 1), Transition(1, BigInteger.ZERO, 0)))
 
         private fun big(vararg values: Long): List<BigInteger> = values.map { BigInteger.of(it) }
 
