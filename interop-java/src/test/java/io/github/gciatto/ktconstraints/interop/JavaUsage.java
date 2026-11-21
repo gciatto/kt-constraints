@@ -9,6 +9,9 @@ import io.github.gciatto.ktconstraints.dsl.Expressions;
 import io.github.gciatto.ktconstraints.model.ConstraintModel;
 import io.github.gciatto.ktconstraints.model.ConstraintScope;
 import io.github.gciatto.ktconstraints.solve.Assignment;
+import io.github.gciatto.ktconstraints.solve.CheckResult;
+import io.github.gciatto.ktconstraints.solve.CheckStatus;
+import io.github.gciatto.ktconstraints.solve.Checkpoint;
 import io.github.gciatto.ktconstraints.solve.SolutionEvent;
 import io.github.gciatto.ktconstraints.solve.SolutionFound;
 import io.github.gciatto.ktconstraints.solve.SolveCompleted;
@@ -19,6 +22,8 @@ import io.github.gciatto.ktconstraints.solve.TerminationReason;
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -158,6 +163,45 @@ public final class JavaUsage {
             check(Integer.valueOf(7).equals(result.getAssignment().intValueOf(n)), "n " + result.getAssignment().valueOf(n));
             Rational value = result.getAssignment().valueOf(r);
             check(value.compareTo(Rational.parse("0.5")) >= 0 && value.compareTo(Rational.parse("0.55")) <= 0, "r " + value);
+        }
+    }
+
+    /** Incremental session: frames, rollback, assumptions with an unsat core, and an asynchronous check. */
+    public static void sessions(SolverBackend backend) throws Exception {
+        ConstraintScope scope = ConstraintScope.empty();
+        IntVar x = scope.intVar("x", 0, 10);
+        scope.add(Expressions.gt(x, 3));
+        try (BlockingSolver solver = BlockingSolver.of(backend);
+             BlockingSession session = solver.openSession(scope.build())) {
+            Checkpoint checkpoint = session.push();
+            session.add(Expressions.lt(x, 2));
+            check(session.check().getStatus() == CheckStatus.UNSATISFIABLE, "contradictory frame");
+            session.popTo(checkpoint);
+            CheckResult restored = session.check();
+            check(restored.getStatus() == CheckStatus.SATISFIABLE, "restored status " + restored.getStatus());
+            check(restored.getAssignment().intValueOf(x) > 3, "restored x " + restored.getAssignment().valueOf(x));
+            BoolExpr low = Expressions.lt(x, 1);
+            BoolExpr high = Expressions.gt(x, 8);
+            CheckResult assumed = session.check(Arrays.asList(low, high));
+            check(assumed.getStatus() == CheckStatus.UNSATISFIABLE, "assumption status " + assumed.getStatus());
+            check(assumed.getUnsatCore().contains(low), "core " + assumed.getUnsatCore());
+            CheckResult async = session.checkAsync(Collections.singletonList(Expressions.eq(x, 7)), 60_000L)
+                .get(120, TimeUnit.SECONDS);
+            check(Integer.valueOf(7).equals(async.getAssignment().intValueOf(x)), "async x " + async.getAssignment().valueOf(x));
+        }
+    }
+
+    /** A solver without incremental sessions refuses to open one rather than emulating it. */
+    public static void sessionsUnsupported(SolverBackend backend) {
+        ConstraintScope scope = ConstraintScope.empty();
+        scope.intVar("x", 0, 1);
+        try (BlockingSolver solver = BlockingSolver.of(backend)) {
+            try {
+                solver.openSession(scope.build()).close();
+            } catch (UnsupportedOperationException expected) {
+                return;
+            }
+            throw new AssertionError("session opened on " + solver.getDescriptor().getId());
         }
     }
 
