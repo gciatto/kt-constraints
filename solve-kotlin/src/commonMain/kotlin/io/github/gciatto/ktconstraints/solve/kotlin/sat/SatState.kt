@@ -18,6 +18,7 @@ internal class SatState {
     private var phases = IntArray(16)
     private var activity = DoubleArray(16)
     private var activityIncrement = 1.0
+    private val order = SatOrder { activity }
 
     fun reset(variables: Int) {
         if (variables >= assignments.size) {
@@ -37,6 +38,7 @@ internal class SatState {
         trail.clear()
         levels.clear()
         propagated = 0
+        order.reset(variables)
     }
 
     fun value(literal: Int): Int = assignments[abs(literal)] * if (literal > 0) 1 else -1
@@ -68,23 +70,17 @@ internal class SatState {
             assignments[variable] = 0
             assignmentLevels[variable] = 0
             reasons[variable] = -1
+            order.insert(variable)
         }
         levels.truncate(level)
         propagated = minOf(propagated, trail.size)
     }
 
-    fun chooseDecision(
-        variables: Int,
-        budget: SatBudget,
-    ): Int {
-        var variable = 0
-        var score = -1.0
-        for (candidate in 1..variables) {
+    fun chooseDecision(budget: SatBudget): Int {
+        var variable = order.removeMax()
+        while (variable != 0 && assignments[variable] != 0) {
             budget.tick()
-            if (assignments[candidate] == 0 && activity[candidate] > score) {
-                variable = candidate
-                score = activity[candidate]
-            }
+            variable = order.removeMax()
         }
         return if (variable == 0 || phases[variable] >= 0) variable else -variable
     }
@@ -95,6 +91,7 @@ internal class SatState {
         budget: SatBudget,
     ) {
         activity[variable] += activityIncrement
+        order.increased(variable)
         if (activity[variable] > 1e100) {
             for (index in 1..variables) {
                 budget.tick()

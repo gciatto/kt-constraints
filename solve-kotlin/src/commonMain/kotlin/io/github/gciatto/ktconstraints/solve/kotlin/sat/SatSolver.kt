@@ -81,7 +81,7 @@ internal class SatSolver {
                         else -> decision = literal
                     }
                 }
-                if (decision == 0) decision = state.chooseDecision(database.variableCount, budget)
+                if (decision == 0) decision = state.chooseDecision(budget)
                 if (decision == 0) {
                     return SatResult(
                         SatStatus.SATISFIABLE,
