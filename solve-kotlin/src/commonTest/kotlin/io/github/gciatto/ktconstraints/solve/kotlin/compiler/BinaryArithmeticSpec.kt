@@ -1,9 +1,16 @@
 package io.github.gciatto.ktconstraints.solve.kotlin.compiler
 
 import io.github.gciatto.ktconstraints.core.IntDomain
+import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.kotlin.KotlinConfiguration
+import io.github.gciatto.ktconstraints.solve.kotlin.SearchBudget
+import io.github.gciatto.ktconstraints.solve.kotlin.SearchStopped
+import io.github.gciatto.ktconstraints.solve.kotlin.sat.SatSolver
 import io.github.gciatto.ktconstraints.solve.kotlin.sat.SatStatus
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.CancellationException
 import org.gciatto.kt.math.BigInteger
 
 /** Machine arithmetic is used only as an independent oracle for exhaustively bounded examples. */
@@ -28,8 +35,11 @@ class BinaryArithmeticSpec :
                 listOf(arithmetic.add(x, y), arithmetic.subtract(x, y), arithmetic.multiply(x, y), arithmetic.negate(x))
             for (left in -3L..3L) {
                 for (right in -2L..4L) {
-                    val assumptions = intArrayOf(arithmetic.equal(x, arithmetic.integer(BigInteger.of(left))),
-                        arithmetic.equal(y, arithmetic.integer(BigInteger.of(right))))
+                    val assumptions =
+                        intArrayOf(
+                            arithmetic.equal(x, arithmetic.integer(BigInteger.of(left))),
+                            arithmetic.equal(y, arithmetic.integer(BigInteger.of(right))),
+                        )
                     val expected = listOf(left + right, left - right, left * right, -left).map(BigInteger::of)
                     val assignment = requireNotNull(fixture.solver.solve(assumptions).values)
                     expressions.map { arithmetic.decodeInteger(it, assignment) } shouldBe expected
@@ -49,7 +59,8 @@ class BinaryArithmeticSpec :
             val fixture = BinaryFixture()
             val x = fixture.arithmetic.variable(IntDomain.of(-1, 0))
             val negative = fixture.arithmetic.negate(x)
-            val assignment = requireNotNull(fixture.solver.solve(intArrayOf(fixture.arithmetic.equal(x, fixture.arithmetic.integer(-BigInteger.ONE)))).values)
+            val equality = fixture.arithmetic.equal(x, fixture.arithmetic.integer(-BigInteger.ONE))
+            val assignment = requireNotNull(fixture.solver.solve(intArrayOf(equality)).values)
             fixture.arithmetic.decodeInteger(negative, assignment) shouldBe BigInteger.ONE
         }
 
@@ -82,6 +93,30 @@ class BinaryArithmeticSpec :
             val fixture = BinaryFixture()
             fixture.arithmetic.variable(IntDomain.empty())
             fixture.solver.solve().status shouldBe SatStatus.UNSATISFIABLE
+        }
+
+        test("integer-circuit/widening-respects-the-configured-resource-limit-before-allocation") {
+            val solver = SatSolver()
+            val circuit = Circuit(solver, KotlinConfiguration(maxBitWidth = 3), SearchBudget(null, null) { false })
+            val arithmetic = BinaryArithmetic(circuit)
+            val x = arithmetic.variable(IntDomain.of(-2, 2))
+            val allocated = circuit.variables
+            val failure = shouldThrow<SearchStopped> { arithmetic.multiply(x, x) }
+            failure.reason shouldBe TerminationReason.RESOURCE_LIMIT
+            circuit.variables shouldBe allocated
+        }
+
+        test("integer-circuit/multiplication-observes-cooperative-cancellation") {
+            val fixture = BinaryFixture()
+            val magnitude = BigInteger.ONE shl 63
+            val x = fixture.arithmetic.variable(IntDomain.of(-magnitude, magnitude - BigInteger.ONE))
+            var checkpoints = 0
+            val arithmetic =
+                BinaryArithmetic(fixture.circuit) {
+                    if (++checkpoints == 2) throw CancellationException("requested")
+                }
+            shouldThrow<CancellationException> { arithmetic.multiply(x, x) }
+            checkpoints shouldBe 2
         }
 
         test("integer-circuit/comparison-and-choice-respect-signed-values") {
