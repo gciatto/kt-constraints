@@ -10,14 +10,17 @@ internal class SatPropagation(
     suspend fun assertUnits(): Boolean {
         for (index in 0 until database.units.size) {
             budget.tick()
+            budget.poll()
             val reason = database.units[index]
             if (!state.enqueue(database.clauses[reason][0], reason)) return false
         }
         return true
     }
 
-    suspend fun propagate(): Int {
+    /** Returns a conflicting clause, [FIXPOINT], or [PAUSED] when a checkpoint is due between trail literals. */
+    fun propagate(): Int {
         while (state.propagated < state.trail.size) {
+            if (budget.due) return PAUSED
             budget.tick()
             statistics.propagations++
             val falsified = -state.trail[state.propagated++]
@@ -31,17 +34,14 @@ internal class SatPropagation(
                     clause[0] = clause[1]
                     clause[1] = falsified
                 }
-                check(clause[1] == falsified) { "Stale clause watch" }
                 val other = clause[0]
                 if (state.value(other) > 0) {
                     index++
                     continue
                 }
                 var replacement = 2
-                while (replacement < clause.size && state.value(clause[replacement]) < 0) {
-                    budget.tick()
-                    replacement++
-                }
+                while (replacement < clause.size && state.value(clause[replacement]) < 0) replacement++
+                budget.tick(replacement - 2)
                 if (replacement < clause.size) {
                     val literal = clause[replacement]
                     clause[replacement] = falsified
@@ -54,6 +54,11 @@ internal class SatPropagation(
                 }
             }
         }
-        return -1
+        return FIXPOINT
+    }
+
+    companion object {
+        const val FIXPOINT = -1
+        const val PAUSED = -2
     }
 }

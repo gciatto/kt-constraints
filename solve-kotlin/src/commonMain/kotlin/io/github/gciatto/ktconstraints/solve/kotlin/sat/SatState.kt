@@ -56,7 +56,7 @@ internal class SatState {
         return true
     }
 
-    suspend fun backtrack(
+    fun backtrack(
         level: Int,
         budget: SatBudget,
     ) {
@@ -73,7 +73,7 @@ internal class SatState {
         propagated = minOf(propagated, trail.size)
     }
 
-    suspend fun chooseDecision(
+    fun chooseDecision(
         variables: Int,
         budget: SatBudget,
     ): Int {
@@ -89,7 +89,7 @@ internal class SatState {
         return if (variable == 0 || phases[variable] >= 0) variable else -variable
     }
 
-    suspend fun bump(
+    fun bump(
         variable: Int,
         variables: Int,
         budget: SatBudget,

@@ -11,7 +11,7 @@ internal class SatConflictAnalysis(
     private val learned = IntVector()
     private val touched = IntVector()
 
-    suspend fun analyze(conflict: Int): SatLearning {
+    fun analyze(conflict: Int): SatLearning {
         learned.clear()
         touched.clear()
         learned.add(0)
@@ -49,7 +49,7 @@ internal class SatConflictAnalysis(
         return SatLearning(learned.toIntArray(), jump)
     }
 
-    private suspend fun orderBackjumpLiteral(): Int {
+    private fun orderBackjumpLiteral(): Int {
         var jump = 0
         var highest = 1
         for (index in 1 until learned.size) {

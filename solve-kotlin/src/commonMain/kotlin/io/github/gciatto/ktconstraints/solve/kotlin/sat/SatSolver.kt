@@ -59,7 +59,9 @@ internal class SatSolver {
         val analysis = SatConflictAnalysis(database, state, budget)
         while (true) {
             budget.tick()
+            budget.poll()
             val conflict = propagation.propagate()
+            if (conflict == SatPropagation.PAUSED) continue
             if (conflict >= 0) {
                 statistics.conflicts++
                 if (state.levels.size == 0) return SatResult(SatStatus.UNSATISFIABLE)
