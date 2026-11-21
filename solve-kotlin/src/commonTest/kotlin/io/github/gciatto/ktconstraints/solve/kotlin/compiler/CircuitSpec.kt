@@ -20,8 +20,9 @@ class CircuitSpec : FunSpec({
                 val assumptions = intArrayOf(if (a) x else -x, if (b) y else -y)
                 val result = sat.solve(assumptions)
                 result.status shouldBe SatStatus.SATISFIABLE
-                circuit.value(and, requireNotNull(result.values)) shouldBe (a && b)
-                circuit.value(xor, result.values!!) shouldBe (a != b)
+                val values = requireNotNull(result.values)
+                circuit.value(and, values) shouldBe (a && b)
+                circuit.value(xor, values) shouldBe (a != b)
             }
         }
     }
