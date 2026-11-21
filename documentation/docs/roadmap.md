@@ -148,15 +148,14 @@ reports, native resource cleanup verified, JS/TS and Java APIs validated indepen
 - [x] Distinguish native propagation from entailment by repeated satisfiability checks (`Evidence`).
 - [x] Implement backtracking via reversible trail, persistent snapshots, or native push/pop, per backend.
   Z3 session frames and Choco environment worlds; undo also unposts Choco's permanent reifications.
-- [ ] Variable binding/domain-change events, domain inspection, residual constraint projection and explanations.
+- [x] Variable binding/domain-change events, domain inspection, residual constraint projection and explanations.
   Pulled domain-change reports, domain inspection and sound, non-minimal residual projection are implemented;
-  explanations are pending.
+  explanations (`explain()`: Z3 unsat cores, Choco deletion filtering) are implemented.
 - [x] Define interaction between user-driven branching and backend search without duplicated choice points.
   Labeling is the logic engine's search over marks (`docs/LOGIC-ENGINES.md`).
-- [ ] Test nesting, fork isolation, replay, failures, cut-like pruning, infinite domains and resource cancellation.
+- [x] Test nesting, fork isolation, replay, failures, cut-like pruning, infinite domains and resource cancellation.
   The shared `storeContract` covers nesting, stale and foreign marks, failure and recovery, cut-like undo,
-  declarations after marks, oracle agreement and close. `fork` is deferred; unbounded reals in stores and
-  cancellation of in-flight posts are untested.
+  declarations after marks, forks, explanations, exact reals, timeouts, cancellation, oracle agreement and close.
 - [x] Benchmark constraint-added-per-resolution-step latency and rollback, not only batch benchmark instances.
   `:solve-choco:storeBenchmark` and `:solve-z3:jvmStoreBenchmark` (N-queens labeling against batch re-solving).
 

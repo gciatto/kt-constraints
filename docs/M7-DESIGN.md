@@ -29,8 +29,8 @@ settled on 2026-11-21).
      `FAILED` or `UNCHANGED`.
    - `PropagatingStore` (Choco, JVM). `constrain` runs native propagation and reports the domain reductions.
      Its entailment is native and may be `UNKNOWN`.
-3. **Facades** (Java `BlockingStore`, TS `Store`): the same shape. *Decided:* they follow M7, once the Kotlin API
-   settles.
+3. **Facades:** Java `BlockingStore` and TS `Store` (`Backend.openStore`), with the same shape. They were added
+   once the Kotlin API settled.
 
 ## Semantics
 
@@ -43,9 +43,15 @@ settled on 2026-11-21).
   domains present when the mark was taken, and invalidates that mark and every newer one. It reuses
   `CheckpointStack`'s ownership and staleness rules. This maps to Z3 `push`/`pop` and Choco
   `worldPush`/`worldPop` with no replay and no copying of native contexts.
-- **`fork()` is deferred.** An independent copy would need a replay journal or a second native context;
-  sequential backtracking does not need it. *Decided:* deferred; a later `fork` would replay
-  the journal.
+- **`fork()` replays.** An independent copy replays the live variables and constraints into a fresh store, so
+  it costs time proportional to the store and carries none of the marks. Deferred at first, then added after M7's
+  core. Z3 forks open a second session on the same solver, which the last store using it closes.
+- **Explanations.** On a failed store, `explain()` returns posted constraints that are inconsistent by
+  themselves:
+  - Z3: the unsat core of the posted constraints, checked as assumptions in a throwaway session.
+  - Choco: a deletion filter that keeps a constraint only when propagation can no longer refute the rest without
+    it.
+  Neither result is guaranteed minimal.
 - **Entailment** returns `ENTAILED`, `DISENTAILED`, `UNDETERMINED` or `UNKNOWN`:
   - `UNDETERMINED`: proven to be neither entailed nor disentailed.
   - `UNKNOWN`: the engine could not decide (timeout, or propagation that is too weak).

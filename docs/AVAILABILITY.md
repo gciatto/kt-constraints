@@ -32,6 +32,8 @@ implemented. The Node cell of `chuffed/minizinc-wasm` is blank because that rout
 | TypeScript (`:interop-js`), `z3/wasm`    | —         | —               | —           | ✅   | ✅       |
 | TypeScript, `gecode/minizinc-js-cli`     | —         | —               | —           | ✅   | —        |
 | TypeScript, `chuffed/minizinc-wasm`      | —         | —               | —           |      | ✅       |
+| Java `BlockingStore` (Choco, Z3)         | ✅        | ✅              | ✅          | —    | —        |
+| TypeScript `Store`, `z3/wasm`            | —         | —               | —           | ✅   | ✅       |
 
 ## Constraint stores
 

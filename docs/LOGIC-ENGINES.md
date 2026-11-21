@@ -45,7 +45,10 @@ Both implement the same interface and pass the same contract (`storeContract` in
 ## Limits
 
 - One consumer per store; the runtime must not call it from concurrent threads.
-- There is no `fork()` yet, so or-parallel exploration needs one store per worker.
+- `fork()` copies a store by replaying it, which suits or-parallel exploration with one fork per worker but costs
+  time proportional to the store. `explain()` on a failed store names conflicting posted constraints, for example
+  to report why a goal failed.
 - `ChocoStore` handles Booleans and integers within ±10^7 and has no exact reals. `SatisfiabilityStore` over Z3
   also handles reals and bit-vectors.
-- Store facades for Java and TypeScript are planned after M7.
+- Java (`BlockingStore`) and TypeScript (`Backend.openStore()`, Z3 Wasm only) expose the same operations. The
+  TypeScript facade has no `project`.

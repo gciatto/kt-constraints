@@ -47,5 +47,8 @@ entries run:
 - `browser.mts` runs them in Chromium on Z3 and Chuffed. Run it with
   `INTEROP_BROWSER_TEST=true CHROME_BIN=... ./gradlew :interop-js:typescriptBrowserUsageTest`.
 
-Not yet exposed: bit-vector expressions. The declarations also list kt-math's own exported number API, which this
+Constraint stores: `backend.openStore()` returns a `Store` (Z3 Wasm only; other routes refuse) with `intVar`,
+`constrain`, `mark`/`undoTo`, `entails`, `explain` (returning the caller's own expressions), `domain` and `fork`.
+
+Not yet exposed: bit-vector expressions and store residual projection. The declarations also list kt-math's own exported number API, which this
 facade does not need.
