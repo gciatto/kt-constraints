@@ -14,6 +14,9 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
             }
         }
+        jsTest {
+            dependencies { implementation(project(":solve-kotlin")) }
+        }
     }
 }
 
