@@ -7,6 +7,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     testImplementation(project(":solve-choco"))
     testImplementation(project(":solve-cpsat"))
+    testImplementation(project(":solve-kotlin"))
     testImplementation(project(":solve-mip"))
     testImplementation(project(":solve-z3"))
     testImplementation(libs.kotest.runner.junit5)
