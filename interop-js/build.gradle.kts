@@ -21,6 +21,22 @@ kotlin.js {
     binaries.library()
     useEsModules()
     generateTypeScriptDefinitions()
+    // npm metadata of the published package; the version comes from git-semver (forced on release).
+    compilations.named("main") {
+        packageJson {
+            customField("description", "Kotlin Multiplatform constraint programming and SMT, as an ES module with TypeScript types")
+            customField("license", "Apache-2.0")
+            customField("type", "module")
+            customField("repository", mapOf("type" to "git", "url" to "git+https://github.com/gciatto/kt-constraints.git"))
+            customField("homepage", "https://github.com/gciatto/kt-constraints/tree/master/interop-js")
+            customField("keywords", listOf("constraint-programming", "smt", "z3", "minizinc", "solver", "typescript"))
+            customField("engines", mapOf("node" to ">=22"))
+            customField(
+                "exports",
+                mapOf(".".to(mapOf("types" to "./kt-constraints-interop-js.d.mts", "import" to "./kt-constraints-interop-js.mjs"))),
+            )
+        }
+    }
 }
 
 // Type-checks and runs src/test/typescript against the packaged library, as an npm consumer would.
@@ -98,3 +114,9 @@ tasks.register<Exec>("typescriptBrowserUsageTest") {
     commandLine("node", "browser-run.mjs", "site")
 }
 tasks.matching { it.name == "jsTest" }.configureEach { dependsOn(typescriptUsageTest) }
+
+// The npm package carries the project license and this module's README.
+tasks.named<Copy>("jsNodeProductionLibraryDistribution") {
+    from(rootProject.file("LICENSE"))
+    from(layout.projectDirectory.file("README.md"))
+}

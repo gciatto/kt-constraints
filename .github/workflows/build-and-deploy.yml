@@ -35,6 +35,11 @@ jobs:
         run: ./gradlew check assemble koverXmlReport --parallel --continue
       - name: Check Maven Central publication task graph (dry run)
         run: ./gradlew publishAllPublicationsToProjectLocalRepository zipMavenCentralPortalPublication --dry-run
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check npm publication of the TypeScript facade (dry run)
+        run: ./scripts/publish-npm.sh -PforceVersion=0.0.0-ci --dry-run
       - name: Job summary
         if: always()
         uses: ./.github/actions/ci-summary
@@ -64,6 +69,7 @@ jobs:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_PASSWORD }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           ORG_GRADLE_PROJECT_otherMavenUsername: ${{ github.actor }}
           ORG_GRADLE_PROJECT_otherMavenPassword: ${{ secrets.GITHUB_TOKEN }}
         run: |
