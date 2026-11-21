@@ -27,7 +27,10 @@ object KotlinBenchmark {
             }
         }
 
-    private suspend fun measureSample(create: () -> KotlinBenchmarkCase, sample: Int) {
+    private suspend fun measureSample(
+        create: () -> KotlinBenchmarkCase,
+        sample: Int,
+    ) {
         val elapsed = linkedMapOf<String, Long>()
         val case = timed(elapsed, "model_construction") { create() }
         val budget = SearchBudget(TIMEOUT_MILLIS, null) { false }
@@ -42,7 +45,10 @@ object KotlinBenchmark {
         println("# ${case.name} sample=$sample engine_statistics=${engine.metadata(budget).statistics}")
     }
 
-    private suspend fun measureRestoration(case: KotlinBenchmarkCase, elapsed: MutableMap<String, Long>) {
+    private suspend fun measureRestoration(
+        case: KotlinBenchmarkCase,
+        elapsed: MutableMap<String, Long>,
+    ) {
         KotlinBackend().create().use { solver ->
             timed(elapsed, "session_open") { solver.openSession(case.model) }.use { session ->
                 val baseline = timed(elapsed, "session_initial_check") { session.check(timeoutMillis = TIMEOUT_MILLIS) }
@@ -51,9 +57,10 @@ object KotlinBenchmark {
                 val pushed = timed(elapsed, "session_pushed_check") { session.check(timeoutMillis = TIMEOUT_MILLIS) }
                 check(pushed.status == CheckStatus.SATISFIABLE) { "Pushed session failed: ${case.name}, $pushed" }
                 check(GroundEvaluator.evaluate(case.pushed, requireNotNull(pushed.assignment)))
-                val conflict = timed(elapsed, "session_contradictory_assumption") {
-                    session.check(listOf(case.restored), TIMEOUT_MILLIS)
-                }
+                val conflict =
+                    timed(elapsed, "session_contradictory_assumption") {
+                        session.check(listOf(case.restored), TIMEOUT_MILLIS)
+                    }
                 check(conflict.status == CheckStatus.UNSATISFIABLE) { "Opposite branches did not conflict: ${case.name}, $conflict" }
                 timed(elapsed, "session_pop") { session.popTo(checkpoint) }
                 val restored = timed(elapsed, "session_restored_check") { session.check(listOf(case.restored), TIMEOUT_MILLIS) }
@@ -63,7 +70,11 @@ object KotlinBenchmark {
         }
     }
 
-    private fun sameValue(variable: Variable, full: Assignment, projected: Assignment): Boolean =
+    private fun sameValue(
+        variable: Variable,
+        full: Assignment,
+        projected: Assignment,
+    ): Boolean =
         when (variable) {
             is BoolVar -> full.valueOf(variable) == projected.valueOf(variable)
             is IntVar -> full.valueOf(variable) == projected.valueOf(variable)
@@ -72,7 +83,11 @@ object KotlinBenchmark {
             else -> error("Unsupported benchmark projection")
         }
 
-    private inline fun <T> timed(elapsed: MutableMap<String, Long>, phase: String, action: () -> T): T {
+    private suspend inline fun <T> timed(
+        elapsed: MutableMap<String, Long>,
+        phase: String,
+        action: suspend () -> T,
+    ): T {
         val started = System.nanoTime()
         return action().also { elapsed[phase] = System.nanoTime() - started }
     }
