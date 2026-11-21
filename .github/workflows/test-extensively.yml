@@ -72,7 +72,8 @@ jobs:
         run: >-
           ./gradlew :core:${{ matrix.target }}Test :model:${{ matrix.target }}Test :dsl:${{ matrix.target }}Test
           :solve:${{ matrix.target }}Test :solve-spi:${{ matrix.target }}Test
-          :test-solve:${{ matrix.target }}Test :solve-minizinc:${{ matrix.target }}Test :solve-z3:${{ matrix.target }}Test
+          :test-solve:${{ matrix.target }}Test :solve-kotlin:${{ matrix.target }}Test
+          :solve-minizinc:${{ matrix.target }}Test :solve-z3:${{ matrix.target }}Test
           --parallel --continue
       - name: Job summary
         if: always()
