@@ -3,9 +3,12 @@ import {
     Backend,
     BoolExpression,
     IntExpression,
+    Mark,
     ModelBuilder,
     Outcome,
     Solver,
+    Store,
+    StorePropagation,
     allDifferent,
     constant,
     real,
@@ -175,7 +178,43 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
                 session.close();
             }
         });
+        // Constraint store: post, mark, entail, undo, fail, explain with the caller's expressions, fork.
+        const store: Store = backend.openStore();
+        try {
+            const x = store.intVar("x", 0n, 9n);
+            const y = store.intVar("y", 0n, 9n);
+            const posted: StorePropagation = await store.constrain(x.plus(y).lt(constant(3n)));
+            check(posted.status !== "FAILED", `store post ${posted.status}`);
+            const mark: Mark = store.mark();
+            await store.constrain(x.eq(constant(2n)));
+            check((await store.entails(y.eq(constant(0n)))).value === "ENTAILED", "y is forced to 0");
+            store.undoTo(mark);
+            const bound = await store.entails(x.lt(constant(3n)));
+            check(bound.value === "ENTAILED" && bound.evidence === "SATISFIABILITY", `x < 3: ${bound.value}`);
+            const domain: bigint[][] = store.domain(x);
+            check(domain.length === 1 && domain[0][0] === 0n && domain[0][1] === 9n, `domain ${domain}`);
+            const impossible = x.gt(constant(5n));
+            check((await store.constrain(impossible)).status === "FAILED", "x > 5 must fail");
+            check(store.isFailed, "the store is failed");
+            check((await store.explain())?.includes(impossible) === true, "explanations keep the caller's expressions");
+            const child = store.fork();
+            try {
+                check(child.isFailed, "forks keep the failure");
+            } finally {
+                child.close();
+            }
+        } finally {
+            store.close();
+        }
+        log(`${backend.id}: store`);
     } else {
+        let refused = false;
+        try {
+            backend.openStore().close();
+        } catch {
+            refused = true;
+        }
+        check(refused, "routes without incremental assertions must refuse stores");
         await step("no-session", async solver => {
             let refused = false;
             try {
