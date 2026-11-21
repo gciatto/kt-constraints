@@ -30,47 +30,59 @@ internal class KotlinSession(
     private val known = model.variables.toMutableSet()
     private var engine: KotlinEngine? = null
 
-    override fun declare(variable: Variable) = exclusive {
-        require(known.add(variable)) { "Variable already in the session: ${variable.name}" }
-        declarations.last() += variable
-    }
-
-    override fun add(constraint: BoolExpr) = exclusive {
-        requireAccepted(listOf(constraint))
-        frames.last() += SessionAssertion(constraint)
-    }
-
-    override fun push(): Checkpoint = exclusive {
-        frames.add(mutableListOf())
-        declarations.add(mutableListOf())
-        checkpoints.push()
-    }
-
-    override fun popTo(checkpoint: Checkpoint) = exclusive {
-        val count = checkpoints.popTo(checkpoint)
-        repeat(count) { frames.removeAt(frames.lastIndex) }
-        known -= List(count) { declarations.removeAt(declarations.lastIndex) }.flatten().toSet()
-    }
-
-    override suspend fun check(assumptions: List<BoolExpr>, timeoutMillis: Long?): CheckResult = exclusive {
-        require(timeoutMillis == null || timeoutMillis >= 0)
-        val temporary = assumptions.toList()
-        requireAccepted(temporary)
-        val budget = SearchBudget(timeoutMillis, configuration.workLimit) { closed.load() }
-        try {
-            budget.poll()
-            budget.checkpoint()
-            checkActive(temporary, budget)
-        } catch (stopped: SearchStopped) {
-            CheckResult(CheckStatus.UNKNOWN, null, descriptor, stopped.reason)
+    override fun declare(variable: Variable) =
+        exclusive {
+            require(known.add(variable)) { "Variable already in the session: ${variable.name}" }
+            declarations.last() += variable
         }
-    }
 
-    private suspend fun checkActive(assumptions: List<BoolExpr>, budget: SearchBudget): CheckResult {
-        val current = engine ?: KotlinEngine(model, configuration, budget).also {
-            it.initialize(budget, includeObjective = false)
-            engine = it
+    override fun add(constraint: BoolExpr) =
+        exclusive {
+            requireAccepted(listOf(constraint))
+            frames.last() += SessionAssertion(constraint)
         }
+
+    override fun push(): Checkpoint =
+        exclusive {
+            frames.add(mutableListOf())
+            declarations.add(mutableListOf())
+            checkpoints.push()
+        }
+
+    override fun popTo(checkpoint: Checkpoint) =
+        exclusive {
+            val count = checkpoints.popTo(checkpoint)
+            repeat(count) { frames.removeAt(frames.lastIndex) }
+            known -= List(count) { declarations.removeAt(declarations.lastIndex) }.flatten().toSet()
+        }
+
+    override suspend fun check(
+        assumptions: List<BoolExpr>,
+        timeoutMillis: Long?,
+    ): CheckResult =
+        exclusive {
+            require(timeoutMillis == null || timeoutMillis >= 0)
+            val temporary = assumptions.toList()
+            requireAccepted(temporary)
+            val budget = SearchBudget(timeoutMillis, configuration.workLimit) { closed.load() }
+            try {
+                budget.poll()
+                budget.checkpoint()
+                checkActive(temporary, budget)
+            } catch (stopped: SearchStopped) {
+                CheckResult(CheckStatus.UNKNOWN, null, descriptor, stopped.reason)
+            }
+        }
+
+    private suspend fun checkActive(
+        assumptions: List<BoolExpr>,
+        budget: SearchBudget,
+    ): CheckResult {
+        val current =
+            engine ?: KotlinEngine(model, configuration, budget).also {
+                it.initialize(budget, includeObjective = false)
+                engine = it
+            }
         current.circuit.useBudget(budget)
         val declared = declarations.flatten()
         for (variable in declared) current.translation.declare(variable)
@@ -87,7 +99,12 @@ internal class KotlinSession(
             CheckResult(CheckStatus.UNSATISFIABLE, null, descriptor, unsatCore = assumptions, metadata = current.metadata(budget))
         } else {
             current.validate(full, active.map { it.expression } + assumptions)
-            CheckResult(CheckStatus.SATISFIABLE, full.project(model.outputVariables + declared), descriptor, metadata = current.metadata(budget))
+            CheckResult(
+                CheckStatus.SATISFIABLE,
+                full.project(model.outputVariables + declared),
+                descriptor,
+                metadata = current.metadata(budget),
+            )
         }
     }
 

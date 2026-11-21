@@ -16,10 +16,15 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 internal class KotlinSolver(
     override val descriptor: SolverDescriptor,
     private val configuration: KotlinConfiguration,
-) : ManagedConstraintSolver(), IncrementalConstraintSolver {
+) : ManagedConstraintSolver(),
+    IncrementalConstraintSolver {
     private val sessions = AtomicReference(emptySet<KotlinSession>())
 
-    override fun openStream(model: ConstraintModel, options: SolveOptions, onClosed: () -> Unit): ManagedSolutionStream {
+    override fun openStream(
+        model: ConstraintModel,
+        options: SolveOptions,
+        onClosed: () -> Unit,
+    ): ManagedSolutionStream {
         requireSupported(model)
         return KotlinStream(model, options, descriptor, configuration, onClosed)
     }

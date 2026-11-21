@@ -49,7 +49,10 @@ internal class Circuit(
 
     fun constant(value: Boolean): Int = if (value) trueLiteral else falseLiteral
 
-    fun and(left: Int, right: Int): Int {
+    fun and(
+        left: Int,
+        right: Int,
+    ): Int {
         budget.consume()
         if (left == falseLiteral || right == falseLiteral || left == -right) return falseLiteral
         if (left == trueLiteral || left == right) return right
@@ -63,9 +66,15 @@ internal class Circuit(
         }
     }
 
-    fun or(left: Int, right: Int): Int = -and(-left, -right)
+    fun or(
+        left: Int,
+        right: Int,
+    ): Int = -and(-left, -right)
 
-    fun xor(left: Int, right: Int): Int {
+    fun xor(
+        left: Int,
+        right: Int,
+    ): Int {
         budget.consume()
         if (left == right) return falseLiteral
         if (left == -right) return trueLiteral
@@ -83,13 +92,18 @@ internal class Circuit(
         }
     }
 
-    fun choose(condition: Int, whenTrue: Int, whenFalse: Int): Int =
-        if (whenTrue == whenFalse) whenTrue else or(and(condition, whenTrue), and(-condition, whenFalse))
+    fun choose(
+        condition: Int,
+        whenTrue: Int,
+        whenFalse: Int,
+    ): Int = if (whenTrue == whenFalse) whenTrue else or(and(condition, whenTrue), and(-condition, whenFalse))
 
     fun all(literals: Iterable<Int>): Int = literals.fold(trueLiteral, ::and)
 
     fun any(literals: Iterable<Int>): Int = literals.fold(falseLiteral, ::or)
 
-    fun value(literal: Int, values: BooleanArray): Boolean =
-        if (literal > 0) values[literal] else !values[-literal]
+    fun value(
+        literal: Int,
+        values: BooleanArray,
+    ): Boolean = if (literal > 0) values[literal] else !values[-literal]
 }

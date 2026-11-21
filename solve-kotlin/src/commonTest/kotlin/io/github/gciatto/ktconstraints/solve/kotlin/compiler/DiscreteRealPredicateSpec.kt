@@ -49,10 +49,11 @@ class DiscreteRealPredicateSpec :
             val x = scope.intVar("x", -4..4)
             val y = scope.intVar("y", -3..3)
             fixture.declare(scope)
-            val expression = RealSum(
-                RealScale(Rational.of(2, 3), IntToReal(x)),
-                RealScale(Rational.of(-5, 7), IntToReal(y)),
-            )
+            val expression =
+                RealSum(
+                    RealScale(Rational.of(2, 3), IntToReal(x)),
+                    RealScale(Rational.of(-5, 7), IntToReal(y)),
+                )
             val bound = RealLiteral(Rational.of(11, 21))
             val equal = RealEquality(expression, bound)
             val predicates = listOf(RealLessThan(expression, bound), RealLessOrEqual(expression, bound), equal, BoolNot(equal))
@@ -60,10 +61,11 @@ class DiscreteRealPredicateSpec :
 
             fixture.translation.realAtoms.size shouldBe 0
             for ((first, second) in listOf(-4 to -3, 0 to 0, 1 to 0, 4 to 3, -1 to 1)) {
-                val fixed = intArrayOf(
-                    fixture.translation.assertion(IntEquality(x, IntLiteral(first)), fixture.budget),
-                    fixture.translation.assertion(IntEquality(y, IntLiteral(second)), fixture.budget),
-                )
+                val fixed =
+                    intArrayOf(
+                        fixture.translation.assertion(IntEquality(x, IntLiteral(first)), fixture.budget),
+                        fixture.translation.assertion(IntEquality(y, IntLiteral(second)), fixture.budget),
+                    )
                 val scaled = 14 * first - 15 * second
                 val expected = listOf(scaled < 11, scaled <= 11, scaled == 11, scaled != 11)
                 for (index in literals.indices) {
@@ -87,7 +89,8 @@ class DiscreteRealPredicateSpec :
             val limited = SearchBudget(null, 30) { false }
             fixture.circuit.useBudget(limited)
 
-            shouldThrow<SearchStopped> { fixture.translation.assertion(predicate, limited) }.reason shouldBe TerminationReason.RESOURCE_LIMIT
+            shouldThrow<SearchStopped> { fixture.translation.assertion(predicate, limited) }.reason shouldBe
+                TerminationReason.RESOURCE_LIMIT
 
             fixture.circuit.useBudget(fixture.budget)
             val literal = fixture.translation.assertion(predicate, fixture.budget)

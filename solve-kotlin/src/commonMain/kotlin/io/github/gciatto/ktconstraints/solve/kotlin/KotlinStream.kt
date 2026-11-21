@@ -36,14 +36,15 @@ internal class KotlinStream(
     private var pendingBlock: BoolExpr? = null
     private var emitted = 0
 
-    override suspend fun readNext(): SolutionEvent = try {
-        // Each pull may run in a different coroutine: refresh the polled context before polling it.
-        budget.checkpoint()
-        budget.poll()
-        step()
-    } catch (stopped: SearchStopped) {
-        complete(stopped.reason, proven = false)
-    }
+    override suspend fun readNext(): SolutionEvent =
+        try {
+            // Each pull may run in a different coroutine: refresh the polled context before polling it.
+            budget.checkpoint()
+            budget.poll()
+            step()
+        } catch (stopped: SearchStopped) {
+            complete(stopped.reason, proven = false)
+        }
 
     override fun release() {
         closed.store(true)
@@ -67,11 +68,12 @@ internal class KotlinStream(
                 if (target == null) return complete(TerminationReason.COMPLETED)
                 requireNotNull(optimization).refuted(target)
             } else {
-                val objectiveValue = when (val objective = model.objective) {
-                    is Objective.Minimize -> GroundEvaluator.evaluate(objective.expression, full)
-                    is Objective.Maximize -> GroundEvaluator.evaluate(objective.expression, full)
-                    null -> null
-                }
+                val objectiveValue =
+                    when (val objective = model.objective) {
+                        is Objective.Minimize -> GroundEvaluator.evaluate(objective.expression, full)
+                        is Objective.Maximize -> GroundEvaluator.evaluate(objective.expression, full)
+                        null -> null
+                    }
                 if (objectiveValue != null) requireNotNull(optimization).improved(objectiveValue)
                 val found = SolutionFound(full.project(model.outputVariables), objectiveValue)
                 incumbent = found
@@ -94,7 +96,10 @@ internal class KotlinStream(
         return current
     }
 
-    private suspend fun objectiveAtLeast(current: KotlinEngine, target: BigInteger): Int {
+    private suspend fun objectiveAtLeast(
+        current: KotlinEngine,
+        target: BigInteger,
+    ): Int {
         val binary = current.translation.binary
         val objective = requireNotNull(current.objective)
         return if (model.objective is Objective.Maximize) {
@@ -104,13 +109,17 @@ internal class KotlinStream(
         }
     }
 
-    private fun complete(reason: TerminationReason, proven: Boolean = true): SolveCompleted {
+    private fun complete(
+        reason: TerminationReason,
+        proven: Boolean = true,
+    ): SolveCompleted {
         val best = incumbent
-        val status = when {
-            best == null -> if (reason == TerminationReason.COMPLETED && proven) SolveStatus.INFEASIBLE else SolveStatus.UNKNOWN
-            model.objective != null && reason == TerminationReason.COMPLETED && proven -> SolveStatus.OPTIMAL
-            else -> SolveStatus.FEASIBLE
-        }
+        val status =
+            when {
+                best == null -> if (reason == TerminationReason.COMPLETED && proven) SolveStatus.INFEASIBLE else SolveStatus.UNKNOWN
+                model.objective != null && reason == TerminationReason.COMPLETED && proven -> SolveStatus.OPTIMAL
+                else -> SolveStatus.FEASIBLE
+            }
         return SolveCompleted(
             SolveResult(
                 status,

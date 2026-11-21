@@ -10,7 +10,10 @@ internal class BitCircuit(
 ) {
     private var operations = 0
 
-    suspend fun constant(value: BigInteger, width: Int): IntArray {
+    suspend fun constant(
+        value: BigInteger,
+        width: Int,
+    ): IntArray {
         circuit.width(width)
         require(value.signum >= 0 && value.bitLength <= width) { "Bit-vector literal outside its width" }
         val result = IntArray(width)
@@ -21,7 +24,11 @@ internal class BitCircuit(
         return result
     }
 
-    suspend fun extend(bits: IntArray, width: Int, signed: Boolean): IntArray {
+    suspend fun extend(
+        bits: IntArray,
+        width: Int,
+        signed: Boolean,
+    ): IntArray {
         circuit.width(width)
         require(bits.isNotEmpty())
         val result = IntArray(width)
@@ -32,7 +39,11 @@ internal class BitCircuit(
         return result
     }
 
-    suspend fun add(left: IntArray, right: IntArray, carryIn: Int = circuit.falseLiteral): IntArray {
+    suspend fun add(
+        left: IntArray,
+        right: IntArray,
+        carryIn: Int = circuit.falseLiteral,
+    ): IntArray {
         require(left.size == right.size && left.isNotEmpty())
         circuit.width(left.size)
         val result = IntArray(left.size)
@@ -58,12 +69,19 @@ internal class BitCircuit(
         return result
     }
 
-    suspend fun negate(bits: IntArray): IntArray =
-        add(not(bits), IntArray(bits.size) { circuit.falseLiteral }, circuit.trueLiteral)
+    suspend fun negate(bits: IntArray): IntArray = add(not(bits), IntArray(bits.size) { circuit.falseLiteral }, circuit.trueLiteral)
 
-    suspend fun subtract(left: IntArray, right: IntArray): IntArray = add(left, negate(right))
+    suspend fun subtract(
+        left: IntArray,
+        right: IntArray,
+    ): IntArray = add(left, negate(right))
 
-    suspend fun multiply(left: IntArray, right: IntArray, width: Int, signed: Boolean): IntArray {
+    suspend fun multiply(
+        left: IntArray,
+        right: IntArray,
+        width: Int,
+        signed: Boolean,
+    ): IntArray {
         circuit.width(width)
         require(left.isNotEmpty() && right.isNotEmpty())
         val multiplicand = if (left.size >= right.size) left else right
@@ -83,7 +101,11 @@ internal class BitCircuit(
         return result
     }
 
-    suspend fun equal(left: IntArray, right: IntArray, signed: Boolean): Int {
+    suspend fun equal(
+        left: IntArray,
+        right: IntArray,
+        signed: Boolean,
+    ): Int {
         val width = maxOf(left.size, right.size)
         circuit.width(width)
         require(left.isNotEmpty() && right.isNotEmpty())
@@ -95,7 +117,11 @@ internal class BitCircuit(
         return result
     }
 
-    suspend fun less(left: IntArray, right: IntArray, signed: Boolean): Int {
+    suspend fun less(
+        left: IntArray,
+        right: IntArray,
+        signed: Boolean,
+    ): Int {
         val width = maxOf(left.size, right.size)
         circuit.width(width)
         require(left.isNotEmpty() && right.isNotEmpty())
@@ -109,7 +135,12 @@ internal class BitCircuit(
         return if (signed) circuit.choose(circuit.xor(left.last(), right.last()), left.last(), result) else result
     }
 
-    suspend fun choose(condition: Int, whenTrue: IntArray, whenFalse: IntArray, width: Int): IntArray {
+    suspend fun choose(
+        condition: Int,
+        whenTrue: IntArray,
+        whenFalse: IntArray,
+        width: Int,
+    ): IntArray {
         circuit.width(width)
         require(whenTrue.isNotEmpty() && whenFalse.isNotEmpty())
         val result = IntArray(width)
@@ -120,7 +151,11 @@ internal class BitCircuit(
         return result
     }
 
-    suspend fun bitwise(operator: BitVecOperator, left: IntArray, right: IntArray): IntArray {
+    suspend fun bitwise(
+        operator: BitVecOperator,
+        left: IntArray,
+        right: IntArray,
+    ): IntArray {
         require(left.size == right.size)
         circuit.width(left.size)
         val result = IntArray(left.size)
@@ -137,7 +172,11 @@ internal class BitCircuit(
         return result
     }
 
-    suspend fun shift(operator: BitVecOperator, bits: IntArray, amount: IntArray): IntArray {
+    suspend fun shift(
+        operator: BitVecOperator,
+        bits: IntArray,
+        amount: IntArray,
+    ): IntArray {
         circuit.width(bits.size)
         require(amount.isNotEmpty())
         val fill = if (operator == BitVecOperator.ARITHMETIC_SHIFT_RIGHT) bits.last() else circuit.falseLiteral
@@ -168,8 +207,18 @@ internal class BitCircuit(
         return result
     }
 
-    private fun bit(bits: IntArray, index: Int, signed: Boolean): Int =
-        if (index < bits.size) bits[index] else if (signed) bits.last() else circuit.falseLiteral
+    private fun bit(
+        bits: IntArray,
+        index: Int,
+        signed: Boolean,
+    ): Int =
+        if (index < bits.size) {
+            bits[index]
+        } else if (signed) {
+            bits.last()
+        } else {
+            circuit.falseLiteral
+        }
 
     private suspend fun tick() {
         if (operations++ and 127 == 0) checkpoint()
