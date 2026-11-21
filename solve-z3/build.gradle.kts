@@ -116,3 +116,12 @@ z3NativeHost?.let { (target, directory, library) ->
             }
         }
 }
+
+tasks.register<JavaExec>("jvmStoreBenchmark") {
+    group = "benchmark"
+    description = "Times CLP-style store operations (N-queens labeling) against batch re-solving."
+    val compilation = kotlin.jvm().compilations.getByName("test")
+    dependsOn("jvmTestClasses")
+    classpath(compilation.output.allOutputs, compilation.runtimeDependencyFiles)
+    mainClass.set("io.github.gciatto.ktconstraints.solve.z3.Z3StoreBenchmark")
+}
