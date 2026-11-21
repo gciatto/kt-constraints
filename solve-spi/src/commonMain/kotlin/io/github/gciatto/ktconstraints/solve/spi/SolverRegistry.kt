@@ -84,6 +84,10 @@ class SolverRegistry private constructor(
         @JvmStatic
         fun of(vararg backends: SolverBackend): SolverRegistry = SolverRegistry(backends.asList())
 
+        /** Creates a registry in the order of [backends]. */
+        @JvmStatic
+        fun of(backends: List<SolverBackend>): SolverRegistry = SolverRegistry(backends)
+
         /** Creates a registry with no backends. Test fakes are never registered automatically. */
         @JvmStatic
         fun empty(): SolverRegistry = of()
