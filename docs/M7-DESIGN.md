@@ -1,8 +1,8 @@
 # M7 design: CLP-ready constraint store
 
 M7 lets an external logic engine own a constraint store. It posts constraints as resolution proceeds, asks what
-they imply, and backtracks. Nothing here depends on a Prolog implementation. Status: **draft for review**; the
-decisions marked *Decision* need sign-off before public types are added.
+they imply, and backtracks. Nothing here depends on a Prolog implementation. Status: **accepted** (decisions below
+settled on 2026-11-21).
 
 ## What exists
 
@@ -29,8 +29,8 @@ decisions marked *Decision* need sign-off before public types are added.
      `FAILED` or `UNCHANGED`.
    - `PropagatingStore` (Choco, JVM). `constrain` runs native propagation and reports the domain reductions.
      Its entailment is native and may be `UNKNOWN`.
-3. **Facades** (Java `BlockingStore`, TS `Store`): the same shape. They follow once the Kotlin API settles.
-   They are not part of M7's exit criteria.
+3. **Facades** (Java `BlockingStore`, TS `Store`): the same shape. *Decided:* they follow M7, once the Kotlin API
+   settles.
 
 ## Semantics
 
@@ -44,7 +44,8 @@ decisions marked *Decision* need sign-off before public types are added.
   `CheckpointStack`'s ownership and staleness rules. This maps to Z3 `push`/`pop` and Choco
   `worldPush`/`worldPop` with no replay and no copying of native contexts.
 - **`fork()` is deferred.** An independent copy would need a replay journal or a second native context;
-  sequential backtracking does not need it. *Decision:* defer, or add `fork` by journal replay in M7.
+  sequential backtracking does not need it. *Decided:* deferred; a later `fork` would replay
+  the journal.
 - **Entailment** returns `ENTAILED`, `DISENTAILED`, `UNDETERMINED` or `UNKNOWN`:
   - `UNDETERMINED`: proven to be neither entailed nor disentailed.
   - `UNKNOWN`: the engine could not decide (timeout, or propagation that is too weak).
@@ -53,9 +54,8 @@ decisions marked *Decision* need sign-off before public types are added.
   - Choco answers from its propagators' `isEntailed`, which often returns `UNDEFINED`. That maps to `UNKNOWN`,
     never to `UNDETERMINED`.
   - Each answer carries its evidence: proof by satisfiability, or propagation.
-  - *Decision:* this four-valued result, or the roadmap's three values (merging `UNDETERMINED` into
-    `UNKNOWN`). The four-valued form is lossless, and a Prolog `when/2`-style wakeup needs to tell "not yet"
-    from "cannot tell".
+  - *Decided:* four values rather than the roadmap's three. A Prolog `when/2`-style wakeup needs to tell
+    "not yet" from "cannot tell".
 - **Propagation reports are pulled, not pushed.** `constrain` returns either
   - `Propagation.Failed`, or
   - `Propagation.Changed` with the list of variables whose domains shrank, in engine order.
