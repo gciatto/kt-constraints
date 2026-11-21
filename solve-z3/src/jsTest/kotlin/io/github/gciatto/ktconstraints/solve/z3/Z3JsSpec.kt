@@ -17,9 +17,11 @@ import io.github.gciatto.ktconstraints.solve.SolveCompleted
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.spi.SatisfiabilityStore
 import io.github.gciatto.ktconstraints.test.solve.FiniteOracle
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
+import io.github.gciatto.ktconstraints.test.solve.storeContract
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.async
@@ -44,6 +46,7 @@ class Z3JsSpec :
 
             include(solverContract { loaded().create() })
             include(incrementalContract { loaded().create() })
+            include(storeContract(propagates = false) { SatisfiabilityStore.of(loaded().create()) })
             include(z3OptimizationContract { loaded().create() })
             include(z3RealContract { loaded().create() })
             include(z3BitVecContract { loaded().create() })

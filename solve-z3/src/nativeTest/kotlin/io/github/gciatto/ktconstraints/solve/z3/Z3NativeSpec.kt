@@ -21,9 +21,11 @@ import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.BackendUnavailableException
+import io.github.gciatto.ktconstraints.solve.spi.SatisfiabilityStore
 import io.github.gciatto.ktconstraints.test.solve.FiniteOracle
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
+import io.github.gciatto.ktconstraints.test.solve.storeContract
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -53,6 +55,7 @@ class Z3NativeSpec :
 
             include(solverContract { Z3NativeBackend().create() })
             include(incrementalContract { Z3NativeBackend().create() })
+            include(storeContract(propagates = false) { SatisfiabilityStore.of(Z3NativeBackend().create()) })
             include(z3OptimizationContract { Z3NativeBackend().create() })
             include(z3RealContract { Z3NativeBackend().create() })
             include(z3BitVecContract { Z3NativeBackend().create() })

@@ -27,9 +27,11 @@ import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.spi.SatisfiabilityStore
 import io.github.gciatto.ktconstraints.test.solve.FiniteOracle
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
+import io.github.gciatto.ktconstraints.test.solve.storeContract
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests
 import io.kotest.matchers.collections.shouldContain
@@ -47,6 +49,7 @@ class Z3Spec :
     FunSpec({
         include(solverContract { Z3Backend().create() })
         include(incrementalContract { Z3Backend().create() })
+        include(storeContract(propagates = false) { SatisfiabilityStore.of(Z3Backend().create()) })
         include(z3OptimizationContract { Z3Backend().create() })
         include(z3RealContract { Z3Backend().create() })
         include(z3BitVecContract { Z3Backend().create() })
