@@ -69,13 +69,14 @@ internal class SatSolver {
                 if (state.levels.size == 0) return SatResult(SatStatus.UNSATISFIABLE)
                 val learned = analysis.analyze(conflict)
                 state.backtrack(learned.backtrackLevel, budget)
-                val reason = database.insertClause(learned.clause)
+                val reason = database.insertLearned(learned.clause, learned.blockDistance)
                 check(state.enqueue(learned.clause[0], reason)) { "Learned clause must be asserting after backjump" }
                 state.decayActivity()
                 if (--restartBudget <= 0) {
                     restartBudget = luby(++restarts) * RESTART_UNIT
                     // Level 0 keeps root facts; the decision loop below re-applies assumptions in order.
                     state.backtrack(0, budget)
+                    database.reduce()
                 }
             } else {
                 var decision = 0
