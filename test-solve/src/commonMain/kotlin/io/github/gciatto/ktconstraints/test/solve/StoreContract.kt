@@ -184,7 +184,8 @@ fun storeContract(
                 solutions.isEmpty() -> if (!propagates) status shouldBe StoreStatus.FAILED
                 else -> status shouldNotBe StoreStatus.FAILED
             }
-            if (status == StoreStatus.FAILED) return@withTests
+            // An unsatisfiable store entails everything vacuously, so only satisfiable cases probe entailment.
+            if (solutions.isEmpty()) return@withTests
             val probe = case.probe(xs)
             val holds =
                 solutions
