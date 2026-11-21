@@ -16,8 +16,12 @@ import io.github.gciatto.ktconstraints.core.BoolImplies
 import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.CardinalityRelation
+import io.github.gciatto.ktconstraints.core.Circuit
+import io.github.gciatto.ktconstraints.core.Cumulative
+import io.github.gciatto.ktconstraints.core.DecomposableConstraint
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntDifference
 import io.github.gciatto.ktconstraints.core.IntDomain
@@ -32,6 +36,7 @@ import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.model.ConstraintModel
@@ -107,6 +112,8 @@ internal class CpSatTranslation(
             is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolCardinality -> relation(expression).first()
             is AllDifferent -> cpModel.addAllDifferent(expression.operands.map { integer(it) })
             is Table -> table(expression)
+            is DecomposableConstraint ->
+                if (!cpModel.structural(expression, ::integer, ::equality)) post(expression.decomposition)
             else -> cpModel.addBoolOr(listOf(literal(expression)))
         }
     }
@@ -133,6 +140,7 @@ internal class CpSatTranslation(
             is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolCardinality ->
                 relation(expression).let { (positive, negative) -> literals.reified(positive, negative) }
             is AllDifferent, is Table -> nestedGlobal(expression)
+            is DecomposableConstraint -> literal(expression.decomposition)
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported expression: $expression")))
         }
 
@@ -209,20 +217,11 @@ internal class CpSatTranslation(
                     .fold(LinearExpr.newBuilder().add(expression.constant.toLongExact())) { builder, (term, coefficient) ->
                         builder.addTerm(integer(term), coefficient.toLongExact())
                     }.build()
-            is IntProduct -> {
-                val left = integer(expression.left)
-                val right = integer(expression.right)
-                auxiliary(expression).also { cpModel.addMultiplicationEquality(it, left, right) }
-            }
-            is Element -> {
-                val index = integer(expression.index)
-                val values = expression.values.map { integer(it) }
-                auxiliary(expression).also { cpModel.addElement(index, values, it) }
-            }
-            is IntMin, is IntMax -> {
+            is IntProduct, is Element, is IntMin, is IntMax -> {
                 val operands = expression.children.map { integer(it as IntExpr) }
-                auxiliary(expression).also { cpModel.extremum(expression is IntMin, it, operands) }
+                auxiliary(expression).also { cpModel.defining(expression, it, operands) }
             }
+            is BoolToInt -> literal(expression.operand)
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported expression: $expression")))
         }
 
@@ -232,9 +231,55 @@ internal class CpSatTranslation(
     }
 }
 
-/** CP-SAT's native `min` or `max` equality linking [result] to [operands]. */
-private fun CpModel.extremum(
-    lowest: Boolean,
+/** CP-SAT's native constraint defining [result] as [expression] over its translated [operands]. */
+private fun CpModel.defining(
+    expression: IntExpr,
     result: LinearArgument,
     operands: List<LinearArgument>,
-): Constraint = if (lowest) addMinEquality(result, operands) else addMaxEquality(result, operands)
+): Constraint =
+    when (expression) {
+        is IntProduct -> addMultiplicationEquality(result, operands[0], operands[1])
+        is Element -> addElement(operands[0], operands.drop(1), result)
+        is IntMin -> addMinEquality(result, operands)
+        else -> addMaxEquality(result, operands)
+    }
+
+/** Posts CP-SAT's native form of a top-level structural global; false where its decomposition must be posted instead. */
+private fun CpModel.structural(
+    expression: DecomposableConstraint,
+    integer: (IntExpr) -> LinearArgument,
+    equality: (LinearArgument, LinearArgument) -> Literal,
+): Boolean {
+    fun variable(operand: IntExpr): com.google.ortools.sat.IntVar =
+        integer(operand) as? com.google.ortools.sat.IntVar
+            ?: CpSatSupport.bounds(operand).let { bounds ->
+                newIntVar(bounds.min.toLongExact(), bounds.max.toLongExact(), "operand").also { addEquality(it, integer(operand)) }
+            }
+    when {
+        expression.children.isEmpty() -> Unit
+        expression is Inverse ->
+            addInverse(
+                expression.direct.map(::variable).toTypedArray(),
+                expression.inverse.map(::variable).toTypedArray(),
+            )
+        expression is Circuit && expression.successors.size > 1 -> {
+            val circuit = addCircuit()
+            expression.successors.forEachIndexed { tail, successor ->
+                val next = integer(successor)
+                expression.successors.indices.filter { it != tail }.forEach { head ->
+                    circuit.addArc(tail, head, equality(next, LinearExpr.constant(head.toLong())))
+                }
+            }
+        }
+        expression is Cumulative -> {
+            val intervals =
+                expression.starts.zip(expression.durations) { start, duration ->
+                    newFixedSizeIntervalVar(integer(start), duration.toLongExact(), "task")
+                }
+            addCumulative(expression.capacity.toLongExact())
+                .addDemands(intervals.toTypedArray(), expression.demands.map { it.toLongExact() }.toLongArray())
+        }
+        else -> return false
+    }
+    return true
+}

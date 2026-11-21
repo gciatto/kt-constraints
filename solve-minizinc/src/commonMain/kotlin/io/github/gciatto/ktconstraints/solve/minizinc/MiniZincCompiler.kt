@@ -49,7 +49,7 @@ class MiniZincCompiler(
                 }
             }
         model.outputVariables.forEach { lowering.lower(it) }
-        val constraints = model.constraints.map { lowering.lower(it).text }
+        val constraints = model.constraints.map { lowering.constraint(it).text }
         val solve =
             when (val objective = model.objective) {
                 is Objective.Minimize -> "solve minimize ${lowering.lower(objective.expression).text};"

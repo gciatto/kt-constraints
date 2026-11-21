@@ -15,7 +15,9 @@ import io.github.gciatto.ktconstraints.core.BoolImplies
 import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
+import io.github.gciatto.ktconstraints.core.DecomposableConstraint
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.Expr
 import io.github.gciatto.ktconstraints.core.IntDifference
@@ -61,6 +63,8 @@ internal object Z3Support {
                     is Table -> decompositions += "table -> disjunction of tuple conjunctions"
                     is BoolCardinality -> decompositions += "cardinality -> pseudo-Boolean constraint"
                     is IntMin, is IntMax -> decompositions += "min/max -> ite chain"
+                    is BoolToInt -> decompositions += "0/1 conversion -> ite"
+                    is DecomposableConstraint -> decompositions += "${node::class.simpleName} -> its exact decomposition"
                     is BoolVar, is IntVar, is BoolLiteral, is IntLiteral, is IntSum, is IntDifference, is IntProduct,
                     is IntNegation, is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolAnd, is BoolOr,
                     is BoolNot, is BoolImplies, is BoolEquality, is LinearSum, is RealVar, is RealLiteral, is RealSum,

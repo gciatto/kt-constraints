@@ -9,8 +9,12 @@ import io.github.gciatto.ktconstraints.core.BoolImplies
 import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.CardinalityRelation
+import io.github.gciatto.ktconstraints.core.Circuit
+import io.github.gciatto.ktconstraints.core.Cumulative
+import io.github.gciatto.ktconstraints.core.DecomposableConstraint
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntDifference
 import io.github.gciatto.ktconstraints.core.IntDomain
@@ -25,6 +29,7 @@ import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.core.Variable
@@ -36,6 +41,7 @@ import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
 import org.chocosolver.solver.Model
 import org.chocosolver.solver.constraints.Constraint
 import org.chocosolver.solver.constraints.extension.Tuples
+import org.chocosolver.solver.variables.Task
 import org.gciatto.kt.math.BigInteger
 import java.util.OptionalInt
 import org.chocosolver.solver.variables.BoolVar as ChocoBoolVar
@@ -116,6 +122,7 @@ internal class ChocoTranslation(
             is BoolVar -> booleans.getValue(expression)
             is BoolLiteral -> chocoModel.boolVar(expression.value)
             is BoolNot -> literal(expression.operand).not()
+            is DecomposableConstraint -> literal(expression.decomposition)
             else -> constraint(expression).reify()
         }
 
@@ -131,7 +138,7 @@ internal class ChocoTranslation(
             is IntLessThan -> (linear(expression.left) + linear(expression.right) * MINUS_ONE).relation(chocoModel, "<")
             is IntLessOrEqual -> (linear(expression.left) + linear(expression.right) * MINUS_ONE).relation(chocoModel, "<=")
             is BoolCardinality -> cardinality(expression)
-            is AllDifferent, is Table -> global(expression)
+            is AllDifferent, is Table, is DecomposableConstraint -> global(expression)
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported expression: $expression")))
         }
 
@@ -151,6 +158,8 @@ internal class ChocoTranslation(
 
     private fun global(expression: BoolExpr): Constraint =
         when {
+            expression is DecomposableConstraint ->
+                chocoModel.structural(expression) { variable(it) } ?: constraint(expression.decomposition)
             expression is AllDifferent && expression.operands.size < 2 -> chocoModel.trueConstraint()
             expression is AllDifferent -> chocoModel.allDifferent(expression.operands.map { variable(it) }.toTypedArray(), "DEFAULT")
             (expression as Table).tuples.isEmpty() -> chocoModel.falseConstraint()
@@ -173,21 +182,12 @@ internal class ChocoTranslation(
                     expression.terms.zip(expression.coefficients).map { (term, c) -> linear(term) * c } +
                         ChocoLinear.of(expression.constant),
                 )
-            is IntProduct -> {
-                val left = variable(expression.left)
-                val right = variable(expression.right)
-                ChocoLinear.of(auxiliary(expression).also { chocoModel.times(left, right, it).post() })
-            }
-            is Element -> {
-                val index = variable(expression.index)
-                val values = expression.values.map { variable(it) }.toTypedArray()
-                // Posted at top level: the index range is enforced regardless of nesting, as on every other route.
-                ChocoLinear.of(auxiliary(expression).also { chocoModel.element(it, values, index, 0).post() })
-            }
-            is IntMin, is IntMax -> {
+            is IntProduct, is Element, is IntMin, is IntMax -> {
                 val operands = expression.children.map { variable(it as IntExpr) }
-                ChocoLinear.of(auxiliary(expression).also { chocoModel.extremum(expression is IntMin, it, operands).post() })
+                // Posted at top level: element's index range is enforced regardless of nesting, as on every other route.
+                ChocoLinear.of(auxiliary(expression).also { chocoModel.defining(expression, it, operands).post() })
             }
+            is BoolToInt -> ChocoLinear.of(literal(expression.operand))
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported expression: $expression")))
         }
 
@@ -212,9 +212,38 @@ internal class ChocoTranslation(
     }
 }
 
-/** Choco's native `min` or `max` constraint linking [result] to [operands]. */
-private fun Model.extremum(
-    lowest: Boolean,
+/** Choco's native constraint defining [result] as [expression] over its translated [operands]. */
+private fun Model.defining(
+    expression: IntExpr,
     result: ChocoIntVar,
     operands: List<ChocoIntVar>,
-): Constraint = if (lowest) min(result, operands.toTypedArray()) else max(result, operands.toTypedArray())
+): Constraint =
+    when (expression) {
+        is IntProduct -> times(operands[0], operands[1], result)
+        is Element -> element(result, operands.drop(1).toTypedArray(), operands[0], 0)
+        is IntMin -> min(result, operands.toTypedArray())
+        else -> max(result, operands.toTypedArray())
+    }
+
+/** Choco's native form of a top-level structural global, or null where its decomposition must be posted instead. */
+private fun Model.structural(
+    expression: DecomposableConstraint,
+    variable: (IntExpr) -> ChocoIntVar,
+): Constraint? =
+    when {
+        expression.children.isEmpty() -> trueConstraint()
+        expression is Inverse ->
+            inverseChanneling(expression.direct.map(variable).toTypedArray(), expression.inverse.map(variable).toTypedArray(), 0, 0)
+        expression is Circuit && expression.successors.size > 1 -> circuit(expression.successors.map(variable).toTypedArray(), 0)
+        expression is Cumulative ->
+            cumulative(
+                expression.starts
+                    .zip(
+                        expression.durations,
+                    ) { start, duration -> Task(variable(start), duration.toIntExact()) }
+                    .toTypedArray(),
+                expression.demands.map { intVar(it.toIntExact()) }.toTypedArray(),
+                intVar(expression.capacity.toIntExact()),
+            )
+        else -> null
+    }

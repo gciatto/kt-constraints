@@ -16,4 +16,13 @@ enum class GlobalKind {
 
     /** Integer `min` and `max`. */
     MIN_MAX,
+
+    /** `inverse`. */
+    INVERSE,
+
+    /** `circuit`. */
+    CIRCUIT,
+
+    /** `cumulative` (and `disjunctive`). */
+    CUMULATIVE,
 }

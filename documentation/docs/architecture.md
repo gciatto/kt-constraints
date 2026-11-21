@@ -75,6 +75,14 @@ and Boolean cardinalities. Their operand and tuple collections are detached immu
 equality. An element expression requires a non-empty array and rejects an out-of-range ground index; tables
 validate tuple arity. Empty all-different is true and an empty allowed-tuple table is false, including at arity zero.
 
+`IntMin`/`IntMax` and the 0/1 conversion `BoolToInt` are integer nodes. `Inverse`, `Circuit` (zero-based successors)
+and `Cumulative` (constant positive durations, non-negative demands and capacity) implement
+`DecomposableConstraint`: each carries an exact decomposition over primitive nodes that introduces no variables.
+Every route posts them natively at top level where it can (Choco, CP-SAT, MiniZinc) and lowers the decomposition
+below a connective, where native forms cannot be reified, and on Z3 and MIP routes. Counting, ordering and
+scheduling helpers (`count`, `among`, `globalCardinality`, `increasing`, `decreasing`, `lexLess`, `lexLessOrEqual`,
+`disjunctive`, `abs`) are DSL functions over these nodes, not separate IR.
+
 ## Portable representation design
 
 No serialization format or portable model fingerprint is implemented yet. A future format must encode exact

@@ -9,7 +9,10 @@ import io.github.gciatto.ktconstraints.core.BoolImplies
 import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
+import io.github.gciatto.ktconstraints.core.Cumulative
+import io.github.gciatto.ktconstraints.core.DecomposableConstraint
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.Expr
 import io.github.gciatto.ktconstraints.core.IntDifference
@@ -84,6 +87,7 @@ open class BoundedIntegerSupport(
             is Element -> IntegerBounds(children.drop(1).minOf { it.min }, children.drop(1).maxOf { it.max })
             is IntMin -> IntegerBounds(children.minOf { it.min }, children.minOf { it.max })
             is IntMax -> IntegerBounds(children.maxOf { it.min }, children.maxOf { it.max })
+            is BoolToInt, is BoolExpr -> IntegerBounds(BigInteger.ZERO, BigInteger.ONE)
             else -> throw IllegalArgumentException("Unsupported integer expression: $node")
         }
 
@@ -148,6 +152,7 @@ open class BoundedIntegerSupport(
                     expression.children.forEach { boolean(it as BoolExpr, false) }
                 is IntEquality, is IntLessThan, is IntLessOrEqual -> expression.children.forEach { integer(it as IntExpr) }
                 is AllDifferent, is Table -> global(expression, topLevel)
+                is DecomposableConstraint -> structural(expression, topLevel)
                 else -> unsupported += "Unsupported expression: ${expression::class.simpleName ?: expression}"
             }
         }
@@ -168,13 +173,27 @@ open class BoundedIntegerSupport(
             }
         }
 
+        /** Natively posted operands at top level; the exact decomposition below it, or for cumulative magnitudes. */
+        private fun structural(
+            expression: DecomposableConstraint,
+            topLevel: Boolean,
+        ) {
+            if (topLevel && expression !is Cumulative) {
+                expression.children.forEach { integer(it as IntExpr) }
+            } else {
+                boolean(expression.decomposition, false)
+            }
+            if (!topLevel) decompositions += "nested ${expression::class.simpleName} -> its exact decomposition"
+        }
+
         private fun integer(expression: IntExpr) {
             val before = unsupported.size
             expression.fold { node, _: List<Unit> ->
                 when (node) {
                     is IntVar, is IntLiteral, is IntSum, is IntDifference, is IntNegation, is IntProduct, is Element, is IntMin,
-                    is IntMax,
+                    is IntMax, is BoolExpr,
                     -> Unit
+                    is BoolToInt -> boolean(node.operand, false)
                     is LinearSum -> {
                         node.coefficients.forEach { check(it, "Coefficient") }
                         check(node.constant, "Constant")

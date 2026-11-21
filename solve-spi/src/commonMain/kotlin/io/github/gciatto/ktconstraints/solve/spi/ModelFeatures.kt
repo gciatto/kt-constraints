@@ -10,7 +10,10 @@ import io.github.gciatto.ktconstraints.core.BoolImplies
 import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
+import io.github.gciatto.ktconstraints.core.Circuit
+import io.github.gciatto.ktconstraints.core.Cumulative
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.Expr
 import io.github.gciatto.ktconstraints.core.IntLiteral
@@ -18,6 +21,7 @@ import io.github.gciatto.ktconstraints.core.IntMax
 import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
 import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Sort
@@ -176,6 +180,9 @@ class ModelFeatures private constructor(
                 is Element -> globals += GlobalKind.ELEMENT
                 is BoolCardinality -> globals += GlobalKind.CARDINALITY
                 is IntMin, is IntMax -> globals += GlobalKind.MIN_MAX
+                is Inverse -> globals += GlobalKind.INVERSE
+                is Circuit -> globals += GlobalKind.CIRCUIT
+                is Cumulative -> globals += GlobalKind.CUMULATIVE
                 else -> Unit
             }
             if (node.isConnective() && children.any { it.relation }) reified = true
@@ -189,7 +196,13 @@ class ModelFeatures private constructor(
 
 /** Whether a node is a Boolean connective, whose relation operands would need reification. */
 private fun Expr.isConnective(): Boolean =
-    this is BoolOr || this is BoolNot || this is BoolImplies || this is BoolEquality || this is BoolCardinality || this is BoolAnd
+    this is BoolOr ||
+        this is BoolNot ||
+        this is BoolToInt ||
+        this is BoolImplies ||
+        this is BoolEquality ||
+        this is BoolCardinality ||
+        this is BoolAnd
 
 /** Whether a Boolean node is a relation or global rather than a variable, literal or connective. */
 private fun isRelation(node: Expr): Boolean = node is BoolExpr && node !is BoolVar && node !is BoolLiteral && !node.isConnective()

@@ -9,8 +9,12 @@ import io.github.gciatto.ktconstraints.core.BoolImplies
 import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.CardinalityRelation
+import io.github.gciatto.ktconstraints.core.Circuit
+import io.github.gciatto.ktconstraints.core.Cumulative
+import io.github.gciatto.ktconstraints.core.DecomposableConstraint
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.Expr
 import io.github.gciatto.ktconstraints.core.IntDifference
@@ -26,6 +30,7 @@ import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.core.VariableId
@@ -50,6 +55,45 @@ internal class MiniZincLowering(
                 else -> reject("Unsupported expression: ${node::class.simpleName}")
             }
         }
+
+    /** A top-level constraint: structural globals use MiniZinc's natives, which cannot be reified. */
+    fun constraint(expression: BoolExpr): LoweredExpression =
+        when (expression) {
+            is BoolAnd -> LoweredExpression("(${constraint(expression.left).text} /\\ ${constraint(expression.right).text})")
+            is DecomposableConstraint -> LoweredExpression(structural(expression))
+            else -> lower(expression)
+        }
+
+    private fun structural(expression: DecomposableConstraint): String {
+        val operands = expression.children.map { lower(it).text }
+        if (operands.isEmpty()) return "true"
+
+        fun array(items: List<String>) = "array1d(0..${items.lastIndex}, [${items.joinToString()}])"
+        return when (expression) {
+            is Inverse -> {
+                includes += "inverse.mzn"
+                "inverse(${array(
+                    operands.subList(0, expression.direct.size),
+                )}, ${array(operands.subList(expression.direct.size, operands.size))})"
+            }
+            is Circuit -> {
+                includes += "circuit.mzn"
+                "circuit(${array(operands)})"
+            }
+            is Cumulative -> {
+                includes += "cumulative.mzn"
+                (expression.durations + expression.demands + expression.capacity).forEach { checkValue(it) }
+                expression.starts.zip(expression.durations) { start, duration ->
+                    checkValue(
+                        requireNotNull(lower(start).bounds).max + duration,
+                    )
+                }
+                "cumulative([${operands.joinToString()}], [${expression.durations.joinToString()}], " +
+                    "[${expression.demands.joinToString()}], ${expression.capacity})"
+            }
+            else -> lower(expression.decomposition).text
+        }
+    }
 
     private fun integer(
         node: IntExpr,
@@ -78,6 +122,7 @@ internal class MiniZincLowering(
                 val upper = values.maxOf { requireNotNull(it.bounds).max }
                 checked("array1d(0..${values.lastIndex}, [${values.joinToString { it.text }}])[$index]", lower, upper)
             }
+            is BoolToInt -> checked("bool2int(${children.single().text})", BigInteger.ZERO, BigInteger.ONE)
             is IntMin -> extremum("min", children) { bounds -> bounds.minOf { it } }
             is IntMax -> extremum("max", children) { bounds -> bounds.maxOf { it } }
             is LinearSum -> linear(node, children)
@@ -104,6 +149,7 @@ internal class MiniZincLowering(
                     if (children.isEmpty()) "true" else "all_different([${children.joinToString { it.text }}])"
                 }
                 is Table -> table(node, children)
+                is DecomposableConstraint -> lower(node.decomposition).text
                 is BoolCardinality -> {
                     checkValue(BigInteger.of(node.count))
                     val sum = if (children.isEmpty()) "0" else "sum([${children.joinToString { "bool2int(${it.text})" }}])"

@@ -88,6 +88,7 @@ object GroundEvaluator {
             is Element -> evaluateElement(node, values)
             is IntMin -> values.minOf { it as BigInteger }
             is IntMax -> values.maxOf { it as BigInteger }
+            is BoolToInt -> if (values[0] as Boolean) BigInteger.ONE else BigInteger.ZERO
             is BitVecToInt -> BitVectors.toInt(values[0] as BigInteger, node.operand.width, node.signed)
             is LinearSum ->
                 values.zip(node.coefficients).fold(node.constant) { total, (value, coefficient) ->
@@ -131,6 +132,7 @@ object GroundEvaluator {
             is AllDifferent -> values.toSet().size == values.size
             is Table -> node.tuples.any { it == values }
             is BoolCardinality -> evaluateCardinality(node, values)
+            is DecomposableConstraint -> StructuralSemantics.holds(node, values.map { it as BigInteger })
             else -> throw IllegalArgumentException("Unsupported Boolean expression: $node")
         }
 

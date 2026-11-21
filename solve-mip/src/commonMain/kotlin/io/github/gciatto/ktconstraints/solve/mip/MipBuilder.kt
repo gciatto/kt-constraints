@@ -9,8 +9,10 @@ import io.github.gciatto.ktconstraints.core.BoolImplies
 import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.CardinalityRelation
+import io.github.gciatto.ktconstraints.core.DecomposableConstraint
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntDifference
 import io.github.gciatto.ktconstraints.core.IntEquality
@@ -110,6 +112,7 @@ internal class MipBuilder(
             is IntEquality -> difference(expression.left, expression.right).let { require(it, BigInteger.ZERO, BigInteger.ZERO) }
             is IntLessOrEqual -> require(difference(expression.left, expression.right), null, BigInteger.ZERO)
             is IntLessThan -> require(difference(expression.left, expression.right), null, MipAffine.MINUS_ONE)
+            is DecomposableConstraint -> post(expression.decomposition.also { decompositions += MipLowering.STRUCTURAL })
             else -> require(literal(expression), BigInteger.ONE, BigInteger.ONE)
         }
     }
@@ -130,6 +133,7 @@ internal class MipBuilder(
             is BoolCardinality -> cardinality(expression)
             is AllDifferent -> allDifferent(expression)
             is Table -> table(expression)
+            is DecomposableConstraint -> literal(expression.decomposition.also { decompositions += MipLowering.STRUCTURAL })
             else -> throw Rejection("Unsupported expression: ${expression::class.simpleName ?: expression}")
         }
 
@@ -213,6 +217,7 @@ internal class MipBuilder(
                     )
                 is IntProduct -> product(linear(expression.left), linear(expression.right))
                 is Element -> element(expression)
+                is BoolToInt -> literal(expression.operand)
                 is IntMin -> extremum(expression.operands, lowest = true)
                 is IntMax -> extremum(expression.operands, lowest = false)
                 else -> throw Rejection("Unsupported expression: ${expression::class.simpleName ?: expression}")

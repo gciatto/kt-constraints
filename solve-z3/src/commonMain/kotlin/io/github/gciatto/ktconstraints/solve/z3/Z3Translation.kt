@@ -17,8 +17,10 @@ import io.github.gciatto.ktconstraints.core.BoolImplies
 import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.CardinalityRelation
+import io.github.gciatto.ktconstraints.core.DecomposableConstraint
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.Expr
 import io.github.gciatto.ktconstraints.core.IntDifference
@@ -165,6 +167,7 @@ internal class Z3Translation<T>(
             is Element -> element(children)
             is IntMin -> children.reduce { best, next -> port.ite(port.lessOrEqual(best, next), best, next) }
             is IntMax -> children.reduce { best, next -> port.ite(port.lessOrEqual(next, best), best, next) }
+            is BoolToInt -> port.ite(children.single(), port.int(BigInteger.ONE), port.int(BigInteger.ZERO))
             is BitVecToInt -> port.bitVecToInt(children.single(), node.signed)
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported integer expression: $node")))
         }
@@ -223,6 +226,7 @@ internal class Z3Translation<T>(
             is AllDifferent -> if (children.size < 2) port.bool(true) else port.distinct(children)
             is Table -> port.or(node.tuples.map { row -> port.and(children.zip(row) { term, value -> port.equal(term, port.int(value)) }) })
             is BoolCardinality -> cardinality(node, children)
+            is DecomposableConstraint -> translate(node.decomposition)
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported Boolean expression: $node")))
         }
 
