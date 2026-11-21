@@ -1,5 +1,6 @@
 package io.github.gciatto.ktconstraints.test.solve
 
+import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.GroundEvaluator
 import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.core.IntEquality
@@ -10,7 +11,6 @@ import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.RealLessThan
 import io.github.gciatto.ktconstraints.core.RealLiteral
-import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.Assignment
 import io.github.gciatto.ktconstraints.solve.ConstraintStore
@@ -283,8 +283,9 @@ fun storeContract(
             store.constrain(pairs.last(), timeoutMillis = 300).status shouldBe StoreStatus.UNKNOWN
             store.isFailed shouldBe false
             store.undoTo(mark)
+            val retry = store.mark()
             withTimeoutOrNull(300.milliseconds) { store.constrain(pairs.last()) } shouldBe null
-            store.undoTo(mark)
+            store.undoTo(retry)
             store.constrain(IntEquality(pigeons[0], IntLiteral(0))).status shouldBe StoreStatus.SATISFIABLE
         }
     }
