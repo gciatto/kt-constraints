@@ -1,10 +1,10 @@
 package io.github.gciatto.ktconstraints.solve.cpsat
 
+import io.github.gciatto.ktconstraints.core.AllDifferent
+import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.LinearSum
-import io.github.gciatto.ktconstraints.core.AllDifferent
-import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.Assignment
 import io.github.gciatto.ktconstraints.solve.SolveOptions

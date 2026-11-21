@@ -26,7 +26,7 @@ class MipOptionsSpec :
             }
 
         withTests(nameFn = { "mip-options/$it" }, listOf("scip", "highs")) { engine ->
-            val backend = if (engine == "scip") OrToolsMipBackend.scip() else OrToolsMipBackend.highs()
+            val backend = if (engine == "scip") OrToolsMipBackend.scip() else OrToolsMipBackend.highs(60_000)
             val exact = backend.create().use { it.solve(knapsack(), SolveOptions() + MipOptions(threads = 2)) }
             exact.status shouldBe SolveStatus.OPTIMAL
             val loose = backend.create().use { it.solve(knapsack(), SolveOptions() + MipOptions(relativeGap = 0.5)) }
