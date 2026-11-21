@@ -50,6 +50,7 @@ import io.kotest.matchers.ints.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.withTimeoutOrNull
 import org.gciatto.kt.math.BigInteger
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
 /** Direct Choco JVM route: shared contract, 32-bit guards, reification differentials, search lifecycle. */
@@ -152,6 +153,15 @@ class ChocoSpec :
                 result.bestBound shouldBe result.objectiveValue
                 result.assignment?.valueOf(hidden) shouldBe null
             }
+        }
+
+        test("choco/long-sums-translate-in-linear-time").config(timeout = 5.seconds) {
+            val scope = ConstraintScope.empty()
+            val flags = (0 until 40_000).map { scope.boolVar("b$it") }
+            val xs = (0 until 40_000).map { scope.intVar("x$it", 0..1) }
+            scope.add(BoolCardinality(flags, 1, CardinalityRelation.AT_MOST))
+            scope.add(IntLessOrEqual(LinearSum(xs, xs.map { BigInteger.ONE }), IntLiteral(1)))
+            ChocoTranslation(scope.build())
         }
 
         test("choco/incumbents-strictly-improve") {
