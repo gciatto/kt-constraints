@@ -61,7 +61,8 @@ private fun knownOracleNode(node: Expr): Boolean =
         is BoolVar, is IntVar, is BoolLiteral, is IntLiteral, is IntSum, is IntDifference, is IntProduct,
         is IntNegation, is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolAnd, is BoolOr,
         is BoolNot, is BoolImplies, is BoolEquality, is AllDifferent, is Element, is Table,
-        is LinearSum, is BoolCardinality, is IntMin, is IntMax, is BoolToInt, is Inverse, is Circuit, is Cumulative, is Regular, is SubCircuit, is BinPacking, is NoOverlap2D,
+        is LinearSum, is BoolCardinality, is IntMin, is IntMax, is BoolToInt, is Inverse, is Circuit, is Cumulative,
+        is Regular, is SubCircuit, is BinPacking, is NoOverlap2D,
         -> true
         else -> false
     }
