@@ -11,6 +11,7 @@ import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntExpr
 import io.github.gciatto.ktconstraints.core.IntMax
 import io.github.gciatto.ktconstraints.core.IntMin
+import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.LinearSum
 import org.gciatto.kt.math.BigInteger
 import kotlin.jvm.JvmMultifileClass
@@ -36,6 +37,9 @@ fun max(
     first: IntExpr,
     vararg rest: IntExpr,
 ): IntMax = IntMax(listOf(first) + rest)
+
+/** Absolute value, expressed as `max(operand, -operand)` so every route that supports `max` supports it. */
+fun abs(operand: IntExpr): IntMax = IntMax(listOf(operand, IntNegation(operand)))
 
 /** Preserves an exact integer sum, including the empty sum zero. */
 fun sum(vararg terms: IntExpr): LinearSum = LinearSum(terms.asList(), List(terms.size) { BigInteger.ONE })
