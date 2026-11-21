@@ -18,6 +18,9 @@ internal class ReversibleIntDomains(
     /** Active change history, detached from later restrictions and restoration. */
     val reductions: List<DomainReduction> get() = buildList { addAll(trail) }
 
+    /** Number of active reductions; allows fixed-point detection without copying the history. */
+    val revision: Int get() = trail.size
+
     /** Returns the current domain of a declared variable. */
     operator fun get(variable: IntVar): IntDomain = requireNotNull(domains[variable]) { "Variable belongs to another domain store" }
 
