@@ -20,7 +20,13 @@ import io.kotest.matchers.string.shouldContain
 @OptIn(ExperimentalKtConstraintsApi::class)
 class RankingSpec :
     FunSpec({
-        val cp = setOf(SolverCapability.SATISFACTION, SolverCapability.OPTIMIZATION, SolverCapability.INTEGER_ARITHMETIC)
+        val cp =
+            setOf(
+                SolverCapability.SATISFACTION,
+                SolverCapability.OPTIMIZATION,
+                SolverCapability.INTEGER_ARITHMETIC,
+                SolverCapability.GLOBAL_CONSTRAINTS,
+            )
         val smt = cp + setOf(SolverCapability.REAL_ARITHMETIC, SolverCapability.INCREMENTAL_ASSERTIONS)
         val choco = FakeBackend(SolverDescriptor("choco", "direct", cp + SolverCapability.GLOBAL_CONSTRAINTS))
         val cpSat = FakeBackend(SolverDescriptor("cp-sat", "direct", cp + SolverCapability.GLOBAL_CONSTRAINTS))

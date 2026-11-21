@@ -35,7 +35,7 @@ class SolverRegistrySpec :
                     SolverDescriptor(
                         "example",
                         "optimizer",
-                        setOf(SolverCapability.SATISFACTION, SolverCapability.OPTIMIZATION),
+                        setOf(SolverCapability.SATISFACTION, SolverCapability.OPTIMIZATION, SolverCapability.INTEGER_ARITHMETIC),
                     ),
                 )
             val model = ConstraintModel.of { minimize(intVar("x", 0..1)) }
