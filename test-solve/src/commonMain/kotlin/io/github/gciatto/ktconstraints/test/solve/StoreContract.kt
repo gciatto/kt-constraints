@@ -7,6 +7,10 @@ import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.core.IntSum
+import io.github.gciatto.ktconstraints.core.Rational
+import io.github.gciatto.ktconstraints.core.RealLessThan
+import io.github.gciatto.ktconstraints.core.RealLiteral
+import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.Assignment
 import io.github.gciatto.ktconstraints.solve.ConstraintStore
@@ -14,22 +18,28 @@ import io.github.gciatto.ktconstraints.solve.Entailment
 import io.github.gciatto.ktconstraints.solve.EntailmentResult
 import io.github.gciatto.ktconstraints.solve.Evidence
 import io.github.gciatto.ktconstraints.solve.StoreStatus
+import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.funSpec
 import io.kotest.datatest.withTests
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kotlinx.coroutines.withTimeoutOrNull
 import org.gciatto.kt.math.BigInteger
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Shared [ConstraintStore] contracts. With [propagates] false the store answers by complete satisfiability checks,
  * so posts are proven [StoreStatus.SATISFIABLE] and entailment is never [Entailment.UNKNOWN]; otherwise it answers
- * by propagation, which must shrink domains and stay sound but may be undecided.
+ * by propagation, which must shrink domains and stay sound but may be undecided. [reals] enables exact real variables;
+ * otherwise declaring one must be rejected. Satisfiability stores must also survive timeouts and cancellation.
  */
 fun storeContract(
     propagates: Boolean,
+    reals: Boolean = !propagates,
     create: () -> ConstraintStore,
 ) = funSpec {
     val evidence = if (propagates) Evidence.PROPAGATION else Evidence.SATISFIABILITY
@@ -212,6 +222,73 @@ fun storeContract(
         }
     }
 
+    test("store-contract/failures-are-explained-by-posted-constraints") {
+        create().use { store ->
+            val x = store.intVar("x", IntDomain.of(0, 9))
+            val y = store.intVar("y", IntDomain.of(0, 9))
+            val z = store.intVar("z", IntDomain.of(0, 9))
+            val unrelated = IntLessThan(z, IntLiteral(3))
+            val forward = IntLessThan(x, y)
+            val backward = IntLessThan(y, x)
+            store.constrain(unrelated)
+            store.constrain(forward)
+            store.explain() shouldBe null
+            store.constrain(backward).status shouldBe StoreStatus.FAILED
+            val why = requireNotNull(store.explain())
+            why shouldContainAll listOf(forward, backward)
+            listOf(unrelated, forward, backward) shouldContainAll why
+        }
+    }
+
+    test("store-contract/forks-are-independent") {
+        create().use { parent ->
+            val x = parent.intVar("x", IntDomain.of(0, 9))
+            parent.constrain(IntLessThan(x, IntLiteral(5)))
+            val mark = parent.mark()
+            parent.fork().use { child ->
+                child.entails(IntLessThan(x, IntLiteral(5))).value shouldBe Entailment.ENTAILED
+                child.constrain(IntEquality(x, IntLiteral(7))).status shouldBe StoreStatus.FAILED
+                parent.isFailed shouldBe false
+                parent.constrain(IntEquality(x, IntLiteral(3))).status shouldNotBe StoreStatus.FAILED
+                shouldThrow<IllegalArgumentException> { child.undoTo(mark) }
+                val y = child.intVar("y", IntDomain.of(0, 1))
+                shouldThrow<IllegalArgumentException> { parent.constrain(IntEquality(y, IntLiteral(0))) }
+                child.fork().use { grandchild -> grandchild.isFailed shouldBe true }
+            }
+            parent.undoTo(mark)
+            parent.constrain(IntEquality(x, IntLiteral(4))).status shouldNotBe StoreStatus.FAILED
+        }
+    }
+
+    test("store-contract/exact-reals").config(enabled = reals) {
+        create().use { store ->
+            val r = store.realVar("r")
+            store.constrain(RealLessThan(RealLiteral(Rational.of(1, 2)), r)).status shouldBe StoreStatus.SATISFIABLE
+            store.entails(RealLessThan(RealLiteral(Rational.of(1, 3)), r)).value shouldBe Entailment.ENTAILED
+            store.entails(RealLessThan(r, RealLiteral(Rational.of(1, 1)))).value shouldBe Entailment.UNDETERMINED
+            store.constrain(RealLessThan(r, RealLiteral(Rational.of(1, 3)))).status shouldBe StoreStatus.FAILED
+        }
+    }
+
+    test("store-contract/reals-are-rejected").config(enabled = !reals) {
+        create().use { store -> shouldThrow<UnsupportedModelException> { store.realVar("r") } }
+    }
+
+    test("store-contract/timeouts-and-cancellation-are-not-failures").config(enabled = !propagates) {
+        create().use { store ->
+            val pigeons = List(PIGEONS) { store.intVar("p$it", IntDomain.of(0, PIGEONS - 2L)) }
+            val pairs = pigeons.indices.flatMap { i -> (i + 1 until PIGEONS).map { j -> BoolNot(IntEquality(pigeons[i], pigeons[j])) } }
+            pairs.dropLast(1).forEach { store.constrain(it).status shouldBe StoreStatus.SATISFIABLE }
+            val mark = store.mark()
+            store.constrain(pairs.last(), timeoutMillis = 300).status shouldBe StoreStatus.UNKNOWN
+            store.isFailed shouldBe false
+            store.undoTo(mark)
+            withTimeoutOrNull(300.milliseconds) { store.constrain(pairs.last()) } shouldBe null
+            store.undoTo(mark)
+            store.constrain(IntEquality(pigeons[0], IntLiteral(0))).status shouldBe StoreStatus.SATISFIABLE
+        }
+    }
+
     test("store-contract/closed-stores-reject-use") {
         val store = create()
         val x = store.intVar("x", IntDomain.of(0, 1))
@@ -221,3 +298,6 @@ fun storeContract(
         shouldThrow<IllegalStateException> { store.mark() }
     }
 }
+
+/** Thirteen pigeons in twelve holes: refuting it takes CDCL solvers far longer than the test's deadlines. */
+private const val PIGEONS = 13
