@@ -10,6 +10,8 @@ import io.github.gciatto.ktconstraints.core.CardinalityRelation
 import io.github.gciatto.ktconstraints.core.IntEquality
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.LinearSum
@@ -112,6 +114,18 @@ class ModelFeaturesSpec :
             features.variables shouldBe 3
             features.constraints shouldBe 2
             features.maxMagnitude shouldBe BigInteger.of(20_000)
+        }
+
+        test("model-features/min-and-max-are-globals") {
+            val model =
+                ConstraintModel.of {
+                    val x = intVar("x", 0..3)
+                    val y = intVar("y", 0..3)
+                    add(IntLessOrEqual(IntMax(listOf(x, y)), IntMin(listOf(x, IntLiteral(2)))))
+                }
+            val features = ModelFeatures.of(model)
+            features.globals shouldBe setOf(GlobalKind.MIN_MAX)
+            features.problemClass shouldBe ProblemClass.CP_GLOBALS
         }
 
         test("model-features/satisfaction-has-no-objective") {

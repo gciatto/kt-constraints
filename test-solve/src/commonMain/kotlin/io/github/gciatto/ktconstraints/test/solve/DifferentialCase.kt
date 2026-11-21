@@ -17,6 +17,8 @@ import io.github.gciatto.ktconstraints.core.IntInterval
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -69,6 +71,13 @@ class DifferentialCase(
                     scope.add(BoolImplies(BoolCardinality(flags, 2, CardinalityRelation.AT_LEAST), IntLessThan(IntLiteral(1), z)))
                     scope.add(BoolCardinality(listOf(BoolAnd(flags[0], BoolNot(flags[1])), flags[2]), 1, CardinalityRelation.AT_MOST))
                     scope.add(BoolOr(BoolCardinality(flags, 0, CardinalityRelation.EXACTLY), IntLessOrEqual(z, IntLiteral(2))))
+                },
+                DifferentialCase("min-max-reified-and-nested") { scope ->
+                    val x = scope.intVar("x", -2..3)
+                    val y = scope.intVar("y", 0..2)
+                    val b = scope.boolVar("b")
+                    scope.add(BoolEquality(b, IntEquality(IntMax(listOf(x, y, IntLiteral(1))), IntLiteral(2))))
+                    scope.add(IntLessOrEqual(IntSum(IntMin(listOf(x, IntNegation(y))), IntMax(listOf(y))), IntLiteral(1)))
                 },
                 DifferentialCase("products-and-negative-values") { scope ->
                     val x = scope.intVar("x", -3..3)

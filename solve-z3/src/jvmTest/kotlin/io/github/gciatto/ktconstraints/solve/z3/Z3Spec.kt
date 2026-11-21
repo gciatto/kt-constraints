@@ -29,6 +29,7 @@ import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.SatisfiabilityStore
 import io.github.gciatto.ktconstraints.test.solve.FiniteOracle
+import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.github.gciatto.ktconstraints.test.solve.storeContract
@@ -53,6 +54,7 @@ class Z3Spec :
         include(z3OptimizationContract { Z3Backend().create() })
         include(z3RealContract { Z3Backend().create() })
         include(z3BitVecContract { Z3Backend().create() })
+        include(differentialContract("z3") { Z3Backend().create() })
 
         test("z3/runtime-is-available-and-identifies-the-direct-route") {
             val backend = Z3Backend()

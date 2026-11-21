@@ -17,7 +17,9 @@ import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolveCompleted
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.test.solve.DifferentialCase
 import io.github.gciatto.ktconstraints.test.solve.FiniteOracle
+import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -36,6 +38,11 @@ class MiniZincIntegrationSpec :
             test("integration/requires-MINIZINC_EXECUTABLE").config(enabled = false) {}
         } else {
             include(solverContract { MiniZincGecodeBackend(executable).create() })
+            include(
+                differentialContract("integration/gecode", cases = DifferentialCase.catalogue().filter { it.name.startsWith("min-max") }) {
+                    MiniZincGecodeBackend(executable).create()
+                },
+            )
             test("integration/globals-match-the-independent-finite-oracle") {
                 val scope = ConstraintScope.empty()
                 val x = scope.intVar("x", 0..2)

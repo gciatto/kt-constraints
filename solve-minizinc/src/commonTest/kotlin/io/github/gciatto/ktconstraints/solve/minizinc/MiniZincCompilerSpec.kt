@@ -7,7 +7,10 @@ import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.core.IntEquality
+import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.RealLessThan
@@ -43,6 +46,15 @@ class MiniZincCompilerSpec :
             source.contains("all_different(") shouldBe true
             source.contains("array1d(0..1") shouldBe true
             source.contains("constraint (v0 >= 0 /\\ v0 < 2);") shouldBe true
+        }
+        test("compiler/lowers-min-and-max-to-builtins") {
+            val scope = ConstraintScope.empty()
+            val x = scope.intVar("x", 0..2)
+            val y = scope.intVar("y", -1..4)
+            scope.add(IntLessOrEqual(IntMax(listOf(x, y)), IntMin(listOf(y, IntLiteral(3)))))
+            val source = MiniZincCompiler().compile(scope.build()).source
+            source.contains("max([v0, v1])") shouldBe true
+            source.contains("min([v1, 3])") shouldBe true
         }
         test("compiler/rejects-native-range-overflow-and-unknown-nodes-in-all-branches") {
             val compiler = MiniZincCompiler()

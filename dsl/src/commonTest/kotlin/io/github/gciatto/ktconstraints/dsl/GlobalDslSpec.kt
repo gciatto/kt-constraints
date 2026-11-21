@@ -16,5 +16,7 @@ class GlobalDslSpec :
             GroundEvaluator.evaluate(atMost(1, BoolLiteral(true), BoolLiteral(false))) shouldBe true
             GroundEvaluator.evaluate(exactly(0, BoolLiteral(false))) shouldBe true
             GroundEvaluator.evaluate(atLeast(1, BoolLiteral(false))) shouldBe false
+            GroundEvaluator.evaluate(min(IntLiteral(4), IntLiteral(-2))).toString() shouldBe "-2"
+            GroundEvaluator.evaluate(max(IntLiteral(4), IntLiteral(-2))).toString() shouldBe "4"
         }
     })

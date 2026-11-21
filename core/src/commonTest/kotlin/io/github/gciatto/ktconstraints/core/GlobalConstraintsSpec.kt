@@ -57,6 +57,17 @@ class GlobalConstraintsSpec :
             shouldThrow<IllegalArgumentException> { BoolCardinality(values, -1, CardinalityRelation.EXACTLY) }
         }
 
+        test("minMax/select-the-exact-extremum-and-reject-empty-operands") {
+            val values = listOf(IntLiteral(4), IntLiteral("-9223372036854775809"), IntLiteral(7))
+            GroundEvaluator.evaluate(IntMin(values)).toString() shouldBe "-9223372036854775809"
+            GroundEvaluator.evaluate(IntMax(values)) shouldBe BigInteger.of(7)
+            GroundEvaluator.evaluate(IntMin(listOf(IntLiteral(3)))) shouldBe BigInteger.of(3)
+            shouldThrow<IllegalArgumentException> { IntMin(emptyList()) }
+            shouldThrow<IllegalArgumentException> { IntMax(emptyList()) }
+            IntMin(values) shouldBe IntMin(values.toMutableList())
+            (IntMin(values) == IntMax(values)) shouldBe false
+        }
+
         test("globals/snapshot-inputs-and-retain-structural-equality") {
             val operands = mutableListOf<IntExpr>(IntLiteral(1), IntLiteral(2))
             val row = mutableListOf(BigInteger.ONE, BigInteger.TWO)

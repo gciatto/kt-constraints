@@ -16,6 +16,8 @@ import io.github.gciatto.ktconstraints.core.IntEquality
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -51,7 +53,7 @@ private fun knownOracleNode(node: Expr): Boolean =
         is BoolVar, is IntVar, is BoolLiteral, is IntLiteral, is IntSum, is IntDifference, is IntProduct,
         is IntNegation, is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolAnd, is BoolOr,
         is BoolNot, is BoolImplies, is BoolEquality, is AllDifferent, is Element, is Table,
-        is LinearSum, is BoolCardinality,
+        is LinearSum, is BoolCardinality, is IntMin, is IntMax,
         -> true
         else -> false
     }
