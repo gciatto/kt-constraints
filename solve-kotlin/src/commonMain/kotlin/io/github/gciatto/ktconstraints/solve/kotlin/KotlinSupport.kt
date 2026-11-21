@@ -15,7 +15,9 @@ import io.github.gciatto.ktconstraints.core.BoolImplies
 import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
+import io.github.gciatto.ktconstraints.core.DecomposableConstraint
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.Expr
 import io.github.gciatto.ktconstraints.core.IntDifference
@@ -23,6 +25,8 @@ import io.github.gciatto.ktconstraints.core.IntEquality
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -64,12 +68,16 @@ internal object KotlinSupport {
                 is Element -> decompositions += "element -> ite chain with a top-level index definedness constraint"
                 is Table -> decompositions += "table -> disjunction of tuple conjunctions"
                 is BoolCardinality -> decompositions += "cardinality -> exact binary counting circuit"
+                is DecomposableConstraint -> {
+                    decompositions += "${node::class.simpleName} -> variable-free decomposition"
+                    pending.addLast(node.decomposition)
+                }
                 is BoolVar, is IntVar, is BoolLiteral, is IntLiteral, is IntSum, is IntDifference, is IntProduct,
                 is IntNegation, is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolAnd, is BoolOr,
                 is BoolNot, is BoolImplies, is BoolEquality, is LinearSum, is RealVar, is RealLiteral, is RealSum,
                 is RealDifference, is RealNegation, is RealScale, is IntToReal, is RealEquality, is RealLessThan,
                 is RealLessOrEqual, is BitVecVar, is BitVecLiteral, is BitVecBinary, is BitVecNot, is BitVecNegation,
-                is BitVecComparison, is BitVecToInt,
+                is BitVecComparison, is BitVecToInt, is IntMin, is IntMax, is BoolToInt,
                 -> Unit
                 else -> unsupported += "Unsupported expression: ${node::class.simpleName ?: node}"
             }

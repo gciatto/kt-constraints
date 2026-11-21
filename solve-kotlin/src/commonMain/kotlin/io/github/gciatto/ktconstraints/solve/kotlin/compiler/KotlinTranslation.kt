@@ -17,8 +17,10 @@ import io.github.gciatto.ktconstraints.core.BoolImplies
 import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.CardinalityRelation
+import io.github.gciatto.ktconstraints.core.DecomposableConstraint
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.Expr
 import io.github.gciatto.ktconstraints.core.IntDifference
@@ -28,6 +30,8 @@ import io.github.gciatto.ktconstraints.core.IntExpr
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -53,7 +57,9 @@ import io.github.gciatto.ktconstraints.solve.kotlin.SearchBudget
 import org.gciatto.kt.math.BigInteger
 
 /** Exact translation into reusable Boolean circuits and linear-real atoms; no search occurs here. */
-internal class KotlinTranslation(val circuit: Circuit) {
+internal class KotlinTranslation(
+    val circuit: Circuit,
+) {
     val binary = BinaryArithmetic(circuit, circuit::checkpoint)
     val realAtoms = mutableListOf<RealAtom>()
     private val cache = CompilationCache()
@@ -64,7 +70,11 @@ internal class KotlinTranslation(val circuit: Circuit) {
 
     val realCount: Int get() = reals.size
 
-    suspend fun declare(model: ConstraintModel, domains: Map<IntVar, IntDomain>, budget: SearchBudget) {
+    suspend fun declare(
+        model: ConstraintModel,
+        domains: Map<IntVar, IntDomain>,
+        budget: SearchBudget,
+    ) {
         for (variable in model.variables) {
             budget.checkpoint()
             declare(variable, domains)
@@ -89,12 +99,18 @@ internal class KotlinTranslation(val circuit: Circuit) {
         }
     }
 
-    suspend fun assertion(expression: BoolExpr, budget: SearchBudget): Int {
+    suspend fun assertion(
+        expression: BoolExpr,
+        budget: SearchBudget,
+    ): Int {
         val term = translate(expression, budget)
         return circuit.and(term.value as Int, term.defined)
     }
 
-    suspend fun translate(expression: Expr, budget: SearchBudget): CompiledTerm {
+    suspend fun translate(
+        expression: Expr,
+        budget: SearchBudget,
+    ): CompiledTerm {
         cache[expression]?.let { return it }
         val stack = ArrayDeque<CompilationFrame>()
         stack.addLast(CompilationFrame(expression))
@@ -106,7 +122,7 @@ internal class KotlinTranslation(val circuit: Circuit) {
                 val known = cache[child]
                 if (known == null) stack.addLast(CompilationFrame(child)) else frame.results += known
             } else {
-                val term = compile(frame.node, frame.results)
+                val term = compile(frame.node, frame.results, budget)
                 cache.put(frame.node, term)
                 stack.removeLast()
                 if (stack.isEmpty()) return term
@@ -115,7 +131,10 @@ internal class KotlinTranslation(val circuit: Circuit) {
         }
     }
 
-    fun assignment(values: BooleanArray, realValues: List<Rational>): Assignment =
+    fun assignment(
+        values: BooleanArray,
+        realValues: List<Rational>,
+    ): Assignment =
         Assignment.of(
             booleans.mapValues { circuit.value(it.value, values) },
             integers.mapValues { binary.decodeInteger(it.value, values) },
@@ -123,16 +142,26 @@ internal class KotlinTranslation(val circuit: Circuit) {
             bitVectors.mapValues { binary.decodeBits(it.value, values) },
         )
 
-    private suspend fun compile(node: Expr, terms: List<CompiledTerm>): CompiledTerm {
+    private suspend fun compile(
+        node: Expr,
+        terms: List<CompiledTerm>,
+        budget: SearchBudget,
+    ): CompiledTerm {
         var defined = circuit.all(terms.map { it.defined })
-        val children = terms.map { it.value }
-        val value = when (node) {
-            is BoolExpr -> boolean(node, children)
-            is BitVecExpr -> bitVector(node, children)
-            is RealExpr -> real(node, children)
-            is IntExpr -> integer(node, children)
-            else -> error("Unsupported expression")
+        if (node is DecomposableConstraint) {
+            // shortcut: the variable-free decomposition is exact everywhere but large; native circuits would be smaller.
+            val decomposed = translate(node.decomposition, budget)
+            return CompiledTerm(decomposed.value, circuit.and(defined, decomposed.defined))
         }
+        val children = terms.map { it.value }
+        val value =
+            when (node) {
+                is BoolExpr -> boolean(node, children)
+                is BitVecExpr -> bitVector(node, children)
+                is RealExpr -> real(node, children)
+                is IntExpr -> integer(node, children)
+                else -> error("Unsupported expression")
+            }
         if (node is Element) {
             val index = children.first() as IntegerEncoding
             val lower = -binary.less(index, binary.integer(BigInteger.ZERO))
@@ -142,96 +171,131 @@ internal class KotlinTranslation(val circuit: Circuit) {
         return CompiledTerm(value, defined)
     }
 
-    private suspend fun integer(node: IntExpr, values: List<Any>): IntegerEncoding = when (node) {
-        is IntVar -> integers.getValue(node)
-        is IntLiteral -> binary.integer(node.value)
-        is IntSum -> binary.add(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
-        is IntDifference -> binary.subtract(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
-        is IntProduct -> binary.multiply(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
-        is IntNegation -> binary.negate(values.single() as IntegerEncoding)
-        is BitVecToInt -> binary.toInteger(values.single() as IntArray, node.signed)
-        is LinearSum -> values.indices.fold(binary.integer(node.constant)) { sum, index ->
-            binary.add(sum, binary.multiply(values[index] as IntegerEncoding, binary.integer(node.coefficients[index])))
-        }
-        is Element -> {
-            val index = values.first() as IntegerEncoding
-            var result = values.last() as IntegerEncoding
-            for (position in node.values.size - 2 downTo 0) {
-                result = binary.choose(
-                    binary.equal(index, binary.integer(BigInteger.of(position))),
-                    values[position + 1] as IntegerEncoding,
-                    result,
-                )
+    private suspend fun integer(
+        node: IntExpr,
+        values: List<Any>,
+    ): IntegerEncoding =
+        when (node) {
+            is IntVar -> integers.getValue(node)
+            is IntLiteral -> binary.integer(node.value)
+            is IntSum -> binary.add(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
+            is IntDifference -> binary.subtract(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
+            is IntProduct -> binary.multiply(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
+            is IntNegation -> binary.negate(values.single() as IntegerEncoding)
+            is BitVecToInt -> binary.toInteger(values.single() as IntArray, node.signed)
+            is BoolToInt -> IntegerEncoding(intArrayOf(values.single() as Int, circuit.falseLiteral), BigInteger.ZERO, BigInteger.ONE)
+            is IntMin -> values.map { it as IntegerEncoding }.reduce { least, next -> binary.choose(binary.less(next, least), next, least) }
+            is IntMax -> values.map { it as IntegerEncoding }.reduce { most, next -> binary.choose(binary.less(most, next), next, most) }
+            is LinearSum ->
+                values.indices.fold(binary.integer(node.constant)) { sum, index ->
+                    binary.add(sum, binary.multiply(values[index] as IntegerEncoding, binary.integer(node.coefficients[index])))
+                }
+            is Element -> {
+                val index = values.first() as IntegerEncoding
+                var result = values.last() as IntegerEncoding
+                for (position in node.values.size - 2 downTo 0) {
+                    result =
+                        binary.choose(
+                            binary.equal(index, binary.integer(BigInteger.of(position))),
+                            values[position + 1] as IntegerEncoding,
+                            result,
+                        )
+                }
+                result
             }
-            result
+            else -> error("Unsupported integer expression")
         }
-        else -> error("Unsupported integer expression")
-    }
 
-    private suspend fun bitVector(node: BitVecExpr, values: List<Any>): IntArray = when (node) {
-        is BitVecVar -> bitVectors.getValue(node)
-        is BitVecLiteral -> binary.bits(node.value, node.width)
-        is BitVecBinary -> binary.bitVector(node.operator, values[0] as IntArray, values[1] as IntArray)
-        is BitVecNot -> binary.bitNot(values.single() as IntArray)
-        is BitVecNegation -> binary.bitNegate(values.single() as IntArray)
-        else -> error("Unsupported bit-vector expression")
-    }
+    private suspend fun bitVector(
+        node: BitVecExpr,
+        values: List<Any>,
+    ): IntArray =
+        when (node) {
+            is BitVecVar -> bitVectors.getValue(node)
+            is BitVecLiteral -> binary.bits(node.value, node.width)
+            is BitVecBinary -> binary.bitVector(node.operator, values[0] as IntArray, values[1] as IntArray)
+            is BitVecNot -> binary.bitNot(values.single() as IntArray)
+            is BitVecNegation -> binary.bitNegate(values.single() as IntArray)
+            else -> error("Unsupported bit-vector expression")
+        }
 
-    private suspend fun real(node: RealExpr, values: List<Any>): LinearForm = when (node) {
-        is RealVar -> LinearForm(realCoefficients = mapOf(reals.getValue(node) to Rational.ONE))
-        is RealLiteral -> LinearForm(constant = node.value)
-        is RealSum -> (values[0] as LinearForm) + (values[1] as LinearForm)
-        is RealDifference -> (values[0] as LinearForm) + (values[1] as LinearForm).scale(Rational.of(-1))
-        is RealNegation -> (values.single() as LinearForm).scale(Rational.of(-1))
-        is RealScale -> (values.single() as LinearForm).scale(node.coefficient)
-        is IntToReal -> embed(values.single() as IntegerEncoding)
-        else -> error("Unsupported real expression")
-    }
+    private suspend fun real(
+        node: RealExpr,
+        values: List<Any>,
+    ): LinearForm =
+        when (node) {
+            is RealVar -> LinearForm(realCoefficients = mapOf(reals.getValue(node) to Rational.ONE))
+            is RealLiteral -> LinearForm(constant = node.value)
+            is RealSum -> (values[0] as LinearForm) + (values[1] as LinearForm)
+            is RealDifference -> (values[0] as LinearForm) + (values[1] as LinearForm).scale(Rational.of(-1))
+            is RealNegation -> (values.single() as LinearForm).scale(Rational.of(-1))
+            is RealScale -> (values.single() as LinearForm).scale(node.coefficient)
+            is IntToReal -> embed(values.single() as IntegerEncoding)
+            else -> error("Unsupported real expression")
+        }
 
-    private suspend fun boolean(node: BoolExpr, values: List<Any>): Int = when (node) {
-        is BoolVar -> booleans.getValue(node)
-        is BoolLiteral -> circuit.constant(node.value)
-        is BoolNot -> -(values.single() as Int)
-        is BoolAnd -> circuit.and(values[0] as Int, values[1] as Int)
-        is BoolOr -> circuit.or(values[0] as Int, values[1] as Int)
-        is BoolImplies -> circuit.or(-(values[0] as Int), values[1] as Int)
-        is BoolEquality -> -circuit.xor(values[0] as Int, values[1] as Int)
-        is IntEquality -> binary.equal(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
-        is IntLessThan -> binary.less(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
-        is IntLessOrEqual -> -binary.less(values[1] as IntegerEncoding, values[0] as IntegerEncoding)
-        is BitVecComparison -> binary.bitCompare(node.relation, values[0] as IntArray, values[1] as IntArray)
-        is RealEquality, is RealLessThan, is RealLessOrEqual -> realRelation(node, values)
-        else -> global(node, values)
-    }
+    private suspend fun boolean(
+        node: BoolExpr,
+        values: List<Any>,
+    ): Int =
+        when (node) {
+            is BoolVar -> booleans.getValue(node)
+            is BoolLiteral -> circuit.constant(node.value)
+            is BoolNot -> -(values.single() as Int)
+            is BoolAnd -> circuit.and(values[0] as Int, values[1] as Int)
+            is BoolOr -> circuit.or(values[0] as Int, values[1] as Int)
+            is BoolImplies -> circuit.or(-(values[0] as Int), values[1] as Int)
+            is BoolEquality -> -circuit.xor(values[0] as Int, values[1] as Int)
+            is IntEquality -> binary.equal(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
+            is IntLessThan -> binary.less(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
+            is IntLessOrEqual -> -binary.less(values[1] as IntegerEncoding, values[0] as IntegerEncoding)
+            is BitVecComparison -> binary.bitCompare(node.relation, values[0] as IntArray, values[1] as IntArray)
+            is RealEquality, is RealLessThan, is RealLessOrEqual -> realRelation(node, values)
+            else -> global(node, values)
+        }
 
-    private suspend fun global(node: BoolExpr, values: List<Any>): Int = when (node) {
-        is AllDifferent -> {
-            var result = circuit.trueLiteral
-            for (left in values.indices) {
-                for (right in left + 1 until values.size) {
-                    result = circuit.and(result, -binary.equal(values[left] as IntegerEncoding, values[right] as IntegerEncoding))
+    private suspend fun global(
+        node: BoolExpr,
+        values: List<Any>,
+    ): Int =
+        when (node) {
+            is AllDifferent -> {
+                var result = circuit.trueLiteral
+                for (left in values.indices) {
+                    for (right in left + 1 until values.size) {
+                        result = circuit.and(result, -binary.equal(values[left] as IntegerEncoding, values[right] as IntegerEncoding))
+                    }
+                }
+                result
+            }
+            is Table ->
+                circuit.any(
+                    node.tuples.map { row ->
+                        circuit.all(values.indices.map { binary.equal(values[it] as IntegerEncoding, binary.integer(row[it])) })
+                    },
+                )
+            is BoolCardinality -> {
+                val sum =
+                    values.fold(binary.integer(BigInteger.ZERO)) { total, literal ->
+                        binary.add(
+                            total,
+                            IntegerEncoding(intArrayOf(literal as Int, circuit.falseLiteral), BigInteger.ZERO, BigInteger.ONE),
+                        )
+                    }
+                val bound = binary.integer(BigInteger.of(node.count))
+                when (node.relation) {
+                    CardinalityRelation.EXACTLY -> binary.equal(sum, bound)
+                    CardinalityRelation.AT_MOST -> -binary.less(bound, sum)
+                    CardinalityRelation.AT_LEAST -> -binary.less(sum, bound)
                 }
             }
-            result
+            else -> error("Unsupported Boolean expression")
         }
-        is Table -> circuit.any(node.tuples.map { row ->
-            circuit.all(values.indices.map { binary.equal(values[it] as IntegerEncoding, binary.integer(row[it])) })
-        })
-        is BoolCardinality -> {
-            val sum = values.fold(binary.integer(BigInteger.ZERO)) { total, literal ->
-                binary.add(total, IntegerEncoding(intArrayOf(literal as Int, circuit.falseLiteral), BigInteger.ZERO, BigInteger.ONE))
-            }
-            val bound = binary.integer(BigInteger.of(node.count))
-            when (node.relation) {
-                CardinalityRelation.EXACTLY -> binary.equal(sum, bound)
-                CardinalityRelation.AT_MOST -> -binary.less(bound, sum)
-                CardinalityRelation.AT_LEAST -> -binary.less(sum, bound)
-            }
-        }
-        else -> error("Unsupported Boolean expression")
-    }
 
-    private suspend fun realRelation(node: BoolExpr, values: List<Any>): Int {
+    private suspend fun realRelation(
+        node: BoolExpr,
+        values: List<Any>,
+    ): Int {
         val difference = (values[0] as LinearForm) + (values[1] as LinearForm).scale(Rational.of(-1))
         return if (node is RealEquality) {
             circuit.and(atom(difference, false), atom(difference.scale(Rational.of(-1)), false))
@@ -240,7 +304,10 @@ internal class KotlinTranslation(val circuit: Circuit) {
         }
     }
 
-    private suspend fun atom(form: LinearForm, strict: Boolean): Int {
+    private suspend fun atom(
+        form: LinearForm,
+        strict: Boolean,
+    ): Int {
         if (form.realCoefficients.isEmpty() && form.bitCoefficients.isEmpty()) {
             return circuit.constant(if (strict) form.constant < Rational.ZERO else form.constant <= Rational.ZERO)
         }
@@ -248,7 +315,10 @@ internal class KotlinTranslation(val circuit: Circuit) {
         return circuit.variable().also { realAtoms += RealAtom(it, form, strict) }
     }
 
-    private suspend fun discreteAtom(form: LinearForm, strict: Boolean): Int {
+    private suspend fun discreteAtom(
+        form: LinearForm,
+        strict: Boolean,
+    ): Int {
         // All denominators are positive, so multiplying by their LCM preserves strict and non-strict ordering.
         var denominator = form.constant.denominator
         for (coefficient in form.bitCoefficients.values) {
