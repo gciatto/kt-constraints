@@ -170,6 +170,14 @@ Incremental sessions (`IncrementalConstraintSolver.openSession`) treat the model
 A shared `CheckpointStack` rejects stale and foreign checkpoints before any native change. Assumptions hold for a
 single check, and unsat cores are subsets of those assumptions, not necessarily minimal. Satisfiable checks are
 validated against every active constraint and assumption. Repeated checks are not advertised as propagation.
+
+M7 adds `ConstraintStore`, the logical store an external logic engine owns (`docs/M7-DESIGN.md`). Variables are
+declared on the store at any time; marks backtrack in LIFO order and invalidate newer marks; a failed store stays
+failed until undone. Entailment is four-valued (`ENTAILED`, `DISENTAILED`, `UNDETERMINED`, `UNKNOWN`) and carries
+its `Evidence`. `SatisfiabilityStore` runs over any incremental session, so every definite answer is a proof but
+domains never narrow. `ChocoStore` propagates natively, reporting shrunk domains, and decides entailment by
+refutation through propagation, which may be `UNKNOWN` but is never wrong. Residual projection is sound, not
+minimal. `docs/LOGIC-ENGINES.md` maps choice points, wakeups and labeling onto the store.
 Translation, streams and sessions are common code behind an internal per-context port, so the Wasm route
 `z3/wasm` (official `z3-solver` module, owned and terminated by a closeable `Z3JsBackend`) shares them on Node
 and in cross-origin-isolated browsers, and the Kotlin/Native route `z3/native` shares them through a cinterop

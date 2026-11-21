@@ -142,13 +142,23 @@ reports, native resource cleanup verified, JS/TS and Java APIs validated indepen
 
 ## P3 — Constraint store / CLP readiness
 
-- [ ] Define `IncrementalSession`, `PropagatingSession`, `Checkpoint`, `ConstraintStore` and typed entailment.
-- [ ] Distinguish native propagation from entailment by repeated satisfiability checks.
-- [ ] Implement backtracking via reversible trail, persistent snapshots, or native push/pop, per backend.
+- [x] Define `IncrementalSession`, `PropagatingSession`, `Checkpoint`, `ConstraintStore` and typed entailment.
+  `ConstraintStore` with `StoreMark`s and four-valued `Entailment` plus `Evidence` (`docs/M7-DESIGN.md`); the
+  propagating role is `ChocoStore`, the satisfiability role `SatisfiabilityStore` over any incremental session.
+- [x] Distinguish native propagation from entailment by repeated satisfiability checks (`Evidence`).
+- [x] Implement backtracking via reversible trail, persistent snapshots, or native push/pop, per backend.
+  Z3 session frames and Choco environment worlds; undo also unposts Choco's permanent reifications.
 - [ ] Variable binding/domain-change events, domain inspection, residual constraint projection and explanations.
-- [ ] Define interaction between user-driven branching and backend search without duplicated choice points.
+  Pulled domain-change reports, domain inspection and sound, non-minimal residual projection are implemented;
+  explanations are pending.
+- [x] Define interaction between user-driven branching and backend search without duplicated choice points.
+  Labeling is the logic engine's search over marks (`docs/LOGIC-ENGINES.md`).
 - [ ] Test nesting, fork isolation, replay, failures, cut-like pruning, infinite domains and resource cancellation.
-- [ ] Benchmark constraint-added-per-resolution-step latency and rollback, not only batch benchmark instances.
+  The shared `storeContract` covers nesting, stale and foreign marks, failure and recovery, cut-like undo,
+  declarations after marks, oracle agreement and close. `fork` is deferred; unbounded reals in stores and
+  cancellation of in-flight posts are untested.
+- [x] Benchmark constraint-added-per-resolution-step latency and rollback, not only batch benchmark instances.
+  `:solve-choco:storeBenchmark` and `:solve-z3:jvmStoreBenchmark` (N-queens labeling against batch re-solving).
 
 **P3 acceptance:** An external logic engine can own and backtrack a constraint store via stable APIs, independently
 of any specific Prolog implementation. Any future 2p-Kt integration belongs outside this repository.

@@ -33,6 +33,15 @@ implemented. The Node cell of `chuffed/minizinc-wasm` is blank because that rout
 | TypeScript, `gecode/minizinc-js-cli`     | —         | —               | —           | ✅   | —        |
 | TypeScript, `chuffed/minizinc-wasm`      | —         | —               | —           |      | ✅       |
 
+## Constraint stores
+
+| Store                                    | JVM Linux | JVM macOS arm64 | JVM Windows | Node | Chromium | Native Linux x64 | Native macOS arm64 | Native Windows x64 |
+|------------------------------------------|:---------:|:---------------:|:-----------:|:----:|:--------:|:----------------:|:------------------:|:------------------:|
+| `ChocoStore` (propagating)               | ✅        | ✅              | ✅          | —    | —        | —                | —                  | —                  |
+| `SatisfiabilityStore` over Z3            | ✅        | ✅              | ✅          | ✅   | ✅       | ✅               | ✅                 | ✅                 |
+
+Both run the shared `storeContract` inside the suites listed below (`ChocoSpec`, `Z3Spec`, `Z3JsSpec`, `Z3NativeSpec`).
+
 ## Evidence
 
 - **JVM** (`test-jvm`: Ubuntu, macOS arm64 and Windows, each on JDK 17 and 21): `./gradlew jvmTest`. The suites for

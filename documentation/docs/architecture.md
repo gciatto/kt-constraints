@@ -45,6 +45,18 @@ Integer expressions, finite-domain bounds and assignment values use kt-math's im
 `BigInteger`. Long and Int factories are convenience inputs; conversion to a bounded backend must be checked.
 `Sort.BitVector` is a separate bitwise sort.
 
+Real expressions are linear: unbounded `RealVar`s, exact `Rational` literals (normalized, so structural equality
+is numeric), sums, differences, negation, rational scaling and an explicit `IntToReal` embedding, compared with
+real equality and orderings; the DSL offers these as operators over real expressions, `Rational`s and machine
+integers, and `Rational.parse` reads `p`, `p/q` and decimals such as `0.1` exactly. Without products of variables every model value is rational, so evaluation and
+assignments stay exact. Objectives remain integer, because a real supremum need not be attained. Routes without
+exact reals (MiniZinc floats, the finite oracle) reject models that declare or use them.
+
+Bit-vectors follow SMT-LIB `QF_BV`: values are unsigned `BigInteger`s below `2^width` for any positive width,
+literals out of range are rejected, arithmetic wraps, shifts saturate at the width, and signed relations and the
+signed integer conversion read two's complement. Operand widths are checked at construction. Division,
+remainder, concatenation and extraction are deferred until their conventions have conformance cases.
+
 Finite integer domains are canonical unions of sorted, disjoint, non-adjacent closed intervals. Sparse values
 are singleton intervals; empty domains have no bounds and cardinality zero. Explicit inverted intervals are
 invalid, while an empty Kotlin range denotes the empty domain. Union, intersection and cardinality operate on
@@ -94,6 +106,9 @@ Streams emit solution/incumbent events and exactly one completion event, then re
 close preserve the first definitive terminal result and release resources once, including during an in-flight
 read. Only one consumer may call `next` at a time. Closing a solver cancels its active streams. Shared lifecycle
 implementations use portable atomic state; coroutine cancellation is propagated rather than reported as UNSAT.
+Batch `solve` is lazy: for a satisfaction model it returns the first validated solution as a completed
+`FEASIBLE` result and closes the stream, which stops the search; enumerating more solutions is the stream's job.
+Optimization reads the stream until its completion, so optimality still needs the backend's proof.
 
 The unpublished finite test oracle enumerates at most 10,000 candidates across at most 64 variables. It checks
 the whole supported IR before enumeration, uses exact sparse domains, validates all full assignments, and only
@@ -125,4 +140,45 @@ preserves source-variable mappings and lets MiniZinc lower globals. It proves ev
 Gecode's symmetric range `-2147483646..2147483646`; otherwise it rejects the whole model. Array selection uses
 zero-based arrays with independent index-definedness constraints. CLI output contains full assignments for
 independent validation before public projection. Runtime startup and temporary files belong to the stream,
-not to the common compiled representation. Other MiniZinc engines and JS/Native transports remain M3 work.
+not to the common compiled representation. M3 adds explicit Chuffed, CP-SAT, HiGHS and CBC configurations. Each is discovered by exact configuration ID
+and validated with an actual startup solve. The existing Gecode entry point remains source-compatible.
+Chuffed excludes its reserved +/-500,000,000 sentinels; CP-SAT initially shares Gecode's conservative range.
+The direct `cp-sat/direct` route (M5) instead bounds every integer subexpression and accumulated linear
+magnitude by `2^61`, so each posted relation fits CP-SAT's int64 arithmetic; see `docs/M5-DESIGN.md`.
+The direct `choco/direct` route bounds them by `10^7` (inside Choco's `IntVar.MAX_INT_BOUND`), reifies nested
+globals natively and builds one Choco model per stream, advanced one solution per read. `scip/or-tools` and
+`highs/or-tools` share a common exact lowering to integer programs within `10^6`; HiGHS solves carry a mandatory
+backend limit because OR-Tools cannot interrupt them.
+HiGHS/CBC use a +/-1,000,000 affine integer subset, zero objective gaps and exact returned-assignment
+validation; their proof statuses rely on numerical MIP evidence. They do not advertise exhaustive enumeration.
+A validated MIP satisfaction witness plus successful exit establishes feasibility even without a terminal status.
+No-witness completion and optimization still require explicit statuses. JS execution uses the official npm runtime: Node/Gecode is `gecode/minizinc-js-cli`, while browser/Chuffed
+is `chuffed/minizinc-wasm`. A closeable, asynchronously loaded backend owns the global upstream pool;
+only one backend may own that pool at a time. Backend close cancels active streams, then shuts down the
+pool once they exit (bounded grace) so CLI temporary-file cleanup is not preempted; the next load awaits
+that release. Individual solver close leaves the shared runtime usable. Node and browser reuse the checked
+compiler, exact assignment decoder and shared contracts. JS statistics inherit upstream Number
+semantics, while assignment integers remain in a lossless JSON string. Native command execution remains planned.
+
+M4 adds direct JVM Z3 (`z3/direct`, bundled by `z3-turnkey`), a route distinct from every MiniZinc route.
+Integers map to Z3's unbounded `Int`, so no numeric range is imposed. Globals use declared lossless decompositions
+and the same element-definedness rule. Optimization gallops and then bisects tentative objective bounds over
+`Solver` checks; optimality is claimed only once the next better score is refuted. Each stream or session owns one Z3 context confined to a dedicated thread;
+close and coroutine cancellation interrupt the native call, and the context is closed on its own thread.
+
+Incremental sessions (`IncrementalConstraintSolver.openSession`) treat the model as an irremovable root frame.
+A shared `CheckpointStack` rejects stale and foreign checkpoints before any native change. Assumptions hold for a
+single check, and unsat cores are subsets of those assumptions, not necessarily minimal. Satisfiable checks are
+validated against every active constraint and assumption. Repeated checks are not advertised as propagation.
+
+M7 adds `ConstraintStore`, the logical store an external logic engine owns (`docs/M7-DESIGN.md`). Variables are
+declared on the store at any time; marks backtrack in LIFO order and invalidate newer marks; a failed store stays
+failed until undone. Entailment is four-valued (`ENTAILED`, `DISENTAILED`, `UNDETERMINED`, `UNKNOWN`) and carries
+its `Evidence`. `SatisfiabilityStore` runs over any incremental session, so every definite answer is a proof but
+domains never narrow. `ChocoStore` propagates natively, reporting shrunk domains, and decides entailment by
+refutation through propagation, which may be `UNKNOWN` but is never wrong. Residual projection is sound, not
+minimal. `docs/LOGIC-ENGINES.md` maps choice points, wakeups and labeling onto the store.
+Translation, streams and sessions are common code behind an internal per-context port, so the Wasm route
+`z3/wasm` (official `z3-solver` module, owned and terminated by a closeable `Z3JsBackend`) shares them on Node
+and in cross-origin-isolated browsers, and the Kotlin/Native route `z3/native` shares them through a cinterop
+shim that loads the Z3 C library at run time, so a missing library is a reported unavailability, not a link failure.
