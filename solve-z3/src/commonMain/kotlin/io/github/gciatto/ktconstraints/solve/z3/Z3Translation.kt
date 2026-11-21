@@ -45,6 +45,7 @@ import io.github.gciatto.ktconstraints.core.RealScale
 import io.github.gciatto.ktconstraints.core.RealSum
 import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Table
+import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.fold
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.Assignment
@@ -62,6 +63,7 @@ internal class Z3Translation<T>(
     private val reals = linkedMapOf<RealVar, T>()
     private val bitVectors = linkedMapOf<BitVecVar, T>()
     private val indexDefinedness = mutableListOf<T>()
+    private var constants = 0
 
     /** Domain, model-constraint and their element-definedness assertions. */
     val assertions: List<T>
@@ -69,18 +71,33 @@ internal class Z3Translation<T>(
     init {
         val report = Z3Support.report(model)
         if (!report.isSupported) throw UnsupportedModelException(report)
-        model.variables.forEachIndexed { index, variable ->
-            when (variable) {
-                is BoolVar -> booleans[variable] = port.boolConst("b$index")
-                is IntVar -> integers[variable] = port.intConst("i$index")
-                is RealVar -> reals[variable] = port.realConst("r$index")
-                is BitVecVar -> bitVectors[variable] = port.bitVecConst("v$index", variable.width)
-                else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported variable: ${variable.name}")))
-            }
-        }
-        val domains = integers.map { (variable, term) -> domain(variable, term) }
+        val domains = model.variables.mapNotNull { declare(it) }
         val constraints = model.constraints.map { translate(it) }
         assertions = domains + constraints + drainDefinedness()
+    }
+
+    /** Creates a fresh constant for [variable], returning its domain assertion when it has one. */
+    fun declare(variable: Variable): T? {
+        val index = constants++
+        return when (variable) {
+            is BoolVar -> null.also { booleans[variable] = port.boolConst("b$index") }
+            is IntVar ->
+                port.intConst("i$index").let {
+                    integers[variable] = it
+                    domain(variable, it)
+                }
+            is RealVar -> null.also { reals[variable] = port.realConst("r$index") }
+            is BitVecVar -> null.also { bitVectors[variable] = port.bitVecConst("v$index", variable.width) }
+            else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported variable: ${variable.name}")))
+        }
+    }
+
+    /** Drops [variables] from translation and assignments; their constants are never reused. */
+    fun forget(variables: Collection<Variable>) {
+        booleans.keys.removeAll(variables)
+        integers.keys.removeAll(variables)
+        reals.keys.removeAll(variables)
+        bitVectors.keys.removeAll(variables)
     }
 
     /** Returns and forgets element-index definedness assertions collected since the previous call. */

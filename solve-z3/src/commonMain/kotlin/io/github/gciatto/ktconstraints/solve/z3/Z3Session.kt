@@ -2,6 +2,7 @@ package io.github.gciatto.ktconstraints.solve.z3
 
 import io.github.gciatto.ktconstraints.core.BoolExpr
 import io.github.gciatto.ktconstraints.core.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.CheckResult
 import io.github.gciatto.ktconstraints.solve.CheckStatus
@@ -29,6 +30,8 @@ internal class Z3Session<T>(
     private val busy = AtomicBoolean(false)
     private val checkpoints = CheckpointStack()
     private val frames = mutableListOf(model.constraints.toMutableList())
+    private val declarations = mutableListOf(mutableListOf<Variable>())
+    private val known = model.variables.toMutableSet()
     private val translation: Z3Translation<T>
     private var checks = 0
 
@@ -38,6 +41,18 @@ internal class Z3Session<T>(
                 Z3Translation(port, model).also { port.assert(it.assertions) }
             }
     }
+
+    override fun declare(variable: Variable) =
+        exclusive {
+            require(known.add(variable)) { "Variable already in the session: ${variable.name}" }
+            try {
+                owner.confinedNow { port -> port.assert(listOfNotNull(translation.declare(variable))) }
+            } catch (rejection: UnsupportedModelException) {
+                known -= variable
+                throw rejection
+            }
+            declarations.last() += variable
+        }
 
     override fun add(constraint: BoolExpr) =
         exclusive {
@@ -50,6 +65,7 @@ internal class Z3Session<T>(
         exclusive {
             owner.confinedNow { it.push() }
             frames += mutableListOf<BoolExpr>()
+            declarations += mutableListOf<Variable>()
             checkpoints.push()
         }
 
@@ -58,6 +74,9 @@ internal class Z3Session<T>(
             val popped = checkpoints.popTo(checkpoint)
             owner.confinedNow { it.pop(popped) }
             repeat(popped) { frames.removeAt(frames.lastIndex) }
+            val forgotten = List(popped) { declarations.removeAt(declarations.lastIndex) }.flatten()
+            known -= forgotten.toSet()
+            translation.forget(forgotten)
         }
 
     override suspend fun check(
@@ -124,7 +143,7 @@ internal class Z3Session<T>(
         if (!(frames.flatten() + assumptions).all { GroundEvaluator.evaluate(it, full) }) {
             throw BackendExecutionException("${descriptor.id} returned an assignment violating the session")
         }
-        return CheckResult(CheckStatus.SATISFIABLE, full.project(model.outputVariables), descriptor)
+        return CheckResult(CheckStatus.SATISFIABLE, full.project(model.outputVariables + declarations.flatten()), descriptor)
     }
 
     private fun unknown(
@@ -144,9 +163,8 @@ internal class Z3Session<T>(
     }
 
     private fun requireAccepted(expressions: List<BoolExpr>) {
-        val declared = model.variables.toSet()
-        val foreign = expressions.flatMap { it.variables }.filterNot { it in declared }
-        require(foreign.isEmpty()) { "Variables not declared by the session model: ${foreign.joinToString { it.name }}" }
+        val foreign = expressions.flatMap { it.variables }.filterNot { it in known }
+        require(foreign.isEmpty()) { "Variables not declared in the session: ${foreign.joinToString { it.name }}" }
         val report = Z3Support.report(expressions)
         if (!report.isSupported) throw UnsupportedModelException(report)
     }
