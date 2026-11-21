@@ -11,6 +11,8 @@ import {
     StorePropagation,
     allDifferent,
     constant,
+    max,
+    min,
     real,
     toReal,
 } from "kt-constraints-interop-js";
@@ -64,6 +66,18 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
         const vx: bigint | null | undefined = outcome.solution?.valueOf(x);
         const vy = outcome.solution?.valueOf(y);
         check(vx != null && vy != null && vx + vy === 10n && vx > vy, `solution ${vx}, ${vy}`);
+    });
+
+    // Min and max globals: max(x, y) = 4 and min(x, y, 9) = 4 force x = y = 4.
+    await step("min-max", async solver => {
+        const builder = new ModelBuilder();
+        const x = builder.intVar("x", 0n, 5n);
+        const y = builder.intVar("y", 0n, 5n);
+        builder.add(max([x, y]).eq(constant(4n)));
+        builder.add(min([x, y, constant(9n)]).eq(constant(4n)));
+        const outcome = await solver.solve(builder.build());
+        check(outcome.status === "FEASIBLE", `min-max status ${outcome.status}`);
+        check(outcome.solution?.valueOf(x) === 4n && outcome.solution?.valueOf(y) === 4n, "min-max solution");
     });
 
     // Optimization: maximize 3x - y subject to x + y <= 12 over 0..10; optimum 30.
