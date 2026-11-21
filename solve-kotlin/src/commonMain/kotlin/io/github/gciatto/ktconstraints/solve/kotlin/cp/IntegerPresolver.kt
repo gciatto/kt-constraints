@@ -154,6 +154,7 @@ internal class IntegerPresolver(
             val form = normalizer.normalize(operand)
             if (form != null && form.coefficients.isEmpty() && !fixed.add(form.constant)) return true
         }
+        if (fewerValuesThanOperands(constraint.operands, store, normalizer)) return true
         if (fixed.isEmpty()) return false
         val ordered = fixed.sorted()
         for (operand in constraint.operands) {
@@ -165,6 +166,34 @@ internal class IntegerPresolver(
             if (store[operand].isEmpty) return true
         }
         return false
+    }
+
+    /** Hall's condition over the whole scope: distinct operands need at least as many values as there are operands. */
+    private fun fewerValuesThanOperands(
+        operands: List<IntExpr>,
+        store: ReversibleIntDomains,
+        normalizer: AffineNormalizer,
+    ): Boolean {
+        val domains =
+            operands.map { operand ->
+                when {
+                    operand is IntVar -> store[operand]
+                    else ->
+                        normalizer
+                            .normalize(
+                                operand,
+                            )?.takeIf { it.coefficients.isEmpty() }
+                            ?.let { IntDomain.of(it.constant, it.constant) }
+                } ?: return false
+            }
+        val union = domains.reduce(IntDomain::union)
+        val needed = BigInteger.of(operands.size.toLong())
+        var available = BigInteger.ZERO
+        for (interval in union.intervals) {
+            available += interval.max - interval.min + BigInteger.ONE
+            if (available >= needed) return false
+        }
+        return true
     }
 
     private fun withoutValues(
