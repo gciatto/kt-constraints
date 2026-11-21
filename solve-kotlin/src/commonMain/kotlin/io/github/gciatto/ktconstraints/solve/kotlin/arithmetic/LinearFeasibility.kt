@@ -29,7 +29,7 @@ internal class LinearFeasibility {
             val variable = chooseVariable(variableCount, rows, checkpoint)
             val affected = rows.filter { variable in it.coefficients }
             frames += EliminationFrame(variable, affected)
-            rows = compact(eliminate(variable, rows, checkpoint), checkpoint) ?: return LinearResult(null)
+            rows = eliminate(variable, rows, checkpoint) ?: return LinearResult(null)
         }
         val values = MutableList(variableCount) { Rational.ZERO }
         for (frame in frames.asReversed()) {
@@ -70,15 +70,15 @@ internal class LinearFeasibility {
         variable: Int,
         rows: List<LinearInequality>,
         checkpoint: suspend () -> Unit,
-    ): List<LinearInequality> {
+    ): List<LinearInequality>? {
         val positive = mutableListOf<LinearInequality>()
         val negative = mutableListOf<LinearInequality>()
-        val result = mutableListOf<LinearInequality>()
+        val retained = linkedMapOf<Map<Int, Rational>, LinearInequality>()
         for (row in rows) {
             checkpoint()
             val coefficient = row.coefficients[variable]
             when {
-                coefficient == null -> result += row
+                coefficient == null -> if (!retain(row, retained)) return null
                 coefficient > Rational.ZERO -> positive += row
                 else -> negative += row
             }
@@ -86,10 +86,10 @@ internal class LinearFeasibility {
         for (upper in positive) {
             for (lower in negative) {
                 checkpoint()
-                result += combine(variable, upper, lower)
+                if (!retain(combine(variable, upper, lower), retained)) return null
             }
         }
-        return result
+        return retained.values.toList()
     }
 
     private fun combine(
@@ -120,17 +120,24 @@ internal class LinearFeasibility {
         val retained = linkedMapOf<Map<Int, Rational>, LinearInequality>()
         for (original in rows) {
             checkpoint()
-            if (original.coefficients.isEmpty()) {
-                if (original.upperBound < Rational.ZERO || original.upperBound == Rational.ZERO && original.strict) return null
-                continue
-            }
-            val row = normalize(original)
-            val previous = retained[row.coefficients]
-            if (previous == null || row.upperBound < previous.upperBound || row.upperBound == previous.upperBound && row.strict) {
-                retained[row.coefficients] = row
-            }
+            if (!retain(original, retained)) return null
         }
         return retained.values.toList()
+    }
+
+    private fun retain(
+        original: LinearInequality,
+        retained: MutableMap<Map<Int, Rational>, LinearInequality>,
+    ): Boolean {
+        if (original.coefficients.isEmpty()) {
+            return original.upperBound > Rational.ZERO || original.upperBound == Rational.ZERO && !original.strict
+        }
+        val row = normalize(original)
+        val previous = retained[row.coefficients]
+        if (previous == null || row.upperBound < previous.upperBound || row.upperBound == previous.upperBound && row.strict) {
+            retained[row.coefficients] = row
+        }
+        return true
     }
 
     private fun normalize(row: LinearInequality): LinearInequality {
