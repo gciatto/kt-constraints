@@ -123,6 +123,10 @@ Gecode/Chuffed/CP-SAT/HiGHS/CBC routes tested when installed; no backend capabil
 - [x] Implement assumptions and unsat cores for engines supporting them, with source mapping (Z3 JVM, Wasm and Native; cores map to assumptions).
 - [x] Implement SMT-style incremental sessions, push/pop and stable checkpoint ownership, rollback safety tests.
 - [ ] JVM, Linux/macOS/Windows native, Android/iOS native (where packaging works), JS and Kotlin/Wasm JS.
+  JVM, desktop Native and JS verified (`docs/AVAILABILITY.md`); iOS compiles without a provisioned Z3 library.
+  Kotlin/Wasm (`wasmJs`, `wasmWasi`) is blocked upstream: kt-math 2.1.2, whose `BigInteger` is in the core API,
+  publishes no Wasm variant. Coroutines, serialization and Kotest do. The JS solver bindings would also need
+  rewriting without `dynamic`, which Kotlin/Wasm lacks.
 - [ ] Add JS/TS `Promise` API and JVM Java builder/static factories + blocking/CompletionStage APIs.
   Java implemented (`Expressions` facade, `BlockingSolver` with blocking, `CompletableFuture` and iterator solving;
   javac-compiled consumer run against Choco, CP-SAT, Z3, SCIP and HiGHS). JS/TS implemented for the Z3 Wasm route
