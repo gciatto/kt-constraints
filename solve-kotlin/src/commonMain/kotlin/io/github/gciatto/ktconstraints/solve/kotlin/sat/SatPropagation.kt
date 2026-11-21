@@ -30,6 +30,10 @@ internal class SatPropagation(
                 budget.tick()
                 val id = watched[index]
                 val clause = database.clauses[id]
+                if (clause.size == 0) {
+                    watched.removeAtSwap(index)
+                    continue
+                }
                 if (clause[0] == falsified) {
                     clause[0] = clause[1]
                     clause[1] = falsified

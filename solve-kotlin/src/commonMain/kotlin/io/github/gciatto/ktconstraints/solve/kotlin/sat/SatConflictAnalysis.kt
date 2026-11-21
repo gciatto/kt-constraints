@@ -10,6 +10,8 @@ internal class SatConflictAnalysis(
 ) {
     private val learned = IntVector()
     private val touched = IntVector()
+    private var levelStamps = IntArray(16)
+    private var stamp = 0
 
     fun analyze(conflict: Int): SatLearning {
         learned.clear()
@@ -47,7 +49,7 @@ internal class SatConflictAnalysis(
             budget.tick()
             state.seen[touched[index]] = false
         }
-        return SatLearning(learned.toIntArray(), jump)
+        return SatLearning(learned.toIntArray(), jump, blockDistance())
     }
 
     /** Drops literals whose reason clause is otherwise contained in the learned clause or fixed at level zero. */
@@ -69,6 +71,20 @@ internal class SatConflictAnalysis(
             if (other != variable && !state.seen[other] && state.assignmentLevels[other] > 0) return false
         }
         return true
+    }
+
+    private fun blockDistance(): Int {
+        if (levelStamps.size <= state.levels.size) levelStamps = IntArray(2 * state.levels.size + 1)
+        stamp++
+        var distinct = 0
+        for (index in 0 until learned.size) {
+            val level = state.assignmentLevels[abs(learned[index])]
+            if (levelStamps[level] != stamp) {
+                levelStamps[level] = stamp
+                distinct++
+            }
+        }
+        return distinct
     }
 
     private fun orderBackjumpLiteral(): Int {
