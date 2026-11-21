@@ -177,7 +177,7 @@ internal class KotlinTranslation(val circuit: Circuit) {
         else -> error("Unsupported bit-vector expression")
     }
 
-    private fun real(node: RealExpr, values: List<Any>): LinearForm = when (node) {
+    private suspend fun real(node: RealExpr, values: List<Any>): LinearForm = when (node) {
         is RealVar -> LinearForm(realCoefficients = mapOf(reals.getValue(node) to Rational.ONE))
         is RealLiteral -> LinearForm(constant = node.value)
         is RealSum -> (values[0] as LinearForm) + (values[1] as LinearForm)
@@ -247,20 +247,26 @@ internal class KotlinTranslation(val circuit: Circuit) {
         return circuit.variable().also { realAtoms += RealAtom(it, form, strict) }
     }
 
-    private fun embed(integer: IntegerEncoding): LinearForm {
-        var result = LinearForm()
+    private suspend fun embed(integer: IntegerEncoding): LinearForm {
+        val coefficients = mutableMapOf<Int, Rational>()
+        var constant = Rational.ZERO
         for (index in integer.bits.indices) {
+            if ((index and 127) == 0) circuit.checkpoint()
             val magnitude = BigInteger.ONE shl index
             val coefficient = Rational.of(if (index == integer.bits.lastIndex) -magnitude else magnitude)
             val literal = integer.bits[index]
-            result += when (literal) {
-                circuit.trueLiteral -> LinearForm(constant = coefficient)
-                circuit.falseLiteral -> LinearForm()
-                else -> if (literal > 0) LinearForm(bitCoefficients = mapOf(literal to coefficient)) else {
-                    LinearForm(bitCoefficients = mapOf(-literal to -coefficient), constant = coefficient)
+            when (literal) {
+                circuit.trueLiteral -> constant += coefficient
+                circuit.falseLiteral -> Unit
+                else -> {
+                    val variable = if (literal > 0) literal else -literal
+                    val contribution = if (literal > 0) coefficient else -coefficient
+                    if (literal < 0) constant += coefficient
+                    val combined = (coefficients[variable] ?: Rational.ZERO) + contribution
+                    if (combined == Rational.ZERO) coefficients.remove(variable) else coefficients[variable] = combined
                 }
             }
         }
-        return result
+        return LinearForm(bitCoefficients = coefficients, constant = constant)
     }
 }
