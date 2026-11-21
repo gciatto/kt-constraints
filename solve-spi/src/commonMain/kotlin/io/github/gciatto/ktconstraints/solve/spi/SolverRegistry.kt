@@ -24,25 +24,45 @@ class SolverRegistry private constructor(
     fun require(id: String): SolverBackend =
         requireNotNull(backends.firstOrNull { it.descriptor.id == id }) { "Backend not registered: $id" }
 
-    /** Chooses the first eligible registered backend, retaining diagnostics when none qualifies. */
+    /** The best-ranked eligible backend under [policy]; fails with every rejection when none qualifies. */
     fun select(
         model: ConstraintModel,
         options: SolveOptions = SolveOptions.DEFAULT,
         requiredCapabilities: Set<SolverCapability> = emptySet(),
-    ): SolverBackend {
-        val required =
-            buildSet {
-                add(SolverCapability.SATISFACTION)
-                if (model.objective != null) add(SolverCapability.OPTIMIZATION)
-                addAll(requiredCapabilities)
-            }
+        policy: RankingPolicy = RankingPolicy.DEFAULT,
+        platform: Platform = Platform.current(),
+    ): SolverBackend = rank(model, options, requiredCapabilities, policy, platform).best.backend
+
+    /**
+     * Filters registered backends by the capabilities [model] needs (from its features, plus [requiredCapabilities]),
+     * runtime availability and whole-model support, then ranks the eligible ones by [policy] on [platform]. Ties keep
+     * registration order. Never instantiates a solver.
+     */
+    fun rank(
+        model: ConstraintModel,
+        options: SolveOptions = SolveOptions.DEFAULT,
+        requiredCapabilities: Set<SolverCapability> = emptySet(),
+        policy: RankingPolicy = RankingPolicy.DEFAULT,
+        platform: Platform = Platform.current(),
+    ): Selection {
+        val features = ModelFeatures.of(model)
+        val required = Heuristics.requiredCapabilities(features) + requiredCapabilities
         val rejections = linkedMapOf<String, List<String>>()
+        val eligible = mutableListOf<SolverBackend>()
         for (backend in backends) {
             val reasons = rejectionReasons(backend, model, options, required)
-            if (reasons.isEmpty()) return backend
-            rejections[backend.descriptor.id] = reasons
+            if (reasons.isEmpty()) eligible += backend else rejections[backend.descriptor.id] = reasons
         }
-        throw NoCompatibleBackendException(rejections)
+        val candidates =
+            eligible
+                .map { backend ->
+                    val contributions =
+                        policy.heuristics.mapNotNull { (heuristic, weight) ->
+                            heuristic.score(features, backend.descriptor, platform)?.let { Contribution(heuristic.name, weight, it) }
+                        }
+                    Candidate(backend, contributions)
+                }.sortedByDescending { it.total }
+        return Selection(features, candidates, rejections)
     }
 
     private fun rejectionReasons(
