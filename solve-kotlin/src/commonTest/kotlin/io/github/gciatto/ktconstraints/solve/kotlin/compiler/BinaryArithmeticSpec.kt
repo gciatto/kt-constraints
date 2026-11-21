@@ -64,6 +64,45 @@ class BinaryArithmeticSpec :
             fixture.arithmetic.decodeInteger(negative, assignment) shouldBe BigInteger.ONE
         }
 
+        test("integer-circuit/narrowing-wide-operands-preserves-small-exact-results") {
+            val fixture = BinaryFixture()
+            val arithmetic = fixture.arithmetic
+            val x = arithmetic.variable(IntDomain.of(100, 101))
+            val y = arithmetic.variable(IntDomain.of(-101, -100))
+            val sum = arithmetic.add(x, y)
+            (sum.bits.size < x.bits.size) shouldBe true
+            for (left in 100L..101L) {
+                for (right in -101L..-100L) {
+                    val assumptions =
+                        intArrayOf(
+                            arithmetic.equal(x, arithmetic.integer(BigInteger.of(left))),
+                            arithmetic.equal(y, arithmetic.integer(BigInteger.of(right))),
+                        )
+                    val assignment = requireNotNull(fixture.solver.solve(assumptions).values)
+                    arithmetic.decodeInteger(sum, assignment) shouldBe BigInteger.of(left + right)
+                }
+            }
+        }
+
+        test("integer-circuit/signed-one-bit-product-is-positive-when-both-inputs-are-negative") {
+            val fixture = BinaryFixture()
+            val arithmetic = fixture.arithmetic
+            val x = arithmetic.variable(IntDomain.of(-1, 0))
+            val y = arithmetic.variable(IntDomain.of(-1, 0))
+            val product = arithmetic.multiply(x, y)
+            for (left in -1L..0L) {
+                for (right in -1L..0L) {
+                    val assumptions =
+                        intArrayOf(
+                            arithmetic.equal(x, arithmetic.integer(BigInteger.of(left))),
+                            arithmetic.equal(y, arithmetic.integer(BigInteger.of(right))),
+                        )
+                    val assignment = requireNotNull(fixture.solver.solve(assumptions).values)
+                    arithmetic.decodeInteger(product, assignment) shouldBe BigInteger.of(left * right)
+                }
+            }
+        }
+
         test("integer-circuit/sparse-domain-holes-are-enforced") {
             val fixture = BinaryFixture()
             val domain = IntDomain.of(-5, -3).union(IntDomain.of(5, 6))
