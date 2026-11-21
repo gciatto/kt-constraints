@@ -158,8 +158,8 @@ proof; timeouts and failures are reported, never treated as evidence.
 The experimental `:solve-kotlin` route additionally keeps its complete solver implementation in `commonMain`:
 exact finite circuits and CDCL, root integer presolve, rational linear feasibility, and managed incremental
 sessions/streams. Its public entry points are `KotlinBackend` and `KotlinConfiguration`. It reuses the existing
-core numeric and coroutine dependencies. The implementation design and pending execution evidence are recorded
-in `docs/PURE-KOTLIN.md` and `docs/PURE-KOTLIN-VALIDATION.md`; no platform success is claimed before those checks run.
+core numeric and coroutine dependencies. The implementation design and execution evidence are recorded
+in `docs/PURE-KOTLIN.md` and `docs/PURE-KOTLIN-VALIDATION.md`.
 
 ## Backend conformance
 

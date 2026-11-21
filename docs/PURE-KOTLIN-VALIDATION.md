@@ -4,12 +4,27 @@ Recorded for the `feat/pure-kotlin-solver` delivery on **2026-11-21**.
 
 ## Result
 
-The implementation, test sources, manual benchmark, documentation and CI wiring are present.
-**Kotlin compilation, executable tests, ktlint and detekt remain unverified.** The environment failed to
-download the repository's pinned Gradle distribution before any build task could start.
+Reapplied onto `develop` (81255aa) and executed on 2026-11-21. ktlint and detekt pass, and these suites pass:
 
-The new backend stays outside `publishedModules`, and its platform availability cells remain blank.
-No benchmark timings or external-solver performance comparisons are claimed.
+| Suite | Tests |
+|---|---|
+| `:solve-kotlin:jvmTest` | 165 |
+| `:solve-kotlin:jsNodeTest` | 166 |
+| `:solve-kotlin:linuxX64Test` | 165 |
+| `:interop-java:test` (includes `KotlinJavaUsageSpec`) | 28 |
+| `:interop-js:jsNodeTest` (includes `KotlinFacadeSpec`) | 7 |
+| Repository-wide `jvmTest jsTest` | all green |
+
+Execution found and fixed: commit ordering (the translator preceded its integer circuits), a stream that polled
+a coroutine captured by an earlier pull (every second `next()` from a new caller failed), the missing
+`IncrementalSession.declare`, the globals added to `develop` after the original base, compiler warnings and one
+detekt finding. macOS, Windows and Chromium cells await CI. The module stays outside `publishedModules`;
+no benchmark timings are claimed.
+
+### Original delivery
+
+The original delivery could not download the pinned Gradle distribution, so none of the following was executed
+there; it is kept as provenance.
 
 ## Repository provenance
 

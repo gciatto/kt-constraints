@@ -2,7 +2,7 @@
 
 `:solve-kotlin` implements the `kotlin/direct` route in `commonMain`. Its current scope is the union of the
 **built-in modelling constructs already exposed by this repository**, with exact arithmetic and shared execution
-contracts. The implementation is experimental and remains unpublished pending executable conformance evidence.
+contracts. The implementation is experimental and remains unpublished pending profiling and full CI evidence.
 See [validation](../docs/PURE-KOTLIN-VALIDATION.md) for the actual verification status.
 
 ## Use from a source checkout
@@ -128,7 +128,7 @@ and the configured Kotest stack.
 
 All solver production code is in `commonMain`; it uses no native solver, subprocess, JNI, C binding or Wasm
 solver binary. Existing build configuration supplies JVM, JavaScript, Linux/Windows Native, macOS arm64 and
-representative iOS targets. Actual execution on those targets remains unverified in this delivery. Kotlin/Wasm
+representative iOS targets. Shared contracts pass on the JVM, Node and Linux x64 Native; other targets rely on CI. Kotlin/Wasm
 is not added as a target.
 
 ## Verification and manual measurements

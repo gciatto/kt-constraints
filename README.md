@@ -11,7 +11,7 @@
 [M3 validation](docs/M3.md) covers the engine catalogue, Node CLI and browser Wasm transports.
 [M4 design](docs/M4-DESIGN.md) covers direct Z3 and incremental sessions (in progress).
 [Pure Kotlin implementation](solve-kotlin/README.md) documents the experimental `kotlin/direct` route;
-[its validation record](docs/PURE-KOTLIN-VALIDATION.md) identifies the blocked executable checks.
+[its validation record](docs/PURE-KOTLIN-VALIDATION.md) records the executed suites.
 
 ## Project status
 
@@ -31,8 +31,8 @@ linear lowering; HiGHS solves are always bounded by a backend limit, since OR-To
 
 The new `:solve-kotlin` module implements the current built-in IR in common Kotlin, with exact finite integer
 and bit-vector circuits, CDCL SAT, rational linear feasibility, root presolve, incremental assertions,
-enumeration and integer optimisation. Its tests are written but could not be executed in the delivery
-environment because the pinned Gradle distribution was unavailable; the module remains unpublished.
+enumeration and integer optimisation. Its shared contracts pass on the JVM, Node and Linux Native, and through the
+Java and JS facades; the module remains unpublished until performance work and the full CI matrix are done.
 
 ## Design
 
@@ -56,7 +56,7 @@ environment because the pinned Gradle distribution was unavailable; the module r
 | Direct solver adapters | `:solve-cpsat` | JVM OR-Tools CP-SAT: batch satisfaction, enumeration and optimization |
 | Direct solver adapters | `:solve-choco` | JVM Choco: batch satisfaction, enumeration and optimization |
 | Direct solver adapters | `:solve-mip` | JVM SCIP and HiGHS through OR-Tools: batch satisfaction and optimization |
-| Portable solver | `:solve-kotlin` | Pure common Kotlin implementation; shared contracts and platform tests added, compilation/execution pending |
+| Portable solver | `:solve-kotlin` | Pure common Kotlin implementation; shared contracts pass on JVM, Node and Linux Native; unpublished |
 | Direct solver adapters | `:solve-highs` | Placeholder module for the direct HiGHS C API |
 | Orchestration | `:solve-portfolio` | `solveAuto`: routes bundled per platform, ranked by model features, capabilities and platform (extensible heuristics, with a hook for benchmark evidence), run as fallback or race portfolios; see [docs/M8-DESIGN.md](docs/M8-DESIGN.md) and [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
 | Constraint stores | `:solve`, `:solve-spi`, `:solve-choco` | `ConstraintStore` for external logic engines: propagating `ChocoStore` (JVM) and proof-based `SatisfiabilityStore` over Z3 (JVM, Wasm, Native); see [docs/LOGIC-ENGINES.md](docs/LOGIC-ENGINES.md) |
