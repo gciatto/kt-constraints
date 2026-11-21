@@ -25,6 +25,7 @@ import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.IntVar
 import io.github.gciatto.ktconstraints.core.LinearSum
 import io.github.gciatto.ktconstraints.core.Table
+import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.Assignment
@@ -49,22 +50,45 @@ internal class ChocoTranslation(
     val chocoModel = Model()
     private val booleans = linkedMapOf<BoolVar, ChocoBoolVar>()
     private val integers = linkedMapOf<IntVar, ChocoIntVar>()
+    private var declared = 0
+
+    /** The Choco variable of each declared source variable; Choco Booleans are 0/1 integer variables. */
+    val natives = hashMapOf<Variable, ChocoIntVar>()
 
     init {
         val report = ChocoSupport.report(model)
         if (!report.isSupported) throw UnsupportedModelException(report)
-        model.variables.forEachIndexed { index, variable ->
-            when (variable) {
-                is BoolVar -> booleans[variable] = chocoModel.boolVar("b$index")
-                is IntVar -> integers[variable] = integer(variable.domain, "i$index")
-                else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported variable: ${variable.name}")))
-            }
-        }
+        model.variables.forEach { declare(it) }
         model.constraints.forEach { post(it) }
         when (val objective = model.objective) {
             is Objective.Minimize -> chocoModel.setObjective(Model.MINIMIZE, variable(objective.expression))
             is Objective.Maximize -> chocoModel.setObjective(Model.MAXIMIZE, variable(objective.expression))
             null -> Unit
+        }
+    }
+
+    /** Creates the Choco variable of [variable], posting its domain holes. */
+    fun declare(variable: Variable) {
+        fun integer(
+            domain: IntDomain,
+            name: String,
+        ): ChocoIntVar {
+            if (domain.isEmpty) {
+                chocoModel.falseConstraint().post()
+                return chocoModel.intVar(name, 0)
+            }
+            val intervals = domain.intervals
+            val created = chocoModel.intVar(name, intervals.first().min.toIntExact(), intervals.last().max.toIntExact())
+            intervals.zipWithNext { below, above ->
+                chocoModel.notMember(created, (below.max + BigInteger.ONE).toIntExact(), (above.min - BigInteger.ONE).toIntExact()).post()
+            }
+            return created
+        }
+        val index = declared++
+        when (variable) {
+            is BoolVar -> booleans[variable] = chocoModel.boolVar("b$index").also { natives[variable] = it }
+            is IntVar -> integers[variable] = integer(variable.domain, "i$index").also { natives[variable] = it }
+            else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported variable: ${variable.name}")))
         }
     }
 
@@ -75,23 +99,8 @@ internal class ChocoTranslation(
             integers = integers.mapValues { (_, variable) -> BigInteger.of(variable.value) },
         )
 
-    private fun integer(
-        domain: IntDomain,
-        name: String,
-    ): ChocoIntVar {
-        if (domain.isEmpty) {
-            chocoModel.falseConstraint().post()
-            return chocoModel.intVar(name, 0)
-        }
-        val intervals = domain.intervals
-        val variable = chocoModel.intVar(name, intervals.first().min.toIntExact(), intervals.last().max.toIntExact())
-        intervals.zipWithNext { below, above ->
-            chocoModel.notMember(variable, (below.max + BigInteger.ONE).toIntExact(), (above.min - BigInteger.ONE).toIntExact()).post()
-        }
-        return variable
-    }
-
-    private fun post(expression: BoolExpr) {
+    /** Posts [expression] at top level; conjunctions become separate constraints. */
+    fun post(expression: BoolExpr) {
         if (expression is BoolAnd) {
             post(expression.left)
             post(expression.right)
