@@ -12,9 +12,8 @@ No Gurobi binary, disassembly or proprietary implementation was used. Compatibil
 repository's semantics and contracts. The much larger union of all external solvers' features remains a
 staged extension of the IR and engine, not a property of this first backend.
 
-This is an implementation branch with test-first commit ordering. The available environment could not fetch
-the pinned Gradle distribution, so compilation, executable red/green cycles, platform conformance and
-performance are unverified. [The validation record](PURE-KOTLIN-VALIDATION.md) distinguishes source inspection
+This is an implementation branch with test-first commit ordering. Its suites now compile and pass on the JVM,
+Node and Linux Native; performance is not yet measured. [The validation record](PURE-KOTLIN-VALIDATION.md) distinguishes source inspection
 from execution. Publication remains gated.
 
 ## Architecture
@@ -55,7 +54,8 @@ machine integers. Size limits are checked before allocating arithmetic outputs.
 
 Boolean gates are fully reified with Tseitin-style clauses. Arithmetic comparisons, cardinalities, pairwise
 all-different, allowed tuples and element selection can therefore appear under arbitrary Boolean connectives.
-The support report exposes each global decomposition. Domain consistency for specialised globals is a later
+The support report exposes each global decomposition. Structural globals (inverse, circuit, subcircuit,
+cumulative, regular, bin packing, 2D non-overlap) compile through their variable-free core decomposition. Domain consistency for specialised globals is a later
 engine enhancement, not an implied property of circuit decomposition.
 
 ### Definedness

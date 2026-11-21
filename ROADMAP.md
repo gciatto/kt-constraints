@@ -36,10 +36,11 @@ bit-vector and global-constraint IR through exact circuits, CDCL and rational el
 search, projected enumeration, integer optimisation and incremental assertion sessions. No external library
 version or solver runtime dependency is added.
 
-Tests precede their implementation commits, but the delivery environment cannot download Gradle 9.9.1;
-compilation, executable TDD cycles and platform conformance are still pending. This module remains unpublished.
+Tests precede their implementation commits. The JVM, Node, Linux Native, Java and JS boundary suites run and pass;
+this module remains unpublished pending profiling and the full CI matrix.
 
-- [ ] Execute and fix the JVM, JS, Native and language-boundary suites; then consider publication.
+- [x] Execute and fix the JVM, JS, Native and language-boundary suites.
+- [ ] Profile and tune the engine; then consider publication.
 - [ ] Measure the manual benchmark and add a representative corpus before performance claims.
 - [ ] Add bounded learned-clause/theory storage, shared-DAG traversal and improved search heuristics.
 - [ ] Add explained CP propagation, stronger globals and dedicated propagating-session contracts.

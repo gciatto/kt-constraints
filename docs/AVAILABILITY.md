@@ -20,22 +20,21 @@ there: it may work, but nothing proves it. A route marked — cannot exist on th
 | `cbc/minizinc`                | ✅        |                 |             | —    | —        |                  |                    |                    |
 | `gecode/minizinc-js-cli`      | —         | —               | —           | ✅   | —        | —                | —                  | —                  |
 | `chuffed/minizinc-wasm`       | —         | —               | —           |      | ✅       | —                | —                  | —                  |
-| `kotlin/direct`              |           |                 |             |      |          |                  |                    |                    |
+| `kotlin/direct`              | ✅        |                 |             | ✅   |          | ✅               |                    |                    |
 
 Native MiniZinc cells are blank rather than "—" because command execution from Kotlin/Native is planned but not
 implemented. The Node cell of `chuffed/minizinc-wasm` is blank because that route runs MiniZinc's browser build.
 
-`kotlin/direct` has an implementation in `commonMain` and unconditional shared conformance tests. Its cells
-remain blank: this delivery could not fetch Gradle 9.9.1, so none of its platform tests executed. Existing JVM
-and JS jobs discover it, and the Native matrix now names it explicitly. See [the validation record](PURE-KOTLIN-VALIDATION.md).
+`kotlin/direct` has an implementation in `commonMain` and unconditional shared conformance tests, executed locally on
+JVM Linux, Node and Linux x64 Native; the other cells await CI evidence from the jobs that now include the module. See [the validation record](PURE-KOTLIN-VALIDATION.md).
 
 ## Facades
 
 | Facade                                   | JVM Linux | JVM macOS arm64 | JVM Windows | Node | Chromium |
 |------------------------------------------|:---------:|:---------------:|:-----------:|:----:|:--------:|
 | Java (`:interop-java`), on the verified JVM routes above | ✅ | ✅     | ✅          | —    | —        |
-| Java, `kotlin/direct`                    |           |               |             | —    | —        |
-| JavaScript facade tests, `kotlin/direct` | —         | —             | —           |      |          |
+| Java, `kotlin/direct`                    | ✅        |               |             | —    | —        |
+| JavaScript facade tests, `kotlin/direct` | —         | —             | —           | ✅   |          |
 | TypeScript (`:interop-js`), `z3/wasm`    | —         | —               | —           | ✅   | ✅       |
 | TypeScript, `gecode/minizinc-js-cli`     | —         | —               | —           | ✅   | —        |
 | TypeScript, `chuffed/minizinc-wasm`      | —         | —               | —           |      | ✅       |
