@@ -91,5 +91,17 @@ settled on 2026-11-21).
 5. Benchmarks.
 6. A doc on mapping a logic engine onto the store.
 
+**Choco spike result (step 4):**
+- Confirmed:
+  - `worldPush`, then post, then `propagate`, then `worldPop` restores domains.
+  - `worldPopUntil` undoes several marks at once.
+  - Recovery after a `ContradictionException` works: `engine.flush()`, then pop.
+  - Variables created inside a world are harmless after popping it.
+  - `Constraint.isSatisfied()` gives TRUE, FALSE or UNDEFINED.
+- The catch: `reify()` posts the reification permanently, so a world pop does not remove it. The store
+  therefore records every Choco constraint created in a frame and `unpost`s them on undo, instead of relying on
+  `postTemp`.
+- The Choco store is `ChocoStore`, in `:solve-choco`.
+
 The exit criterion is met by Z3 (incremental) plus Choco (genuine propagation). If the Choco spike fails,
 propagation is documented as unavailable rather than emulated.

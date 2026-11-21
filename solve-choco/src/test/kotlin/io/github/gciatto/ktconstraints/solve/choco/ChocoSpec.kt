@@ -29,6 +29,7 @@ import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.enumerate
 import io.github.gciatto.ktconstraints.test.solve.solverContract
+import io.github.gciatto.ktconstraints.test.solve.storeContract
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests
@@ -44,6 +45,7 @@ import kotlin.time.TimeSource
 class ChocoSpec :
     FunSpec({
         include(solverContract { ChocoBackend().create() })
+        include(storeContract(propagates = true) { ChocoStore() })
 
         test("choco/runtime-is-available-and-identifies-the-direct-route") {
             val backend = ChocoBackend()
