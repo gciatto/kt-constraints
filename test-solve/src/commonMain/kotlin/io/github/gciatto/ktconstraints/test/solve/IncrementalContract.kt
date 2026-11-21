@@ -3,9 +3,12 @@ package io.github.gciatto.ktconstraints.test.solve
 import io.github.gciatto.ktconstraints.core.BoolExpr
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.core.IntEquality
+import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.VariableFactory
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.CheckStatus
 import io.github.gciatto.ktconstraints.solve.IncrementalConstraintSolver
@@ -133,6 +136,44 @@ fun incrementalContract(
                 val result = session.check(listOf(assumption))
                 result.status shouldBe CheckStatus.SATISFIABLE
                 setOf(BigInteger.ZERO, BigInteger.ONE).contains(result.assignment?.valueOf(index)) shouldBe true
+            }
+        }
+    }
+
+    test("incremental-contract/declared-variables-join-the-session-with-their-domains") {
+        val scope = ConstraintScope.empty()
+        val x = scope.intVar("x", 0..3)
+        val y = VariableFactory.empty().intVar("y", IntDomain.values(2, 7))
+        create().use { solver ->
+            solver.openSession(scope.build()).use { session ->
+                session.declare(y)
+                session.add(IntLessThan(x, y))
+                session.add(IntLessThan(IntLiteral(2), y))
+                val result = session.check()
+                result.status shouldBe CheckStatus.SATISFIABLE
+                result.assignment?.valueOf(y) shouldBe BigInteger.of(7)
+                shouldThrow<IllegalArgumentException> { session.declare(y) }
+                shouldThrow<IllegalArgumentException> { session.declare(x) }
+            }
+        }
+    }
+
+    test("incremental-contract/popping-a-frame-forgets-its-declarations") {
+        val scope = ConstraintScope.empty()
+        val x = scope.intVar("x", 0..3)
+        val y = VariableFactory.empty().intVar("y", IntDomain.of(0, 1))
+        create().use { solver ->
+            solver.openSession(scope.build()).use { session ->
+                val checkpoint = session.push()
+                session.declare(y)
+                session.add(IntLessOrEqual(x, y))
+                session.check().status shouldBe CheckStatus.SATISFIABLE
+                session.popTo(checkpoint)
+                shouldThrow<IllegalArgumentException> { session.add(IntEquality(y, IntLiteral(0))) }
+                session.check().assignment?.valueOf(y) shouldBe null
+                session.declare(y)
+                session.add(IntEquality(y, IntLiteral(1)))
+                session.check().assignment?.valueOf(y) shouldBe BigInteger.ONE
             }
         }
     }
