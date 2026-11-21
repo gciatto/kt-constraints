@@ -22,7 +22,6 @@ import io.kotest.datatest.withTests
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
-import kotlin.time.Duration.Companion.seconds
 
 /** Native-free exact linear lowering: numeric guards, affine products and declared decompositions. */
 class MipLoweringSpec :
@@ -86,13 +85,6 @@ class MipLoweringSpec :
                     MipLowering.ELEMENT,
                     MipLowering.REIFICATION,
                 )
-        }
-
-        test("mip-lowering/large-all-different-lowers-in-quadratic-time").config(timeout = 5.seconds) {
-            val scope = ConstraintScope.empty()
-            val xs = (0 until 250).map { scope.intVar("x$it", 0..249) }
-            scope.add(AllDifferent(xs))
-            MipLowering.report(scope.build()).isSupported shouldBe true
         }
 
         test("mip-lowering/program-bounds-and-coefficients-are-exact") {

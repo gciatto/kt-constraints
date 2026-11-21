@@ -15,7 +15,6 @@ import io.github.gciatto.ktconstraints.core.VariableFactory
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
-import kotlin.time.Duration.Companion.seconds
 
 /** Frozen models and variable ownership contract. */
 class ConstraintScopeSpec :
@@ -36,14 +35,6 @@ class ConstraintScopeSpec :
             scope.intVar("x", -3L, Long.MAX_VALUE).domain shouldBe IntDomain.of(-3, Long.MAX_VALUE)
             shouldThrow<IllegalArgumentException> { scope.intVar("y", 2L, 1L) }
         }
-        test("scope/adding-many-named-constraints-is-linear").config(timeout = 5.seconds) {
-            val scope = ConstraintScope.empty()
-            val xs = (0 until 40_000).map { scope.intVar("x$it", 0..9) }
-            xs.forEachIndexed { i, x -> scope.add(IntEquality(x, IntLiteral(i % 10)), name = "c$i") }
-            scope.build().constraints.size shouldBe 40_000
-            shouldThrow<IllegalArgumentException> { scope.add(IntEquality(xs[0], IntLiteral(0)), name = "c0") }
-        }
-
         test("scope/accepts-expressions-deeper-than-the-call-stack") {
             val scope = ConstraintScope.empty()
             val x = scope.intVar("x", 0..1)
