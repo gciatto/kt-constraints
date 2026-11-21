@@ -19,6 +19,8 @@ import io.github.gciatto.ktconstraints.core.IntExpr
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -182,6 +184,10 @@ internal class ChocoTranslation(
                 // Posted at top level: the index range is enforced regardless of nesting, as on every other route.
                 ChocoLinear.of(auxiliary(expression).also { chocoModel.element(it, values, index, 0).post() })
             }
+            is IntMin, is IntMax -> {
+                val operands = expression.children.map { variable(it as IntExpr) }
+                ChocoLinear.of(auxiliary(expression).also { chocoModel.extremum(expression is IntMin, it, operands).post() })
+            }
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported expression: $expression")))
         }
 
@@ -205,3 +211,10 @@ internal class ChocoTranslation(
         val MINUS_ONE: BigInteger = -BigInteger.ONE
     }
 }
+
+/** Choco's native `min` or `max` constraint linking [result] to [operands]. */
+private fun Model.extremum(
+    lowest: Boolean,
+    result: ChocoIntVar,
+    operands: List<ChocoIntVar>,
+): Constraint = if (lowest) min(result, operands.toTypedArray()) else max(result, operands.toTypedArray())

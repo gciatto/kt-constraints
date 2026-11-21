@@ -78,7 +78,7 @@ JVM solving uses `MiniZincBackend(MiniZincEngine.CHUFFED, executable)` for expli
 
 Integer constants and finite-domain bounds use multiplatform kt-math `BigInteger`; `Int` and `Long` are
 convenience inputs. Domains support empty sets, sparse values, unions and intersections without enumerating
-intervals. The core retains `AllDifferent`, zero-based `Element`, allowed-tuple `Table`, `LinearSum` and
+intervals. The core retains `AllDifferent`, zero-based `Element`, allowed-tuple `Table`, `IntMin`/`IntMax`, `LinearSum` and
 Boolean cardinality nodes for later backend lowering. `GroundEvaluator` checks constants or complete typed bindings;
 it is not a solver. Models support named assertions, annotations, source locations and output projection.
 

@@ -26,6 +26,8 @@ import io.github.gciatto.ktconstraints.core.IntExpr
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -217,6 +219,10 @@ internal class CpSatTranslation(
                 val values = expression.values.map { integer(it) }
                 auxiliary(expression).also { cpModel.addElement(index, values, it) }
             }
+            is IntMin, is IntMax -> {
+                val operands = expression.children.map { integer(it as IntExpr) }
+                auxiliary(expression).also { cpModel.extremum(expression is IntMin, it, operands) }
+            }
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported expression: $expression")))
         }
 
@@ -225,3 +231,10 @@ internal class CpSatTranslation(
         return cpModel.newIntVar(bounds.min.toLongExact(), bounds.max.toLongExact(), "a${auxiliaries++}")
     }
 }
+
+/** CP-SAT's native `min` or `max` equality linking [result] to [operands]. */
+private fun CpModel.extremum(
+    lowest: Boolean,
+    result: LinearArgument,
+    operands: List<LinearArgument>,
+): Constraint = if (lowest) addMinEquality(result, operands) else addMaxEquality(result, operands)

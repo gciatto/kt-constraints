@@ -86,6 +86,8 @@ object GroundEvaluator {
             is IntProduct -> (values[0] as BigInteger) * (values[1] as BigInteger)
             is IntNegation -> -(values[0] as BigInteger)
             is Element -> evaluateElement(node, values)
+            is IntMin -> values.minOf { it as BigInteger }
+            is IntMax -> values.maxOf { it as BigInteger }
             is BitVecToInt -> BitVectors.toInt(values[0] as BigInteger, node.operand.width, node.signed)
             is LinearSum ->
                 values.zip(node.coefficients).fold(node.constant) { total, (value, coefficient) ->

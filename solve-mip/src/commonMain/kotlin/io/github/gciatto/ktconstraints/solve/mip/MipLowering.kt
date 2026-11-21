@@ -14,6 +14,7 @@ internal object MipLowering {
     const val ALL_DIFFERENT = "allDifferent -> pairwise disequalities"
     const val TABLE = "table -> disjunction of tuple conjunctions"
     const val ELEMENT = "element -> top-level one-hot index selection with exact big-M value links"
+    const val MIN_MAX = "min/max -> bounding rows plus a one-hot exact big-M link to the selected operand"
     const val REIFICATION = "nested Boolean structure -> exact big-M reification over integer bounds"
 
     private const val LIMIT_VALUE = 1_000_000L

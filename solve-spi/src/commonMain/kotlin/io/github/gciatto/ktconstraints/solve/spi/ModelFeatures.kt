@@ -14,6 +14,8 @@ import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.Expr
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntVar
 import io.github.gciatto.ktconstraints.core.LinearSum
@@ -173,6 +175,7 @@ class ModelFeatures private constructor(
                 is Table -> globals += GlobalKind.TABLE
                 is Element -> globals += GlobalKind.ELEMENT
                 is BoolCardinality -> globals += GlobalKind.CARDINALITY
+                is IntMin, is IntMax -> globals += GlobalKind.MIN_MAX
                 else -> Unit
             }
             if (node.isConnective() && children.any { it.relation }) reified = true

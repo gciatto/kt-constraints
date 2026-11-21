@@ -18,6 +18,8 @@ import io.github.gciatto.ktconstraints.core.IntExpr
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -80,6 +82,8 @@ open class BoundedIntegerSupport(
                 }
             is IntProduct -> product(children[0], children[1])
             is Element -> IntegerBounds(children.drop(1).minOf { it.min }, children.drop(1).maxOf { it.max })
+            is IntMin -> IntegerBounds(children.minOf { it.min }, children.minOf { it.max })
+            is IntMax -> IntegerBounds(children.maxOf { it.min }, children.maxOf { it.max })
             else -> throw IllegalArgumentException("Unsupported integer expression: $node")
         }
 
@@ -168,7 +172,9 @@ open class BoundedIntegerSupport(
             val before = unsupported.size
             expression.fold { node, _: List<Unit> ->
                 when (node) {
-                    is IntVar, is IntLiteral, is IntSum, is IntDifference, is IntNegation, is IntProduct, is Element -> Unit
+                    is IntVar, is IntLiteral, is IntSum, is IntDifference, is IntNegation, is IntProduct, is Element, is IntMin,
+                    is IntMax,
+                    -> Unit
                     is LinearSum -> {
                         node.coefficients.forEach { check(it, "Coefficient") }
                         check(node.constant, "Constant")

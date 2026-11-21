@@ -13,4 +13,7 @@ enum class GlobalKind {
 
     /** Boolean cardinality (`atMost`, `atLeast`, `exactly`). */
     CARDINALITY,
+
+    /** Integer `min` and `max`. */
+    MIN_MAX,
 }

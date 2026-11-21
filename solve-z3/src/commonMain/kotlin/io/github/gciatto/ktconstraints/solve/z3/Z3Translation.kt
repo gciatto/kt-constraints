@@ -27,6 +27,8 @@ import io.github.gciatto.ktconstraints.core.IntExpr
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -161,6 +163,8 @@ internal class Z3Translation<T>(
             is IntNegation -> port.negate(children.single())
             is LinearSum -> linear(node, children)
             is Element -> element(children)
+            is IntMin -> children.reduce { best, next -> port.ite(port.lessOrEqual(best, next), best, next) }
+            is IntMax -> children.reduce { best, next -> port.ite(port.lessOrEqual(next, best), best, next) }
             is BitVecToInt -> port.bitVecToInt(children.single(), node.signed)
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported integer expression: $node")))
         }

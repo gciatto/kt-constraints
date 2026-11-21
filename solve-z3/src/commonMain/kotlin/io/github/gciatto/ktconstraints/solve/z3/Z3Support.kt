@@ -23,6 +23,8 @@ import io.github.gciatto.ktconstraints.core.IntEquality
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -58,6 +60,7 @@ internal object Z3Support {
                     is Element -> decompositions += "element -> ite chain with a top-level index definedness constraint"
                     is Table -> decompositions += "table -> disjunction of tuple conjunctions"
                     is BoolCardinality -> decompositions += "cardinality -> pseudo-Boolean constraint"
+                    is IntMin, is IntMax -> decompositions += "min/max -> ite chain"
                     is BoolVar, is IntVar, is BoolLiteral, is IntLiteral, is IntSum, is IntDifference, is IntProduct,
                     is IntNegation, is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolAnd, is BoolOr,
                     is BoolNot, is BoolImplies, is BoolEquality, is LinearSum, is RealVar, is RealLiteral, is RealSum,

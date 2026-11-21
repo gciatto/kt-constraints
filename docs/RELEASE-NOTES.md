@@ -12,7 +12,7 @@ with Java and TypeScript facades. Maven group `io.github.gciatto`, artifacts `kt
   - exact unbounded integers;
   - exact linear reals;
   - SMT-LIB fixed-width bit-vectors;
-  - globals (`allDifferent`, `table`, `element`, cardinality).
+  - globals (`allDifferent`, `table`, `element`, `min`/`max`, cardinality).
 - `ConstraintScope` with ownership checks; a Kotlin operator DSL; the Java `Expressions` facade.
 - Deep expressions are handled without recursion. Model construction is linear in the number of constraints.
 

@@ -20,6 +20,8 @@ import io.github.gciatto.ktconstraints.core.IntInterval
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -76,6 +78,8 @@ internal class MiniZincLowering(
                 val upper = values.maxOf { requireNotNull(it.bounds).max }
                 checked("array1d(0..${values.lastIndex}, [${values.joinToString { it.text }}])[$index]", lower, upper)
             }
+            is IntMin -> extremum("min", children) { bounds -> bounds.minOf { it } }
+            is IntMax -> extremum("max", children) { bounds -> bounds.maxOf { it } }
             is LinearSum -> linear(node, children)
             else -> reject("Unsupported integer expression: ${node::class.simpleName}")
         }
@@ -156,6 +160,16 @@ internal class MiniZincLowering(
     ): LoweredExpression {
         val bounds = calculate(requireNotNull(children[0].bounds), requireNotNull(children[1].bounds))
         return checked(pair(children, operator), bounds.min, bounds.max)
+    }
+
+    /** `min`/`max` of the operands; [select] picks the extremum of a list of bounds, giving both result bounds. */
+    private fun extremum(
+        name: String,
+        children: List<LoweredExpression>,
+        select: (List<BigInteger>) -> BigInteger,
+    ): LoweredExpression {
+        val bounds = children.map { requireNotNull(it.bounds) }
+        return checked("$name([${children.joinToString { it.text }}])", select(bounds.map { it.min }), select(bounds.map { it.max }))
     }
 
     private fun pair(

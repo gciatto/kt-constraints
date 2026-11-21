@@ -18,6 +18,8 @@ import io.github.gciatto.ktconstraints.core.IntExpr
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLessThan
 import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.IntMax
+import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
@@ -211,6 +213,8 @@ internal class MipBuilder(
                     )
                 is IntProduct -> product(linear(expression.left), linear(expression.right))
                 is Element -> element(expression)
+                is IntMin -> extremum(expression.operands, lowest = true)
+                is IntMax -> extremum(expression.operands, lowest = false)
                 else -> throw Rejection("Unsupported expression: ${expression::class.simpleName ?: expression}")
             }
         if (form.magnitude(variables) > MipLowering.LIMIT) throw Rejection("Integer range of $expression exceeds the MIP margin of 10^6")
@@ -250,6 +254,27 @@ internal class MipBuilder(
             val below = gap.min(variables)
             require(gap + MipAffine.of(b) * above, null, above)
             require(gap + MipAffine.of(b) * below, below, null)
+        }
+        return y
+    }
+
+    /** Every operand bounds the result; exactly one selected operand equals it. */
+    private fun extremum(
+        operands: List<IntExpr>,
+        lowest: Boolean,
+    ): MipAffine {
+        val values = operands.map { linear(it) }
+        if (values.size == 1) return values.single()
+        decompositions += MipLowering.MIN_MAX
+        val select: (List<BigInteger>) -> BigInteger = { bounds -> if (lowest) bounds.minOf { it } else bounds.maxOf { it } }
+        val y = MipAffine.of(fresh(select(values.map { it.min(variables) }), select(values.map { it.max(variables) })))
+        val selectors = values.map { binary() }
+        require(selectors.indexSum(), BigInteger.ONE, BigInteger.ONE)
+        values.zip(selectors).forEach { (value, b) ->
+            val gap = if (lowest) value - y else y - value
+            val above = gap.max(variables)
+            require(gap, BigInteger.ZERO, null)
+            require(gap + MipAffine.of(b) * above, null, above)
         }
         return y
     }
