@@ -21,20 +21,25 @@ import io.github.gciatto.ktconstraints.solve.Assignment
 
 /** Blocks exactly a projected tuple, leaving hidden variables existentially quantified. */
 internal object ProjectionBlocker {
-    fun block(variables: List<Variable>, assignment: Assignment): BoolExpr {
+    fun block(
+        variables: List<Variable>,
+        assignment: Assignment,
+    ): BoolExpr {
         var result: BoolExpr = BoolLiteral(false)
         for (variable in variables) {
-            val equal = when (variable) {
-                is BoolVar -> BoolEquality(variable, BoolLiteral(requireNotNull(assignment.valueOf(variable))))
-                is IntVar -> IntEquality(variable, IntLiteral(requireNotNull(assignment.valueOf(variable))))
-                is RealVar -> RealEquality(variable, RealLiteral(requireNotNull(assignment.valueOf(variable))))
-                is BitVecVar -> BitVecComparison(
-                    BitVecRelation.EQUAL,
-                    variable,
-                    BitVecLiteral(requireNotNull(assignment.valueOf(variable)), variable.width),
-                )
-                else -> error("Unsupported projected variable")
-            }
+            val equal =
+                when (variable) {
+                    is BoolVar -> BoolEquality(variable, BoolLiteral(requireNotNull(assignment.valueOf(variable))))
+                    is IntVar -> IntEquality(variable, IntLiteral(requireNotNull(assignment.valueOf(variable))))
+                    is RealVar -> RealEquality(variable, RealLiteral(requireNotNull(assignment.valueOf(variable))))
+                    is BitVecVar ->
+                        BitVecComparison(
+                            BitVecRelation.EQUAL,
+                            variable,
+                            BitVecLiteral(requireNotNull(assignment.valueOf(variable)), variable.width),
+                        )
+                    else -> error("Unsupported projected variable")
+                }
             result = BoolOr(result, BoolNot(equal))
         }
         return result

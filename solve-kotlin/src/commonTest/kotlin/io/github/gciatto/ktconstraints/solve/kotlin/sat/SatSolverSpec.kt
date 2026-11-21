@@ -69,8 +69,14 @@ class SatSolverSpec :
         test("sat/exhausts-every-formula-over-two-variables") {
             val candidates =
                 listOf(
-                    intArrayOf(1), intArrayOf(-1), intArrayOf(2), intArrayOf(-2),
-                    intArrayOf(1, 2), intArrayOf(1, -2), intArrayOf(-1, 2), intArrayOf(-1, -2),
+                    intArrayOf(1),
+                    intArrayOf(-1),
+                    intArrayOf(2),
+                    intArrayOf(-2),
+                    intArrayOf(1, 2),
+                    intArrayOf(1, -2),
+                    intArrayOf(-1, 2),
+                    intArrayOf(-1, -2),
                 )
             repeat(1 shl candidates.size) { mask ->
                 val clauses = candidates.filterIndexed { index, _ -> mask and (1 shl index) != 0 }

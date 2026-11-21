@@ -82,7 +82,11 @@ private fun IntArray.binding(value: Int): IntArray = IntArray(size) { bit -> if 
 
 private fun signedValue(value: Int): Int = if (value >= 4) value - 8 else value
 
-private fun expectedBits(operator: BitVecOperator, left: Int, right: Int): Int =
+private fun expectedBits(
+    operator: BitVecOperator,
+    left: Int,
+    right: Int,
+): Int =
     when (operator) {
         BitVecOperator.ADD -> left + right
         BitVecOperator.SUBTRACT -> left - right
@@ -95,7 +99,11 @@ private fun expectedBits(operator: BitVecOperator, left: Int, right: Int): Int =
         BitVecOperator.ARITHMETIC_SHIFT_RIGHT -> if (right >= 3) signedValue(left) shr 3 else signedValue(left) shr right
     } and 7
 
-private fun expectedComparison(relation: BitVecRelation, left: Int, right: Int): Boolean =
+private fun expectedComparison(
+    relation: BitVecRelation,
+    left: Int,
+    right: Int,
+): Boolean =
     when (relation) {
         BitVecRelation.EQUAL -> left == right
         BitVecRelation.UNSIGNED_LESS_THAN -> left < right

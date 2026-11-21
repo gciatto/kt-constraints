@@ -41,7 +41,10 @@ internal class SatState {
 
     fun value(literal: Int): Int = assignments[abs(literal)] * if (literal > 0) 1 else -1
 
-    fun enqueue(literal: Int, reason: Int): Boolean {
+    fun enqueue(
+        literal: Int,
+        reason: Int,
+    ): Boolean {
         val current = value(literal)
         if (current != 0) return current > 0
         val variable = abs(literal)
@@ -53,7 +56,10 @@ internal class SatState {
         return true
     }
 
-    suspend fun backtrack(level: Int, budget: SatBudget) {
+    suspend fun backtrack(
+        level: Int,
+        budget: SatBudget,
+    ) {
         if (levels.size <= level) return
         val restoredSize = levels[level]
         while (trail.size > restoredSize) {
@@ -67,7 +73,10 @@ internal class SatState {
         propagated = minOf(propagated, trail.size)
     }
 
-    suspend fun chooseDecision(variables: Int, budget: SatBudget): Int {
+    suspend fun chooseDecision(
+        variables: Int,
+        budget: SatBudget,
+    ): Int {
         var variable = 0
         var score = -1.0
         for (candidate in 1..variables) {
@@ -80,7 +89,11 @@ internal class SatState {
         return if (variable == 0 || phases[variable] >= 0) variable else -variable
     }
 
-    suspend fun bump(variable: Int, variables: Int, budget: SatBudget) {
+    suspend fun bump(
+        variable: Int,
+        variables: Int,
+        budget: SatBudget,
+    ) {
         activity[variable] += activityIncrement
         if (activity[variable] > 1e100) {
             for (index in 1..variables) {

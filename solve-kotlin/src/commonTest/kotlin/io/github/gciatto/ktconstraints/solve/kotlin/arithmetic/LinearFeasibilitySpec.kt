@@ -109,8 +109,16 @@ class LinearFeasibilitySpec :
                 val rows =
                     List(8) {
                         val coefficients = (0..2).associateWith { Rational.of(random.nextInt(-3, 4).toLong()) }
-                        val activity = coefficients.entries.fold(Rational.ZERO) { total, (variable, value) -> total + value * witness[variable] }
-                        LinearInequality(coefficients, activity + Rational.of(random.nextInt(1, 5).toLong(), 7), strict = random.nextBoolean())
+                        val activity =
+                            coefficients.entries.fold(Rational.ZERO) { total, (variable, value) ->
+                                total +
+                                    value * witness[variable]
+                            }
+                        LinearInequality(
+                            coefficients,
+                            activity + Rational.of(random.nextInt(1, 5).toLong(), 7),
+                            strict = random.nextBoolean(),
+                        )
                     }
                 val values = requireNotNull(LinearFeasibility().solve(3, rows).values)
                 values.size shouldBe 3

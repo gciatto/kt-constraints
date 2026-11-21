@@ -29,7 +29,10 @@ internal class KotlinEngine(
     private var theoryConflicts = 0L
     private var presolveReductions = 0
 
-    suspend fun initialize(budget: SearchBudget, includeObjective: Boolean) {
+    suspend fun initialize(
+        budget: SearchBudget,
+        includeObjective: Boolean,
+    ) {
         circuit.useBudget(budget)
         val presolved = IntegerPresolver().run(model, budget::checkpoint)
         presolveReductions = presolved.reductions.size
@@ -40,11 +43,12 @@ internal class KotlinEngine(
             circuit.clause(translation.assertion(constraint, budget))
         }
         if (includeObjective) {
-            val expression = when (val target = model.objective) {
-                is Objective.Minimize -> target.expression
-                is Objective.Maximize -> target.expression
-                null -> null
-            }
+            val expression =
+                when (val target = model.objective) {
+                    is Objective.Minimize -> target.expression
+                    is Objective.Maximize -> target.expression
+                    null -> null
+                }
             if (expression != null) {
                 val compiled = translation.translate(expression, budget)
                 objective = compiled.value as IntegerEncoding
@@ -53,12 +57,18 @@ internal class KotlinEngine(
         }
     }
 
-    suspend fun literal(constraint: BoolExpr, budget: SearchBudget): Int {
+    suspend fun literal(
+        constraint: BoolExpr,
+        budget: SearchBudget,
+    ): Int {
         circuit.useBudget(budget)
         return translation.assertion(constraint, budget)
     }
 
-    suspend fun check(assumptions: IntArray, budget: SearchBudget): Assignment? {
+    suspend fun check(
+        assumptions: IntArray,
+        budget: SearchBudget,
+    ): Assignment? {
         circuit.useBudget(budget)
         while (true) {
             budget.checkpoint()
@@ -83,22 +93,27 @@ internal class KotlinEngine(
         }
     }
 
-    fun validate(assignment: Assignment, constraints: List<BoolExpr>) {
+    fun validate(
+        assignment: Assignment,
+        constraints: List<BoolExpr>,
+    ) {
         if (!constraints.all { GroundEvaluator.evaluate(it, assignment) }) {
             throw BackendExecutionException("kotlin/direct produced a witness violating an original assertion")
         }
     }
 
-    fun metadata(budget: SearchBudget): SolveMetadata = SolveMetadata(
-        statistics = mapOf(
-            "work" to budget.work.toString(),
-            "variables" to circuit.variables.toString(),
-            "compiledClauses" to circuit.clauses.toString(),
-            "decisions" to sat.decisions.toString(),
-            "conflicts" to sat.conflicts.toString(),
-            "propagations" to sat.propagations.toString(),
-            "theoryConflicts" to theoryConflicts.toString(),
-            "presolveReductions" to presolveReductions.toString(),
-        ),
-    )
+    fun metadata(budget: SearchBudget): SolveMetadata =
+        SolveMetadata(
+            statistics =
+                mapOf(
+                    "work" to budget.work.toString(),
+                    "variables" to circuit.variables.toString(),
+                    "compiledClauses" to circuit.clauses.toString(),
+                    "decisions" to sat.decisions.toString(),
+                    "conflicts" to sat.conflicts.toString(),
+                    "propagations" to sat.propagations.toString(),
+                    "theoryConflicts" to theoryConflicts.toString(),
+                    "presolveReductions" to presolveReductions.toString(),
+                ),
+        )
 }

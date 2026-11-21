@@ -3,7 +3,10 @@ package io.github.gciatto.ktconstraints.solve.kotlin
 import org.gciatto.kt.math.BigInteger
 
 /** Searches integer objective bounds by bisection; minimization is maximization of the negated score. */
-internal class OptimizationState(private val maximize: Boolean, initialUpperScore: BigInteger) {
+internal class OptimizationState(
+    private val maximize: Boolean,
+    initialUpperScore: BigInteger,
+) {
     private var upper = initialUpperScore
     private var best: BigInteger? = null
 

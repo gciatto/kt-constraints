@@ -14,7 +14,10 @@ internal class CompilationCache {
         return if (index < 0) null else terms.getValue(node::class)[index]
     }
 
-    fun put(node: Expr, term: CompiledTerm) {
+    fun put(
+        node: Expr,
+        term: CompiledTerm,
+    ) {
         nodes.getOrPut(node::class) { mutableListOf() }.add(node)
         terms.getOrPut(node::class) { mutableListOf() }.add(term)
     }

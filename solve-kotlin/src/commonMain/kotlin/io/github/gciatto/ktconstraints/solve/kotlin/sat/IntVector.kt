@@ -1,7 +1,9 @@
 package io.github.gciatto.ktconstraints.solve.kotlin.sat
 
 /** Growable primitive storage for trails, clause watches and conflict analysis. */
-internal class IntVector(initialCapacity: Int = 8) {
+internal class IntVector(
+    initialCapacity: Int = 8,
+) {
     private var values = IntArray(initialCapacity.coerceAtLeast(1))
 
     var size: Int = 0
@@ -12,7 +14,10 @@ internal class IntVector(initialCapacity: Int = 8) {
         return values[index]
     }
 
-    operator fun set(index: Int, value: Int) {
+    operator fun set(
+        index: Int,
+        value: Int,
+    ) {
         require(index in 0 until size)
         values[index] = value
     }

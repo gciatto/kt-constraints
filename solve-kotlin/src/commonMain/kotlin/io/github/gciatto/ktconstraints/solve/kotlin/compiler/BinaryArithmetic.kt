@@ -14,8 +14,7 @@ internal class BinaryArithmetic(
 ) {
     private val gates = BitCircuit(circuit, checkpoint)
 
-    suspend fun integer(value: BigInteger): IntegerEncoding =
-        IntegerEncoding(signedConstant(value, width(value, value)), value, value)
+    suspend fun integer(value: BigInteger): IntegerEncoding = IntegerEncoding(signedConstant(value, width(value, value)), value, value)
 
     /** Encodes an unsigned offset from the lower bound, retaining arbitrary-precision origins and domain holes. */
     suspend fun variable(domain: IntDomain): IntegerEncoding {
@@ -48,7 +47,10 @@ internal class BinaryArithmetic(
         return IntegerEncoding(encoded, minimum, maximum)
     }
 
-    suspend fun add(left: IntegerEncoding, right: IntegerEncoding): IntegerEncoding {
+    suspend fun add(
+        left: IntegerEncoding,
+        right: IntegerEncoding,
+    ): IntegerEncoding {
         if (left.min == left.max && right.min == right.max) return integer(left.min + right.min)
         val minimum = left.min + right.min
         val maximum = left.max + right.max
@@ -56,15 +58,25 @@ internal class BinaryArithmetic(
         return IntegerEncoding(gates.add(gates.extend(left.bits, width, true), gates.extend(right.bits, width, true)), minimum, maximum)
     }
 
-    suspend fun subtract(left: IntegerEncoding, right: IntegerEncoding): IntegerEncoding {
+    suspend fun subtract(
+        left: IntegerEncoding,
+        right: IntegerEncoding,
+    ): IntegerEncoding {
         if (left.min == left.max && right.min == right.max) return integer(left.min - right.min)
         val minimum = left.min - right.max
         val maximum = left.max - right.min
         val width = width(minimum, maximum)
-        return IntegerEncoding(gates.subtract(gates.extend(left.bits, width, true), gates.extend(right.bits, width, true)), minimum, maximum)
+        return IntegerEncoding(
+            gates.subtract(gates.extend(left.bits, width, true), gates.extend(right.bits, width, true)),
+            minimum,
+            maximum,
+        )
     }
 
-    suspend fun multiply(left: IntegerEncoding, right: IntegerEncoding): IntegerEncoding {
+    suspend fun multiply(
+        left: IntegerEncoding,
+        right: IntegerEncoding,
+    ): IntegerEncoding {
         if (left.min == left.max && right.min == right.max) return integer(left.min * right.min)
         if (left.min == BigInteger.ZERO && left.max == BigInteger.ZERO || right.min == BigInteger.ZERO && right.max == BigInteger.ZERO) {
             return integer(BigInteger.ZERO)
@@ -82,18 +94,28 @@ internal class BinaryArithmetic(
         return IntegerEncoding(gates.negate(gates.extend(operand.bits, width(minimum, maximum), signed = true)), minimum, maximum)
     }
 
-    suspend fun equal(left: IntegerEncoding, right: IntegerEncoding): Int {
+    suspend fun equal(
+        left: IntegerEncoding,
+        right: IntegerEncoding,
+    ): Int {
         if (left.max < right.min || right.max < left.min) return circuit.falseLiteral
         return gates.equal(left.bits, right.bits, signed = true)
     }
 
-    suspend fun less(left: IntegerEncoding, right: IntegerEncoding): Int {
+    suspend fun less(
+        left: IntegerEncoding,
+        right: IntegerEncoding,
+    ): Int {
         if (left.max < right.min) return circuit.trueLiteral
         if (left.min >= right.max) return circuit.falseLiteral
         return gates.less(left.bits, right.bits, signed = true)
     }
 
-    suspend fun choose(condition: Int, whenTrue: IntegerEncoding, whenFalse: IntegerEncoding): IntegerEncoding {
+    suspend fun choose(
+        condition: Int,
+        whenTrue: IntegerEncoding,
+        whenFalse: IntegerEncoding,
+    ): IntegerEncoding {
         if (condition == circuit.trueLiteral) return whenTrue
         if (condition == circuit.falseLiteral) return whenFalse
         val minimum = minOf(whenTrue.min, whenFalse.min)
@@ -101,9 +123,16 @@ internal class BinaryArithmetic(
         return IntegerEncoding(gates.choose(condition, whenTrue.bits, whenFalse.bits, width(minimum, maximum)), minimum, maximum)
     }
 
-    suspend fun bits(value: BigInteger, width: Int): IntArray = gates.constant(value, width)
+    suspend fun bits(
+        value: BigInteger,
+        width: Int,
+    ): IntArray = gates.constant(value, width)
 
-    suspend fun bitVector(operator: BitVecOperator, left: IntArray, right: IntArray): IntArray {
+    suspend fun bitVector(
+        operator: BitVecOperator,
+        left: IntArray,
+        right: IntArray,
+    ): IntArray {
         require(left.size == right.size && left.isNotEmpty()) { "Bit-vector operands must have the same positive width" }
         circuit.width(left.size)
         return when (operator) {
@@ -111,7 +140,12 @@ internal class BinaryArithmetic(
             BitVecOperator.SUBTRACT -> gates.subtract(left, right)
             BitVecOperator.MULTIPLY -> gates.multiply(left, right, left.size, signed = false)
             BitVecOperator.AND, BitVecOperator.OR, BitVecOperator.XOR -> gates.bitwise(operator, left, right)
-            BitVecOperator.SHIFT_LEFT, BitVecOperator.LOGICAL_SHIFT_RIGHT, BitVecOperator.ARITHMETIC_SHIFT_RIGHT -> gates.shift(operator, left, right)
+            BitVecOperator.SHIFT_LEFT, BitVecOperator.LOGICAL_SHIFT_RIGHT, BitVecOperator.ARITHMETIC_SHIFT_RIGHT ->
+                gates.shift(
+                    operator,
+                    left,
+                    right,
+                )
         }
     }
 
@@ -119,7 +153,11 @@ internal class BinaryArithmetic(
 
     suspend fun bitNegate(operand: IntArray): IntArray = gates.negate(operand)
 
-    suspend fun bitCompare(relation: BitVecRelation, left: IntArray, right: IntArray): Int {
+    suspend fun bitCompare(
+        relation: BitVecRelation,
+        left: IntArray,
+        right: IntArray,
+    ): Int {
         require(left.size == right.size && left.isNotEmpty()) { "Bit-vector operands must have the same positive width" }
         return when (relation) {
             BitVecRelation.EQUAL -> gates.equal(left, right, signed = false)
@@ -130,7 +168,10 @@ internal class BinaryArithmetic(
         }
     }
 
-    suspend fun toInteger(bits: IntArray, signed: Boolean): IntegerEncoding {
+    suspend fun toInteger(
+        bits: IntArray,
+        signed: Boolean,
+    ): IntegerEncoding {
         circuit.width(bits.size)
         if (signed) {
             val magnitude = BigInteger.ONE shl (bits.size - 1)
@@ -140,12 +181,18 @@ internal class BinaryArithmetic(
         return IntegerEncoding(gates.extend(bits, width, signed = false), BigInteger.ZERO, (BigInteger.ONE shl bits.size) - BigInteger.ONE)
     }
 
-    fun decodeInteger(encoding: IntegerEncoding, values: BooleanArray): BigInteger {
+    fun decodeInteger(
+        encoding: IntegerEncoding,
+        values: BooleanArray,
+    ): BigInteger {
         val unsigned = decodeBits(encoding.bits, values)
         return if (circuit.value(encoding.bits.last(), values)) unsigned - (BigInteger.ONE shl encoding.bits.size) else unsigned
     }
 
-    fun decodeBits(bits: IntArray, values: BooleanArray): BigInteger {
+    fun decodeBits(
+        bits: IntArray,
+        values: BooleanArray,
+    ): BigInteger {
         var result = BigInteger.ZERO
         for (index in bits.indices.reversed()) {
             result = result shl 1
@@ -154,10 +201,15 @@ internal class BinaryArithmetic(
         return result
     }
 
-    private suspend fun signedConstant(value: BigInteger, width: Int): IntArray =
-        gates.constant(if (value.signum < 0) value + (BigInteger.ONE shl width) else value, width)
+    private suspend fun signedConstant(
+        value: BigInteger,
+        width: Int,
+    ): IntArray = gates.constant(if (value.signum < 0) value + (BigInteger.ONE shl width) else value, width)
 
-    private fun width(minimum: BigInteger, maximum: BigInteger): Int {
+    private fun width(
+        minimum: BigInteger,
+        maximum: BigInteger,
+    ): Int {
         val negativeMagnitude = if (minimum.signum < 0) (-minimum - BigInteger.ONE).bitLength else minimum.bitLength
         val positiveMagnitude = if (maximum.signum < 0) (-maximum - BigInteger.ONE).bitLength else maximum.bitLength
         return checkedWidth(maxOf(negativeMagnitude, positiveMagnitude).toLong() + 1)
