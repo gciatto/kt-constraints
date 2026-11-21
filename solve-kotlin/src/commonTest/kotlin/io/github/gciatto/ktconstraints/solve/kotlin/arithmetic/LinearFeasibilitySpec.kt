@@ -129,6 +129,26 @@ class LinearFeasibilitySpec :
             checkpoints shouldBe 1
         }
 
+        test("linear/rejects-a-projected-contradiction-before-expanding-all-pairs") {
+            val rows =
+                (1..20).flatMap { coefficient ->
+                    listOf(
+                        LinearInequality(mapOf(0 to Rational.ONE, 1 to Rational.of(coefficient.toLong())), Rational.ZERO),
+                        LinearInequality(
+                            mapOf(0 to -Rational.ONE, 1 to Rational.of(-coefficient.toLong())),
+                            Rational.ZERO,
+                            strict = coefficient == 1,
+                        ),
+                    )
+                }
+            var checkpoints = 0
+            val result =
+                LinearFeasibility().solve(2, rows) {
+                    if (++checkpoints > 250) throw CancellationException("work budget exceeded")
+                }
+            result.values shouldBe null
+        }
+
         test("linear/repeated-solves-do-not-retain-old-assertions") {
             val engine = LinearFeasibility()
             engine.solve(0, listOf(LinearInequality(emptyMap(), -Rational.ONE))).values shouldBe null
