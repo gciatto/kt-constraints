@@ -46,6 +46,7 @@ import io.github.gciatto.ktconstraints.core.RealScale
 import io.github.gciatto.ktconstraints.core.RealSum
 import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Table
+import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.Assignment
 import io.github.gciatto.ktconstraints.solve.kotlin.SearchBudget
@@ -66,16 +67,25 @@ internal class KotlinTranslation(val circuit: Circuit) {
     suspend fun declare(model: ConstraintModel, domains: Map<IntVar, IntDomain>, budget: SearchBudget) {
         for (variable in model.variables) {
             budget.checkpoint()
-            when (variable) {
-                is BoolVar -> booleans[variable] = circuit.variable()
-                is IntVar -> integers[variable] = binary.variable(domains.getValue(variable))
-                is BitVecVar -> {
+            declare(variable, domains)
+        }
+    }
+
+    /** Encodes [variable] once, narrowing an integer to its presolved domain when [domains] has one. */
+    suspend fun declare(
+        variable: Variable,
+        domains: Map<IntVar, IntDomain> = emptyMap(),
+    ) {
+        when (variable) {
+            is BoolVar -> booleans.getOrPut(variable) { circuit.variable() }
+            is IntVar -> if (variable !in integers) integers[variable] = binary.variable(domains[variable] ?: variable.domain)
+            is BitVecVar ->
+                if (variable !in bitVectors) {
                     circuit.width(variable.width)
                     bitVectors[variable] = IntArray(variable.width) { circuit.variable() }
                 }
-                is RealVar -> reals[variable] = reals.size
-                else -> error("Unsupported declaration")
-            }
+            is RealVar -> reals.getOrPut(variable) { reals.size }
+            else -> error("Unsupported declaration")
         }
     }
 

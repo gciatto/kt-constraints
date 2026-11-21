@@ -1,6 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.kotlin
 
 import io.github.gciatto.ktconstraints.core.BoolExpr
+import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.CheckResult
 import io.github.gciatto.ktconstraints.solve.CheckStatus
@@ -26,7 +27,14 @@ internal class KotlinSession(
     private val busy = AtomicBoolean(false)
     private val checkpoints = CheckpointStack()
     private val frames = mutableListOf(mutableListOf<SessionAssertion>())
+    private val declarations = mutableListOf(mutableListOf<Variable>())
+    private val known = model.variables.toMutableSet()
     private var engine: KotlinEngine? = null
+
+    override fun declare(variable: Variable) = exclusive {
+        require(known.add(variable)) { "Variable already in the session: ${variable.name}" }
+        declarations.last() += variable
+    }
 
     override fun add(constraint: BoolExpr) = exclusive {
         requireAccepted(listOf(constraint))
@@ -35,12 +43,14 @@ internal class KotlinSession(
 
     override fun push(): Checkpoint = exclusive {
         frames.add(mutableListOf())
+        declarations.add(mutableListOf())
         checkpoints.push()
     }
 
     override fun popTo(checkpoint: Checkpoint) = exclusive {
         val count = checkpoints.popTo(checkpoint)
         repeat(count) { frames.removeAt(frames.lastIndex) }
+        known -= List(count) { declarations.removeAt(declarations.lastIndex) }.flatten().toSet()
     }
 
     override suspend fun check(assumptions: List<BoolExpr>, timeoutMillis: Long?): CheckResult = exclusive {
@@ -62,6 +72,8 @@ internal class KotlinSession(
             engine = it
         }
         current.circuit.useBudget(budget)
+        val declared = declarations.flatten()
+        for (variable in declared) current.translation.declare(variable)
         val active = frames.flatten()
         val literals = mutableListOf<Int>()
         for (assertion in active) {
@@ -75,7 +87,7 @@ internal class KotlinSession(
             CheckResult(CheckStatus.UNSATISFIABLE, null, descriptor, unsatCore = assumptions, metadata = current.metadata(budget))
         } else {
             current.validate(full, active.map { it.expression } + assumptions)
-            CheckResult(CheckStatus.SATISFIABLE, full.project(model.outputVariables), descriptor, metadata = current.metadata(budget))
+            CheckResult(CheckStatus.SATISFIABLE, full.project(model.outputVariables + declared), descriptor, metadata = current.metadata(budget))
         }
     }
 
@@ -87,8 +99,7 @@ internal class KotlinSession(
     private fun requireAccepted(expressions: List<BoolExpr>) {
         val report = KotlinSupport.report(expressions)
         if (!report.isSupported) throw UnsupportedModelException(report)
-        val declared = model.variables.toSet()
-        require(expressions.all { expression -> expression.variables.all { it in declared } }) { "Variable outside the session model" }
+        require(expressions.all { expression -> expression.variables.all { it in known } }) { "Variable not declared in the session" }
     }
 
     private inline fun <R> exclusive(action: () -> R): R {
