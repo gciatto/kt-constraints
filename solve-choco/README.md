@@ -14,7 +14,7 @@ API (Java 17). Availability is an actual startup solve. Other Kotlin targets hav
   objectives and reports `OPTIMAL` only when the search ends without being stopped.
 - Close, coroutine cancellation and deadlines stop an in-flight search; a stopped search never
   reports infeasibility.
-- No propagating or incremental sessions yet. Publication stays disabled.
+- No propagating or incremental sessions yet.
 
 ```kotlin
 ChocoBackend().create().use { solver ->

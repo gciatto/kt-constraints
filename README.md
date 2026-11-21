@@ -73,8 +73,7 @@ println(model.constraints.size) // 1
 ```
 
 JVM solving uses `MiniZincBackend(MiniZincEngine.CHUFFED, executable)` for explicit engine selection;
-`MiniZincGecodeBackend(executable)` remains available. Install a matching MiniZinc solver configuration. The adapter is
-experimental and remains unpublished while packaging is finalized. See [ROADMAP.md](ROADMAP.md).
+`MiniZincGecodeBackend(executable)` remains available. Install a matching MiniZinc solver configuration. See [ROADMAP.md](ROADMAP.md).
 
 Integer constants and finite-domain bounds use multiplatform kt-math `BigInteger`; `Int` and `Long` are
 convenience inputs. Domains support empty sets, sparse values, unions and intersections without enumerating
@@ -108,8 +107,8 @@ Apple Native tests also require full Xcode; Command Line Tools alone cannot link
 ```
 
 The repository includes the standard Gradle 9.9.1 wrapper scripts and JAR. The wrapper verifies the Gradle
-distribution against the SHA-256 checksum in `gradle-wrapper.properties`. Backend placeholders remain
-deliberately unpublished until functional and conformance-tested.
+distribution against the SHA-256 checksum in `gradle-wrapper.properties`. Placeholder backend modules
+(`solve-highs`, `solve-flatzinc`, `solve-portfolio`) remain unpublished until functional and conformance-tested.
 
 ## Publishing coordinates
 
@@ -117,6 +116,7 @@ deliberately unpublished until functional and conformance-tested.
 * Maven group: `io.github.gciatto`
 * Maven artifact family: `kt-constraints-core`, `kt-constraints-model`, `kt-constraints-solve`, etc.
 * Kotlin package root: `io.github.gciatto.ktconstraints`
+* Artifacts, source builds and solver runtimes: [docs/INSTALLATION.md](docs/INSTALLATION.md)
 * The coordinates do not overlap with `it.unibo.tuprolog:*` (2p-Kt) or `io.github.gciatto:kt-math`.
 
 Releases and GitHub Pages deployment are disabled until explicitly enabled by repository variables

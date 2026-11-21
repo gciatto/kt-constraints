@@ -112,5 +112,4 @@ runtime spec when its environment is absent.
 ## Boundaries
 
 This is Kotlin/JS invoking solver Wasm, not a Kotlin/Wasm or WASI target. Native execution,
-direct engines, incremental sessions, native propagation and stable Java/TypeScript
-facades remain planned. Backend publication stays disabled.
+incremental sessions and native propagation remain planned.

@@ -15,7 +15,6 @@ Direct Z3 routes, distinct from every MiniZinc route:
   z3-turnkey artifact as the JVM; iOS compiles but has no provisioned library.
 
 Both share one translation, stream and session implementation behind an internal platform port.
-Kotlin/Native bindings are planned; publication stays disabled.
 
 ```kotlin
 Z3Backend().create().use { solver ->

@@ -63,6 +63,8 @@ never blindly repeat successful GAV deployments (see 2p-Kt's corresponding scrip
 - [ ] `./gradlew zipMavenCentralPortalPublication --dry-run` lists the intended modules only.
 - [ ] Backend placeholder modules are *not* published until operational and covered by capability contracts;
       enable each module individually in `publishedModules` when ready.
+- [ ] Publish from macOS (as the release job does): Linux hosts cannot run the Apple cinterop of `solve-z3`, so its
+      macOS and iOS artifacts would be missing.
 - [ ] Central Portal and signing credentials are present in repository secrets.
 - [ ] `ENABLE_RELEASE` is explicitly set to `true` only after the above checks.
 

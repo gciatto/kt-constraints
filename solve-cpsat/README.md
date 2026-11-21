@@ -13,7 +13,7 @@ and startup solve. Other Kotlin targets have no backend in this module.
 - Satisfaction streams enumerate distinct projections on one worker. Optimization uses CP-SAT's search,
   emits strictly improving incumbents with exactly evaluated objectives, and reports `OPTIMAL` only on
   CP-SAT's proof. `CpSatBackend(workers, seed)` fixes optimization workers and the random seed.
-- No incremental sessions or scheduling globals yet. Publication stays disabled.
+- No incremental sessions or scheduling globals yet.
 
 ```kotlin
 CpSatBackend().create().use { solver ->
