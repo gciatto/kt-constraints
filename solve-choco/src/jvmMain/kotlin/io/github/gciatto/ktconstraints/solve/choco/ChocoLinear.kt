@@ -10,11 +10,7 @@ internal data class ChocoLinear(
     val terms: Map<IntVar, BigInteger> = emptyMap(),
     val constant: BigInteger = BigInteger.ZERO,
 ) {
-    operator fun plus(other: ChocoLinear): ChocoLinear {
-        val merged = terms.toMutableMap()
-        other.terms.forEach { (variable, coefficient) -> merged[variable] = (merged[variable] ?: BigInteger.ZERO) + coefficient }
-        return ChocoLinear(merged.filterValues { it.signum != 0 }, constant + other.constant)
-    }
+    operator fun plus(other: ChocoLinear): ChocoLinear = sum(listOf(this, other))
 
     operator fun times(factor: BigInteger): ChocoLinear =
         ChocoLinear(terms.mapValues { it.value * factor }.filterValues { it.signum != 0 }, constant * factor)
@@ -42,5 +38,16 @@ internal data class ChocoLinear(
         fun of(variable: IntVar): ChocoLinear = ChocoLinear(mapOf(variable to BigInteger.ONE))
 
         fun of(constant: BigInteger): ChocoLinear = ChocoLinear(constant = constant)
+
+        /** Merges all [forms] into one map, linear in their total size (folding [plus] would copy at every step). */
+        fun sum(forms: Iterable<ChocoLinear>): ChocoLinear {
+            val merged = mutableMapOf<IntVar, BigInteger>()
+            var constant = BigInteger.ZERO
+            for (form in forms) {
+                form.terms.forEach { (variable, coefficient) -> merged[variable] = (merged[variable] ?: BigInteger.ZERO) + coefficient }
+                constant += form.constant
+            }
+            return ChocoLinear(merged.filterValues { it.signum != 0 }, constant)
+        }
     }
 }

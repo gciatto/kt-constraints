@@ -126,9 +126,9 @@ internal class ChocoTranslation(
 
     private fun cardinality(expression: BoolCardinality): Constraint {
         val count =
-            expression.operands.fold(ChocoLinear.of(BigInteger.of(-expression.count.toLong()))) { total, operand ->
-                total + ChocoLinear.of(literal(operand))
-            }
+            ChocoLinear.sum(
+                expression.operands.map { ChocoLinear.of(literal(it)) } + ChocoLinear.of(BigInteger.of(-expression.count.toLong())),
+            )
         val operator =
             when (expression.relation) {
                 CardinalityRelation.AT_MOST -> "<="
@@ -158,9 +158,10 @@ internal class ChocoTranslation(
             is IntDifference -> linear(expression.left) + linear(expression.right) * MINUS_ONE
             is IntNegation -> linear(expression.operand) * MINUS_ONE
             is LinearSum ->
-                expression.terms.zip(expression.coefficients).fold(ChocoLinear.of(expression.constant)) { total, (term, coefficient) ->
-                    total + linear(term) * coefficient
-                }
+                ChocoLinear.sum(
+                    expression.terms.zip(expression.coefficients).map { (term, c) -> linear(term) * c } +
+                        ChocoLinear.of(expression.constant),
+                )
             is IntProduct -> {
                 val left = variable(expression.left)
                 val right = variable(expression.right)
