@@ -57,6 +57,8 @@ internal class SatSolver {
         propagation: SatPropagation,
     ): SatResult {
         val analysis = SatConflictAnalysis(database, state, budget)
+        var restarts = 0
+        var restartBudget = luby(restarts) * RESTART_UNIT
         while (true) {
             budget.tick()
             budget.poll()
@@ -70,6 +72,11 @@ internal class SatSolver {
                 val reason = database.insertClause(learned.clause)
                 check(state.enqueue(learned.clause[0], reason)) { "Learned clause must be asserting after backjump" }
                 state.decayActivity()
+                if (--restartBudget <= 0) {
+                    restartBudget = luby(++restarts) * RESTART_UNIT
+                    // Level 0 keeps root facts; the decision loop below re-applies assumptions in order.
+                    state.backtrack(0, budget)
+                }
             } else {
                 var decision = 0
                 while (state.levels.size < assumptions.size && decision == 0) {
@@ -92,6 +99,27 @@ internal class SatSolver {
                 statistics.decisions++
                 check(state.enqueue(decision, -1))
             }
+        }
+    }
+
+    private companion object {
+        const val RESTART_UNIT = 100L
+
+        /** The Luby sequence 1, 1, 2, 1, 1, 2, 4, ...; its universal optimality suits unknown runtime profiles. */
+        fun luby(index: Int): Long {
+            var size = 1L
+            var sequence = 0
+            while (size < index + 1) {
+                sequence++
+                size = 2 * size + 1
+            }
+            var position = index.toLong()
+            while (size - 1 != position) {
+                size = (size - 1) / 2
+                sequence--
+                position %= size
+            }
+            return 1L shl sequence
         }
     }
 }
