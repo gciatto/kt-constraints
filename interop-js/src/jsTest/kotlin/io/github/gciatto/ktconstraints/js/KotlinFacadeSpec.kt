@@ -27,7 +27,7 @@ class KotlinFacadeSpec : FunSpec({
             outcome.route as String shouldBe "kotlin/direct"
             val value = outcome.solution.valueOf(x)
             jsTypeOf(value) shouldBe "bigint"
-            value.toString() as String shouldBe "1180591620717411303425"
+            value.toString() shouldBe "1180591620717411303425"
         } finally {
             solver.close()
         }
@@ -61,7 +61,7 @@ class KotlinFacadeSpec : FunSpec({
                 item.done as Boolean shouldBe false
                 val event = item.value
                 if (event.solution != null) {
-                    answers += event.solution.valueOf(x).toString() as String
+                    answers += event.solution.valueOf(x).toString()
                 } else {
                     event.outcome.status as String shouldBe "FEASIBLE"
                     event.outcome.termination as String shouldBe "COMPLETED"
@@ -116,7 +116,7 @@ class KotlinFacadeSpec : FunSpec({
 
                 val restored = awaited(session.check(arrayOf(two), null, null))
                 restored.status as String shouldBe "SATISFIABLE"
-                restored.solution.valueOf(x).toString() as String shouldBe "2"
+                restored.solution.valueOf(x).toString() shouldBe "2"
                 awaited(session.check(emptyArray<BoolExpression>(), null, null)).status as String shouldBe "SATISFIABLE"
                 solver.close()
                 shouldThrow<IllegalStateException> { session.push() }
