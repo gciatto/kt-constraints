@@ -29,3 +29,12 @@ kotlin {
         }
     }
 }
+
+tasks.register<JavaExec>("jvmBenchmark") {
+    group = "benchmark"
+    description = "Runs every benchmark family on every eligible bundled JVM route and prints CSV."
+    val compilation = kotlin.jvm().compilations.getByName("test")
+    dependsOn("jvmTestClasses")
+    classpath(compilation.output.allOutputs, compilation.runtimeDependencyFiles)
+    mainClass.set("io.github.gciatto.ktconstraints.solve.portfolio.PortfolioBenchmark")
+}
