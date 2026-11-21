@@ -13,6 +13,7 @@ import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Sort
 import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.VariableFactory
+import io.github.gciatto.ktconstraints.core.VariableId
 import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmStatic
 
@@ -20,7 +21,9 @@ import kotlin.jvm.JvmStatic
 class ConstraintScope private constructor() {
     private val factory = VariableFactory.empty()
     private val variables = linkedMapOf<String, Variable>()
+    private val ids = hashSetOf<VariableId>()
     private val entries = mutableListOf<ConstraintEntry>()
+    private val names = hashSetOf<String>()
     private var objective: Objective? = null
     private var projection: List<Variable>? = null
 
@@ -66,8 +69,9 @@ class ConstraintScope private constructor() {
         apply {
             requireWellSorted(constraint)
             requireOwned(constraint.variables)
-            require(name == null || entries.none { it.name == name }) { "Duplicate constraint name: $name" }
+            require(name == null || name !in names) { "Duplicate constraint name: $name" }
             entries += ConstraintEntry(constraint, name, annotations, source)
+            name?.let { names += it }
         }
 
     /** Replaces the model objective with a minimization. */
@@ -111,8 +115,7 @@ class ConstraintScope private constructor() {
     }
 
     private fun requireOwned(referenced: Set<Variable>) {
-        val localIds = variables.values.mapTo(hashSetOf()) { it.id }
-        require(referenced.all { it.id in localIds }) {
+        require(referenced.all { it.id in ids }) {
             "Expression refers to variables outside this modelling scope"
         }
     }
@@ -125,6 +128,7 @@ class ConstraintScope private constructor() {
         require(name !in variables) { "Duplicate variable name: $name" }
         val variable = create()
         variables[name] = variable
+        ids += variable.id
         return variable
     }
 
