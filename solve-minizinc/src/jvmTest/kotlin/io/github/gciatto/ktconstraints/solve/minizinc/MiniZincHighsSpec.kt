@@ -1,5 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
+import io.github.gciatto.ktconstraints.test.solve.DifferentialCase
+import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.core.spec.style.FunSpec
 
@@ -12,5 +14,12 @@ class MiniZincHighsSpec :
             test("requires-explicitly-requested-highs-runtime").config(enabled = false) {}
         } else {
             include(solverContract(enumeration = false) { MiniZincBackend(MiniZincEngine.HIGHS, executable).create() })
+            include(
+                differentialContract(
+                    "highs/minizinc",
+                    enumeration = false,
+                    DifferentialCase.catalogue().filter { it.name != DifferentialCase.NONLINEAR_PRODUCTS },
+                ) { MiniZincBackend(MiniZincEngine.HIGHS, executable).create() },
+            )
         }
     })

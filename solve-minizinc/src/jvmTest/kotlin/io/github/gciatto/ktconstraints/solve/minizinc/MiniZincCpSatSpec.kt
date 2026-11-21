@@ -1,5 +1,6 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
+import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.core.spec.style.FunSpec
 
@@ -12,5 +13,6 @@ class MiniZincCpSatSpec :
             test("requires-explicitly-requested-cp-sat-runtime").config(enabled = false) {}
         } else {
             include(solverContract { MiniZincBackend(MiniZincEngine.CP_SAT, executable).create() })
+            include(differentialContract("cp-sat/minizinc") { MiniZincBackend(MiniZincEngine.CP_SAT, executable).create() })
         }
     })

@@ -1,5 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
+import io.github.gciatto.ktconstraints.test.solve.DifferentialCase
+import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.core.spec.style.FunSpec
 
@@ -12,5 +14,12 @@ class MiniZincCbcSpec :
             test("requires-explicitly-requested-cbc-runtime").config(enabled = false) {}
         } else {
             include(solverContract(enumeration = false) { MiniZincBackend(MiniZincEngine.CBC, executable).create() })
+            include(
+                differentialContract(
+                    "cbc/minizinc",
+                    enumeration = false,
+                    DifferentialCase.catalogue().filter { it.name != DifferentialCase.NONLINEAR_PRODUCTS },
+                ) { MiniZincBackend(MiniZincEngine.CBC, executable).create() },
+            )
         }
     })
