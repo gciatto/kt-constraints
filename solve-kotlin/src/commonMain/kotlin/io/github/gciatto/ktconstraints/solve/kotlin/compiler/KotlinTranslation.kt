@@ -231,7 +231,7 @@ internal class KotlinTranslation(val circuit: Circuit) {
         else -> error("Unsupported Boolean expression")
     }
 
-    private fun realRelation(node: BoolExpr, values: List<Any>): Int {
+    private suspend fun realRelation(node: BoolExpr, values: List<Any>): Int {
         val difference = (values[0] as LinearForm) + (values[1] as LinearForm).scale(Rational.of(-1))
         return if (node is RealEquality) {
             circuit.and(atom(difference, false), atom(difference.scale(Rational.of(-1)), false))
@@ -240,11 +240,31 @@ internal class KotlinTranslation(val circuit: Circuit) {
         }
     }
 
-    private fun atom(form: LinearForm, strict: Boolean): Int {
+    private suspend fun atom(form: LinearForm, strict: Boolean): Int {
         if (form.realCoefficients.isEmpty() && form.bitCoefficients.isEmpty()) {
             return circuit.constant(if (strict) form.constant < Rational.ZERO else form.constant <= Rational.ZERO)
         }
+        if (form.realCoefficients.isEmpty()) return discreteAtom(form, strict)
         return circuit.variable().also { realAtoms += RealAtom(it, form, strict) }
+    }
+
+    private suspend fun discreteAtom(form: LinearForm, strict: Boolean): Int {
+        // All denominators are positive, so multiplying by their LCM preserves strict and non-strict ordering.
+        var denominator = form.constant.denominator
+        for (coefficient in form.bitCoefficients.values) {
+            circuit.checkpoint()
+            denominator = (denominator / denominator.gcd(coefficient.denominator)) * coefficient.denominator
+        }
+        val zero = binary.integer(BigInteger.ZERO)
+        var sum = binary.integer(form.constant.numerator * (denominator / form.constant.denominator))
+        for ((variable, coefficient) in form.bitCoefficients) {
+            circuit.checkpoint()
+            val scaled = coefficient.numerator * (denominator / coefficient.denominator)
+            // Selecting the coefficient or zero implements coefficient * bit without a multiplier circuit.
+            val term = binary.choose(variable, binary.integer(scaled), zero)
+            sum = binary.add(sum, term)
+        }
+        return if (strict) binary.less(sum, zero) else -binary.less(zero, sum)
     }
 
     private suspend fun embed(integer: IntegerEncoding): LinearForm {
