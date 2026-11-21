@@ -7,11 +7,7 @@ internal data class MipAffine(
     val terms: Map<Int, BigInteger> = emptyMap(),
     val constant: BigInteger = BigInteger.ZERO,
 ) {
-    operator fun plus(other: MipAffine): MipAffine {
-        val merged = terms.toMutableMap()
-        other.terms.forEach { (index, coefficient) -> merged[index] = (merged[index] ?: BigInteger.ZERO) + coefficient }
-        return MipAffine(merged.filterValues { it.signum != 0 }, constant + other.constant)
-    }
+    operator fun plus(other: MipAffine): MipAffine = sum(listOf(this, other))
 
     operator fun minus(other: MipAffine): MipAffine = this + other * MINUS_ONE
 
@@ -40,5 +36,16 @@ internal data class MipAffine(
         fun of(index: Int): MipAffine = MipAffine(mapOf(index to BigInteger.ONE))
 
         fun of(constant: BigInteger): MipAffine = MipAffine(constant = constant)
+
+        /** Merges all [forms] into one map, linear in their total size (folding [plus] would copy at every step). */
+        fun sum(forms: Iterable<MipAffine>): MipAffine {
+            val merged = mutableMapOf<Int, BigInteger>()
+            var constant = BigInteger.ZERO
+            for (form in forms) {
+                form.terms.forEach { (index, coefficient) -> merged[index] = (merged[index] ?: BigInteger.ZERO) + coefficient }
+                constant += form.constant
+            }
+            return MipAffine(merged.filterValues { it.signum != 0 }, constant)
+        }
     }
 }

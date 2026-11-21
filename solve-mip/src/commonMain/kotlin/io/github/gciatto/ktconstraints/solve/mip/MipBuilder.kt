@@ -205,12 +205,10 @@ internal class MipBuilder(
                 is IntDifference -> linear(expression.left) - linear(expression.right)
                 is IntNegation -> linear(expression.operand) * MipAffine.MINUS_ONE
                 is LinearSum ->
-                    expression.terms
-                        .zip(
-                            expression.coefficients,
-                        ).fold(MipAffine.of(check(expression.constant, "Constant"))) { total, (term, c) ->
-                            total + linear(term) * check(c, "Coefficient")
-                        }
+                    MipAffine.sum(
+                        expression.terms.zip(expression.coefficients).map { (term, c) -> linear(term) * check(c, "Coefficient") } +
+                            MipAffine.of(check(expression.constant, "Constant")),
+                    )
                 is IntProduct -> product(linear(expression.left), linear(expression.right))
                 is Element -> element(expression)
                 else -> throw Rejection("Unsupported expression: ${expression::class.simpleName ?: expression}")
@@ -287,11 +285,11 @@ internal class MipBuilder(
         return value
     }
 
-    private fun List<Int>.indexSum(): MipAffine = fold(MipAffine.ZERO) { total, index -> total + MipAffine.of(index) }
+    private fun List<Int>.indexSum(): MipAffine = MipAffine.sum(map { MipAffine.of(it) })
 
-    private fun List<MipAffine>.sum(): MipAffine = fold(MipAffine.ZERO) { total, form -> total + form }
+    private fun List<MipAffine>.sum(): MipAffine = MipAffine.sum(this)
 
-    private inline fun <T> List<T>.sumOf(form: (T) -> MipAffine): MipAffine = fold(MipAffine.ZERO) { total, item -> total + form(item) }
+    private inline fun <T> List<T>.sumOf(form: (T) -> MipAffine): MipAffine = MipAffine.sum(map(form))
 
     /** Aborts the lowering of one constraint, objective or declaration. */
     private class Rejection(
