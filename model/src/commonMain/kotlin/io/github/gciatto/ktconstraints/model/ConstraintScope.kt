@@ -14,6 +14,7 @@ import io.github.gciatto.ktconstraints.core.Sort
 import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.VariableFactory
 import io.github.gciatto.ktconstraints.core.VariableId
+import io.github.gciatto.ktconstraints.core.fold
 import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmStatic
 
@@ -105,13 +106,14 @@ class ConstraintScope private constructor() {
     fun build(): ConstraintModel = ConstraintModel(variables.values, entries, objective, projection ?: variables.values)
 
     private fun requireWellSorted(expression: Expr) {
-        when (expression) {
-            is IntExpr -> require(expression.sort == Sort.Integer) { "Inconsistent integer expression sort" }
-            is BoolExpr -> require(expression.sort == Sort.Bool) { "Inconsistent Boolean expression sort" }
-            is RealExpr -> require(expression.sort == Sort.Real) { "Inconsistent real expression sort" }
-            is BitVecExpr -> require(expression.sort == Sort.BitVector(expression.width)) { "Inconsistent bit-vector expression sort" }
+        expression.fold { node, _: List<Unit> ->
+            when (node) {
+                is IntExpr -> require(node.sort == Sort.Integer) { "Inconsistent integer expression sort" }
+                is BoolExpr -> require(node.sort == Sort.Bool) { "Inconsistent Boolean expression sort" }
+                is RealExpr -> require(node.sort == Sort.Real) { "Inconsistent real expression sort" }
+                is BitVecExpr -> require(node.sort == Sort.BitVector(node.width)) { "Inconsistent bit-vector expression sort" }
+            }
         }
-        expression.children.forEach { requireWellSorted(it) }
     }
 
     private fun requireOwned(referenced: Set<Variable>) {
