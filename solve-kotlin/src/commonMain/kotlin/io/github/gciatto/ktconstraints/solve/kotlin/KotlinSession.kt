@@ -55,12 +55,13 @@ internal class KotlinSession(
 
     override suspend fun check(assumptions: List<BoolExpr>, timeoutMillis: Long?): CheckResult = exclusive {
         require(timeoutMillis == null || timeoutMillis >= 0)
-        requireAccepted(assumptions)
+        val temporary = assumptions.toList()
+        requireAccepted(temporary)
         val budget = SearchBudget(timeoutMillis, configuration.workLimit) { closed.load() }
         try {
             budget.poll()
             budget.checkpoint()
-            checkActive(assumptions, budget)
+            checkActive(temporary, budget)
         } catch (stopped: SearchStopped) {
             CheckResult(CheckStatus.UNKNOWN, null, descriptor, stopped.reason)
         }
