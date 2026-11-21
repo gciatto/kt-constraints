@@ -2,8 +2,10 @@ package io.github.gciatto.ktconstraints.interop
 
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.choco.ChocoBackend
+import io.github.gciatto.ktconstraints.solve.choco.ChocoStore
 import io.github.gciatto.ktconstraints.solve.cpsat.CpSatBackend
 import io.github.gciatto.ktconstraints.solve.mip.OrToolsMipBackend
+import io.github.gciatto.ktconstraints.solve.spi.SatisfiabilityStore
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
 import io.github.gciatto.ktconstraints.solve.z3.Z3Backend
 import io.kotest.core.spec.style.FunSpec
@@ -32,4 +34,6 @@ class JavaUsageSpec :
         test("java/choco/direct/future-cancellation") { JavaUsage.cancelAsync(ChocoBackend()) }
         test("java/z3/direct/incremental-session") { JavaUsage.sessions(Z3Backend()) }
         test("java/choco/direct/sessions-are-refused") { JavaUsage.sessionsUnsupported(ChocoBackend()) }
+        test("java/choco/direct/propagating-store") { JavaUsage.store(ChocoStore()) }
+        test("java/z3/direct/satisfiability-store") { JavaUsage.store(SatisfiabilityStore.of(Z3Backend().create())) }
     })

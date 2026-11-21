@@ -12,6 +12,11 @@ import io.github.gciatto.ktconstraints.solve.Assignment;
 import io.github.gciatto.ktconstraints.solve.CheckResult;
 import io.github.gciatto.ktconstraints.solve.CheckStatus;
 import io.github.gciatto.ktconstraints.solve.Checkpoint;
+import io.github.gciatto.ktconstraints.solve.ConstraintStore;
+import io.github.gciatto.ktconstraints.solve.Entailment;
+import io.github.gciatto.ktconstraints.solve.Propagation;
+import io.github.gciatto.ktconstraints.solve.StoreMark;
+import io.github.gciatto.ktconstraints.solve.StoreStatus;
 import io.github.gciatto.ktconstraints.solve.SolutionEvent;
 import io.github.gciatto.ktconstraints.solve.SolutionFound;
 import io.github.gciatto.ktconstraints.solve.SolveCompleted;
@@ -202,6 +207,29 @@ public final class JavaUsage {
                 return;
             }
             throw new AssertionError("session opened on " + solver.getDescriptor().getId());
+        }
+    }
+
+    /** Constraint store from Java: post, mark, entail, undo, fail, explain and fork, blocking and asynchronously. */
+    public static void store(ConstraintStore backing) throws Exception {
+        try (BlockingStore store = BlockingStore.of(backing)) {
+            IntVar x = store.intVar("x", 0, 9);
+            IntVar y = store.intVar("y", 0, 9);
+            Propagation posted = store.constrain(Expressions.lt(Expressions.plus(x, y), 3));
+            check(posted.getStatus() != StoreStatus.FAILED, "post status " + posted.getStatus());
+            StoreMark mark = store.mark();
+            store.constrain(Expressions.eq(x, 2));
+            check(store.entails(Expressions.eq(y, 0)).getValue() == Entailment.ENTAILED, "y is forced to 0");
+            store.undoTo(mark);
+            Entailment bound = store.entailsAsync(Expressions.lt(x, 3)).get(60, TimeUnit.SECONDS).getValue();
+            check(bound == Entailment.ENTAILED, "x < 3 is entailed, got " + bound);
+            BoolExpr impossible = Expressions.gt(x, 5);
+            check(store.constrainAsync(impossible).get(60, TimeUnit.SECONDS).getStatus() == StoreStatus.FAILED, "x > 5 fails");
+            check(store.isFailed(), "store is failed");
+            check(store.explain().contains(impossible), "explanation " + store.explain());
+            try (BlockingStore child = store.fork()) {
+                check(child.isFailed(), "forks keep the failure");
+            }
         }
     }
 
