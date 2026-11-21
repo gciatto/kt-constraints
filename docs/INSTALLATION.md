@@ -21,7 +21,8 @@ through Gradle module metadata; Maven users name the variant explicitly.
 | `kt-constraints-solve-cpsat`      | JVM                        | CP-SAT (OR-Tools)                                           |
 | `kt-constraints-solve-mip`        | JVM (routes); JS/Native carry only internal lowering | SCIP and HiGHS (OR-Tools)         |
 | `kt-constraints-solve-minizinc`   | JVM, JS                    | MiniZinc CLI (JVM, Node) and browser Wasm                   |
-| `kt-constraints-interop-java`     | JVM                        | `BlockingSolver`, `BlockingSession`, `JavaNumbers`          |
+| `kt-constraints-solve-portfolio`  | JVM, JS, Native            | `solveAuto`, default routes per platform, fallback and race |
+| `kt-constraints-interop-java`     | JVM                        | `BlockingSolver`, `BlockingSession`, `BlockingStore`, `JavaNumbers` |
 | `kt-constraints-interop-js`       | JS                         | ES module with TypeScript declarations                      |
 
 ## From source
@@ -39,7 +40,8 @@ dependencies {
 
 Java projects add `kt-constraints-interop-java` plus the backend artifacts they use.
 
-For TypeScript, `./gradlew :interop-js:jsNodeProductionLibraryDistribution` writes an npm package to
+For TypeScript, once released: `npm install kt-constraints-interop-js` (an ES module with TypeScript declarations,
+Node 22+). From source, `./gradlew :interop-js:jsNodeProductionLibraryDistribution` writes the same package to
 `interop-js/build/dist/js/productionLibrary`; install it with `npm install --install-links <that path>`.
 
 ## Solver runtimes

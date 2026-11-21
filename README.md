@@ -50,7 +50,7 @@ linear lowering; HiGHS solves are always bounded by a backend limit, since OR-To
 | Direct solver adapters | `:solve-choco` | JVM Choco: batch satisfaction, enumeration and optimization |
 | Direct solver adapters | `:solve-mip` | JVM SCIP and HiGHS through OR-Tools: batch satisfaction and optimization |
 | Direct solver adapters | `:solve-highs` | Placeholder module for the direct HiGHS C API |
-| Orchestration | `:solve-portfolio` | Placeholder module |
+| Orchestration | `:solve-portfolio` | `solveAuto`: routes bundled per platform, ranked by model features, capabilities and platform (extensible heuristics, with a hook for benchmark evidence), run as fallback or race portfolios; see [docs/M8-DESIGN.md](docs/M8-DESIGN.md) and [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
 | Constraint stores | `:solve`, `:solve-spi`, `:solve-choco` | `ConstraintStore` for external logic engines: propagating `ChocoStore` (JVM) and proof-based `SatisfiabilityStore` over Z3 (JVM, Wasm, Native); see [docs/LOGIC-ENGINES.md](docs/LOGIC-ENGINES.md) |
 | Language interoperability | `:interop-java`, `:interop-js` | Java: `Expressions` static modelling facade and `BlockingSolver` (blocking, `CompletableFuture`, iterator) `BlockingSession` (incremental checks) and `BlockingStore` (constraint stores), tested from javac-compiled code against every bundled JVM backend; JS: ES module with TypeScript declarations, `bigint` integers, `Promise` solving with `AbortSignal` cancellation and `for await` iteration over Z3 Wasm and MiniZinc (Node CLI, browser Wasm), with exact reals, incremental sessions and constraint stores, type-checked and run on Node and in Chromium against the packaged library |
 | Testing and documentation | `:test-core`, `:test-solve`, `:documentation` | Shared contracts, capped finite test oracle and MkDocs |
@@ -94,6 +94,8 @@ MINIZINC_EXECUTABLE=/path/to/minizinc MINIZINC_ENGINES=gecode,chuffed,cp-sat,hig
 MINIZINC_BROWSER_TEST=true ./gradlew :solve-minizinc:jsBrowserTest
 # Manual raw phase benchmark, excluded from routine check.
 MINIZINC_EXECUTABLE=/path/to/minizinc ./gradlew :solve-minizinc:jvmBenchmark
+# Manual cross-route benchmark of eight problem families (CSV; see docs/BENCHMARKS.md).
+./gradlew :solve-portfolio:jvmBenchmark
 ```
 
 ## Build
@@ -109,7 +111,7 @@ Apple Native tests also require full Xcode; Command Line Tools alone cannot link
 
 The repository includes the standard Gradle 9.9.1 wrapper scripts and JAR. The wrapper verifies the Gradle
 distribution against the SHA-256 checksum in `gradle-wrapper.properties`. Placeholder backend modules
-(`solve-highs`, `solve-flatzinc`, `solve-portfolio`) remain unpublished until functional and conformance-tested.
+(`solve-highs`, `solve-flatzinc`) remain unpublished until functional and conformance-tested.
 
 ## Publishing coordinates
 

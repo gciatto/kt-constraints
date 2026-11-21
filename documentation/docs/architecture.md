@@ -116,6 +116,20 @@ then projects public outputs. Satisfaction enumeration removes duplicate project
 improving incumbents. Reaching a limit or timeout retains an incumbent without claiming optimality. Undefined
 element indices invalidate a candidate; other evaluation errors propagate. The oracle is never auto-registered.
 
+## Automatic selection and portfolios
+
+`SolverRegistry.rank` (M8, `docs/M8-DESIGN.md`) first rejects backends that lack a capability the model's
+features require, are unavailable, or report part of the model unsupported. It then scores the rest with a
+`RankingPolicy`, a list of weighted `RankingHeuristic`s:
+- capability fit;
+- feature affinity, matching the problem class to SMT, CP or MIP engines;
+- route overhead;
+- an optional benchmark-evidence heuristic over the experimental `PerformanceEvidence` interface.
+
+Ties keep registration order, and every score carries its reason. `:solve-portfolio` bundles each platform's
+routes (`DefaultBackends`) and runs them as a fallback or a bounded race. Only a single backend's own result is a
+proof; timeouts and failures are reported, never treated as evidence.
+
 ## Platform boundaries
 
 - `commonMain`: pure typed IR, compiler contracts, generic descriptors.

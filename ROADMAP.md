@@ -133,8 +133,12 @@ Gecode/Chuffed/CP-SAT/HiGHS/CBC routes tested when installed; no backend capabil
   (ES module, generated declarations type-checked by `tsc`, `bigint`, `Promise` + `AbortSignal`, async iteration;
   run on Node and in Chromium against the packaged library, with exact reals, incremental sessions and the MiniZinc
   Node CLI and browser Wasm routes); Java incremental sessions via `BlockingSession` (Z3). Per-platform evidence: `docs/AVAILABILITY.md`.
-- [ ] `:solve-portfolio`: deterministic ordered selection, optional parallel portfolio, evidence-aware incumbent handling.
+- [x] `:solve-portfolio`: deterministic ordered selection, optional parallel portfolio, evidence-aware incumbent handling.
+  `SolverRegistry.rank` (feature-, capability- and platform-aware `RankingPolicy` with explained scores and an
+  experimental `PerformanceEvidence` hook), `Portfolio.fallback` and `Portfolio.race`, `solveAuto` (M8).
 - [ ] Automatic discovery of installed/embedded runtimes and solver version/capability metadata.
+  `DefaultBackends` registers the routes bundled per platform and probes their availability; MiniZinc still needs
+  `MINIZINC_EXECUTABLE`, and solver versions are not yet reported.
 - [ ] CI host matrix + Java/JS/Native end-to-end usage tests, including solver bootstrap/install docs.
 
 **P2 acceptance:** Z3 works incrementally on supported targets; CP/SMT models run with explicit runtime capability
