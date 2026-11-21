@@ -65,7 +65,13 @@ class Z3NativeSpec :
                 backend.availability().available shouldBe true
                 backend.descriptor.id shouldBe "z3/native"
                 backend.descriptor.capabilities.containsAll(
-                    setOf(SolverCapability.INCREMENTAL_ASSERTIONS, SolverCapability.ASSUMPTIONS, SolverCapability.UNSAT_CORES),
+                    setOf(
+                        SolverCapability.INCREMENTAL_ASSERTIONS,
+                        SolverCapability.ASSUMPTIONS,
+                        SolverCapability.UNSAT_CORES,
+                        SolverCapability.REAL_ARITHMETIC,
+                        SolverCapability.BITVECTORS,
+                    ),
                 ) shouldBe true
                 backend.create().use { it.solve(ConstraintScope.empty().build()).descriptor shouldBe backend.descriptor }
             }

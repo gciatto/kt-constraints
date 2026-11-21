@@ -16,6 +16,7 @@ import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolveCompleted
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolveStatus
+import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.SatisfiabilityStore
 import io.github.gciatto.ktconstraints.test.solve.FiniteOracle
@@ -54,6 +55,8 @@ class Z3JsSpec :
             test("z3-js/route-identifies-the-wasm-binding") {
                 val selected = loaded()
                 selected.descriptor.id shouldBe "z3/wasm"
+                selected.descriptor.capabilities.containsAll(setOf(SolverCapability.REAL_ARITHMETIC, SolverCapability.BITVECTORS)) shouldBe
+                    true
                 selected.availability().available shouldBe true
                 selected.create().use { it.solve(ConstraintScope.empty().build()).descriptor shouldBe selected.descriptor }
             }

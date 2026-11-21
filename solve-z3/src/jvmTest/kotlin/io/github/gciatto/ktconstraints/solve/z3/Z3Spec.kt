@@ -59,7 +59,13 @@ class Z3Spec :
             backend.availability().available shouldBe true
             backend.descriptor.id shouldBe "z3/direct"
             backend.descriptor.capabilities.containsAll(
-                setOf(SolverCapability.INCREMENTAL_ASSERTIONS, SolverCapability.ASSUMPTIONS, SolverCapability.UNSAT_CORES),
+                setOf(
+                    SolverCapability.INCREMENTAL_ASSERTIONS,
+                    SolverCapability.ASSUMPTIONS,
+                    SolverCapability.UNSAT_CORES,
+                    SolverCapability.REAL_ARITHMETIC,
+                    SolverCapability.BITVECTORS,
+                ),
             ) shouldBe true
             (SolverCapability.DOMAIN_PROPAGATION in backend.descriptor.capabilities) shouldBe false
         }
