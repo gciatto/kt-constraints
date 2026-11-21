@@ -10,7 +10,7 @@ import io.github.gciatto.ktconstraints.solve.kotlin.sat.SatSolver
 internal class Circuit(
     val solver: SatSolver,
     private val configuration: KotlinConfiguration,
-    private val budget: SearchBudget,
+    private var budget: SearchBudget,
 ) {
     private val gates = mutableMapOf<GateKey, Int>()
 
@@ -22,6 +22,12 @@ internal class Circuit(
 
     val trueLiteral: Int = variable().also { clause(it) }
     val falseLiteral: Int get() = -trueLiteral
+
+    fun useBudget(budget: SearchBudget) {
+        this.budget = budget
+    }
+
+    suspend fun checkpoint() = budget.checkpoint()
 
     fun variable(): Int {
         budget.consume()

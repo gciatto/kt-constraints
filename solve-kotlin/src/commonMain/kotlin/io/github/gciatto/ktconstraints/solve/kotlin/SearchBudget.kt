@@ -23,7 +23,7 @@ internal class SearchBudget(
     fun consume() {
         if (workLimit != null && work >= workLimit) throw SearchStopped(TerminationReason.RESOURCE_LIMIT)
         work++
-        if (work and 255L == 0L) poll()
+        if ((work and 255L) == 0L) poll()
     }
 
     fun poll() {
