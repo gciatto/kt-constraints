@@ -21,6 +21,9 @@ kotlin {
                 implementation(project(":solve-minizinc"))
             }
         }
+        commonTest {
+            dependencies { implementation(project(":test-solve")) }
+        }
         nativeMain {
             dependencies { implementation(project(":solve-z3")) }
         }
