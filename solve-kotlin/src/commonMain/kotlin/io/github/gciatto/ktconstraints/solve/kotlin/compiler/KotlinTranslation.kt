@@ -266,6 +266,9 @@ internal class KotlinTranslation(
                         result = circuit.and(result, -binary.equal(values[left] as IntegerEncoding, values[right] as IntegerEncoding))
                     }
                 }
+                for (value in permutationValues(node)) {
+                    result = circuit.and(result, circuit.any(values.map { binary.equal(it as IntegerEncoding, binary.integer(value)) }))
+                }
                 result
             }
             is Table ->
@@ -291,6 +294,25 @@ internal class KotlinTranslation(
             }
             else -> error("Unsupported Boolean expression")
         }
+
+    /**
+     * Values of an all-different over variables whose domains jointly hold exactly as many values as operands.
+     * Each value is then taken: an implied, exact strengthening that lets the SAT search count.
+     */
+    private fun permutationValues(node: AllDifferent): List<BigInteger> {
+        val variables = node.operands.map { it as? IntVar ?: return emptyList() }
+        val union = variables.map { it.domain }.reduce(IntDomain::union)
+        val values = mutableListOf<BigInteger>()
+        for (interval in union.intervals) {
+            var value = interval.min
+            while (value <= interval.max) {
+                if (values.size == variables.size) return emptyList()
+                values += value
+                value += BigInteger.ONE
+            }
+        }
+        return if (values.size == variables.size) values else emptyList()
+    }
 
     private suspend fun realRelation(
         node: BoolExpr,
