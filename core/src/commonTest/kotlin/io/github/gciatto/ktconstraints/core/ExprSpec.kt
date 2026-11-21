@@ -18,6 +18,14 @@ class ExprSpec :
             order shouldBe listOf(IntLiteral(1), IntLiteral(2), IntNegation(IntLiteral(2)), expression)
         }
 
+        test("fold-and-variables/handle-chains-deeper-than-the-call-stack") {
+            val factory = VariableFactory.empty()
+            val xs = (0 until 100).map { factory.intVar("x$it", IntDomain.of(0, 1)) }
+            val chain = (1 until 100_000).fold<Int, IntExpr>(xs[0]) { total, i -> IntSum(total, xs[i % xs.size]) }
+            chain.fold { _, children: List<Int> -> 1 + children.sum() } shouldBe 199_999
+            chain.variables shouldBe xs.toSet()
+        }
+
         test("expressions/preserve-variable-identity-and-operand-order") {
             val factory = VariableFactory.empty()
             val x = factory.intVar("x", IntDomain.of(0, 1))

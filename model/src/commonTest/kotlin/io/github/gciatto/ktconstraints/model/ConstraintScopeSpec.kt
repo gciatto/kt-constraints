@@ -5,6 +5,7 @@ import io.github.gciatto.ktconstraints.core.BitVecLiteral
 import io.github.gciatto.ktconstraints.core.BitVecRelation
 import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.core.IntEquality
+import io.github.gciatto.ktconstraints.core.IntExpr
 import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.Rational
@@ -41,6 +42,14 @@ class ConstraintScopeSpec :
             xs.forEachIndexed { i, x -> scope.add(IntEquality(x, IntLiteral(i % 10)), name = "c$i") }
             scope.build().constraints.size shouldBe 40_000
             shouldThrow<IllegalArgumentException> { scope.add(IntEquality(xs[0], IntLiteral(0)), name = "c0") }
+        }
+
+        test("scope/accepts-expressions-deeper-than-the-call-stack") {
+            val scope = ConstraintScope.empty()
+            val x = scope.intVar("x", 0..1)
+            val chain = (1 until 100_000).fold<Int, IntExpr>(x) { total, _ -> IntSum(total, x) }
+            scope.add(IntEquality(chain, IntLiteral(0)))
+            scope.build().constraints.size shouldBe 1
         }
 
         test("scope/variable-identities-are-distinct") {
