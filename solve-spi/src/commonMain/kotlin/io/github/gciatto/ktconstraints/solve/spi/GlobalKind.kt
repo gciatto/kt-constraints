@@ -25,4 +25,16 @@ enum class GlobalKind {
 
     /** `cumulative` (and `disjunctive`). */
     CUMULATIVE,
+
+    /** `regular` (deterministic automata). */
+    REGULAR,
+
+    /** `subCircuit`. */
+    SUBCIRCUIT,
+
+    /** `binPacking`. */
+    BIN_PACKING,
+
+    /** `noOverlap2D`. */
+    NO_OVERLAP_2D,
 }

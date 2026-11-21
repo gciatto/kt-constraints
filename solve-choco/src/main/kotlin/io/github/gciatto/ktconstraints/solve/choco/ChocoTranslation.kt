@@ -12,8 +12,6 @@ import io.github.gciatto.ktconstraints.core.BoolOr
 import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.CardinalityRelation
-import io.github.gciatto.ktconstraints.core.Circuit
-import io.github.gciatto.ktconstraints.core.Cumulative
 import io.github.gciatto.ktconstraints.core.DecomposableConstraint
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntDifference
@@ -29,7 +27,6 @@ import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.IntVar
-import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.core.Variable
@@ -41,7 +38,6 @@ import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
 import org.chocosolver.solver.Model
 import org.chocosolver.solver.constraints.Constraint
 import org.chocosolver.solver.constraints.extension.Tuples
-import org.chocosolver.solver.variables.Task
 import org.gciatto.kt.math.BigInteger
 import java.util.OptionalInt
 import org.chocosolver.solver.variables.BoolVar as ChocoBoolVar
@@ -59,6 +55,7 @@ internal class ChocoTranslation(
     private val booleans = linkedMapOf<BoolVar, ChocoBoolVar>()
     private val integers = linkedMapOf<IntVar, ChocoIntVar>()
     private var declared = 0
+    private val globals = ChocoGlobals(chocoModel) { variable(it) }
 
     /** The Choco variable of each declared source variable; Choco Booleans are 0/1 integer variables. */
     val natives = hashMapOf<Variable, ChocoIntVar>()
@@ -159,7 +156,7 @@ internal class ChocoTranslation(
     private fun global(expression: BoolExpr): Constraint =
         when {
             expression is DecomposableConstraint ->
-                chocoModel.structural(expression) { variable(it) } ?: constraint(expression.decomposition)
+                globals.native(expression) ?: constraint(expression.decomposition)
             expression is AllDifferent && expression.operands.size < 2 -> chocoModel.trueConstraint()
             expression is AllDifferent -> chocoModel.allDifferent(expression.operands.map { variable(it) }.toTypedArray(), "DEFAULT")
             (expression as Table).tuples.isEmpty() -> chocoModel.falseConstraint()
@@ -223,27 +220,4 @@ private fun Model.defining(
         is Element -> element(result, operands.drop(1).toTypedArray(), operands[0], 0)
         is IntMin -> min(result, operands.toTypedArray())
         else -> max(result, operands.toTypedArray())
-    }
-
-/** Choco's native form of a top-level structural global, or null where its decomposition must be posted instead. */
-private fun Model.structural(
-    expression: DecomposableConstraint,
-    variable: (IntExpr) -> ChocoIntVar,
-): Constraint? =
-    when {
-        expression.children.isEmpty() -> trueConstraint()
-        expression is Inverse ->
-            inverseChanneling(expression.direct.map(variable).toTypedArray(), expression.inverse.map(variable).toTypedArray(), 0, 0)
-        expression is Circuit && expression.successors.size > 1 -> circuit(expression.successors.map(variable).toTypedArray(), 0)
-        expression is Cumulative ->
-            cumulative(
-                expression.starts
-                    .zip(
-                        expression.durations,
-                    ) { start, duration -> Task(variable(start), duration.toIntExact()) }
-                    .toTypedArray(),
-                expression.demands.map { intVar(it.toIntExact()) }.toTypedArray(),
-                intVar(expression.capacity.toIntExact()),
-            )
-        else -> null
     }

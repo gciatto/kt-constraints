@@ -1,6 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
 import io.github.gciatto.ktconstraints.core.AllDifferent
+import io.github.gciatto.ktconstraints.core.BinPacking
 import io.github.gciatto.ktconstraints.core.BoolAnd
 import io.github.gciatto.ktconstraints.core.BoolCardinality
 import io.github.gciatto.ktconstraints.core.BoolEquality
@@ -32,6 +33,9 @@ import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.IntVar
 import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.NoOverlap2D
+import io.github.gciatto.ktconstraints.core.Regular
+import io.github.gciatto.ktconstraints.core.SubCircuit
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.core.VariableId
 import io.github.gciatto.ktconstraints.core.fold
@@ -66,7 +70,7 @@ internal class MiniZincLowering(
 
     private fun structural(expression: DecomposableConstraint): String {
         val operands = expression.children.map { lower(it).text }
-        if (operands.isEmpty()) return "true"
+        if (operands.isEmpty() && expression !is Regular) return "true"
 
         fun array(items: List<String>) = "array1d(0..${items.lastIndex}, [${items.joinToString()}])"
         return when (expression) {
@@ -91,8 +95,68 @@ internal class MiniZincLowering(
                 "cumulative([${operands.joinToString()}], [${expression.durations.joinToString()}], " +
                     "[${expression.demands.joinToString()}], ${expression.capacity})"
             }
+            is SubCircuit -> {
+                includes += "subcircuit.mzn"
+                // MiniZinc's linear subcircuit library leaves successors outside the index set; state the range.
+                val ranges = operands.joinToString(" /\\ ") { "($it >= 0 /\\ $it < ${operands.size})" }
+                "(subcircuit(${array(operands)}) /\\ $ranges)"
+            }
+            is NoOverlap2D -> {
+                includes += "diffn.mzn"
+                expression.xs.indices.forEach { i ->
+                    checkValue(requireNotNull(lower(expression.xs[i]).bounds).max + expression.widths[i])
+                    checkValue(requireNotNull(lower(expression.ys[i]).bounds).max + expression.heights[i])
+                }
+                val n = expression.xs.size
+                "diffn([${operands.subList(0, n).joinToString()}], [${operands.subList(n, 2 * n).joinToString()}], " +
+                    "[${expression.widths.joinToString()}], [${expression.heights.joinToString()}])"
+            }
+            is BinPacking -> binPacking(expression, operands)
+            is Regular -> regular(expression, operands)
             else -> lower(expression.decomposition).text
         }
+    }
+
+    private fun binPacking(
+        expression: BinPacking,
+        operands: List<String>,
+    ): String {
+        if (expression.loads.isEmpty() || expression.bins.isEmpty()) return lower(expression.decomposition).text
+        includes += "bin_packing_load.mzn"
+        expression.sizes.forEach { checkValue(it) }
+        val items = expression.bins.size
+        return "bin_packing_load(array1d(0..${expression.loads.size - 1}, [${operands.subList(items, operands.size).joinToString()}]), " +
+            "[${operands.subList(0, items).joinToString()}], [${expression.sizes.joinToString()}])"
+    }
+
+    /** MiniZinc numbers states and symbols from 1 and uses 0 for a missing transition. */
+    private fun regular(
+        expression: Regular,
+        operands: List<String>,
+    ): String {
+        val automaton = expression.automaton
+        if (operands.isEmpty() || automaton.transitions.isEmpty()) return lower(expression.decomposition).text
+        includes += "regular.mzn"
+        val lowest = automaton.transitions.minOf { it.symbol }
+        val highest = automaton.transitions.maxOf { it.symbol }
+        listOf(lowest, highest, highest - lowest + BigInteger.ONE).forEach { checkValue(it) }
+        val offset = BigInteger.ONE - lowest
+        val shifted =
+            operands.map {
+                when (offset.signum) {
+                    0 -> it
+                    1 -> "($it + $offset)"
+                    else -> "($it - ${-offset})"
+                }
+            }
+        val symbols = (highest - lowest).toIntExact() + 1
+        val table =
+            (0 until automaton.states).flatMap { state ->
+                (0 until symbols).map { column -> (automaton.next(state, lowest + BigInteger.of(column))?.plus(1) ?: 0).toString() }
+            }
+        return "regular([${shifted.joinToString()}], ${automaton.states}, $symbols, " +
+            "array2d(1..${automaton.states}, 1..$symbols, [${table.joinToString()}]), ${automaton.initial + 1}, " +
+            "{${automaton.accepting.sorted().joinToString { (it + 1).toString() }}})"
     }
 
     private fun integer(

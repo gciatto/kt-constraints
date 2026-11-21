@@ -19,8 +19,6 @@ import io.github.gciatto.ktconstraints.core.BoolOr
 import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.CardinalityRelation
-import io.github.gciatto.ktconstraints.core.Circuit
-import io.github.gciatto.ktconstraints.core.Cumulative
 import io.github.gciatto.ktconstraints.core.DecomposableConstraint
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntDifference
@@ -36,7 +34,6 @@ import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.IntVar
-import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.model.ConstraintModel
@@ -59,6 +56,7 @@ internal class CpSatTranslation(
     private val integers = linkedMapOf<IntVar, com.google.ortools.sat.IntVar>()
     private val literals = CpSatLiterals(cpModel)
     private var auxiliaries = 0
+    private val globals = CpSatGlobals(cpModel, ::integer, ::equality)
 
     init {
         val report = CpSatSupport.report(model)
@@ -113,7 +111,7 @@ internal class CpSatTranslation(
             is AllDifferent -> cpModel.addAllDifferent(expression.operands.map { integer(it) })
             is Table -> table(expression)
             is DecomposableConstraint ->
-                if (!cpModel.structural(expression, ::integer, ::equality)) post(expression.decomposition)
+                if (!globals.post(expression)) post(expression.decomposition)
             else -> cpModel.addBoolOr(listOf(literal(expression)))
         }
     }
@@ -243,43 +241,3 @@ private fun CpModel.defining(
         is IntMin -> addMinEquality(result, operands)
         else -> addMaxEquality(result, operands)
     }
-
-/** Posts CP-SAT's native form of a top-level structural global; false where its decomposition must be posted instead. */
-private fun CpModel.structural(
-    expression: DecomposableConstraint,
-    integer: (IntExpr) -> LinearArgument,
-    equality: (LinearArgument, LinearArgument) -> Literal,
-): Boolean {
-    fun variable(operand: IntExpr): com.google.ortools.sat.IntVar =
-        integer(operand) as? com.google.ortools.sat.IntVar
-            ?: CpSatSupport.bounds(operand).let { bounds ->
-                newIntVar(bounds.min.toLongExact(), bounds.max.toLongExact(), "operand").also { addEquality(it, integer(operand)) }
-            }
-    when {
-        expression.children.isEmpty() -> Unit
-        expression is Inverse ->
-            addInverse(
-                expression.direct.map(::variable).toTypedArray(),
-                expression.inverse.map(::variable).toTypedArray(),
-            )
-        expression is Circuit && expression.successors.size > 1 -> {
-            val circuit = addCircuit()
-            expression.successors.forEachIndexed { tail, successor ->
-                val next = integer(successor)
-                expression.successors.indices.filter { it != tail }.forEach { head ->
-                    circuit.addArc(tail, head, equality(next, LinearExpr.constant(head.toLong())))
-                }
-            }
-        }
-        expression is Cumulative -> {
-            val intervals =
-                expression.starts.zip(expression.durations) { start, duration ->
-                    newFixedSizeIntervalVar(integer(start), duration.toLongExact(), "task")
-                }
-            addCumulative(expression.capacity.toLongExact())
-                .addDemands(intervals.toTypedArray(), expression.demands.map { it.toLongExact() }.toLongArray())
-        }
-        else -> return false
-    }
-    return true
-}

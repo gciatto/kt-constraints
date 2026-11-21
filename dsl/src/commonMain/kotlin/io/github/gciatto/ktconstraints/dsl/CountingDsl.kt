@@ -6,6 +6,7 @@ package io.github.gciatto.ktconstraints.dsl
 import io.github.gciatto.ktconstraints.core.BoolAnd
 import io.github.gciatto.ktconstraints.core.BoolExpr
 import io.github.gciatto.ktconstraints.core.BoolLiteral
+import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
 import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.IntEquality
@@ -59,6 +60,13 @@ fun globalCardinality(
         values.zip(counts) { value, occurrences -> IntEquality(count(IntLiteral(value), operands), occurrences) },
     )
 }
+
+/** Number of distinct values among [operands]. */
+fun nValue(vararg operands: IntExpr): LinearSum = nValue(operands.asList())
+
+/** Number of distinct values among [operands]: those differing from every earlier operand. */
+fun nValue(operands: List<IntExpr>): LinearSum =
+    ones(operands.indices.map { i -> BoolAnd.of((0 until i).map { j -> BoolNot(IntEquality(operands[i], operands[j])) }) })
 
 private fun ones(conditions: List<BoolExpr>): LinearSum =
     LinearSum(

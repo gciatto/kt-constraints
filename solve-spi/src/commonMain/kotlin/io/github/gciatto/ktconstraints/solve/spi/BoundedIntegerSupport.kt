@@ -11,7 +11,7 @@ import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
 import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.BoolVar
-import io.github.gciatto.ktconstraints.core.Cumulative
+import io.github.gciatto.ktconstraints.core.Circuit
 import io.github.gciatto.ktconstraints.core.DecomposableConstraint
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.Expr
@@ -27,7 +27,10 @@ import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.Regular
+import io.github.gciatto.ktconstraints.core.SubCircuit
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.fold
@@ -173,13 +176,14 @@ open class BoundedIntegerSupport(
             }
         }
 
-        /** Natively posted operands at top level; the exact decomposition below it, or for cumulative magnitudes. */
+        /** Natively posted operands at top level; the exact decomposition below it, or where constants add magnitude. */
         private fun structural(
             expression: DecomposableConstraint,
             topLevel: Boolean,
         ) {
-            if (topLevel && expression !is Cumulative) {
+            if (topLevel && (expression is Inverse || expression is Circuit || expression is SubCircuit || expression is Regular)) {
                 expression.children.forEach { integer(it as IntExpr) }
+                if (expression is Regular) expression.automaton.transitions.forEach { check(it.symbol, "Automaton symbol") }
             } else {
                 boolean(expression.decomposition, false)
             }

@@ -28,6 +28,8 @@ import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.IntVar
 import io.github.gciatto.ktconstraints.core.LinearSum
 import io.github.gciatto.ktconstraints.core.Table
+import io.github.gciatto.ktconstraints.core.Variable
+import io.github.gciatto.ktconstraints.core.VariableFactory
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
 import org.gciatto.kt.math.BigInteger
@@ -47,6 +49,7 @@ internal class MipBuilder(
     private val booleans = linkedMapOf<BoolVar, Int>()
     private val integers = linkedMapOf<IntVar, Int>()
     private var objective: MipObjective? = null
+    private val hidden = mutableSetOf<Variable>()
 
     init {
         attempt { declare(model) }
@@ -61,7 +64,14 @@ internal class MipBuilder(
         }
     }
 
-    fun program(): MipProgram = MipProgram(variables.toList(), rows.toList(), objective, booleans, integers)
+    fun program(): MipProgram =
+        MipProgram(
+            variables.toList(),
+            rows.toList(),
+            objective,
+            booleans.filterKeys { it !in hidden },
+            integers.filterKeys { it !in hidden },
+        )
 
     private fun attempt(block: () -> Unit) {
         try {
@@ -112,9 +122,22 @@ internal class MipBuilder(
             is IntEquality -> difference(expression.left, expression.right).let { require(it, BigInteger.ZERO, BigInteger.ZERO) }
             is IntLessOrEqual -> require(difference(expression.left, expression.right), null, BigInteger.ZERO)
             is IntLessThan -> require(difference(expression.left, expression.right), null, MipAffine.MINUS_ONE)
-            is DecomposableConstraint -> post(expression.decomposition.also { decompositions += MipLowering.STRUCTURAL })
+            is DecomposableConstraint -> post(withHidden(expression.decompose(VariableFactory.empty())))
             else -> require(literal(expression), BigInteger.ONE, BigInteger.ONE)
         }
+    }
+
+    /** Declares the hidden variables a top-level decomposition introduced. */
+    private fun withHidden(formula: BoolExpr): BoolExpr {
+        decompositions += MipLowering.STRUCTURAL
+        for (variable in formula.variables.filter { it !in booleans && it !in integers }) {
+            when (variable) {
+                is BoolVar -> booleans[variable] = binary()
+                is IntVar -> integers[variable] = integer(variable)
+            }
+            hidden += variable
+        }
+        return formula
     }
 
     /** An affine 0/1 form equal to the truth value of [expression]. */

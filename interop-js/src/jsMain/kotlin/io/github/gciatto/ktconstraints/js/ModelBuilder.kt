@@ -2,7 +2,10 @@
 
 package io.github.gciatto.ktconstraints.js
 
+import io.github.gciatto.ktconstraints.core.BoolNot
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.IntDomain
+import io.github.gciatto.ktconstraints.core.LinearSum
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.JsBigInt
@@ -33,6 +36,22 @@ class ModelBuilder {
 
     /** Replaces the objective with maximizing [objective]. */
     fun maximize(objective: IntExpression): ModelBuilder = apply { scope.maximize(objective.expr) }
+
+    /**
+     * Soft constraints: replaces the objective with minimizing the total non-negative weight of the violated
+     * [constraints], `weights[i]` for `constraints[i]`, and returns that penalty.
+     */
+    fun minimizeViolations(
+        constraints: Array<BoolExpression>,
+        weights: Array<JsBigInt>,
+    ): IntExpression {
+        require(constraints.size == weights.size) { "One weight per soft constraint" }
+        val coefficients = weights.map { it.toBigInteger() }
+        require(coefficients.all { it.signum >= 0 }) { "Soft-constraint weights must be non-negative" }
+        val penalty = LinearSum(constraints.map { BoolToInt(BoolNot(it.expr)) }, coefficients)
+        scope.minimize(penalty)
+        return IntExpression(penalty)
+    }
 
     /** Clears any objective. */
     fun satisfy(): ModelBuilder = apply { scope.satisfy() }

@@ -50,6 +50,7 @@ import io.github.gciatto.ktconstraints.core.RealSum
 import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.core.Variable
+import io.github.gciatto.ktconstraints.core.VariableFactory
 import io.github.gciatto.ktconstraints.core.fold
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.Assignment
@@ -68,6 +69,7 @@ internal class Z3Translation<T>(
     private val bitVectors = linkedMapOf<BitVecVar, T>()
     private val indexDefinedness = mutableListOf<T>()
     private var constants = 0
+    private val hidden = mutableSetOf<Variable>()
 
     /** Domain, model-constraint and their element-definedness assertions. */
     val assertions: List<T>
@@ -76,7 +78,7 @@ internal class Z3Translation<T>(
         val report = Z3Support.report(model)
         if (!report.isSupported) throw UnsupportedModelException(report)
         val domains = model.variables.mapNotNull { declare(it) }
-        val constraints = model.constraints.map { translate(it) }
+        val constraints = model.constraints.map { topLevel(it) }
         assertions = domains + constraints + drainDefinedness()
     }
 
@@ -95,6 +97,19 @@ internal class Z3Translation<T>(
             else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported variable: ${variable.name}")))
         }
     }
+
+    /** Translates a model constraint, using hidden-variable decompositions of top-level globals. */
+    private fun topLevel(constraint: BoolExpr): T =
+        when (constraint) {
+            is BoolAnd -> port.and(listOf(topLevel(constraint.left), topLevel(constraint.right)))
+            is DecomposableConstraint -> {
+                val formula = constraint.decompose(VariableFactory.empty())
+                val fresh = formula.variables.filter { it !in booleans && it !in integers }
+                hidden += fresh
+                port.and(fresh.mapNotNull { declare(it) } + translate(formula))
+            }
+            else -> translate(constraint)
+        }
 
     /** Drops [variables] from translation and assignments; their constants are never reused. */
     fun forget(variables: Collection<Variable>) {
@@ -146,8 +161,8 @@ internal class Z3Translation<T>(
     /** Complete assignment of every declared variable from the last satisfiable check. */
     fun assignment(): Assignment =
         Assignment.of(
-            booleans.mapValues { (_, term) -> port.boolValue(term) },
-            integers.mapValues { (_, term) -> port.intValue(term) },
+            booleans.filterKeys { it !in hidden }.mapValues { (_, term) -> port.boolValue(term) },
+            integers.filterKeys { it !in hidden }.mapValues { (_, term) -> port.intValue(term) },
             reals.mapValues { (_, term) -> port.realValue(term) },
             bitVectors.mapValues { (_, term) -> port.bitVecValue(term) },
         )

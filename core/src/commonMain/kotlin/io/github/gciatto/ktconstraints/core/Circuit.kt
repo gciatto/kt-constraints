@@ -27,6 +27,21 @@ class Circuit(
         BoolAnd.of(parts)
     }
 
+    /** Positions along the cycle from node 0: each arc into a node other than 0, self-loops included, increments it. */
+    override fun decompose(auxiliaries: VariableFactory): BoolExpr {
+        val n = successors.size
+        if (n <= 1) return decomposition
+        val position =
+            listOf(IntLiteral(0)) + (1 until n).map { auxiliaries.intVar("circuit.position$it", IntDomain.of(1L, n - 1L)) }
+        val arcs =
+            successors.indices.flatMap { i ->
+                (1 until n).map { j ->
+                    BoolImplies(IntEquality(successors[i], IntLiteral(j)), IntEquality(position[j], IntSum(position[i], IntLiteral(1))))
+                }
+            }
+        return BoolAnd.of(successors.map { Decompositions.inRange(it, n) } + AllDifferent(successors) + arcs)
+    }
+
     override fun equals(other: Any?): Boolean = other is Circuit && successors == other.successors
 
     override fun hashCode(): Int = 17 * successors.hashCode() + 1

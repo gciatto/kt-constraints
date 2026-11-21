@@ -1,6 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.spi
 
 import io.github.gciatto.ktconstraints.core.AllDifferent
+import io.github.gciatto.ktconstraints.core.BinPacking
 import io.github.gciatto.ktconstraints.core.BitVecVar
 import io.github.gciatto.ktconstraints.core.BoolAnd
 import io.github.gciatto.ktconstraints.core.BoolCardinality
@@ -23,8 +24,11 @@ import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntVar
 import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.NoOverlap2D
 import io.github.gciatto.ktconstraints.core.RealVar
+import io.github.gciatto.ktconstraints.core.Regular
 import io.github.gciatto.ktconstraints.core.Sort
+import io.github.gciatto.ktconstraints.core.SubCircuit
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.core.fold
 import io.github.gciatto.ktconstraints.model.ConstraintModel
@@ -183,6 +187,10 @@ class ModelFeatures private constructor(
                 is Inverse -> globals += GlobalKind.INVERSE
                 is Circuit -> globals += GlobalKind.CIRCUIT
                 is Cumulative -> globals += GlobalKind.CUMULATIVE
+                is Regular -> globals += GlobalKind.REGULAR
+                is SubCircuit -> globals += GlobalKind.SUBCIRCUIT
+                is BinPacking -> globals += GlobalKind.BIN_PACKING
+                is NoOverlap2D -> globals += GlobalKind.NO_OVERLAP_2D
                 else -> Unit
             }
             if (node.isConnective() && children.any { it.relation }) reified = true
