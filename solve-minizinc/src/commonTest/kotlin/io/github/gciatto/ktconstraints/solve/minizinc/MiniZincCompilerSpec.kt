@@ -93,7 +93,7 @@ class MiniZincCompilerSpec :
             scope.add(NoOverlap2D(xs, xs, one, one))
             val source = MiniZincCompiler().compile(scope.build()).source
             source.contains("regular([(v0 + 1), (v1 + 1)], 2, 2, array2d(1..2, 1..2, [2, 0, 0, 2]), 1, {2})") shouldBe true
-            source.contains("subcircuit(array1d(0..1, [v0, v1]))") shouldBe true
+            source.contains("(subcircuit(array1d(0..1, [v0, v1])) /\\ (v0 >= 0 /\\ v0 < 2) /\\ (v1 >= 0 /\\ v1 < 2))") shouldBe true
             source.contains("bin_packing_load(array1d(0..1, [v0, v1]), [v0, v1], [1, 1])") shouldBe true
             source.contains("diffn([v0, v1], [v0, v1], [1, 1], [1, 1])") shouldBe true
         }

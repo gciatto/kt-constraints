@@ -26,7 +26,10 @@ class RoutingAndPackingGlobalsSpec :
                 hidden.map { variable ->
                     when (variable) {
                         is BoolVar -> listOf(false, true)
-                        is IntVar -> variable.domain.intervals.flatMap { interval -> (interval.min.toLongExact()..interval.max.toLongExact()).toList() }
+                        is IntVar ->
+                            variable.domain.intervals.flatMap { interval ->
+                                (interval.min.toLongExact()..interval.max.toLongExact()).toList()
+                            }
                         else -> error("Unexpected hidden variable $variable")
                     }
                 }
@@ -54,7 +57,12 @@ class RoutingAndPackingGlobalsSpec :
             Automaton(
                 initial = 0,
                 accepting = setOf(0, 1),
-                transitions = listOf(Transition(0, BigInteger.ZERO, 0), Transition(0, BigInteger.ONE, 1), Transition(1, BigInteger.ZERO, 0)),
+                transitions =
+                    listOf(
+                        Transition(0, BigInteger.ZERO, 0),
+                        Transition(0, BigInteger.ONE, 1),
+                        Transition(1, BigInteger.ZERO, 0),
+                    ),
             )
 
         test("regular/accepts-words-of-a-deterministic-automaton") {

@@ -212,7 +212,11 @@ class DifferentialCase(
 
         /** Words over {0, 1} without two consecutive ones. */
         private val NO_DOUBLE_ONES =
-            Automaton(0, setOf(0, 1), listOf(Transition(0, BigInteger.ZERO, 0), Transition(0, BigInteger.ONE, 1), Transition(1, BigInteger.ZERO, 0)))
+            Automaton(
+                0,
+                setOf(0, 1),
+                listOf(Transition(0, BigInteger.ZERO, 0), Transition(0, BigInteger.ONE, 1), Transition(1, BigInteger.ZERO, 0)),
+            )
 
         private fun big(vararg values: Long): List<BigInteger> = values.map { BigInteger.of(it) }
 
