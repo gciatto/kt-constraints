@@ -53,7 +53,7 @@ import org.gciatto.kt.math.BigInteger
 
 /** Exact translation into reusable Boolean circuits and linear-real atoms; no search occurs here. */
 internal class KotlinTranslation(val circuit: Circuit) {
-    val binary = BinaryArithmetic(circuit)
+    val binary = BinaryArithmetic(circuit, circuit::checkpoint)
     val realAtoms = mutableListOf<RealAtom>()
     private val cache = CompilationCache()
     private val booleans = linkedMapOf<BoolVar, Int>()
@@ -113,7 +113,7 @@ internal class KotlinTranslation(val circuit: Circuit) {
             bitVectors.mapValues { binary.decodeBits(it.value, values) },
         )
 
-    private fun compile(node: Expr, terms: List<CompiledTerm>): CompiledTerm {
+    private suspend fun compile(node: Expr, terms: List<CompiledTerm>): CompiledTerm {
         var defined = circuit.all(terms.map { it.defined })
         val children = terms.map { it.value }
         val value = when (node) {
@@ -132,7 +132,7 @@ internal class KotlinTranslation(val circuit: Circuit) {
         return CompiledTerm(value, defined)
     }
 
-    private fun integer(node: IntExpr, values: List<Any>): IntegerEncoding = when (node) {
+    private suspend fun integer(node: IntExpr, values: List<Any>): IntegerEncoding = when (node) {
         is IntVar -> integers.getValue(node)
         is IntLiteral -> binary.integer(node.value)
         is IntSum -> binary.add(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
@@ -158,7 +158,7 @@ internal class KotlinTranslation(val circuit: Circuit) {
         else -> error("Unsupported integer expression")
     }
 
-    private fun bitVector(node: BitVecExpr, values: List<Any>): IntArray = when (node) {
+    private suspend fun bitVector(node: BitVecExpr, values: List<Any>): IntArray = when (node) {
         is BitVecVar -> bitVectors.getValue(node)
         is BitVecLiteral -> binary.bits(node.value, node.width)
         is BitVecBinary -> binary.bitVector(node.operator, values[0] as IntArray, values[1] as IntArray)
@@ -178,7 +178,7 @@ internal class KotlinTranslation(val circuit: Circuit) {
         else -> error("Unsupported real expression")
     }
 
-    private fun boolean(node: BoolExpr, values: List<Any>): Int = when (node) {
+    private suspend fun boolean(node: BoolExpr, values: List<Any>): Int = when (node) {
         is BoolVar -> booleans.getValue(node)
         is BoolLiteral -> circuit.constant(node.value)
         is BoolNot -> -(values.single() as Int)
@@ -194,7 +194,7 @@ internal class KotlinTranslation(val circuit: Circuit) {
         else -> global(node, values)
     }
 
-    private fun global(node: BoolExpr, values: List<Any>): Int = when (node) {
+    private suspend fun global(node: BoolExpr, values: List<Any>): Int = when (node) {
         is AllDifferent -> {
             var result = circuit.trueLiteral
             for (left in values.indices) {
