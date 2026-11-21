@@ -30,7 +30,7 @@ import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
  * negation through propagation, so it may be [Entailment.UNKNOWN] but is never wrong. Propagation always reaches its
  * fixpoint, so timeouts are not applied. Single consumer; JVM only.
  */
-@Suppress("TooManyFunctions") // One override per ConstraintStore operation, plus the shared declaration step.
+@Suppress("TooManyFunctions") // One override per ConstraintStore operation, plus declaration and replay steps.
 class ChocoStore : ConstraintStore {
     private val factory = VariableFactory.empty()
     private val translation = ChocoTranslation(ConstraintScope.empty().build())
@@ -122,9 +122,42 @@ class ChocoStore : ConstraintStore {
         return Residual(variables.filterIsInstance<IntVar>().associateWith { domain(it) }, constraints, exact = false)
     }
 
+    /** Deletion filter: drops each posted constraint whose removal still lets propagation refute the rest. */
+    override suspend fun explain(timeoutMillis: Long?): List<BoolExpr>? {
+        guard.requireOpen()
+        if (!isFailed) return null
+        val variables = frames.flatMap { it.variables }
+        var core = frames.flatMap { it.constraints }
+        // shortcut: one full replay per posted constraint, O(n^2) posts; switch to QuickXplain if explanations get slow.
+        for (candidate in core.toList()) {
+            val without = core - candidate
+            if (replay(variables, without).isFailed) core = without
+        }
+        return core
+    }
+
+    override fun fork(): ConstraintStore {
+        guard.requireOpen()
+        return replay(frames.flatMap { it.variables }, frames.flatMap { it.constraints }).also { it.isFailed = it.isFailed || isFailed }
+    }
+
     override fun close() {
         guard.close()
     }
+
+    /** A fresh store declaring [variables] and posting [constraints], propagated once. */
+    private fun replay(
+        variables: List<Variable>,
+        constraints: List<BoolExpr>,
+    ): ChocoStore =
+        ChocoStore().also { child ->
+            variables.forEach { child.declare(it) }
+            constraints.forEach {
+                child.frames.last().natives += child.worlds.recording { child.translation.post(it) }
+                child.frames.last().constraints += it
+            }
+            child.isFailed = child.isFailed || !child.worlds.propagate()
+        }
 
     private fun <V : Variable> declare(variable: V): V {
         guard.requireOpen()

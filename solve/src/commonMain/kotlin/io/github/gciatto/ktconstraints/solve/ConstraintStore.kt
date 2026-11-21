@@ -55,6 +55,18 @@ interface ConstraintStore : AutoCloseable {
     /** Constraints the store still holds on [variables]; see [Residual] for its precision. */
     fun project(variables: List<Variable>): Residual
 
+    /**
+     * When the store has failed, posted constraints that are inconsistent by themselves (with the declared domains),
+     * found with the store's own evidence; not necessarily minimal. Null while the store has not failed.
+     */
+    suspend fun explain(timeoutMillis: Long? = null): List<BoolExpr>?
+
+    /**
+     * An independent store holding the same variables, constraints and failure state, but none of the marks. Later
+     * changes to either store do not affect the other. Costs a replay of the current constraints.
+     */
+    fun fork(): ConstraintStore
+
     /** Releases engine resources; idempotent. */
     override fun close()
 }

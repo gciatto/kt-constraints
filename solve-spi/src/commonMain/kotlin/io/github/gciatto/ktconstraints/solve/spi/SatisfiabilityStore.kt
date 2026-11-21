@@ -28,11 +28,12 @@ import kotlin.time.TimeSource
  * [ConstraintStore] over any incremental session. Every post runs a complete satisfiability check, so statuses and
  * entailments are proofs, but nothing propagates: domains stay as declared. Marks map to session frames.
  */
+@Suppress("TooManyFunctions") // One override per ConstraintStore operation, plus the shared declaration step.
 class SatisfiabilityStore private constructor(
-    private val solver: IncrementalConstraintSolver,
+    private val shared: SharedSolver,
 ) : ConstraintStore {
     private val factory = VariableFactory.empty()
-    private val session: IncrementalSession = solver.openSession(ConstraintScope.empty().build())
+    private val session: IncrementalSession = shared.acquire().openSession(ConstraintScope.empty().build())
     private val frames = mutableListOf(StoreFrame(null, failedBefore = false))
     private val guard = StoreGuard()
 
@@ -121,10 +122,36 @@ class SatisfiabilityStore private constructor(
         return Residual(variables.filterIsInstance<IntVar>().associateWith { it.domain }, constraints, exact = false)
     }
 
+    /** Core of the posted constraints, as assumptions of a throwaway session; all of them if no core is available. */
+    override suspend fun explain(timeoutMillis: Long?): List<BoolExpr>? {
+        guard.requireOpen()
+        if (!isFailed) return null
+        val posted = frames.flatMap { it.constraints }
+        return shared.solver.openSession(ConstraintScope.empty().build()).use { probe ->
+            frames.flatMap { it.variables }.forEach { probe.declare(it) }
+            val result = probe.check(posted, timeoutMillis)
+            if (result.status == CheckStatus.UNSATISFIABLE) result.unsatCore ?: posted else posted
+        }
+    }
+
+    override fun fork(): ConstraintStore {
+        guard.requireOpen()
+        val child = SatisfiabilityStore(shared)
+        frames.forEach { frame ->
+            frame.variables.forEach { child.declare(it) }
+            frame.constraints.forEach {
+                child.session.add(it)
+                child.frames.last().constraints += it
+            }
+        }
+        child.isFailed = isFailed
+        return child
+    }
+
     override fun close() {
         if (!guard.close()) return
         session.close()
-        solver.close()
+        shared.release()
     }
 
     private fun <V : Variable> declare(variable: V): V {
@@ -139,6 +166,6 @@ class SatisfiabilityStore private constructor(
     companion object {
         /** Takes ownership of [solver]; closing the store closes it. */
         @JvmStatic
-        fun of(solver: IncrementalConstraintSolver): SatisfiabilityStore = SatisfiabilityStore(solver)
+        fun of(solver: IncrementalConstraintSolver): SatisfiabilityStore = SatisfiabilityStore(SharedSolver(solver))
     }
 }
