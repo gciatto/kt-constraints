@@ -20,13 +20,33 @@ are a deliberate compatibility preference, **not** a runtime dependency.
 4. Make incremental solving, assumptions, reversible checkpoints, propagation and entailment possible for
    appropriate backends, without pretending MiniZinc batch solving implements CLP propagation.
 5. Retain predictable semantics across backends and avoid hidden relaxation of numeric or global constraints.
+6. Provide a pure common Kotlin engine for the current IR, then extend it through measured, independently
+   checked propagation and optimisation stages; see [the implementation design](docs/PURE-KOTLIN.md).
 
 ## Non-goals
 
 * Providing a new Prolog engine, unification library, or 2p-Kt adapter in this repository.
-* Rewriting Z3/CP-SAT/Choco/Gecode propagation or branch-and-bound algorithms in pure Kotlin.
 * Requiring every solver to be shipped on every platform.
 * Claiming native propagation from a backend that only supports repeated batch satisfiability queries.
+
+## Pure Kotlin implementation track
+
+The `:solve-kotlin` source implementation now covers the current Boolean, finite integer, linear real,
+bit-vector and global-constraint IR through exact circuits, CDCL and rational elimination. It adds batch
+search, projected enumeration, integer optimisation and incremental assertion sessions. No external library
+version or solver runtime dependency is added.
+
+Tests precede their implementation commits, but the delivery environment cannot download Gradle 9.9.1;
+compilation, executable TDD cycles and platform conformance are still pending. This module remains unpublished.
+
+- [ ] Execute and fix the JVM, JS, Native and language-boundary suites; then consider publication.
+- [ ] Measure the manual benchmark and add a representative corpus before performance claims.
+- [ ] Add bounded learned-clause/theory storage, shared-DAG traversal and improved search heuristics.
+- [ ] Add explained CP propagation, stronger globals and dedicated propagating-session contracts.
+- [ ] Replace repeated real elimination with incremental exact simplex where measurements justify it.
+- [ ] Extend the IR and corresponding contracts for scheduling, set/graph constraints and richer optimisation.
+
+See [the module](solve-kotlin/README.md) and [validation evidence](docs/PURE-KOTLIN-VALIDATION.md).
 
 ## Baseline architectural contracts
 
