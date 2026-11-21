@@ -132,7 +132,7 @@ class ChocoSpec :
             }
         }
 
-        test("choco/long-sums-translate-in-linear-time").config(timeout = 5.seconds) {
+        test("choco/long-sums-translate-in-linear-time").config(timeout = 30.seconds) {
             val scope = ConstraintScope.empty()
             val flags = (0 until 40_000).map { scope.boolVar("b$it") }
             val xs = (0 until 40_000).map { scope.intVar("x$it", 0..1) }

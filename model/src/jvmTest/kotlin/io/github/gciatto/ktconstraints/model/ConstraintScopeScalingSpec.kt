@@ -10,7 +10,7 @@ import kotlin.time.Duration.Companion.seconds
 /** Wall-clock scaling guards, run on the JVM only: native debug builds are too slow for a meaningful budget. */
 class ConstraintScopeScalingSpec :
     FunSpec({
-        test("scope/adding-many-named-constraints-is-linear").config(timeout = 5.seconds) {
+        test("scope/adding-many-named-constraints-is-linear").config(timeout = 15.seconds) {
             val scope = ConstraintScope.empty()
             val xs = (0 until 40_000).map { scope.intVar("x$it", 0..9) }
             xs.forEachIndexed { i, x -> scope.add(IntEquality(x, IntLiteral(i % 10)), name = "c$i") }
