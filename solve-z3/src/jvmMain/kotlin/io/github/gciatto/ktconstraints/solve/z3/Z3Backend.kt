@@ -58,6 +58,8 @@ class Z3Backend : SolverBackend {
                     SolverCapability.BACKTRACKING,
                     SolverCapability.ASSUMPTIONS,
                     SolverCapability.UNSAT_CORES,
+                    SolverCapability.REAL_ARITHMETIC,
+                    SolverCapability.BITVECTORS,
                 ),
             )
     }
