@@ -37,8 +37,9 @@ internal class KotlinStream(
     private var emitted = 0
 
     override suspend fun readNext(): SolutionEvent = try {
-        budget.poll()
+        // Each pull may run in a different coroutine: refresh the polled context before polling it.
         budget.checkpoint()
+        budget.poll()
         step()
     } catch (stopped: SearchStopped) {
         complete(stopped.reason, proven = false)
