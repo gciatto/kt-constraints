@@ -14,6 +14,7 @@ import io.github.gciatto.ktconstraints.solve.SolveResult
 import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.backend
 import io.github.gciatto.ktconstraints.solve.project
 import io.github.gciatto.ktconstraints.solve.spi.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.ManagedSolutionStream
@@ -47,6 +48,13 @@ internal class ChocoStream(
 
     init {
         solver.addStopCriterion(Criterion { released || Thread.currentThread().isInterrupted || expired() })
+        val decisions = translation.natives.values.toTypedArray()
+        options.backend<ChocoOptions>()?.search?.takeIf { decisions.isNotEmpty() }?.let {
+            solver.setSearch(
+                it.strategy(decisions),
+                ChocoSearch.INPUT_ORDER_LOWER_BOUND.strategy(translation.chocoModel.retrieveIntVars(true)),
+            )
+        }
     }
 
     override suspend fun readNext(): SolutionEvent {

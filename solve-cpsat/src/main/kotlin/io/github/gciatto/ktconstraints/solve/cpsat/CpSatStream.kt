@@ -18,6 +18,7 @@ import io.github.gciatto.ktconstraints.solve.SolveResult
 import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.backend
 import io.github.gciatto.ktconstraints.solve.project
 import io.github.gciatto.ktconstraints.solve.spi.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.ManagedSolutionStream
@@ -35,11 +36,14 @@ internal class CpSatStream(
     private val model: ConstraintModel,
     private val options: SolveOptions,
     descriptor: SolverDescriptor,
-    private val workers: Int,
-    private val seed: Int?,
+    workers: Int,
+    seed: Int?,
     onClosed: () -> Unit,
 ) : ManagedSolutionStream(descriptor, onClosed) {
-    private val translation = CpSatTranslation(model)
+    private val tuning = options.backend<CpSatOptions>()
+    private val workers = tuning?.workers ?: workers
+    private val seed = tuning?.randomSeed ?: seed
+    private val translation = CpSatTranslation(model, tuning?.hints ?: Assignment.empty())
     private val started = TimeSource.Monotonic.markNow()
     private val signals = Channel<CpSatSignal>(Channel.RENDEZVOUS)
     private val solver = CpSolver()

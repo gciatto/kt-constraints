@@ -12,9 +12,10 @@ with Java and TypeScript facades. Maven group `io.github.gciatto`, artifacts `kt
   - exact unbounded integers;
   - exact linear reals;
   - SMT-LIB fixed-width bit-vectors;
-  - globals: `allDifferent`, `table`, `element`, `min`/`max`, cardinality, `inverse`, `circuit`, `cumulative`;
-  - DSL helpers: `count`, `among`, `globalCardinality`, `increasing`, `decreasing`, `lexLess`, `lexLessOrEqual`,
-    `disjunctive`, `abs`, 0/1 conversion.
+  - globals: `allDifferent`, `table`, `element`, `min`/`max`, cardinality, `inverse`, `circuit`, `subCircuit`,
+    `cumulative`, `regular` (automata), `binPacking`, `noOverlap2D`, each available on every route;
+  - DSL helpers: `count`, `among`, `globalCardinality`, `nValue`, `increasing`, `decreasing`, `lexLess`,
+    `lexLessOrEqual`, `disjunctive`, `abs`, 0/1 conversion, and soft constraints via `minimizeViolations`.
 - `ConstraintScope` with ownership checks; a Kotlin operator DSL; the Java `Expressions` facade.
 - Deep expressions are handled without recursion. Model construction is linear in the number of constraints.
 
@@ -32,6 +33,8 @@ with Java and TypeScript facades. Maven group `io.github.gciatto`, artifacts `kt
 - Incremental sessions (Z3) with checkpoints, assumptions and unsat cores.
 - **Automatic selection:** `solveAuto`, and `SolverRegistry.rank` with feature-, capability- and platform-aware
   heuristics that explain their choices, plus an experimental hook for benchmark evidence.
+- **Tuning:** typed per-backend options in `SolveOptions` (CP-SAT workers, seeds and hints; Choco search
+  strategies; MIP threads and gaps; MiniZinc seeds, threads and free search).
 - **Portfolios:** fallback and bounded race. Only a single backend's own result counts as a proof.
 
 ## Constraint stores for logic engines

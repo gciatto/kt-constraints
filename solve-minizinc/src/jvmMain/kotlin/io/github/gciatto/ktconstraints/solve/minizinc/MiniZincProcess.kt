@@ -20,7 +20,8 @@ internal class MiniZincProcess(
     private val timeoutMillis: Long?,
     private val onTimeout: () -> Unit,
     private val onCancel: () -> Unit,
-    private val engine: MiniZincEngine = MiniZincEngine.GECODE,
+    /** Driver flags selecting the engine, its search and any tuning. */
+    private val solverArguments: List<String> = MiniZincEngine.GECODE.solverArguments(),
 ) : AutoCloseable {
     private val lock = Any()
     private var closed = false
@@ -60,8 +61,7 @@ internal class MiniZincProcess(
                 Files.writeString(model, source)
                 process =
                     ProcessBuilder(
-                        listOf(executable, "--solver", engine.configurationId, "--json-stream") +
-                            engine.searchArguments() + listOf("--statistics", model.toString()),
+                        listOf(executable) + solverArguments + listOf("--statistics", model.toString()),
                     ).redirectError(directory.resolve("stderr.log").toFile()).start()
                 reader = requireNotNull(process).inputStream.bufferedReader(Charsets.UTF_8)
                 executor =

@@ -14,6 +14,7 @@ import io.github.gciatto.ktconstraints.solve.SolveResult
 import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.backend
 import io.github.gciatto.ktconstraints.solve.project
 import io.github.gciatto.ktconstraints.solve.spi.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.BackendUnavailableException
@@ -36,6 +37,8 @@ internal class OrToolsMipStream(
     private val solveLimitMillis: Long?,
     onClosed: () -> Unit,
 ) : ManagedSolutionStream(descriptor, onClosed) {
+    private val tuning = options.backend<MipOptions>()
+    private val exact = (tuning?.relativeGap ?: 0.0) == 0.0
     private val program = MipLowering.lower(model)
     private val started = TimeSource.Monotonic.markNow()
     private val outcome = CompletableFuture<OrToolsMipOutcome>()
@@ -91,6 +94,7 @@ internal class OrToolsMipStream(
             val native = MPSolver.createSolver(engine) ?: throw BackendUnavailableException("OR-Tools was built without $engine")
             native.suppressOutput()
             limit?.let { native.setTimeLimit(it.first) }
+            tuning?.threads?.let { native.setNumThreads(it) }
             populate(native)
             solver = native
             thread = Thread({ search(native) }, THREAD_NAME).apply { isDaemon = true }.also { it.start() }
@@ -118,7 +122,13 @@ internal class OrToolsMipStream(
     @Suppress("TooGenericExceptionCaught") // Any native failure must reach the consumer instead of killing the thread.
     private fun search(native: MPSolver) {
         try {
-            val parameters = MPSolverParameters().apply { setDoubleParam(MPSolverParameters.DoubleParam.RELATIVE_MIP_GAP, 0.0) }
+            val parameters =
+                MPSolverParameters().apply {
+                    setDoubleParam(
+                        MPSolverParameters.DoubleParam.RELATIVE_MIP_GAP,
+                        tuning?.relativeGap ?: 0.0,
+                    )
+                }
             val status =
                 try {
                     native.solve(parameters)
@@ -184,7 +194,8 @@ internal class OrToolsMipStream(
         val status =
             when {
                 best == null -> if (reason == TerminationReason.COMPLETED) SolveStatus.INFEASIBLE else SolveStatus.UNKNOWN
-                model.objective != null && reason == TerminationReason.COMPLETED -> SolveStatus.OPTIMAL
+                // A positive gap tolerance stops the proof early: the incumbent is not proven optimal.
+                model.objective != null && reason == TerminationReason.COMPLETED && exact -> SolveStatus.OPTIMAL
                 else -> SolveStatus.FEASIBLE
             }
         return SolveCompleted(

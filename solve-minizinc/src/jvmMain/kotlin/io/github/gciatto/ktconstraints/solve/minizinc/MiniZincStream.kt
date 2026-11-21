@@ -4,6 +4,7 @@ import io.github.gciatto.ktconstraints.solve.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.SolveCompleted
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.backend
 import io.github.gciatto.ktconstraints.solve.spi.ManagedSolutionStream
 import java.nio.file.Path
 
@@ -21,7 +22,7 @@ internal class MiniZincStream(
             options.timeoutMillis,
             onTimeout = { stop(TerminationReason.TIMEOUT) },
             onCancel = { cancel() },
-            engine = compiled.engine,
+            compiled.engine.solverArguments(options.backend<MiniZincOptions>()?.arguments(compiled.engine).orEmpty()),
         )
     private var emitted = 0
     internal val workDirectory: Path? get() = process.directory

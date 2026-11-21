@@ -75,13 +75,22 @@ and Boolean cardinalities. Their operand and tuple collections are detached immu
 equality. An element expression requires a non-empty array and rejects an out-of-range ground index; tables
 validate tuple arity. Empty all-different is true and an empty allowed-tuple table is false, including at arity zero.
 
-`IntMin`/`IntMax` and the 0/1 conversion `BoolToInt` are integer nodes. `Inverse`, `Circuit` (zero-based successors)
-and `Cumulative` (constant positive durations, non-negative demands and capacity) implement
-`DecomposableConstraint`: each carries an exact decomposition over primitive nodes that introduces no variables.
-Every route posts them natively at top level where it can (Choco, CP-SAT, MiniZinc) and lowers the decomposition
-below a connective, where native forms cannot be reified, and on Z3 and MIP routes. Counting, ordering and
-scheduling helpers (`count`, `among`, `globalCardinality`, `increasing`, `decreasing`, `lexLess`, `lexLessOrEqual`,
-`disjunctive`, `abs`) are DSL functions over these nodes, not separate IR.
+`IntMin`/`IntMax` and the 0/1 conversion `BoolToInt` are integer nodes. `Inverse`, `Circuit`, `SubCircuit`
+(zero-based successors), `Cumulative` (constant positive durations, non-negative demands and capacity), `Regular`
+(a deterministic `Automaton`), `BinPacking` and `NoOverlap2D` (constant positive sizes) implement
+`DecomposableConstraint`. Each carries two exact decompositions over primitive nodes: `decomposition` introduces no
+variables and is valid in every context; `decompose(auxiliaries)` may declare hidden variables from a fresh
+`VariableFactory`, read existentially, so it is valid at top level only and is usually far smaller (positions for
+circuits, states for automata). Choco, CP-SAT and MiniZinc post the natives at top level; Z3 and MIP routes use the
+hidden-variable form there and keep hidden variables out of solutions; every route uses the variable-free form below
+a connective, where native forms cannot be reified. Counting, ordering, scheduling and soft-constraint helpers
+(`count`, `among`, `globalCardinality`, `nValue`, `increasing`, `decreasing`, `lexLess`, `lexLessOrEqual`,
+`disjunctive`, `abs`, `minimizeViolations`) are DSL functions over these nodes, not separate IR.
+
+`SolveOptions` carries typed per-backend tuning (`BackendOptions`): `CpSatOptions` (workers, seed, hints),
+`ChocoOptions` (search strategy), `MipOptions` (threads, relative gap) and `MiniZincOptions` (seed, threads, free
+search). Each route reads only its own type, so one options value can tune every route of a portfolio. Tuning never
+changes a model's meaning; a positive MIP gap downgrades results to feasible instead of claiming optimality.
 
 ## Portable representation design
 

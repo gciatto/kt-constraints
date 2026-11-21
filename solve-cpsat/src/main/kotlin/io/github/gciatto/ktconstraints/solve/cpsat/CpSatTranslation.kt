@@ -49,6 +49,7 @@ import org.gciatto.kt.math.BigInteger
  */
 internal class CpSatTranslation(
     model: ConstraintModel,
+    hints: Assignment = Assignment.empty(),
 ) {
     /** Native-independent model description; requires the OR-Tools native library for domains and validation. */
     val cpModel = CpModel()
@@ -68,6 +69,8 @@ internal class CpSatTranslation(
                 else -> throw UnsupportedModelException(SupportReport(listOf("Unsupported variable: ${variable.name}")))
             }
         }
+        booleans.forEach { (variable, native) -> hints.valueOf(variable)?.let { cpModel.addHint(native, it) } }
+        integers.forEach { (variable, native) -> hints.valueOf(variable)?.let { cpModel.addHint(native, it.toLongExact()) } }
         model.constraints.forEach { post(it) }
         when (val objective = model.objective) {
             is Objective.Minimize -> cpModel.minimize(integer(objective.expression))

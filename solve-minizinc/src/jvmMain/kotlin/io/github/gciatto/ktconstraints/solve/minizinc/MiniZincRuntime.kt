@@ -99,3 +99,7 @@ internal fun MiniZincEngine.searchArguments(): List<String> =
         MiniZincEngine.CBC -> listOf("--intermediate-solutions", "--cbc-allowableGap", "0", "--cbc-ratioGap", "0")
         else -> listOf("--all-solutions")
     }
+
+/** Flags selecting [this] engine with JSON output, its complete search, and [tuning]. */
+internal fun MiniZincEngine.solverArguments(tuning: List<String> = emptyList()): List<String> =
+    listOf("--solver", configurationId, "--json-stream") + searchArguments() + tuning
