@@ -8,7 +8,10 @@ import io.github.gciatto.ktconstraints.core.BoolImplies
 import io.github.gciatto.ktconstraints.core.BoolLiteral
 import io.github.gciatto.ktconstraints.core.BoolNot
 import io.github.gciatto.ktconstraints.core.BoolOr
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.CardinalityRelation
+import io.github.gciatto.ktconstraints.core.Circuit
+import io.github.gciatto.ktconstraints.core.Cumulative
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntDifference
 import io.github.gciatto.ktconstraints.core.IntDomain
@@ -22,6 +25,7 @@ import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
+import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
 import io.github.gciatto.ktconstraints.core.Table
 import io.github.gciatto.ktconstraints.model.ConstraintScope
@@ -79,6 +83,48 @@ class DifferentialCase(
                     scope.add(BoolEquality(b, IntEquality(IntMax(listOf(x, y, IntLiteral(1))), IntLiteral(2))))
                     scope.add(IntLessOrEqual(IntSum(IntMin(listOf(x, IntNegation(y))), IntMax(listOf(y))), IntLiteral(1)))
                 },
+                DifferentialCase("bool-to-int-counting") { scope ->
+                    val xs = (0 until 3).map { scope.intVar("x$it", 0..2) }
+                    val z = scope.intVar("z", 0..3)
+                    val b = scope.boolVar("b")
+                    val ones = xs.map { BoolToInt(IntEquality(it, IntLiteral(1))) }
+                    scope.add(IntEquality(LinearSum(ones, List(3) { BigInteger.ONE }), z))
+                    scope.add(IntLessOrEqual(IntSum(BoolToInt(b), BoolToInt(BoolOr(b, IntLessThan(xs[0], xs[1])))), IntLiteral(1)))
+                },
+                DifferentialCase("inverse-top-level") { scope ->
+                    val f = (0 until 3).map { scope.intVar("f$it", -1..3) }
+                    val g = (0 until 3).map { scope.intVar("g$it", 0..2) }
+                    scope.add(Inverse(f, g))
+                    scope.add(IntLessThan(f[0], f[1]))
+                },
+                DifferentialCase("inverse-reified") { scope ->
+                    val f = (0 until 2).map { scope.intVar("f$it", -1..2) }
+                    val g = (0 until 2).map { scope.intVar("g$it", 0..1) }
+                    val b = scope.boolVar("b")
+                    scope.add(BoolEquality(b, Inverse(f, g)))
+                },
+                DifferentialCase("circuit-top-level") { scope ->
+                    val next = (0 until 4).map { scope.intVar("n$it", 0..4) }
+                    scope.add(Circuit(next))
+                    scope.add(BoolNot(IntEquality(next[0], IntLiteral(1))))
+                },
+                DifferentialCase("circuit-reified") { scope ->
+                    val next = (0 until 3).map { scope.intVar("n$it", -1..3) }
+                    val b = scope.boolVar("b")
+                    scope.add(BoolEquality(b, Circuit(next)))
+                },
+                DifferentialCase("cumulative-top-level-and-reified") { scope ->
+                    val starts = (0 until 3).map { scope.intVar("s$it", 0..3) }
+                    val b = scope.boolVar("b")
+                    scope.add(Cumulative(starts, big(2, 1, 2), big(1, 1, 2), BigInteger.TWO))
+                    scope.add(BoolEquality(b, Cumulative(starts.take(2), big(2, 2), big(1, 1), BigInteger.ONE)))
+                },
+                DifferentialCase("cumulative-makespan-optimization") { scope ->
+                    val starts = (0 until 3).map { scope.intVar("s$it", 0..6) }
+                    val durations = big(2, 3, 1)
+                    scope.add(Cumulative(starts, durations, big(2, 1, 1), BigInteger.TWO))
+                    scope.minimize(IntMax(starts.zip(durations) { s, d -> IntSum(s, IntLiteral(d)) }))
+                },
                 DifferentialCase("products-and-negative-values") { scope ->
                     val x = scope.intVar("x", -3..3)
                     val y = scope.intVar("y", -3..3)
@@ -127,6 +173,8 @@ class DifferentialCase(
                     scope.minimize(x)
                 },
             )
+
+        private fun big(vararg values: Long): List<BigInteger> = values.map { BigInteger.of(it) }
 
         private fun interval(
             min: Long,

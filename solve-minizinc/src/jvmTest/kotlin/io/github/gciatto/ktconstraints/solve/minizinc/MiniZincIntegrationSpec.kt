@@ -17,7 +17,6 @@ import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolveCompleted
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.TerminationReason
-import io.github.gciatto.ktconstraints.test.solve.DifferentialCase
 import io.github.gciatto.ktconstraints.test.solve.FiniteOracle
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
@@ -39,7 +38,7 @@ class MiniZincIntegrationSpec :
         } else {
             include(solverContract { MiniZincGecodeBackend(executable).create() })
             include(
-                differentialContract("integration/gecode", cases = DifferentialCase.catalogue().filter { it.name.startsWith("min-max") }) {
+                differentialContract("integration/gecode") {
                     MiniZincGecodeBackend(executable).create()
                 },
             )

@@ -6,7 +6,10 @@ import io.github.gciatto.ktconstraints.core.BitVecLiteral
 import io.github.gciatto.ktconstraints.core.BitVecRelation
 import io.github.gciatto.ktconstraints.core.BoolCardinality
 import io.github.gciatto.ktconstraints.core.BoolOr
+import io.github.gciatto.ktconstraints.core.BoolToInt
 import io.github.gciatto.ktconstraints.core.CardinalityRelation
+import io.github.gciatto.ktconstraints.core.Circuit
+import io.github.gciatto.ktconstraints.core.Cumulative
 import io.github.gciatto.ktconstraints.core.IntEquality
 import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLiteral
@@ -14,6 +17,7 @@ import io.github.gciatto.ktconstraints.core.IntMax
 import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntProduct
 import io.github.gciatto.ktconstraints.core.IntSum
+import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.LinearSum
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.RealLessThan
@@ -126,6 +130,20 @@ class ModelFeaturesSpec :
             val features = ModelFeatures.of(model)
             features.globals shouldBe setOf(GlobalKind.MIN_MAX)
             features.problemClass shouldBe ProblemClass.CP_GLOBALS
+        }
+
+        test("model-features/structural-globals-and-bool-to-int") {
+            val model =
+                ConstraintModel.of {
+                    val xs = List(3) { intVar("x$it", 0..2) }
+                    add(Inverse(xs, xs))
+                    add(Circuit(xs))
+                    add(Cumulative(xs, List(3) { BigInteger.ONE }, List(3) { BigInteger.ONE }, BigInteger.TWO))
+                    add(IntLessOrEqual(BoolToInt(IntEquality(xs[0], IntLiteral(1))), xs[1]))
+                }
+            val features = ModelFeatures.of(model)
+            features.globals shouldBe setOf(GlobalKind.INVERSE, GlobalKind.CIRCUIT, GlobalKind.CUMULATIVE)
+            features.reified shouldBe true
         }
 
         test("model-features/satisfaction-has-no-objective") {

@@ -2,8 +2,12 @@ package io.github.gciatto.ktconstraints.solve.minizinc
 
 import io.github.gciatto.ktconstraints.core.AllDifferent
 import io.github.gciatto.ktconstraints.core.BoolAnd
+import io.github.gciatto.ktconstraints.core.BoolEquality
 import io.github.gciatto.ktconstraints.core.BoolExpr
 import io.github.gciatto.ktconstraints.core.BoolLiteral
+import io.github.gciatto.ktconstraints.core.BoolToInt
+import io.github.gciatto.ktconstraints.core.Circuit
+import io.github.gciatto.ktconstraints.core.Cumulative
 import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.core.IntEquality
@@ -12,6 +16,7 @@ import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.core.IntMax
 import io.github.gciatto.ktconstraints.core.IntMin
 import io.github.gciatto.ktconstraints.core.IntProduct
+import io.github.gciatto.ktconstraints.core.Inverse
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.RealLessThan
 import io.github.gciatto.ktconstraints.core.RealLiteral
@@ -20,6 +25,7 @@ import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import org.gciatto.kt.math.BigInteger
 
 /** Compilation preserves identity and rejects unsupported semantics before runtime startup. */
 class MiniZincCompilerSpec :
@@ -55,6 +61,21 @@ class MiniZincCompilerSpec :
             val source = MiniZincCompiler().compile(scope.build()).source
             source.contains("max([v0, v1])") shouldBe true
             source.contains("min([v1, 3])") shouldBe true
+        }
+        test("compiler/structural-globals-are-native-at-top-level-and-decomposed-when-nested") {
+            val scope = ConstraintScope.empty()
+            val xs = List(3) { scope.intVar("x$it", 0..2) }
+            val b = scope.boolVar("b")
+            scope.add(BoolAnd(Circuit(xs), Inverse(xs, xs)))
+            scope.add(Cumulative(xs, List(3) { BigInteger.ONE }, List(3) { BigInteger.ONE }, BigInteger.TWO))
+            scope.add(BoolEquality(b, Circuit(xs.reversed())))
+            scope.add(IntLessOrEqual(BoolToInt(b), xs[0]))
+            val source = MiniZincCompiler().compile(scope.build()).source
+            source.contains("circuit(array1d(0..2, [v0, v1, v2]))") shouldBe true
+            source.contains("inverse(array1d(0..2, [v0, v1, v2]), array1d(0..2, [v0, v1, v2]))") shouldBe true
+            source.contains("cumulative([v0, v1, v2], [1, 1, 1], [1, 1, 1], 2)") shouldBe true
+            source.contains("circuit(array1d(0..2, [v2") shouldBe false
+            source.contains("bool2int(v3)") shouldBe true
         }
         test("compiler/rejects-native-range-overflow-and-unknown-nodes-in-all-branches") {
             val compiler = MiniZincCompiler()

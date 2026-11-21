@@ -11,7 +11,12 @@ import {
     StorePropagation,
     abs,
     allDifferent,
+    circuit,
     constant,
+    count,
+    disjunctive,
+    increasing,
+    lexLess,
     max,
     min,
     real,
@@ -80,6 +85,25 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
         const outcome = await solver.solve(builder.build());
         check(outcome.status === "FEASIBLE", `min-max status ${outcome.status}`);
         check(outcome.solution?.valueOf(x) === 4n && outcome.solution?.valueOf(y) === 4n, "min-max solution");
+    });
+
+    // Common globals: a circuit fixed by its first successor, two disjunctive tasks, counting and ordering.
+    await step("common-globals", async solver => {
+        const builder = new ModelBuilder();
+        const next = [0, 1, 2].map(i => builder.intVar(`n${i}`, 0n, 2n));
+        const starts = [0, 1].map(i => builder.intVar(`s${i}`, 0n, 3n));
+        builder.add(circuit(next));
+        builder.add(next[0].eq(constant(2n)));
+        builder.add(count(constant(0n), next).eq(constant(1n)));
+        builder.add(disjunctive(starts, [2n, 2n]));
+        builder.add(increasing(starts));
+        builder.add(lexLess([starts[0]], [starts[1]]));
+        const outcome = await solver.solve(builder.build());
+        check(outcome.status === "FEASIBLE", `common-globals status ${outcome.status}`);
+        const values = next.map(n => outcome.solution?.valueOf(n));
+        check(values.join(",") === "2,0,1", `circuit ${values}`);
+        const [a, b] = starts.map(s => outcome.solution?.valueOf(s) ?? -1n);
+        check(b - a >= 2n, `disjunctive ${a}, ${b}`);
     });
 
     // Optimization: maximize 3x - y subject to x + y <= 12 over 0..10; optimum 30.
