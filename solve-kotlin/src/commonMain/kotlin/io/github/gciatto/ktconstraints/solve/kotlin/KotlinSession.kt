@@ -8,7 +8,6 @@ import io.github.gciatto.ktconstraints.solve.CheckStatus
 import io.github.gciatto.ktconstraints.solve.Checkpoint
 import io.github.gciatto.ktconstraints.solve.IncrementalSession
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
-import io.github.gciatto.ktconstraints.solve.TerminationReason
 import io.github.gciatto.ktconstraints.solve.project
 import io.github.gciatto.ktconstraints.solve.spi.CheckpointStack
 import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
