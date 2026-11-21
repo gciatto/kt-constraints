@@ -51,7 +51,7 @@ linear lowering; HiGHS solves are always bounded by a backend limit, since OR-To
 | Direct solver adapters | `:solve-mip` | JVM SCIP and HiGHS through OR-Tools: batch satisfaction and optimization |
 | Direct solver adapters | `:solve-highs` | Placeholder module for the direct HiGHS C API |
 | Orchestration | `:solve-portfolio` | Placeholder module |
-| Language interoperability | `:interop-java`, `:interop-js` | Java: `Expressions` static modelling facade and `BlockingSolver` (blocking, `CompletableFuture`, iterator), tested from javac-compiled code against every bundled JVM backend; JS: ES module with TypeScript declarations, `bigint` integers, `Promise` solving with `AbortSignal` cancellation and `for await` iteration over Z3 Wasm and MiniZinc (Node CLI, browser Wasm), with exact reals and incremental sessions, type-checked and run on Node and in Chromium against the packaged library |
+| Language interoperability | `:interop-java`, `:interop-js` | Java: `Expressions` static modelling facade and `BlockingSolver` (blocking, `CompletableFuture`, iterator) and `BlockingSession` (incremental checks), tested from javac-compiled code against every bundled JVM backend; JS: ES module with TypeScript declarations, `bigint` integers, `Promise` solving with `AbortSignal` cancellation and `for await` iteration over Z3 Wasm and MiniZinc (Node CLI, browser Wasm), with exact reals and incremental sessions, type-checked and run on Node and in Chromium against the packaged library |
 | Testing and documentation | `:test-core`, `:test-solve`, `:documentation` | Shared contracts, capped finite test oracle and MkDocs |
 
 ## Minimal Kotlin modelling example (P0)

@@ -2,6 +2,7 @@ package io.github.gciatto.ktconstraints.interop
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
+import io.github.gciatto.ktconstraints.solve.IncrementalConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolveResult
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
@@ -48,6 +49,17 @@ class BlockingSolver private constructor(
         model: ConstraintModel,
         options: SolveOptions = SolveOptions.DEFAULT,
     ): BlockingSolutionStream = BlockingSolutionStream(solver.solutions(model, options))
+
+    /**
+     * Opens an incremental session over [model], owned by this solver. Throws [UnsupportedOperationException] when the
+     * route has no incremental sessions, rather than emulating them by re-solving.
+     */
+    fun openSession(model: ConstraintModel): BlockingSession {
+        val incremental =
+            solver as? IncrementalConstraintSolver
+                ?: throw UnsupportedOperationException("${descriptor.id} does not support incremental sessions")
+        return BlockingSession(incremental.openSession(model), scope)
+    }
 
     override fun close() {
         scope.cancel()

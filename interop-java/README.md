@@ -27,4 +27,8 @@ try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
 ```
 
 The executable reference is `src/test/java/.../JavaUsage.java`, compiled by `javac` and run against Choco, CP-SAT,
-Z3, SCIP and HiGHS. Incremental sessions have no Java wrapper yet.
+Z3, SCIP and HiGHS.
+
+Incremental sessions (`BlockingSolver.openSession`) return a `BlockingSession` with `add`, `push`, `popTo`, and
+blocking `check` or future-based `checkAsync`, both taking optional assumptions and a timeout. Only routes with
+incremental sessions (Z3) open one; others throw `UnsupportedOperationException` instead of re-solving.
