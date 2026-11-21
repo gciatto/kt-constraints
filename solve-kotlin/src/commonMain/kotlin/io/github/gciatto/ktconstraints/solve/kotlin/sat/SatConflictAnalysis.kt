@@ -41,12 +41,34 @@ internal class SatConflictAnalysis(
             check(unresolved == 0 || reason >= 0) { "A non-UIP antecedent must have a reason" }
         } while (unresolved > 0)
         learned[0] = -pivot
+        minimize()
         val jump = orderBackjumpLiteral()
         for (index in 0 until touched.size) {
             budget.tick()
             state.seen[touched[index]] = false
         }
         return SatLearning(learned.toIntArray(), jump)
+    }
+
+    /** Drops literals whose reason clause is otherwise contained in the learned clause or fixed at level zero. */
+    private fun minimize() {
+        var kept = 1
+        for (index in 1 until learned.size) {
+            val literal = learned[index]
+            if (!implied(abs(literal))) learned[kept++] = literal
+        }
+        learned.truncate(kept)
+    }
+
+    private fun implied(variable: Int): Boolean {
+        val reason = state.reasons[variable]
+        if (reason < 0) return false
+        for (literal in database.clauses[reason]) {
+            budget.tick()
+            val other = abs(literal)
+            if (other != variable && !state.seen[other] && state.assignmentLevels[other] > 0) return false
+        }
+        return true
     }
 
     private fun orderBackjumpLiteral(): Int {
