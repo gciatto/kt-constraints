@@ -39,10 +39,10 @@ import io.github.gciatto.ktconstraints.core.RealScale
 import io.github.gciatto.ktconstraints.core.RealSum
 import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Table
-import io.github.gciatto.ktconstraints.core.fold
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.spi.SupportReport
+import kotlin.reflect.KClass
 
 /** Platform-independent assessment of the IR subset the pure Kotlin backend translates exactly. */
 internal object KotlinSupport {
@@ -51,23 +51,29 @@ internal object KotlinSupport {
     fun report(roots: List<Expr>): SupportReport {
         val unsupported = linkedSetOf<String>()
         val decompositions = linkedSetOf<String>()
-        for (root in roots) {
-            root.fold { node, _: List<Unit> ->
-                when (node) {
-                    is AllDifferent -> decompositions += "allDifferent -> reified pairwise disequalities"
-                    is Element -> decompositions += "element -> ite chain with a top-level index definedness constraint"
-                    is Table -> decompositions += "table -> disjunction of tuple conjunctions"
-                    is BoolCardinality -> decompositions += "cardinality -> exact binary counting circuit"
-                    is BoolVar, is IntVar, is BoolLiteral, is IntLiteral, is IntSum, is IntDifference, is IntProduct,
-                    is IntNegation, is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolAnd, is BoolOr,
-                    is BoolNot, is BoolImplies, is BoolEquality, is LinearSum, is RealVar, is RealLiteral, is RealSum,
-                    is RealDifference, is RealNegation, is RealScale, is IntToReal, is RealEquality, is RealLessThan,
-                    is RealLessOrEqual, is BitVecVar, is BitVecLiteral, is BitVecBinary, is BitVecNot, is BitVecNegation,
-                    is BitVecComparison, is BitVecToInt,
-                    -> Unit
-                    else -> unsupported += "Unsupported expression: ${node::class.simpleName ?: node}"
-                }
+        // Source data classes can recursively hash or compare their operands, so membership uses references only.
+        val visited = mutableMapOf<KClass<out Expr>, MutableList<Expr>>()
+        val pending = ArrayDeque(roots.asReversed())
+        while (pending.isNotEmpty()) {
+            val node = pending.removeLast()
+            val bucket = visited.getOrPut(node::class) { mutableListOf() }
+            if (bucket.any { it === node }) continue
+            bucket.add(node)
+            when (node) {
+                is AllDifferent -> decompositions += "allDifferent -> reified pairwise disequalities"
+                is Element -> decompositions += "element -> ite chain with a top-level index definedness constraint"
+                is Table -> decompositions += "table -> disjunction of tuple conjunctions"
+                is BoolCardinality -> decompositions += "cardinality -> exact binary counting circuit"
+                is BoolVar, is IntVar, is BoolLiteral, is IntLiteral, is IntSum, is IntDifference, is IntProduct,
+                is IntNegation, is IntEquality, is IntLessThan, is IntLessOrEqual, is BoolAnd, is BoolOr,
+                is BoolNot, is BoolImplies, is BoolEquality, is LinearSum, is RealVar, is RealLiteral, is RealSum,
+                is RealDifference, is RealNegation, is RealScale, is IntToReal, is RealEquality, is RealLessThan,
+                is RealLessOrEqual, is BitVecVar, is BitVecLiteral, is BitVecBinary, is BitVecNot, is BitVecNegation,
+                is BitVecComparison, is BitVecToInt,
+                -> Unit
+                else -> unsupported += "Unsupported expression: ${node::class.simpleName ?: node}"
             }
+            pending.addAll(node.children.asReversed())
         }
         return SupportReport(unsupported, decompositions)
     }
