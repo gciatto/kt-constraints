@@ -34,8 +34,7 @@ class SatisfiabilityStore private constructor(
     private val factory = VariableFactory.empty()
     private val session: IncrementalSession = solver.openSession(ConstraintScope.empty().build())
     private val frames = mutableListOf(StoreFrame(null, failedBefore = false))
-    private val live = hashSetOf<Variable>()
-    private var closed = false
+    private val guard = StoreGuard()
 
     override val descriptor: SolverDescriptor get() = session.descriptor
 
@@ -55,7 +54,7 @@ class SatisfiabilityStore private constructor(
         constraint: BoolExpr,
         timeoutMillis: Long?,
     ): Propagation {
-        requireOwned(constraint.variables)
+        guard.requireOwned(constraint.variables)
         if (isFailed) return Propagation(StoreStatus.FAILED)
         session.add(constraint)
         frames.last().constraints += constraint
@@ -69,20 +68,20 @@ class SatisfiabilityStore private constructor(
     }
 
     override fun mark(): StoreMark {
-        requireOpen()
+        guard.requireOpen()
         val mark = SessionMark(this, session.push())
         frames += StoreFrame(mark, isFailed)
         return mark
     }
 
     override fun undoTo(mark: StoreMark) {
-        requireOpen()
+        guard.requireOpen()
         require(mark is SessionMark && mark.owner === this) { "Mark belongs to another store" }
         val index = frames.indexOfFirst { it.mark === mark }
         require(index > 0) { "Mark is stale" }
         session.popTo(mark.checkpoint)
         isFailed = frames[index].failedBefore
-        while (frames.size > index) live -= frames.removeAt(frames.lastIndex).variables.toSet()
+        while (frames.size > index) guard.release(frames.removeAt(frames.lastIndex).variables)
     }
 
     /** A failed store vacuously entails everything. Otherwise two checks, sharing [timeoutMillis], decide. */
@@ -90,7 +89,7 @@ class SatisfiabilityStore private constructor(
         constraint: BoolExpr,
         timeoutMillis: Long?,
     ): EntailmentResult {
-        requireOwned(constraint.variables)
+        guard.requireOwned(constraint.variables)
         if (isFailed) return EntailmentResult(Entailment.ENTAILED, Evidence.SATISFIABILITY)
         val started = TimeSource.Monotonic.markNow()
         val negated = session.check(listOf(BoolNot(constraint)), timeoutMillis).status
@@ -111,39 +110,30 @@ class SatisfiabilityStore private constructor(
     }
 
     override fun domain(variable: IntVar): IntDomain {
-        requireOwned(setOf(variable))
+        guard.requireOwned(setOf(variable))
         return variable.domain
     }
 
     override fun project(variables: List<Variable>): Residual {
-        requireOwned(variables.toSet())
+        guard.requireOwned(variables)
         val requested = variables.toSet()
         val constraints = frames.flatMap { it.constraints }.filter { constraint -> constraint.variables.any { it in requested } }
         return Residual(variables.filterIsInstance<IntVar>().associateWith { it.domain }, constraints, exact = false)
     }
 
     override fun close() {
-        if (closed) return
-        closed = true
+        if (!guard.close()) return
         session.close()
         solver.close()
     }
 
     private fun <V : Variable> declare(variable: V): V {
-        requireOpen()
+        guard.requireOpen()
         session.declare(variable)
         frames.last().variables += variable
-        live += variable
+        guard.adopt(variable)
         return variable
     }
-
-    private fun requireOwned(variables: Set<Variable>) {
-        requireOpen()
-        val foreign = variables.filterNot { it in live }
-        require(foreign.isEmpty()) { "Variables not declared in this store: ${foreign.joinToString { it.name }}" }
-    }
-
-    private fun requireOpen() = check(!closed) { "Store is closed" }
 
     /** Factories. */
     companion object {

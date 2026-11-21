@@ -24,6 +24,7 @@ import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.IntVar
 import io.github.gciatto.ktconstraints.core.LinearSum
 import io.github.gciatto.ktconstraints.core.Table
+import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.fold
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
@@ -42,6 +43,12 @@ open class BoundedIntegerSupport(
 ) {
     /** Unsupported constructs and declared decompositions of [model]. */
     fun report(model: ConstraintModel): SupportReport = Assessment().apply { assess(model) }.report()
+
+    /** Unsupported constructs of one top-level [constraint], as posted to an incremental store. */
+    fun report(constraint: BoolExpr): SupportReport = Assessment().apply { assess(constraint) }.report()
+
+    /** Whether [variable]'s sort and domain bounds are representable. */
+    fun report(variable: Variable): SupportReport = Assessment().apply { assess(variable) }.report()
 
     /** Exact range of a supported integer expression; empty domains are represented by zero. */
     fun bounds(expression: IntExpr): IntegerBounds = expression.fold { node, children: List<IntegerBounds> -> combine(node, children) }
@@ -107,20 +114,24 @@ open class BoundedIntegerSupport(
         fun report() = SupportReport(unsupported, decompositions)
 
         fun assess(model: ConstraintModel) {
-            for (variable in model.variables) {
-                when (variable) {
-                    is BoolVar -> Unit
-                    is IntVar -> integer(variable)
-                    else -> unsupported += "Unsupported variable sort: ${variable.name}"
-                }
-            }
-            model.constraints.forEach { boolean(it, topLevel = true) }
+            model.variables.forEach { assess(it) }
+            model.constraints.forEach { assess(it) }
             when (val objective = model.objective) {
                 is Objective.Minimize -> integer(objective.expression)
                 is Objective.Maximize -> integer(objective.expression)
                 null -> Unit
             }
         }
+
+        fun assess(variable: Variable) {
+            when (variable) {
+                is BoolVar -> Unit
+                is IntVar -> integer(variable)
+                else -> unsupported += "Unsupported variable sort: ${variable.name}"
+            }
+        }
+
+        fun assess(constraint: BoolExpr) = boolean(constraint, topLevel = true)
 
         private fun boolean(
             expression: BoolExpr,
