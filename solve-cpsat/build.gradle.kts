@@ -1,23 +1,15 @@
-kotlin {
-    sourceSets {
-        commonMain {
-            dependencies {
-                api(project(":solve-spi"))
-                api(project(":model"))
-            }
-        }
-        jvmMain {
-            dependencies {
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.ortools.java)
-            }
-        }
-        jvmTest {
-            dependencies { implementation(project(":test-solve")) }
-        }
-    }
+// JVM-only route: the engine ships as a JVM library, so no JS or Native artifacts are published.
+dependencies {
+    api(project(":solve-spi"))
+    api(project(":model"))
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.ortools.java)
+    testImplementation(project(":test-solve"))
+    testImplementation(libs.kotest.runner.junit5)
+    testImplementation(libs.kotest.assertions.core)
 }
 
-tasks.named<org.gradle.api.tasks.testing.Test>("jvmTest") {
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
     testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 }

@@ -32,7 +32,7 @@ log("version: $version", LogLevel.LIFECYCLE)
 
 multiProjectHelper {
     defaultProjectType = ProjectType.KOTLIN
-    jvmProjects(":interop-java")
+    jvmProjects(":interop-java", ":solve-choco", ":solve-cpsat")
     jsProjects(":interop-js")
     otherProjects(":documentation")
 
@@ -48,6 +48,8 @@ multiProjectHelper {
 // kt-mpp already declares JVM and JavaScript; here we add the portable Native targets.
 subprojects {
     plugins.withId("org.jetbrains.kotlin.multiplatform") {
+        // The JS facade has no Native counterpart; declaring empty Native targets would publish empty artifacts.
+        if (path == ":interop-js") return@withId
         configure<KotlinMultiplatformExtension> {
             linuxX64()
             mingwX64()
@@ -61,7 +63,21 @@ subprojects {
 // Only real library modules are publishable at bootstrap. Add each backend to publishedModules
 // only after its runtime works and passes shared conformance tests.
 // Maven Central coordinates are io.github.gciatto:kt-constraints-<module> (+ platform variants).
-val publishedModules = setOf("core", "model", "dsl", "solve", "solve-spi")
+val publishedModules =
+    setOf(
+        "core",
+        "model",
+        "dsl",
+        "solve",
+        "solve-spi",
+        "solve-z3",
+        "solve-choco",
+        "solve-cpsat",
+        "solve-mip",
+        "solve-minizinc",
+        "interop-java",
+        "interop-js",
+    )
 val nonPublished = setOf("documentation", "test-core", "test-solve")
 subprojects {
     if (name in publishedModules) {
@@ -90,17 +106,29 @@ subprojects {
             )
         }
         plugins.withId("maven-publish") {
-            extensions.configure<org.gradle.api.publish.PublishingExtension> {
-                publications.withType<MavenPublication>().configureEach {
-                    val platformSuffix =
-                        when (name) {
-                            "kotlinMultiplatform", "maven", "mavenJava" -> ""
-                            else -> "-${name.lowercase()}"
-                        }
-                    artifactId = "kt-constraints-${project.name}$platformSuffix"
+            val prefixArtifactIds = {
+                extensions.configure<org.gradle.api.publish.PublishingExtension> {
+                    publications.withType<MavenPublication>().configureEach {
+                        val platformSuffix =
+                            when (name.lowercase()) {
+                                "kotlinmultiplatform", "maven", "mavenjava", "ossrh" -> ""
+                                else -> "-${name.lowercase()}"
+                            }
+                        artifactId = "kt-constraints-${project.name}$platformSuffix"
+                    }
                 }
             }
+            prefixArtifactIds()
+            // Kotlin assigns Apple-target coordinates late on non-Apple hosts, overriding the prefix; reapply it last.
+            gradle.projectsEvaluated { prefixArtifactIds() }
         }
+    }
+}
+
+// Source builds may publish locally without a key; Maven Central still rejects unsigned uploads.
+subprojects {
+    tasks.withType<Sign>().configureEach {
+        onlyIf("a signing key is configured") { !project.findProperty("signingKey")?.toString().isNullOrBlank() }
     }
 }
 
