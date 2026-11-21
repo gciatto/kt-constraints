@@ -10,6 +10,8 @@
 [M2 validation](docs/M2.md) records resource-safe solving, real Gecode execution and measured phases.
 [M3 validation](docs/M3.md) covers the engine catalogue, Node CLI and browser Wasm transports.
 [M4 design](docs/M4-DESIGN.md) covers direct Z3 and incremental sessions (in progress).
+[Pure Kotlin implementation](solve-kotlin/README.md) documents the experimental `kotlin/direct` route;
+[its validation record](docs/PURE-KOTLIN-VALIDATION.md) identifies the blocked executable checks.
 
 ## Project status
 
@@ -26,6 +28,11 @@ Direct Choco (`choco/direct`, JVM) solves it within `±10^7` with natively reifi
 SCIP and HiGHS through OR-Tools (`scip/or-tools`, `highs/or-tools`, JVM) solve it within `±10^6` through an exact
 linear lowering; HiGHS solves are always bounded by a backend limit, since OR-Tools cannot interrupt them.
 **A direct HiGHS C API adapter, Gurobi, Choco propagating sessions, FlatZinc interchange and Native MiniZinc execution remain planned**.
+
+The new `:solve-kotlin` module implements the current built-in IR in common Kotlin, with exact finite integer
+and bit-vector circuits, CDCL SAT, rational linear feasibility, root presolve, incremental assertions,
+enumeration and integer optimisation. Its tests are written but could not be executed in the delivery
+environment because the pinned Gradle distribution was unavailable; the module remains unpublished.
 
 ## Design
 
@@ -49,6 +56,7 @@ linear lowering; HiGHS solves are always bounded by a backend limit, since OR-To
 | Direct solver adapters | `:solve-cpsat` | JVM OR-Tools CP-SAT: batch satisfaction, enumeration and optimization |
 | Direct solver adapters | `:solve-choco` | JVM Choco: batch satisfaction, enumeration and optimization |
 | Direct solver adapters | `:solve-mip` | JVM SCIP and HiGHS through OR-Tools: batch satisfaction and optimization |
+| Portable solver | `:solve-kotlin` | Pure common Kotlin implementation; shared contracts and platform tests added, compilation/execution pending |
 | Direct solver adapters | `:solve-highs` | Placeholder module for the direct HiGHS C API |
 | Orchestration | `:solve-portfolio` | `solveAuto`: routes bundled per platform, ranked by model features, capabilities and platform (extensible heuristics, with a hook for benchmark evidence), run as fallback or race portfolios; see [docs/M8-DESIGN.md](docs/M8-DESIGN.md) and [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
 | Constraint stores | `:solve`, `:solve-spi`, `:solve-choco` | `ConstraintStore` for external logic engines: propagating `ChocoStore` (JVM) and proof-based `SatisfiabilityStore` over Z3 (JVM, Wasm, Native); see [docs/LOGIC-ENGINES.md](docs/LOGIC-ENGINES.md) |
@@ -113,6 +121,7 @@ Apple Native tests also require full Xcode; Command Line Tools alone cannot link
 The repository includes the standard Gradle 9.9.1 wrapper scripts and JAR. The wrapper verifies the Gradle
 distribution against the SHA-256 checksum in `gradle-wrapper.properties`. Placeholder backend modules
 (`solve-highs`, `solve-flatzinc`) remain unpublished until functional and conformance-tested.
+The implemented `solve-kotlin` module also remains unpublished until its executable conformance gates pass.
 
 ## Publishing coordinates
 
