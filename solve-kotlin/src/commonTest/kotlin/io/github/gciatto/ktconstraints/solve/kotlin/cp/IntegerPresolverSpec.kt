@@ -97,6 +97,24 @@ class IntegerPresolverSpec :
             IntegerPresolver().run(scope.build()).conflict shouldBe true
         }
 
+        test("presolve/more-all-different-operands-than-values-prove-a-conflict") {
+            val scope = ConstraintScope.empty()
+            val pigeons = List(4) { scope.intVar("p$it", IntDomain.values(0, 5, 9)) }
+            scope.add(AllDifferent(pigeons))
+
+            IntegerPresolver().run(scope.build()).conflict shouldBe true
+        }
+
+        test("presolve/all-different-with-enough-values-across-holes-is-not-a-conflict") {
+            val scope = ConstraintScope.empty()
+            val x = scope.intVar("x", IntDomain.values(0, 5))
+            val y = scope.intVar("y", IntDomain.values(0, 5))
+            val huge = scope.intVar("huge", IntDomain.of(0L, Long.MAX_VALUE))
+            scope.add(AllDifferent(listOf(x, y, huge, IntLiteral(7))))
+
+            IntegerPresolver().run(scope.build()).conflict shouldBe false
+        }
+
         test("presolve/does-not-assume-an-inactive-disjunct-or-a-nonlinear-product") {
             val scope = ConstraintScope.empty()
             val x = scope.intVar("x", 0..10)
