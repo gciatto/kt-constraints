@@ -63,6 +63,7 @@ internal class KotlinTranslation(
 ) {
     val binary = BinaryArithmetic(circuit, circuit::checkpoint)
     private val direct = DirectEncoding(circuit)
+    private val order = OrderEncoding(circuit, binary)
     val linear = LinearCompiler(circuit, binary, direct)
     val realAtoms = mutableListOf<RealAtom>()
     private val cache = CompilationCache()
@@ -94,7 +95,11 @@ internal class KotlinTranslation(
             is IntVar ->
                 if (variable !in integers) {
                     val domain = domains[variable] ?: variable.domain
-                    integers[variable] = binary.variable(domain).also { direct.register(it, domain) }
+                    integers[variable] =
+                        binary.variable(domain).also {
+                            direct.register(it, domain)
+                            order.register(it, domain)
+                        }
                 }
             is BitVecVar ->
                 if (variable !in bitVectors) {
@@ -153,9 +158,24 @@ internal class KotlinTranslation(
         return (shifted(left) ?: return null) to (shifted(right) ?: return null)
     }
 
+    /** `left <= right` (or `<` when [strict]) through order literals when both sides are shifted ordered variables. */
+    private suspend fun ordered(
+        left: IntExpr,
+        right: IntExpr,
+        strict: Boolean,
+    ): Int? {
+        val lower = shifted(left, order::isOrdered) ?: return null
+        val upper = shifted(right, order::isOrdered) ?: return null
+        if (lower.first == null && upper.first == null) return null
+        return order.lessOrEqual(if (strict) lower.first to lower.second + BigInteger.ONE else lower, upper)
+    }
+
     /** `(encoding, shift)` for a small-domain variable plus a constant, `(null, value)` for a constant, else null. */
-    private fun shifted(operand: IntExpr): Pair<IntegerEncoding?, BigInteger>? {
-        fun variable(expression: IntExpr): IntegerEncoding? = (expression as? IntVar)?.let { integers[it] }?.takeIf { direct.isDirect(it) }
+    private fun shifted(
+        operand: IntExpr,
+        eligible: (IntegerEncoding) -> Boolean = direct::isDirect,
+    ): Pair<IntegerEncoding?, BigInteger>? {
+        fun variable(expression: IntExpr): IntegerEncoding? = (expression as? IntVar)?.let { integers[it] }?.takeIf(eligible)
         return when {
             operand is IntLiteral -> null to operand.value
             operand is IntSum && operand.right is IntLiteral -> variable(operand.left)?.let { it to (operand.right as IntLiteral).value }
@@ -335,8 +355,8 @@ internal class KotlinTranslation(
             is BoolImplies -> circuit.or(-(values[0] as Int), values[1] as Int)
             is BoolEquality -> -circuit.xor(values[0] as Int, values[1] as Int)
             is IntEquality -> linear.equal(values[0], values[1])
-            is IntLessThan -> linear.less(values[0], values[1])
-            is IntLessOrEqual -> linear.lessOrEqual(values[0], values[1])
+            is IntLessThan -> ordered(node.left, node.right, strict = true) ?: linear.less(values[0], values[1])
+            is IntLessOrEqual -> ordered(node.left, node.right, strict = false) ?: linear.lessOrEqual(values[0], values[1])
             is BitVecComparison -> binary.bitCompare(node.relation, values[0] as IntArray, values[1] as IntArray)
             is RealEquality, is RealLessThan, is RealLessOrEqual -> realRelation(node, values)
             else -> global(node, values)
