@@ -5,6 +5,7 @@ import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.spi.Platform
 import io.github.gciatto.ktconstraints.test.solve.BenchmarkCatalogue
 import io.github.gciatto.ktconstraints.test.solve.BenchmarkInstance
+import io.github.gciatto.ktconstraints.test.solve.benchmarkEnvironment
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kotlin.time.Duration.Companion.minutes
