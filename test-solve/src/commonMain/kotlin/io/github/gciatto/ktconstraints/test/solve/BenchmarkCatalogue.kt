@@ -175,10 +175,7 @@ object BenchmarkCatalogue {
                 }
                 maximize(LinearSum(xs, profits.map { BigInteger.of(it.toLong()) }))
             }
-        val optimum =
-            points(n)
-                .filter { x -> rows.zip(bounds).all { (row, bound) -> row.indices.sumOf { row[it] * x[it] } <= bound } }
-                .maxOf { x -> x.indices.sumOf { profits[it] * x[it] } }
+        val optimum = bestProfit(rows, bounds, profits)
         return BenchmarkInstance("integer-program", n, model, SolveStatus.OPTIMAL, BigInteger.of(optimum.toLong()))
     }
 
@@ -201,12 +198,35 @@ object BenchmarkCatalogue {
         return best.last()
     }
 
-    private fun points(n: Int): List<List<Int>> =
-        if (n ==
-            0
-        ) {
-            listOf(emptyList())
-        } else {
-            points(n - 1).flatMap { rest -> (0..4).map { rest + it } }
+    /**
+     * Exact optimum of the three-row integer program, each variable in 0..4, by dynamic programming over the
+     * remaining capacities: polynomial in the bounds, where enumerating 5^n points is not.
+     */
+    private fun bestProfit(
+        rows: List<List<Int>>,
+        bounds: List<Int>,
+        profits: List<Int>,
+    ): Int {
+        val (first, second, third) = bounds.map { it + 1 }
+        var best = IntArray(first * second * third)
+        for (item in profits.indices) {
+            val next = best.copyOf()
+            for (a in 0 until first) {
+                for (b in 0 until second) {
+                    for (c in 0 until third) {
+                        for (copies in 1..4) {
+                            val ra = a - copies * rows[0][item]
+                            val rb = b - copies * rows[1][item]
+                            val rc = c - copies * rows[2][item]
+                            if (ra < 0 || rb < 0 || rc < 0) break
+                            val index = (a * second + b) * third + c
+                            next[index] = maxOf(next[index], best[(ra * second + rb) * third + rc] + copies * profits[item])
+                        }
+                    }
+                }
+            }
+            best = next
         }
+        return best.last()
+    }
 }
