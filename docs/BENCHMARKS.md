@@ -9,6 +9,7 @@ thresholds until several reproducible baselines exist (M8 design).
 | `./gradlew :solve-choco:storeBenchmark`, `./gradlew :solve-z3:jvmStoreBenchmark` | CLP-style constraint-store operations |
 | `MINIZINC_EXECUTABLE=... ./gradlew :solve-minizinc:jvmBenchmark` | MiniZinc phases |
 | `KT_CONSTRAINTS_PLATFORM_BENCHMARK=1 ./gradlew :solve-kotlin:<jvmTest\|jsNodeTest> -i` | The same catalogue on each target; rows start with `BENCH,` (Kotlin/JS prints them only with `-i`). For Native, run `:solve-kotlin:linkReleaseTestLinuxX64` and then `build/bin/linuxX64/releaseTest/test.kexe` with the variable set: the default Native test binary is an unoptimised debug build, about 10x slower |
+| `KT_CONSTRAINTS_ROUTE_BENCHMARK=1 ./gradlew :solve-portfolio:<jvmTest\|jsNodeTest> --tests 'io.github.gciatto.ktconstraints.solve.portfolio.RouteBenchmarkSpec' -i` | Every bundled route of the target, plus `kotlin/direct`, over seeded instances; rows start with `ROUTE,` and give each route's rank under the default policy. `_SCALES` (default `1 2 3`), `_SEEDS` (3) and `_TIMEOUT` (ms, 10000) size it. For Native, run `:solve-portfolio:linkReleaseTestLinuxX64`, then `build/bin/linuxX64/releaseTest/test.kexe` with `KT_CONSTRAINTS_Z3_LIBRARY` pointing at `solve-z3/build/z3-native/linuxX64/libz3.so` |
 | `./gradlew :solve-kotlin:jvmFamilyBenchmark` | `kotlin/direct` over seeded instances: median, minimum, maximum and timeouts (`BENCHMARK_SCALES`, `BENCHMARK_SEEDS`, `BENCHMARK_FAMILIES`) |
 
 `jvmBenchmark` prints CSV, and writes it to the file named by `BENCHMARK_CSV` when that is set. `BENCHMARK_SCALE`
@@ -82,3 +83,59 @@ integer-program  4     LINEAR_INTEGER  choco/direct        OPTIMAL     57       
 integer-program  4     LINEAR_INTEGER  z3/direct           OPTIMAL     57         true     3.84      0.02        9.47     9.06
 integer-program  4     LINEAR_INTEGER  auto:scip/or-tools  OPTIMAL     57         true     3.84      0.00        16.76    16.76
 ```
+
+## Route selection evidence (2026-11-22, scales 1-6, 3 seeds, 10 s timeout)
+
+`RouteBenchmarkSpec` on one Linux x64 host: JVM 21, Node and a release `linuxX64` binary. Cells are median
+milliseconds of a fresh solver, including setup. A `*` marks a median where some seeds timed out. MiniZinc routes were
+not measured, because no `minizinc` executable was installed. Every proof matched the known answer.
+
+Scale 3:
+
+| family | JVM cp-sat | JVM choco | JVM z3 | JVM scip | JVM highs | JVM kotlin | Node z3 wasm | Node kotlin | Native z3 | Native kotlin |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| n-queens | 37 | 10 | 40 | 362 | 1076 | 7 | 425 | 20 | 44 | 9 |
+| graph-coloring | 9 | 2 | 11 | 19 | 17 | 3 | 44 | 8 | 16 | 3 |
+| pigeonhole | 3 | 0 | 1613 | 2110 | 5146 | 0 | 4061 | 1 | 1534 | 0 |
+| knapsack | 5 | 2 | 18 | 6 | 11 | 1 | 74 | 2 | 22 | 0 |
+| assignment | 12 | 2 | 122 | 236 | 87 | 16 | 584 | 31 | 133 | 22 |
+| job-shop | 9 | 2 | 14 | 10 | 14 | 4 | 36 | 10 | 21 | 5 |
+| bit-vectors | — | — | 5 | — | — | 0 | 10 | 1 | 10 | 0 |
+| integer-program | 6 | 2 | 11 | 7 | 10 | 3 | 54 | 5 | 21 | 2 |
+| single-machine | 16 | 392* | 106 | 432 | 727 | 78 | 217 | 138 | 110 | 100 |
+
+Scale 6:
+
+| family | JVM cp-sat | JVM choco | JVM z3 | JVM scip | JVM highs | JVM kotlin | Node z3 wasm | Node kotlin | Native z3 | Native kotlin |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| n-queens | 143 | 33 | 7419 | 6231 | 3856 | 21 | 4830 | 106 | 7492 | 50 |
+| graph-coloring | 11 | 2 | 13 | 27 | 18 | 6 | 55 | 21 | 23 | 10 |
+| pigeonhole | 3 | 0 | timeout | timeout | timeout | 1 | timeout | 2 | timeout | 2 |
+| knapsack | 5 | 15 | 17 | 6 | 8 | 7 | 81 | 22 | 23 | 7 |
+| assignment | 17 | 9 | 410 | 1735 | 2328 | 117 | 1743 | 209 | 433 | 153 |
+| job-shop | 9 | 2 | 10 | 9 | 18 | 4 | 41 | 9 | 15 | 3 |
+| bit-vectors | — | — | 5 | — | — | 0 | 11 | 2 | 16 | 0 |
+| integer-program | 7 | 9 | 18 | 7 | 10 | 27 | 78 | 52 | 21 | 28 |
+| single-machine | 31 | timeout | timeout | timeout | 10000* | 10000* | timeout | timeout | timeout | 10000* |
+
+Selection rules these numbers support:
+
+1. **JVM, `CP_GLOBALS`: CP-SAT first, as the default policy already ranks it.** It is never the fastest on easy
+   instances (its fixed cost is about 5-10 ms), but it is the only route that stays flat on single-machine scheduling,
+   an optimisation over reified disjunctions. Choco and Kotlin are faster on satisfaction and assignment, but Choco
+   times out on scheduling from scale 3. With the default race parallelism of 2, CP-SAT and Choco together cover
+   every family here.
+2. **JVM, `CP_GLOBALS`: rank MIP and Z3 last.** Counting arguments (pigeonhole) and large `allDifferent` instances
+   (n-queens, assignment) make SCIP, HiGHS and Z3 seconds slower or time out.
+3. **JVM, `LINEAR_INTEGER`: no evidence for a change.** Every route answers these knapsack and integer-program
+   instances within about 30 ms. The current MIP-first order is harmless, but these instances are too easy to justify
+   it either; harder linear instances are needed.
+4. **Node and Native: Kotlin first for every model it supports, with Z3 as fallback.** `kotlin/direct` beats Z3 Wasm
+   on every Node row by 3-100x, mostly through Wasm's fixed cost of about 40 ms and its search on `allDifferent`. On
+   Native it beats or ties the Z3 C API everywhere; scheduling is within noise. Z3 remains the route for what Kotlin
+   rejects.
+5. **Kotlin on the JVM, if it is ever registered:** rank it after CP-SAT and Choco but before Z3 and MIP on
+   `CP_GLOBALS`. It is faster than Z3 on every JVM row.
+
+Gaps: the catalogue has no `SMT_REAL`, `NONLINEAR_INTEGER` or `PURE_BOOLEAN` family, and its bit-vector instance is
+trivial. Rules for those classes remain the untested defaults.
