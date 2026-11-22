@@ -37,3 +37,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest>().co
         .forEach { name -> providers.environmentVariable(name).orNull?.let { environment(name, it) } }
 }
 
+// Native test tasks run unoptimised debug binaries; release ones measure what users get, e.g.
+// `./gradlew :solve-kotlin:linkReleaseTestLinuxX64` then KT_CONSTRAINTS_PLATFORM_BENCHMARK=1 build/bin/linuxX64/releaseTest/test.kexe
+kotlin.targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+    binaries.test(listOf(org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType.RELEASE))
+}
