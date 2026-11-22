@@ -42,10 +42,10 @@ tasks.register<JavaExec>("jvmBenchmark") {
     mainClass.set("io.github.gciatto.ktconstraints.solve.portfolio.PortfolioBenchmark")
 }
 
-// Kotlin/JS test runners do not inherit arbitrary variables; forward the opt-in route benchmark settings.
+// Kotlin/JS test runners do not inherit arbitrary variables; forward the opt-in route benchmark settings and the
+// MiniZinc executable that registers the Node CLI route.
 tasks.withType<org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest>().configureEach {
-    listOf("", "_SCALES", "_SEEDS", "_TIMEOUT")
-        .map { "KT_CONSTRAINTS_ROUTE_BENCHMARK$it" }
+    (listOf("", "_SCALES", "_SEEDS", "_TIMEOUT").map { "KT_CONSTRAINTS_ROUTE_BENCHMARK$it" } + "MINIZINC_EXECUTABLE")
         .forEach { name -> providers.environmentVariable(name).orNull?.let { environment(name, it) } }
 }
 
