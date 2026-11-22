@@ -7,6 +7,7 @@ internal class SatConflictAnalysis(
     private val database: SatDatabase,
     private val state: SatState,
     private val budget: SatBudget,
+    private val linear: SatLinear,
 ) {
     private val learned = IntVector()
     private val touched = IntVector()
@@ -22,7 +23,7 @@ internal class SatConflictAnalysis(
         var reason = conflict
         var cursor = state.trail.size - 1
         do {
-            for (literal in database.clauses[reason]) {
+            for (literal in antecedent(reason, abs(pivot))) {
                 budget.tick()
                 val variable = abs(literal)
                 if (variable != abs(pivot) && !state.seen[variable] && state.assignmentLevels[variable] > 0) {
@@ -40,7 +41,7 @@ internal class SatConflictAnalysis(
             state.seen[abs(pivot)] = false
             unresolved--
             reason = state.reasons[abs(pivot)]
-            check(unresolved == 0 || reason >= 0) { "A non-UIP antecedent must have a reason" }
+            check(unresolved == 0 || reason != NO_REASON) { "A non-UIP antecedent must have a reason" }
         } while (unresolved > 0)
         learned[0] = -pivot
         minimize()
@@ -64,8 +65,8 @@ internal class SatConflictAnalysis(
 
     private fun implied(variable: Int): Boolean {
         val reason = state.reasons[variable]
-        if (reason < 0) return false
-        for (literal in database.clauses[reason]) {
+        if (reason == NO_REASON) return false
+        for (literal in antecedent(reason, variable)) {
             budget.tick()
             val other = abs(literal)
             if (other != variable && !state.seen[other] && state.assignmentLevels[other] > 0) return false
@@ -87,6 +88,11 @@ internal class SatConflictAnalysis(
         return distinct
     }
 
+    private fun antecedent(
+        reason: Int,
+        variable: Int,
+    ): IntArray = if (SatLinear.isLinear(reason)) linear.explain(reason, variable) else database.clauses[reason]
+
     private fun orderBackjumpLiteral(): Int {
         var jump = 0
         var highest = 1
@@ -104,5 +110,9 @@ internal class SatConflictAnalysis(
             learned[highest] = literal
         }
         return jump
+    }
+
+    private companion object {
+        const val NO_REASON = -1
     }
 }

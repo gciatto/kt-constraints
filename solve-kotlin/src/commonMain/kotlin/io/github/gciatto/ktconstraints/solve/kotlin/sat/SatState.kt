@@ -14,6 +14,10 @@ internal class SatState {
         private set
     var seen = BooleanArray(16)
         private set
+
+    /** Trail index at which each assigned variable was enqueued. */
+    var positions = IntArray(16)
+        private set
     var propagated = 0
     private var phases = IntArray(16)
     private var activity = DoubleArray(16)
@@ -30,6 +34,7 @@ internal class SatState {
             phases = phases.copyOf(capacity)
             activity = activity.copyOf(capacity)
             seen = seen.copyOf(capacity)
+            positions = positions.copyOf(capacity)
         }
         assignments.fill(0)
         assignmentLevels.fill(0)
@@ -54,6 +59,7 @@ internal class SatState {
         phases[variable] = assignments[variable]
         assignmentLevels[variable] = levels.size
         reasons[variable] = reason
+        positions[variable] = trail.size
         trail.add(literal)
         return true
     }
