@@ -41,8 +41,8 @@ internal class SatDatabase {
             0 -> inconsistent = true
             1 -> units.add(id)
             else -> {
-                watching(literals[0]).add(id)
-                watching(literals[1]).add(id)
+                watching(literals[0]).addPair(id, literals[1])
+                watching(literals[1]).addPair(id, literals[0])
             }
         }
         return id
@@ -87,6 +87,7 @@ internal class SatDatabase {
         blockDistances.truncate(kept)
     }
 
+    /** Watch entries of [literal]: clause id and a blocker literal from the same clause, in pairs. */
     fun watching(literal: Int): IntVector = watches[abs(literal) * 2 + if (literal > 0) 0 else 1]
 
     fun validateLiteral(literal: Int) {

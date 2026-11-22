@@ -27,14 +27,25 @@ internal class IntVector(
         values[size++] = value
     }
 
+    fun addPair(
+        first: Int,
+        second: Int,
+    ) {
+        if (size + 2 > values.size) values = values.copyOf(maxOf(values.size * 2, size + 2))
+        values[size++] = first
+        values[size++] = second
+    }
+
+    /** Replaces the pair at [index] with the last pair. */
+    fun removePairAtSwap(index: Int) {
+        require(index >= 0 && index + 1 < size)
+        values[index + 1] = values[--size]
+        values[index] = values[--size]
+    }
+
     fun removeLast(): Int {
         check(size > 0)
         return values[--size]
-    }
-
-    fun removeAtSwap(index: Int) {
-        require(index in 0 until size)
-        values[index] = values[--size]
     }
 
     fun truncate(length: Int) {
