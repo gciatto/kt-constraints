@@ -33,7 +33,7 @@ class RouteBenchmarkSpec :
         val seeds = benchmarkEnvironment("KT_CONSTRAINTS_ROUTE_BENCHMARK_SEEDS")?.toInt() ?: 3
         val timeout = benchmarkEnvironment("KT_CONSTRAINTS_ROUTE_BENCHMARK_TIMEOUT")?.toLong() ?: 10_000L
 
-        test("route-benchmark/catalogue").config(enabled = enabled, timeout = 6.hours) {
+        test("route-benchmark/catalogue").config(enabled = enabled, timeout = 6.hours, invocationTimeout = 6.hours) {
             val platform = Platform.current().let { "${it.runtime}-${it.os}".lowercase() }
             val options = SolveOptions(timeoutMillis = timeout)
             DefaultBackends.load().use { loaded ->
