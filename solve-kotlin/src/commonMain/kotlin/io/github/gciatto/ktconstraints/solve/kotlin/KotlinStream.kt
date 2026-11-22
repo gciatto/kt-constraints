@@ -13,6 +13,8 @@ import io.github.gciatto.ktconstraints.solve.SolveResult
 import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.kotlin.compiler.IntegerEncoding
+import io.github.gciatto.ktconstraints.solve.kotlin.compiler.IntegerLinear
 import io.github.gciatto.ktconstraints.solve.project
 import io.github.gciatto.ktconstraints.solve.spi.ManagedSolutionStream
 import org.gciatto.kt.math.BigInteger
@@ -90,7 +92,16 @@ internal class KotlinStream(
         val objective = current.objective
         if (objective != null) {
             val maximize = model.objective is Objective.Maximize
-            optimization = OptimizationState(maximize, if (maximize) objective.max else -objective.min)
+            val (min, max) =
+                if (objective is IntegerLinear) {
+                    objective.min to objective.max
+                } else {
+                    (objective as IntegerEncoding).let {
+                        it.min to
+                            it.max
+                    }
+                }
+            optimization = OptimizationState(maximize, if (maximize) max else -min)
         }
         engine = current
         return current
@@ -100,12 +111,12 @@ internal class KotlinStream(
         current: KotlinEngine,
         target: BigInteger,
     ): Int {
-        val binary = current.translation.binary
+        val translation = current.translation
         val objective = requireNotNull(current.objective)
         return if (model.objective is Objective.Maximize) {
-            -binary.less(objective, binary.integer(target))
+            translation.linear.lessOrEqual(translation.binary.integer(target), objective)
         } else {
-            -binary.less(binary.integer(-target), objective)
+            translation.linear.lessOrEqual(objective, translation.binary.integer(-target))
         }
     }
 

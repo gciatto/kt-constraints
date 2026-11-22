@@ -9,6 +9,7 @@ import io.github.gciatto.ktconstraints.solve.SolveMetadata
 import io.github.gciatto.ktconstraints.solve.kotlin.arithmetic.LinearFeasibility
 import io.github.gciatto.ktconstraints.solve.kotlin.compiler.Circuit
 import io.github.gciatto.ktconstraints.solve.kotlin.compiler.IntegerEncoding
+import io.github.gciatto.ktconstraints.solve.kotlin.compiler.IntegerLinear
 import io.github.gciatto.ktconstraints.solve.kotlin.compiler.KotlinTranslation
 import io.github.gciatto.ktconstraints.solve.kotlin.cp.IntegerPresolver
 import io.github.gciatto.ktconstraints.solve.kotlin.sat.SatSolver
@@ -24,7 +25,9 @@ internal class KotlinEngine(
     private val sat = SatSolver()
     val circuit = Circuit(sat, configuration, budget)
     val translation = KotlinTranslation(circuit)
-    var objective: IntegerEncoding? = null
+
+    /** The compiled objective: an [IntegerEncoding] or a symbolic [IntegerLinear]. */
+    var objective: Any? = null
         private set
     private var theoryConflicts = 0L
     private var presolveReductions = 0
@@ -51,7 +54,7 @@ internal class KotlinEngine(
                 }
             if (expression != null) {
                 val compiled = translation.translate(expression, budget)
-                objective = compiled.value as IntegerEncoding
+                objective = compiled.value
                 circuit.clause(compiled.defined)
             }
         }
