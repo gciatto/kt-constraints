@@ -2,6 +2,8 @@ package io.github.gciatto.ktconstraints.solve.portfolio
 
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolveResult
+import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
+import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
 import io.github.gciatto.ktconstraints.test.solve.BenchmarkCatalogue
 import io.github.gciatto.ktconstraints.test.solve.BenchmarkInstance
 import kotlinx.coroutines.runBlocking
@@ -16,6 +18,9 @@ import kotlin.system.measureNanoTime
  */
 object PortfolioBenchmark {
     private const val TIMEOUT_MILLIS = 30_000L
+
+    /** Unpublished routes measured alongside the bundled ones, never offered by `auto`. */
+    private val EXTRA_ROUTES: List<SolverBackend> = listOf(KotlinBackend())
     private const val HEADER = "family,size,class,route,status,objective,correct,build_ms,support_ms,cold_ms,warm_ms"
 
     /** Runs every family on every eligible bundled route. */
@@ -30,8 +35,8 @@ object PortfolioBenchmark {
                     lateinit var instance: BenchmarkInstance
                     val build = millis { instance = builder() }
                     val selection = loaded.registry.rank(instance.model, options)
-                    for (candidate in selection.candidates) {
-                        val backend = candidate.backend
+                    val extras = EXTRA_ROUTES.filter { it.support(instance.model, options).isSupported }
+                    for (backend in selection.candidates.map { it.backend } + extras) {
                         val support = millis { backend.support(instance.model, options) }
                         backend.create().use { solver ->
                             lateinit var cold: SolveResult

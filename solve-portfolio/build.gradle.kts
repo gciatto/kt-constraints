@@ -24,6 +24,9 @@ kotlin {
         commonTest {
             dependencies { implementation(project(":test-solve")) }
         }
+        jvmTest {
+            dependencies { implementation(project(":solve-kotlin")) }
+        }
         nativeMain {
             dependencies { implementation(project(":solve-z3")) }
         }
