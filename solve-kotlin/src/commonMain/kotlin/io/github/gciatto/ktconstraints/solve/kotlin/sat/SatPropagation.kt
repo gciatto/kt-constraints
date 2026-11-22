@@ -20,10 +20,20 @@ internal class SatPropagation(
 
     /** Returns a conflicting clause, [FIXPOINT], or [PAUSED] when a checkpoint is due between trail literals. */
     fun propagate(): Int {
+        var processed = 0
+        try {
+            return drain { processed++ }
+        } finally {
+            // Counted locally: a Long increment per literal is software-emulated on Kotlin/JS.
+            statistics.propagations += processed
+        }
+    }
+
+    private inline fun drain(onLiteral: () -> Unit): Int {
         while (state.propagated < state.trail.size) {
             if (budget.due) return PAUSED
             budget.tick()
-            statistics.propagations++
+            onLiteral()
             val falsified = -state.trail[state.propagated++]
             val linearConflict = linear.assign(-falsified, budget)
             if (linearConflict >= 0) return linearConflict
