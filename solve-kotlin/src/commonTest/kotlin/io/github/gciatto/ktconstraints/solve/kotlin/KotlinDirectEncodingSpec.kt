@@ -7,6 +7,7 @@ import io.github.gciatto.ktconstraints.core.Element
 import io.github.gciatto.ktconstraints.core.IntDifference
 import io.github.gciatto.ktconstraints.core.IntDomain
 import io.github.gciatto.ktconstraints.core.IntEquality
+import io.github.gciatto.ktconstraints.core.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.IntLiteral
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.Table
@@ -65,6 +66,18 @@ class KotlinDirectEncodingSpec :
             )
             scope.add(BoolNot(IntEquality(x, IntLiteral(5))))
             scope.add(BoolOr(IntEquality(y, IntLiteral(9)), BoolNot(IntEquality(index, IntLiteral(3)))))
+            agreesWithOracle(scope.build())
+        }
+
+        test("kotlin-direct/constant-element-lookups-are-linear-in-objectives-and-reified-comparisons") {
+            val scope = ConstraintScope.empty()
+            val first = scope.intVar("first", IntDomain.values(-1, 0, 2, 3, 5))
+            val second = scope.intVar("second", 0..3)
+            val costs = listOf(4, -3, 7, 1).map { IntLiteral(it) }
+            val total = IntSum(Element(first, costs), Element(second, costs.reversed()))
+            scope.add(BoolOr(IntEquality(Element(second, costs), IntLiteral(7)), IntLessOrEqual(total, IntLiteral(3))))
+            scope.add(BoolNot(IntEquality(first, second)))
+            scope.maximize(total)
             agreesWithOracle(scope.build())
         }
 
