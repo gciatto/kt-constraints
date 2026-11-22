@@ -8,6 +8,7 @@ thresholds until several reproducible baselines exist (M8 design).
 | `./gradlew :solve-portfolio:jvmBenchmark` | Eight families on every eligible bundled JVM route, plus `auto` |
 | `./gradlew :solve-choco:storeBenchmark`, `./gradlew :solve-z3:jvmStoreBenchmark` | CLP-style constraint-store operations |
 | `MINIZINC_EXECUTABLE=... ./gradlew :solve-minizinc:jvmBenchmark` | MiniZinc phases |
+| `KT_CONSTRAINTS_PLATFORM_BENCHMARK=1 ./gradlew :solve-kotlin:<jvmTest\|jsNodeTest> -i` | The same catalogue on each target; rows start with `BENCH,` (Kotlin/JS prints them only with `-i`). For Native, run `:solve-kotlin:linkReleaseTestLinuxX64` and then `build/bin/linuxX64/releaseTest/test.kexe` with the variable set: the default Native test binary is an unoptimised debug build, about 10x slower |
 | `./gradlew :solve-kotlin:jvmFamilyBenchmark` | `kotlin/direct` over seeded instances: median, minimum, maximum and timeouts (`BENCHMARK_SCALES`, `BENCHMARK_SEEDS`, `BENCHMARK_FAMILIES`) |
 
 `jvmBenchmark` prints CSV, and writes it to the file named by `BENCHMARK_CSV` when that is set. `BENCHMARK_SCALE`

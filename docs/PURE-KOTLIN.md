@@ -196,6 +196,22 @@ the native top-level all-different also beats the pairwise circuit on assignment
 8765/19832/30831 against 11110/22580/44586 at 8/10/12 workers), so the earlier single-instance slowdown was noise
 and no usage-based switch is applied.
 
+### Platforms
+
+The same seeded catalogue (median of 3 seeds, milliseconds, same host) runs on every target:
+
+| Family, scale 6 | JVM | Node | Native, release | Native, debug test binary |
+|---|---:|---:|---:|---:|
+| n-queens (28) | 19 | 86 | 47 | 463 |
+| assignment (10) | 114 | 211 | 155 | 1321 |
+| integer-program (9) | 26 | 53 | 29 | 305 |
+| single-machine (10) | 14128 | 14674 | 15898 | timeout |
+
+A release Native binary runs within 1-2x of the JVM; the default Native test binary is unoptimised and about 10x
+slower, so it must not be used for measurement. Node runs 1-4x slower than the JVM. Kotlin/JS emulates `Long` in
+software, so the SAT kernel counts work and propagations with `Int` in its hot loop; that cut Node's single-machine
+time from 24.0 s to 14.7 s and assignment from 312 ms to 211 ms, without changing the JVM or Native.
+
 Cold solves on 2026-11-22 (16-thread Xeon Gold 6226R, JDK 21; one run, so expect noise), in milliseconds:
 
 | Family | Scale 6: `kotlin/direct` | Choco | Scale 8: `kotlin/direct` | Choco | Fastest at scale 8 |
