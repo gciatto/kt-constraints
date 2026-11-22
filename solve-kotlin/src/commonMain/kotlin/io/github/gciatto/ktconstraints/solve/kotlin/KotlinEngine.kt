@@ -43,7 +43,7 @@ internal class KotlinEngine(
         if (presolved.conflict) circuit.clause(circuit.falseLiteral)
         for (constraint in model.constraints) {
             budget.checkpoint()
-            circuit.clause(translation.assertion(constraint, budget))
+            translation.post(constraint, budget)
         }
         if (includeObjective) {
             val expression =
