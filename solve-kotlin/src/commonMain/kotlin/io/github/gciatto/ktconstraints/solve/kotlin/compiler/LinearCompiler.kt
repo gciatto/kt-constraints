@@ -10,6 +10,7 @@ import org.gciatto.kt.math.BigInteger
 internal class LinearCompiler(
     private val circuit: Circuit,
     private val binary: BinaryArithmetic,
+    private val direct: DirectEncoding,
 ) {
     private val materialized = mutableMapOf<IntegerLinear, IntegerEncoding>()
 
@@ -48,8 +49,17 @@ internal class LinearCompiler(
         if (left is IntegerLinear || right is IntegerLinear) {
             circuit.and(lessOrEqual(left, right), lessOrEqual(right, left))
         } else {
-            binary.equal(encoding(left), encoding(right))
+            equal(encoding(left), encoding(right))
         }
+
+    /** Equality of encodings, through a value literal when one side is a constant and the other has them. */
+    suspend fun equal(
+        left: IntegerEncoding,
+        right: IntegerEncoding,
+    ): Int =
+        (if (right.min == right.max) direct.equal(left, right.min) else null)
+            ?: (if (left.min == left.max) direct.equal(right, left.min) else null)
+            ?: binary.equal(left, right)
 
     private suspend fun native(
         left: Any,

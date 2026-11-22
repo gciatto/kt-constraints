@@ -62,7 +62,8 @@ internal class KotlinTranslation(
     val circuit: Circuit,
 ) {
     val binary = BinaryArithmetic(circuit, circuit::checkpoint)
-    val linear = LinearCompiler(circuit, binary)
+    private val direct = DirectEncoding(circuit)
+    val linear = LinearCompiler(circuit, binary, direct)
     val realAtoms = mutableListOf<RealAtom>()
     private val cache = CompilationCache()
     private val booleans = linkedMapOf<BoolVar, Int>()
@@ -90,7 +91,11 @@ internal class KotlinTranslation(
     ) {
         when (variable) {
             is BoolVar -> booleans.getOrPut(variable) { circuit.variable() }
-            is IntVar -> if (variable !in integers) integers[variable] = binary.variable(domains[variable] ?: variable.domain)
+            is IntVar ->
+                if (variable !in integers) {
+                    val domain = domains[variable] ?: variable.domain
+                    integers[variable] = binary.variable(domain).also { direct.register(it, domain) }
+                }
             is BitVecVar ->
                 if (variable !in bitVectors) {
                     circuit.width(variable.width)
@@ -98,6 +103,69 @@ internal class KotlinTranslation(
                 }
             is RealVar -> reals.getOrPut(variable) { reals.size }
             else -> error("Unsupported declaration")
+        }
+    }
+
+    /**
+     * Posts a permanent root constraint: conjunctions are split, and an all-different over small-domain variables
+     * shifted by constants becomes native per-value constraints; anything else is asserted through its literal.
+     */
+    suspend fun post(
+        constraint: BoolExpr,
+        budget: SearchBudget,
+    ) {
+        val pending = ArrayDeque(listOf(constraint))
+        while (pending.isNotEmpty()) {
+            budget.checkpoint()
+            when (val node = pending.removeLast()) {
+                is BoolAnd -> {
+                    pending.addLast(node.right)
+                    pending.addLast(node.left)
+                }
+                is BoolNot -> {
+                    val sides = (node.operand as? IntEquality)?.let { disequality(it) }
+                    if (sides != null) direct.notEqual(sides.first, sides.second) else circuit.clause(assertion(node, budget))
+                }
+                else -> {
+                    val operands = (node as? AllDifferent)?.operands
+                    val shifts = operands?.mapNotNull(::shifted)
+                    if (shifts != null &&
+                        shifts.size == operands.size
+                    ) {
+                        direct.allDifferent(shifts)
+                    } else {
+                        circuit.clause(assertion(node, budget))
+                    }
+                }
+            }
+        }
+    }
+
+    /** Both sides of [equality] as shifted small-domain terms, reading `x - y = c` as `x = y + c`; null otherwise. */
+    private fun disequality(equality: IntEquality): Pair<Pair<IntegerEncoding?, BigInteger>, Pair<IntegerEncoding?, BigInteger>>? {
+        val left = equality.left
+        val right = equality.right
+        if (left is IntDifference && right is IntLiteral) {
+            val minuend = shifted(left.left)?.takeIf { it.first != null } ?: return null
+            val subtrahend = shifted(left.right)?.takeIf { it.first != null } ?: return null
+            return minuend to (subtrahend.first to subtrahend.second + right.value)
+        }
+        return (shifted(left) ?: return null) to (shifted(right) ?: return null)
+    }
+
+    /** `(encoding, shift)` for a small-domain variable plus a constant, `(null, value)` for a constant, else null. */
+    private fun shifted(operand: IntExpr): Pair<IntegerEncoding?, BigInteger>? {
+        fun variable(expression: IntExpr): IntegerEncoding? = (expression as? IntVar)?.let { integers[it] }?.takeIf { direct.isDirect(it) }
+        return when {
+            operand is IntLiteral -> null to operand.value
+            operand is IntSum && operand.right is IntLiteral -> variable(operand.left)?.let { it to (operand.right as IntLiteral).value }
+            operand is IntSum && operand.left is IntLiteral -> variable(operand.right)?.let { it to (operand.left as IntLiteral).value }
+            operand is IntDifference && operand.right is IntLiteral ->
+                variable(operand.left)?.let {
+                    it to
+                        -(operand.right as IntLiteral).value
+                }
+            else -> variable(operand)?.let { it to BigInteger.ZERO }
         }
     }
 
@@ -216,7 +284,7 @@ internal class KotlinTranslation(
                 for (position in node.values.size - 2 downTo 0) {
                     result =
                         binary.choose(
-                            binary.equal(index, binary.integer(BigInteger.of(position))),
+                            linear.equal(index, binary.integer(BigInteger.of(position))),
                             values[position + 1] as IntegerEncoding,
                             result,
                         )
@@ -287,14 +355,14 @@ internal class KotlinTranslation(
                     }
                 }
                 for (value in permutationValues(node)) {
-                    result = circuit.and(result, circuit.any(values.map { binary.equal(it as IntegerEncoding, binary.integer(value)) }))
+                    result = circuit.and(result, circuit.any(values.map { linear.equal(it as IntegerEncoding, binary.integer(value)) }))
                 }
                 result
             }
             is Table ->
                 circuit.any(
                     node.tuples.map { row ->
-                        circuit.all(values.indices.map { binary.equal(values[it] as IntegerEncoding, binary.integer(row[it])) })
+                        circuit.all(values.indices.map { linear.equal(values[it] as IntegerEncoding, binary.integer(row[it])) })
                     },
                 )
             is BoolCardinality -> {
