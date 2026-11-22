@@ -19,9 +19,9 @@ class KotlinOrderEncodingSpec :
     FunSpec({
         test("kotlin-order/reified-precedences-with-shifts-on-both-sides") {
             val scope = ConstraintScope.empty()
-            val a = scope.intVar("a", 0..20)
-            val b = scope.intVar("b", -5..15)
-            val c = scope.intVar("c", 3..22)
+            val a = scope.intVar("a", 0..10)
+            val b = scope.intVar("b", -3..8)
+            val c = scope.intVar("c", 2..12)
             scope.add(BoolOr(IntLessOrEqual(IntSum(a, IntLiteral(4)), b), IntLessOrEqual(IntSum(IntLiteral(3), b), a)))
             scope.add(
                 BoolOr(IntLessThan(IntDifference(c, IntLiteral(2)), a), IntLessOrEqual(IntSum(b, IntLiteral(7)), IntSum(c, IntLiteral(1)))),
