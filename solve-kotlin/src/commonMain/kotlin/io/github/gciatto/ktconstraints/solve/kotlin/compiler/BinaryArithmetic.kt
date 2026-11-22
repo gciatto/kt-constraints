@@ -44,7 +44,7 @@ internal class BinaryArithmetic(
         }
         circuit.clause(allowed)
         val encoded = gates.add(signedConstant(minimum, resultWidth), gates.extend(offset, resultWidth, signed = false))
-        return IntegerEncoding(encoded, minimum, maximum)
+        return IntegerEncoding(encoded, minimum, maximum, offset)
     }
 
     suspend fun add(

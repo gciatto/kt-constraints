@@ -55,12 +55,14 @@ import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.Assignment
 import io.github.gciatto.ktconstraints.solve.kotlin.SearchBudget
 import org.gciatto.kt.math.BigInteger
+import kotlin.reflect.KClass
 
 /** Exact translation into reusable Boolean circuits and linear-real atoms; no search occurs here. */
 internal class KotlinTranslation(
     val circuit: Circuit,
 ) {
     val binary = BinaryArithmetic(circuit, circuit::checkpoint)
+    val linear = LinearCompiler(circuit, binary)
     val realAtoms = mutableListOf<RealAtom>()
     private val cache = CompilationCache()
     private val booleans = linkedMapOf<BoolVar, Int>()
@@ -153,7 +155,7 @@ internal class KotlinTranslation(
             val decomposed = translate(node.decomposition, budget)
             return CompiledTerm(decomposed.value, circuit.and(defined, decomposed.defined))
         }
-        val children = terms.map { it.value }
+        val children = if (node::class in LINEAR_AWARE) terms.map { it.value } else terms.map { materialize(it.value) }
         val value =
             when (node) {
                 is BoolExpr -> boolean(node, children)
@@ -171,7 +173,29 @@ internal class KotlinTranslation(
         return CompiledTerm(value, defined)
     }
 
+    private suspend fun materialize(value: Any): Any = if (value is IntegerLinear) linear.encoding(value) else value
+
+    private fun symbolic(value: Any): IntegerLinear = value as? IntegerLinear ?: IntegerLinear.of(value as IntegerEncoding)
+
     private suspend fun integer(
+        node: IntExpr,
+        values: List<Any>,
+    ): Any =
+        when {
+            node is LinearSum ->
+                values.indices.fold(IntegerLinear(emptyList(), node.constant)) { sum, index ->
+                    sum + symbolic(values[index]).scale(node.coefficients[index])
+                }
+            values.any { it is IntegerLinear } ->
+                when (node) {
+                    is IntSum -> symbolic(values[0]) + symbolic(values[1])
+                    is IntDifference -> symbolic(values[0]) + symbolic(values[1]).scale(-BigInteger.ONE)
+                    else -> symbolic(values.single()).scale(-BigInteger.ONE)
+                }
+            else -> encoded(node, values)
+        }
+
+    private suspend fun encoded(
         node: IntExpr,
         values: List<Any>,
     ): IntegerEncoding =
@@ -186,10 +210,6 @@ internal class KotlinTranslation(
             is BoolToInt -> IntegerEncoding(intArrayOf(values.single() as Int, circuit.falseLiteral), BigInteger.ZERO, BigInteger.ONE)
             is IntMin -> values.map { it as IntegerEncoding }.reduce { least, next -> binary.choose(binary.less(next, least), next, least) }
             is IntMax -> values.map { it as IntegerEncoding }.reduce { most, next -> binary.choose(binary.less(most, next), next, most) }
-            is LinearSum ->
-                values.indices.fold(binary.integer(node.constant)) { sum, index ->
-                    binary.add(sum, binary.multiply(values[index] as IntegerEncoding, binary.integer(node.coefficients[index])))
-                }
             is Element -> {
                 val index = values.first() as IntegerEncoding
                 var result = values.last() as IntegerEncoding
@@ -246,9 +266,9 @@ internal class KotlinTranslation(
             is BoolOr -> circuit.or(values[0] as Int, values[1] as Int)
             is BoolImplies -> circuit.or(-(values[0] as Int), values[1] as Int)
             is BoolEquality -> -circuit.xor(values[0] as Int, values[1] as Int)
-            is IntEquality -> binary.equal(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
-            is IntLessThan -> binary.less(values[0] as IntegerEncoding, values[1] as IntegerEncoding)
-            is IntLessOrEqual -> -binary.less(values[1] as IntegerEncoding, values[0] as IntegerEncoding)
+            is IntEquality -> linear.equal(values[0], values[1])
+            is IntLessThan -> linear.less(values[0], values[1])
+            is IntLessOrEqual -> linear.lessOrEqual(values[0], values[1])
             is BitVecComparison -> binary.bitCompare(node.relation, values[0] as IntArray, values[1] as IntArray)
             is RealEquality, is RealLessThan, is RealLessOrEqual -> realRelation(node, values)
             else -> global(node, values)
@@ -380,5 +400,19 @@ internal class KotlinTranslation(
             }
         }
         return LinearForm(bitCoefficients = coefficients, constant = constant)
+    }
+
+    private companion object {
+        /** Nodes that accept symbolic sums as children; every other consumer receives materialised bits. */
+        val LINEAR_AWARE: Set<KClass<out Expr>> =
+            setOf(
+                LinearSum::class,
+                IntSum::class,
+                IntDifference::class,
+                IntNegation::class,
+                IntEquality::class,
+                IntLessThan::class,
+                IntLessOrEqual::class,
+            )
     }
 }

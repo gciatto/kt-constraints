@@ -43,6 +43,18 @@ internal class Circuit(
         solver.addClause(literals)
     }
 
+    /** Posts the permanent native constraint `sum(coefficients[i] * literals[i]) <= bound`. */
+    fun linear(
+        literals: IntArray,
+        coefficients: LongArray,
+        bound: Long,
+    ) {
+        budget.consume()
+        if (clauses >= configuration.maxClauses) throw SearchStopped(TerminationReason.RESOURCE_LIMIT)
+        clauses++
+        solver.addLinear(literals, coefficients, bound)
+    }
+
     fun width(width: Int) {
         if (width <= 0 || width > configuration.maxBitWidth) throw SearchStopped(TerminationReason.RESOURCE_LIMIT)
     }
