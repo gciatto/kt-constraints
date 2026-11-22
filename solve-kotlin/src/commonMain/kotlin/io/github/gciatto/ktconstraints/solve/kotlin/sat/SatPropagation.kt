@@ -28,10 +28,15 @@ internal class SatPropagation(
             var index = 0
             while (index < watched.size) {
                 budget.tick()
+                // A true blocker satisfies the clause, which then need not be loaded at all.
+                if (state.value(watched[index + 1]) > 0) {
+                    index += 2
+                    continue
+                }
                 val id = watched[index]
                 val clause = database.clauses[id]
                 if (clause.size == 0) {
-                    watched.removeAtSwap(index)
+                    watched.removePairAtSwap(index)
                     continue
                 }
                 if (clause[0] == falsified) {
@@ -40,7 +45,8 @@ internal class SatPropagation(
                 }
                 val other = clause[0]
                 if (state.value(other) > 0) {
-                    index++
+                    watched[index + 1] = other
+                    index += 2
                     continue
                 }
                 var replacement = 2
@@ -50,11 +56,11 @@ internal class SatPropagation(
                     val literal = clause[replacement]
                     clause[replacement] = falsified
                     clause[1] = literal
-                    watched.removeAtSwap(index)
-                    database.watching(literal).add(id)
+                    watched.removePairAtSwap(index)
+                    database.watching(literal).addPair(id, other)
                 } else {
                     if (!state.enqueue(other, id)) return id
-                    index++
+                    index += 2
                 }
             }
         }
