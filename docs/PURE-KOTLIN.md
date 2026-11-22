@@ -187,6 +187,15 @@ Hall-condition refutation), and a top-level disequality `x + a != y + b` becomes
 pair. Native linear explanations use just enough of the largest coefficients. Making constant element lookups
 linear was tried and dropped: 3-4x faster on small assignment instances, 3-5x slower from scale 8.
 
+Variables with up to 4096 values also get on-demand order literals `x >= v`, defined by exact comparators and
+chained; an inequality `x + a <= y + b` between such shifted variables, or against a constant, becomes one reified
+clause per domain value. On single-machine scheduling (5 seeds per size, `:solve-kotlin:jvmFamilyBenchmark`) this
+cut the median from 3.6 s to 0.64 s at 8 jobs and from 57 s to 12 s at 10 jobs; 12 jobs still time out after 60 s,
+since proving optimal total completion time needs the no-overlap reasoning and LP bounds CP-SAT has. Over 5 seeds,
+the native top-level all-different also beats the pairwise circuit on assignment at every size (median search work
+8765/19832/30831 against 11110/22580/44586 at 8/10/12 workers), so the earlier single-instance slowdown was noise
+and no usage-based switch is applied.
+
 Cold solves on 2026-11-22 (16-thread Xeon Gold 6226R, JDK 21; one run, so expect noise), in milliseconds:
 
 | Family | Scale 6: `kotlin/direct` | Choco | Scale 8: `kotlin/direct` | Choco | Fastest at scale 8 |
@@ -201,8 +210,8 @@ Cold solves on 2026-11-22 (16-thread Xeon Gold 6226R, JDK 21; one run, so expect
 | integer-program | 25 | 19 | 565 | 157 | CP-SAT, 5 |
 
 Assignment is the weakest family: its objective sums element lookups, and without an LP bound proving optimality
-takes much more search than in CP-SAT or Choco; search effort also swings by up to 1.5x between encodings of its
-all-different from one size to the next. Linear models stay behind CP-SAT and SCIP, which use LP relaxations.
+takes much more search than in CP-SAT or Choco. Single instances of it vary by up to 3x between seeds, so the
+table's one-seed cold runs overstate its regression; the multi-seed medians above are the reliable comparison. Linear models stay behind CP-SAT and SCIP, which use LP relaxations.
 
 ## Next stages and acceptance gates
 

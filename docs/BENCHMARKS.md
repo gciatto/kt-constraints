@@ -8,6 +8,7 @@ thresholds until several reproducible baselines exist (M8 design).
 | `./gradlew :solve-portfolio:jvmBenchmark` | Eight families on every eligible bundled JVM route, plus `auto` |
 | `./gradlew :solve-choco:storeBenchmark`, `./gradlew :solve-z3:jvmStoreBenchmark` | CLP-style constraint-store operations |
 | `MINIZINC_EXECUTABLE=... ./gradlew :solve-minizinc:jvmBenchmark` | MiniZinc phases |
+| `./gradlew :solve-kotlin:jvmFamilyBenchmark` | `kotlin/direct` over seeded instances: median, minimum, maximum and timeouts (`BENCHMARK_SCALES`, `BENCHMARK_SEEDS`, `BENCHMARK_FAMILIES`) |
 
 `jvmBenchmark` prints CSV, and writes it to the file named by `BENCHMARK_CSV` when that is set. `BENCHMARK_SCALE`
 (default 1) grows sizes. Each family's known answer comes from a closed form, dynamic programming or
@@ -20,6 +21,10 @@ The columns are:
 
 For `auto` rows, `cold_ms` covers ranking plus a fallback portfolio run, and the route after `auto:` is the one
 that answered. Comparing `auto` with the chosen route's `cold_ms` shows the selection overhead: about 10-15 ms here.
+
+Randomly generated families (knapsack, assignment, integer program, single-machine scheduling) take a seed; seed 0
+keeps the original instances, and `BenchmarkCatalogueSpec` confirms seed 1 too. Compare encodings over several seeds:
+a single instance's search path can swing by 2-3x between equivalent encodings.
 
 The unpublished `kotlin/direct` route is measured too, but never offered by `auto`; its observations and the
 optimisations they drove are in [PURE-KOTLIN.md](PURE-KOTLIN.md#performance). Known answers come from closed forms or
