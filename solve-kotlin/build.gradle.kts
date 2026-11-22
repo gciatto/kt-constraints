@@ -30,3 +30,10 @@ tasks.register<JavaExec>("jvmFamilyBenchmark") {
     mainClass.set("io.github.gciatto.ktconstraints.solve.kotlin.KotlinFamilyBenchmark")
     maxHeapSize = "2g"
 }
+
+// Kotlin/JS test runners do not inherit arbitrary variables; forward the opt-in cross-platform benchmark settings.
+tasks.withType<org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest>().configureEach {
+    listOf("KT_CONSTRAINTS_PLATFORM_BENCHMARK", "KT_CONSTRAINTS_PLATFORM_BENCHMARK_SCALES", "KT_CONSTRAINTS_PLATFORM_BENCHMARK_SEEDS")
+        .forEach { name -> providers.environmentVariable(name).orNull?.let { environment(name, it) } }
+}
+
