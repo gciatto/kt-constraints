@@ -9,6 +9,7 @@ internal class SatSolver {
     private val database = SatDatabase()
     private val state = SatState()
     private val statistics = SatStatistics()
+    private val linear = SatLinear(database, state)
     private var solving = false
 
     val decisions: Long get() = statistics.decisions
@@ -18,13 +19,26 @@ internal class SatSolver {
     /** Allocates a fresh variable; IDs remain valid for this solver's entire lifetime. */
     fun newVariable(): Int {
         check(!solving) { "Cannot change the variable universe during a SAT check" }
-        return database.newVariable()
+        return database.newVariable().also { linear.newVariable() }
     }
 
     /** Adds a permanent clause after validating every literal, then removing duplicates and tautologies. */
     fun addClause(literals: IntArray) {
         check(!solving) { "Cannot add clauses during a SAT check" }
         database.addClause(literals)
+    }
+
+    /**
+     * Adds the permanent constraint `sum(coefficients[i] * literals[i]) <= bound`; coefficients must be positive and
+     * the literals' variables distinct.
+     */
+    fun addLinear(
+        literals: IntArray,
+        coefficients: LongArray,
+        bound: Long,
+    ) {
+        check(!solving) { "Cannot add constraints during a SAT check" }
+        linear.add(literals, coefficients, bound)
     }
 
     /**
@@ -42,8 +56,9 @@ internal class SatSolver {
         try {
             checkpoint()
             state.reset(database.variableCount)
+            linear.reset()
             val budget = SatBudget(checkpoint)
-            val propagation = SatPropagation(database, state, statistics, budget)
+            val propagation = SatPropagation(database, state, statistics, budget, linear)
             if (database.inconsistent || !propagation.assertUnits()) return SatResult(SatStatus.UNSATISFIABLE)
             return search(temporary, budget, propagation)
         } finally {
@@ -56,7 +71,7 @@ internal class SatSolver {
         budget: SatBudget,
         propagation: SatPropagation,
     ): SatResult {
-        val analysis = SatConflictAnalysis(database, state, budget)
+        val analysis = SatConflictAnalysis(database, state, budget, linear)
         var restarts = 0
         var restartBudget = luby(restarts) * RESTART_UNIT
         while (true) {
@@ -68,14 +83,14 @@ internal class SatSolver {
                 statistics.conflicts++
                 if (state.levels.size == 0) return SatResult(SatStatus.UNSATISFIABLE)
                 val learned = analysis.analyze(conflict)
-                state.backtrack(learned.backtrackLevel, budget)
+                backtrack(learned.backtrackLevel, budget)
                 val reason = database.insertLearned(learned.clause, learned.blockDistance)
                 check(state.enqueue(learned.clause[0], reason)) { "Learned clause must be asserting after backjump" }
                 state.decayActivity()
                 if (--restartBudget <= 0) {
                     restartBudget = luby(++restarts) * RESTART_UNIT
                     // Level 0 keeps root facts; the decision loop below re-applies assumptions in order.
-                    state.backtrack(0, budget)
+                    backtrack(0, budget)
                     database.reduce()
                 }
             } else {
@@ -101,6 +116,14 @@ internal class SatSolver {
                 check(state.enqueue(decision, -1))
             }
         }
+    }
+
+    private fun backtrack(
+        level: Int,
+        budget: SatBudget,
+    ) {
+        linear.backtrack(level)
+        state.backtrack(level, budget)
     }
 
     private companion object {

@@ -6,6 +6,7 @@ internal class SatPropagation(
     private val state: SatState,
     private val statistics: SatStatistics,
     private val budget: SatBudget,
+    private val linear: SatLinear,
 ) {
     suspend fun assertUnits(): Boolean {
         for (index in 0 until database.units.size) {
@@ -24,6 +25,8 @@ internal class SatPropagation(
             budget.tick()
             statistics.propagations++
             val falsified = -state.trail[state.propagated++]
+            val linearConflict = linear.assign(-falsified, budget)
+            if (linearConflict >= 0) return linearConflict
             val watched = database.watching(falsified)
             var index = 0
             while (index < watched.size) {
