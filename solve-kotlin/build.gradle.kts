@@ -20,3 +20,13 @@ tasks.register<JavaExec>("jvmBenchmark") {
     classpath(compilation.output.allOutputs, compilation.runtimeDependencyFiles)
     mainClass.set("io.github.gciatto.ktconstraints.solve.kotlin.KotlinBenchmark")
 }
+
+tasks.register<JavaExec>("jvmFamilyBenchmark") {
+    group = "benchmark"
+    description = "Reports median, minimum and maximum kotlin/direct solve times over seeded benchmark instances."
+    val compilation = kotlin.jvm().compilations.getByName("test")
+    dependsOn("jvmTestClasses")
+    classpath(compilation.output.allOutputs, compilation.runtimeDependencyFiles)
+    mainClass.set("io.github.gciatto.ktconstraints.solve.kotlin.KotlinFamilyBenchmark")
+    maxHeapSize = "2g"
+}
