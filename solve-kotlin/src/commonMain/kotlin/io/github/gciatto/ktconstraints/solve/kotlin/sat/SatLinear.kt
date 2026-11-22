@@ -95,23 +95,47 @@ internal class SatLinear(
         }
     }
 
-    /** Clause implying [variable] under the linear reason [reason]: the constraint's literals true before it. */
+    /**
+     * Clause implying [variable] under the linear reason [reason]: the largest-coefficient literals true before it,
+     * just enough that with the variable's own coefficient they exceed the bound.
+     */
     fun explain(
         reason: Int,
         variable: Int,
     ): IntArray {
         val id = constraintOf(reason)
+        val terms = literals[id]
+        val weights = coefficients[id]
+        val own = weights[terms.indexOfFirst { abs(it) == variable }]
         val before = state.positions[variable]
         val result = IntVector()
         result.add(if (state.assignments[variable] > 0) variable else -variable)
-        for (literal in literals[id]) {
-            if (abs(literal) != variable && state.value(literal) > 0 && state.positions[abs(literal)] < before) result.add(-literal)
+        var sum = own
+        for (position in terms.indices) {
+            if (sum > bounds[id]) break
+            val literal = terms[position]
+            if (abs(literal) != variable && state.value(literal) > 0 && state.positions[abs(literal)] < before) {
+                result.add(-literal)
+                sum += weights[position]
+            }
         }
         return result.toIntArray()
     }
 
+    /** The largest-coefficient true literals whose sum alone exceeds the bound, negated, as a learned clause. */
     private fun conflict(id: Int): Int {
-        val clause = literals[id].filter { state.value(it) > 0 }.map { -it }.sortedByDescending { state.assignmentLevels[abs(it)] }
+        val terms = literals[id]
+        val weights = coefficients[id]
+        val clause = mutableListOf<Int>()
+        var sum = 0L
+        for (position in terms.indices) {
+            if (sum > bounds[id]) break
+            if (state.value(terms[position]) > 0) {
+                clause += -terms[position]
+                sum += weights[position]
+            }
+        }
+        clause.sortByDescending { state.assignmentLevels[abs(it)] }
         return database.insertLearned(clause.toIntArray(), clause.size)
     }
 
