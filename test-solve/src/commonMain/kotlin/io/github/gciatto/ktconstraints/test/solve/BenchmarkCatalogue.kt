@@ -27,22 +27,33 @@ import kotlin.random.Random
  */
 object BenchmarkCatalogue {
     private const val SEED = 7
+    private const val SEED_STRIDE = 7919
 
-    /** Every family at [scale]. */
-    fun instances(scale: Int = 1): List<BenchmarkInstance> = builders(scale).map { it() }
+    /** Every family at [scale]; [seed] varies the randomly generated families, and 0 keeps the original instances. */
+    fun instances(
+        scale: Int = 1,
+        seed: Int = 0,
+    ): List<BenchmarkInstance> = builders(scale, seed).map { it() }
 
-    /** Builders of every family at [scale], so model construction can be timed. */
-    fun builders(scale: Int = 1): List<() -> BenchmarkInstance> =
+    /** Builders of every family at [scale] and [seed], so model construction can be timed. */
+    fun builders(
+        scale: Int = 1,
+        seed: Int = 0,
+    ): List<() -> BenchmarkInstance> =
         listOf(
             { queens(4 + 4 * scale) },
             { coloring(5 + 2 * scale) },
             { pigeonhole(4 + scale) },
-            { knapsack(8 + 2 * scale) },
-            { assignment(4 + scale) },
+            { knapsack(8 + 2 * scale, seed) },
+            { assignment(4 + scale, seed) },
             { jobShop() },
             { bitVectors(8 * scale) },
-            { integerProgram(3 + scale) },
+            { integerProgram(3 + scale, seed) },
+            { singleMachine(4 + scale, seed) },
         )
+
+    /** Families whose instances change with the seed. */
+    val SEEDED: Set<String> = setOf("knapsack", "assignment", "integer-program", "single-machine")
 
     /** N-queens; solutions exist for every n of at least 4. */
     fun queens(n: Int): BenchmarkInstance {
@@ -81,8 +92,11 @@ object BenchmarkCatalogue {
     }
 
     /** 0/1 knapsack over [n] seeded items; the optimum comes from dynamic programming. */
-    fun knapsack(n: Int): BenchmarkInstance {
-        val random = Random(SEED + n)
+    fun knapsack(
+        n: Int,
+        seed: Int = 0,
+    ): BenchmarkInstance {
+        val random = Random(SEED + n + SEED_STRIDE * seed)
         val weights = List(n) { random.nextInt(3, 20) }
         val values = List(n) { random.nextInt(1, 30) }
         val capacity = weights.sum() / 2
@@ -100,8 +114,11 @@ object BenchmarkCatalogue {
     }
 
     /** Assignment of [n] workers to [n] tasks with seeded costs through `element`; the optimum is enumerated. */
-    fun assignment(n: Int): BenchmarkInstance {
-        val random = Random(SEED * n)
+    fun assignment(
+        n: Int,
+        seed: Int = 0,
+    ): BenchmarkInstance {
+        val random = Random(SEED * n + SEED_STRIDE * seed)
         val costs = List(n) { List(n) { random.nextInt(1, 50) } }
         val model =
             ConstraintModel.of {
@@ -150,6 +167,36 @@ object BenchmarkCatalogue {
         return BenchmarkInstance("job-shop", 3, model, SolveStatus.OPTIMAL, BigInteger.of(11))
     }
 
+    /**
+     * [n] jobs with seeded durations on one machine, starts within the total duration, pairwise disjunctive, minimising
+     * the total completion time; shortest-processing-time order is optimal, so the optimum has a closed form.
+     */
+    fun singleMachine(
+        n: Int,
+        seed: Int = 0,
+    ): BenchmarkInstance {
+        val random = Random(SEED + 31 * n + SEED_STRIDE * seed)
+        val durations = List(n) { random.nextInt(1, 10) }
+        val horizon = durations.sum()
+        val model =
+            ConstraintModel.of {
+                val starts = List(n) { intVar("start$it", 0..horizon - durations[it]) }
+                for (a in 0 until n) {
+                    for (b in a + 1 until n) {
+                        add(
+                            BoolOr(
+                                IntLessOrEqual(IntSum(starts[a], IntLiteral(durations[a])), starts[b]),
+                                IntLessOrEqual(IntSum(starts[b], IntLiteral(durations[b])), starts[a]),
+                            ),
+                        )
+                    }
+                }
+                minimize(LinearSum(starts, List(n) { BigInteger.ONE }, BigInteger.of(horizon.toLong())))
+            }
+        val optimum = durations.sorted().runningReduce(Int::plus).sum()
+        return BenchmarkInstance("single-machine", n, model, SolveStatus.OPTIMAL, BigInteger.of(optimum.toLong()))
+    }
+
     /** A [width]-bit `x * 3 = 5`: solvable for every width because 3 is odd. */
     fun bitVectors(width: Int): BenchmarkInstance {
         val model =
@@ -162,8 +209,11 @@ object BenchmarkCatalogue {
     }
 
     /** A seeded integer program over [n] variables in 0..4 with three constraints; the optimum is enumerated. */
-    fun integerProgram(n: Int): BenchmarkInstance {
-        val random = Random(SEED + 100 * n)
+    fun integerProgram(
+        n: Int,
+        seed: Int = 0,
+    ): BenchmarkInstance {
+        val random = Random(SEED + 100 * n + SEED_STRIDE * seed)
         val rows = List(3) { List(n) { random.nextInt(1, 6) } }
         val bounds = rows.map { it.sum() * 2 }
         val profits = List(n) { random.nextInt(1, 10) }
