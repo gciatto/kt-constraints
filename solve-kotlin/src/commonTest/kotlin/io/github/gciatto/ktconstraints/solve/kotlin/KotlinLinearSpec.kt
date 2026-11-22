@@ -11,27 +11,13 @@ import io.github.gciatto.ktconstraints.core.IntMax
 import io.github.gciatto.ktconstraints.core.IntNegation
 import io.github.gciatto.ktconstraints.core.IntSum
 import io.github.gciatto.ktconstraints.core.LinearSum
-import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.test.solve.FiniteOracle
-import io.github.gciatto.ktconstraints.test.solve.enumerate
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
 
 /** Linear sums compared natively, in every Boolean context, agree with the finite oracle. */
 class KotlinLinearSpec :
     FunSpec({
-        suspend fun agrees(model: ConstraintModel) {
-            val optimizing = model.objective != null
-            val (expected, oracle) = enumerate(FiniteOracle(), model, objectives = optimizing)
-            KotlinBackend().create().use { solver ->
-                val (actual, result) = enumerate(solver, model, objectives = optimizing)
-                result.status shouldBe oracle.status
-                if (optimizing) result.objectiveValue shouldBe oracle.objectiveValue else actual.toSet() shouldBe expected.toSet()
-            }
-        }
-
         fun coefficients(vararg values: Long) = values.map { BigInteger.of(it) }
 
         test("kotlin-linear/negated-and-strict-sums-with-negative-coefficients") {
@@ -39,7 +25,7 @@ class KotlinLinearSpec :
             val xs = listOf(scope.intVar("x", -2..3), scope.intVar("y", IntDomain.values(-4, 0, 5)), scope.intVar("z", 0..2))
             scope.add(BoolNot(IntLessOrEqual(LinearSum(xs, coefficients(3, -2, 5), BigInteger.of(1)), IntLiteral(4))))
             scope.add(IntLessThan(LinearSum(xs, coefficients(-1, 1, 2)), IntLiteral(6)))
-            agrees(scope.build())
+            agreesWithOracle(scope.build())
         }
 
         test("kotlin-linear/equalities-mix-linear-sums-with-plain-integer-terms") {
@@ -56,7 +42,7 @@ class KotlinLinearSpec :
                     IntLessOrEqual(IntMax(listOf(x, y)), IntLiteral(0)),
                 ),
             )
-            agrees(scope.build())
+            agreesWithOracle(scope.build())
         }
 
         test("kotlin-linear/coefficients-beyond-machine-range-stay-exact") {
@@ -65,7 +51,7 @@ class KotlinLinearSpec :
             val xs = listOf(scope.intVar("x", 0..3), scope.intVar("y", 0..3))
             scope.add(IntEquality(LinearSum(xs, listOf(huge, BigInteger.ONE)), IntLiteral(huge * BigInteger.of(2) + BigInteger.of(3))))
             scope.add(BoolNot(IntLessThan(LinearSum(xs, listOf(-huge, huge)), IntLiteral(0))))
-            agrees(scope.build())
+            agreesWithOracle(scope.build())
         }
 
         test("kotlin-linear/reified-capacities-and-a-linear-objective-reach-the-optimum") {
@@ -76,6 +62,6 @@ class KotlinLinearSpec :
             scope.add(BoolOr(heavy, IntLessOrEqual(LinearSum(take, coefficients(1, 1, 1, 1, 1)), IntLiteral(3))))
             scope.add(BoolOr(BoolNot(heavy), IntLessOrEqual(LinearSum(take, coefficients(0, 2, 0, 3, 1)), IntLiteral(2))))
             scope.maximize(LinearSum(take, coefficients(7, 5, 9, 3, 8), BigInteger.of(-2)))
-            agrees(scope.build())
+            agreesWithOracle(scope.build())
         }
     })
