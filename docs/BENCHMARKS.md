@@ -21,6 +21,10 @@ The columns are:
 For `auto` rows, `cold_ms` covers ranking plus a fallback portfolio run, and the route after `auto:` is the one
 that answered. Comparing `auto` with the chosen route's `cold_ms` shows the selection overhead: about 10-15 ms here.
 
+The unpublished `kotlin/direct` route is measured too, but never offered by `auto`; its observations and the
+optimisations they drove are in [PURE-KOTLIN.md](PURE-KOTLIN.md#performance). Known answers come from closed forms or
+dynamic programming, never from enumerating permutations or grids, so large scales stay within memory.
+
 ## Baseline observation (2026-11-21, scale 1, 30 s timeout)
 
 Host: 16 logical CPUs, Intel(R) Xeon(R) Gold 6226R CPU @ 2.90GHz, openjdk version "21.0.13.1" 2026-11-17. One run, so expect noise.

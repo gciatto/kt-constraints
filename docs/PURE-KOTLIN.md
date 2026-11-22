@@ -13,7 +13,7 @@ repository's semantics and contracts. The much larger union of all external solv
 staged extension of the IR and engine, not a property of this first backend.
 
 This is an implementation branch with test-first commit ordering. Its suites now compile and pass on the JVM,
-Node and Linux Native; performance is not yet measured. [The validation record](PURE-KOTLIN-VALIDATION.md) distinguishes source inspection
+Node and Linux Native; performance is measured below. [The validation record](PURE-KOTLIN-VALIDATION.md) distinguishes source inspection
 from execution. Publication remains gated.
 
 ## Architecture
@@ -164,6 +164,33 @@ part of TDD; source ordering is not presented as a successful red/green result.
 The existing JVM/JS CI tasks discover the new module, and Native jobs explicitly include it. Manual benchmark
 output separates construction, setup, presolve/compilation, first search, projection and incremental phases.
 It supplies deterministic smoke workloads and correctness assertions, without claiming representative timings.
+
+## Performance
+
+`./gradlew :solve-portfolio:jvmBenchmark` measures `kotlin/direct` beside the bundled routes; it is never offered
+by `auto`. JFR profiles put almost all time in SAT propagation, so the kernel now has non-suspending inner loops
+(pausing between trail literals keeps interruption latency), learned-clause minimisation, a VSIDS heap, Luby
+restarts, block-distance clause reduction and blocker literals. Presolve refutes an all-different with fewer
+values than operands, and a permutation all-different also requires every value to be taken. Pigeonhole went
+from 661 ms at scale 4 and 38 s at scale 6 to 3–4 ms; knapsack and the integer program became 2–4× faster.
+
+Cold solves on 2026-11-22 (16-thread Xeon Gold 6226R, JDK 21; one run, so expect noise), in milliseconds:
+
+| Family, scale 6 | `kotlin/direct` | `choco/direct` | Fastest route |
+|---|---:|---:|---|
+| n-queens (28) | 616 | 120 | Choco, 120 |
+| graph-coloring (17) | 8 | 15 | `kotlin/direct` |
+| pigeonhole (10) | 4 | 7 | `kotlin/direct` / CP-SAT, 4 |
+| knapsack (20) | 529 | 36 | CP-SAT, 4 |
+| assignment (10) | 58 | 22 | Choco, 22 |
+| job-shop | 7 | 6 | Choco, 6 |
+| bit-vectors (48) | 1 | — | `kotlin/direct` |
+| integer-program (9) | 322 | 24 | CP-SAT, 7 |
+
+The remaining gaps are structural. Linear constraints become binary adder circuits, which propagate weakly;
+native pseudo-Boolean/linear propagation would close most of the knapsack and integer-program gap. All-different
+over expressions (the n-queens diagonals) uses pairwise comparators on binary encodings, where a direct or order
+encoding for small domains would propagate better.
 
 ## Next stages and acceptance gates
 
