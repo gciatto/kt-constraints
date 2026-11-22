@@ -110,7 +110,7 @@ object BenchmarkCatalogue {
                 val total = task.indices.map { worker -> Element(task[worker], costs[worker].map { IntLiteral(it) }) }
                 minimize(total.reduce<IntExpr, IntExpr> { sum, cost -> IntSum(sum, cost) })
             }
-        val optimum = permutations(n).minOf { perm -> perm.indices.sumOf { costs[it][perm[it]] } }
+        val optimum = cheapestAssignment(costs)
         return BenchmarkInstance("assignment", n, model, SolveStatus.OPTIMAL, BigInteger.of(optimum.toLong()))
     }
 
@@ -182,14 +182,24 @@ object BenchmarkCatalogue {
         return BenchmarkInstance("integer-program", n, model, SolveStatus.OPTIMAL, BigInteger.of(optimum.toLong()))
     }
 
-    private fun permutations(n: Int): List<List<Int>> =
-        if (n ==
-            0
-        ) {
-            listOf(emptyList())
-        } else {
-            permutations(n - 1).flatMap { perm -> (0..perm.size).map { perm.take(it) + (n - 1) + perm.drop(it) } }
+    /** Exact minimum-cost assignment by dynamic programming over task subsets: O(n 2^n), not n! permutations. */
+    private fun cheapestAssignment(costs: List<List<Int>>): Int {
+        val n = costs.size
+        val best = IntArray(1 shl n) { Int.MAX_VALUE }
+        best[0] = 0
+        for (taken in best.indices) {
+            if (best[taken] == Int.MAX_VALUE) continue
+            val worker = taken.countOneBits()
+            if (worker == n) continue
+            for (task in 0 until n) {
+                if (taken and (1 shl task) == 0) {
+                    val next = taken or (1 shl task)
+                    best[next] = minOf(best[next], best[taken] + costs[worker][task])
+                }
+            }
         }
+        return best.last()
+    }
 
     private fun points(n: Int): List<List<Int>> =
         if (n ==
