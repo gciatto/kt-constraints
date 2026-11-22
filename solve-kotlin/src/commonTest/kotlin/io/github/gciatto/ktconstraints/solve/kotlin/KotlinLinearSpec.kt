@@ -59,6 +59,15 @@ class KotlinLinearSpec :
             agrees(scope.build())
         }
 
+        test("kotlin-linear/coefficients-beyond-machine-range-stay-exact") {
+            val huge = BigInteger.ONE shl 70
+            val scope = ConstraintScope.empty()
+            val xs = listOf(scope.intVar("x", 0..3), scope.intVar("y", 0..3))
+            scope.add(IntEquality(LinearSum(xs, listOf(huge, BigInteger.ONE)), IntLiteral(huge * BigInteger.of(2) + BigInteger.of(3))))
+            scope.add(BoolNot(IntLessThan(LinearSum(xs, listOf(-huge, huge)), IntLiteral(0))))
+            agrees(scope.build())
+        }
+
         test("kotlin-linear/reified-capacities-and-a-linear-objective-reach-the-optimum") {
             val scope = ConstraintScope.empty()
             val take = List(5) { scope.intVar("take$it", 0..2) }
