@@ -87,8 +87,8 @@ integer-program  4     LINEAR_INTEGER  auto:scip/or-tools  OPTIMAL     57       
 ## Route selection evidence (2026-11-22, scales 1-6, 3 seeds, 10 s timeout)
 
 `RouteBenchmarkSpec` on one Linux x64 host: JVM 21, Node and a release `linuxX64` binary. Cells are median
-milliseconds of a fresh solver, including setup. A `*` marks a median where some seeds timed out. MiniZinc routes were
-not measured, because no `minizinc` executable was installed. Every proof matched the known answer.
+milliseconds of a fresh solver, including setup. A `*` marks a median where some seeds timed out. MiniZinc routes are
+in their own section below. Every proof matched the known answer.
 
 Scale 3:
 
@@ -139,3 +139,35 @@ Selection rules these numbers support:
 
 Gaps: the catalogue has no `SMT_REAL`, `NONLINEAR_INTEGER` or `PURE_BOOLEAN` family, and its bit-vector instance is
 trivial. Rules for those classes remain the untested defaults.
+
+### MiniZinc routes (pinned 2.10.1 bundle, same run settings)
+
+Set `MINIZINC_EXECUTABLE` to register them: the JVM gets the five engines, and Node gets Gecode through the CLI. The
+number in brackets is the route's rank under the default policy (0 is tried first).
+
+| family, scale | JVM cp-sat direct | JVM gecode | JVM chuffed | JVM cp-sat | JVM highs | JVM cbc | JVM highs or-tools | Node gecode CLI | Node kotlin |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| n-queens, 3 | 38 (0) | 263 (2) | 257 (3) | 410 (4) | 426 (8) | timeout (9) | 1091 (7) | 134 (0) | 22 |
+| n-queens, 6 | 178 (0) | 581 (2) | timeout (3) | timeout (4) | 1036 (8) | timeout (9) | 3867 (7) | 149 (0) | 96 |
+| pigeonhole, 6 | 5 (0) | 263 (2) | 244 (3) | 244 (4) | 287 (8) | 275 (9) | timeout (7) | 131 (0) | 1 |
+| knapsack, 6 | 5 (4) | 267 (6) | 246 (7) | 257 (8) | 275 (2) | 269 (3) | 7 (1) | 132 (0) | 15 |
+| assignment, 6 | 17 (0) | 262 (2) | 255 (3) | 295 (4) | 288 (8) | 283 (9) | 2347 (7) | 136 (0) | 202 |
+| integer-program, 6 | 7 (4) | 264 (6) | 243 (7) | 254 (8) | 276 (2) | 274 (3) | 7 (1) | 134 (0) | 53 |
+| single-machine, 3 | 16 (0) | 282 (2) | 251 (3) | 298 (4) | 668 (8) | 1288 (9) | 711 (7) | 148 (0) | 131 |
+| single-machine, 6 | 33 (0) | 9776* (2) | 2799* (3) | 3890 (4) | timeout (8) | timeout (9) | 10000* (7) | 9639* (0) | timeout |
+
+What they add to the rules:
+
+6. **MiniZinc routes cost a fixed 240-290 ms on the JVM and about 130 ms through Node's CLI.** That is process start
+   plus flattening, before any search. On small and medium models, they belong after every in-process route. The
+   default policy breaks this on `LINEAR_INTEGER`: MIP affinity (+1.0) outweighs the compiled-route penalty (-0.5),
+   so `highs/minizinc` and `cbc/minizinc` rank second and third, ahead of `cp-sat/direct` and `choco/direct`. Those
+   two answer in 5 ms against about 270 ms.
+7. **Flattening can dominate.** Chuffed and CP-SAT through MiniZinc time out on 28-queens, while CP-SAT direct
+   solves it in 178 ms.
+8. **MiniZinc's MIP decomposition of globals beats ours.** HiGHS through MiniZinc solves pigeonhole and assignment
+   in under 300 ms, while `highs/or-tools`, fed this project's big-M rows, times out or takes seconds. This points at
+   `solve-mip`'s lowering of `allDifferent`, not at HiGHS.
+9. **On Node, order Kotlin, then Gecode through the CLI, then Z3 Wasm, when MiniZinc is installed.** Gecode's 130 ms
+   floor loses to Z3 Wasm on tiny models. It wins on 28-queens, pigeonhole and assignment, where Z3 Wasm takes
+   seconds. It finishes two of three scale-6 scheduling seeds, which neither Kotlin nor Z3 Wasm does.
