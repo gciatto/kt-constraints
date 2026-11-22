@@ -26,6 +26,19 @@ class KotlinDirectEncodingSpec :
             agreesWithOracle(scope.build())
         }
 
+        test("kotlin-direct/top-level-disequalities-between-shifted-variables-and-differences") {
+            val scope = ConstraintScope.empty()
+            val x = scope.intVar("x", IntDomain.values(0, 2, 3, 6))
+            val y = scope.intVar("y", -1..3)
+            val z = scope.intVar("z", IntDomain.values(1, 4))
+            scope.add(BoolNot(IntEquality(IntDifference(x, y), IntLiteral(3))))
+            scope.add(BoolNot(IntEquality(IntSum(y, IntLiteral(2)), IntDifference(z, IntLiteral(-1)))))
+            scope.add(BoolNot(IntEquality(IntLiteral(4), z)))
+            scope.add(BoolNot(IntEquality(x, IntSum(IntLiteral(1), z))))
+            scope.add(BoolNot(IntEquality(IntDifference(y, x), IntLiteral(-2))))
+            agreesWithOracle(scope.build())
+        }
+
         test("kotlin-direct/all-different-with-holes-constants-and-a-reified-copy") {
             val scope = ConstraintScope.empty()
             val x = scope.intVar("x", IntDomain.values(-3, 0, 4, 9))
