@@ -180,22 +180,29 @@ optimisation thresholds use the same constraints. Other consumers still receive 
 whose coefficients exceed machine range keep it too. This took knapsack at scale 6 from 529 ms to 26 ms and the
 integer program from 322 ms to 38 ms.
 
+Integer variables with at most 128 values also get on-demand value literals `x = v`, channelled to their offset
+bits. Equalities with constants, element indices and table rows use them; a top-level all-different over variables
+shifted by constants becomes one native at-most-one per value (with every value taken for a permutation, and a
+Hall-condition refutation), and a top-level disequality `x + a != y + b` becomes one binary clause per clashing value
+pair. Native linear explanations use just enough of the largest coefficients. Making constant element lookups
+linear was tried and dropped: 3-4x faster on small assignment instances, 3-5x slower from scale 8.
+
 Cold solves on 2026-11-22 (16-thread Xeon Gold 6226R, JDK 21; one run, so expect noise), in milliseconds:
 
-| Family, scale 6 | `kotlin/direct` | `choco/direct` | Fastest route |
-|---|---:|---:|---|
-| n-queens (28) | 680 | 126 | Choco, 126 |
-| graph-coloring (17) | 9 | 13 | `kotlin/direct` |
-| pigeonhole (10) | 3 | 7 | `kotlin/direct` |
-| knapsack (20) | 26 | 30 | CP-SAT, 4 |
-| assignment (10) | 69 | 24 | CP-SAT, 19 |
-| job-shop | 6 | 5 | Choco, 5 |
-| bit-vectors (48) | 2 | — | `kotlin/direct` |
-| integer-program (9) | 38 | 23 | SCIP, 7 |
+| Family | Scale 6: `kotlin/direct` | Choco | Scale 8: `kotlin/direct` | Choco | Fastest at scale 8 |
+|---|---:|---:|---:|---:|---|
+| n-queens | 137 | 126 | 174 | 106 | Choco |
+| graph-coloring | 18 | 14 | 20 | 19 | CP-SAT, 13 |
+| pigeonhole | 2 | 8 | 3 | 8 | `kotlin/direct` |
+| knapsack | 20 | 30 | 58 | 101 | CP-SAT, 4 |
+| assignment | 203 | 25 | 341 | 61 | CP-SAT, 26 |
+| job-shop | 7 | 7 | 7 | 7 | CP-SAT, 7 |
+| bit-vectors | 2 | — | 2 | — | `kotlin/direct` |
+| integer-program | 25 | 19 | 565 | 157 | CP-SAT, 5 |
 
-The largest remaining gap is all-different over expressions (the n-queens diagonals), which uses pairwise
-comparators on binary encodings; a direct or order encoding for small domains would propagate better. CP-SAT and
-SCIP stay ahead on linear models through LP relaxations, which this backend does not have.
+Assignment is the weakest family: its objective sums element lookups, and without an LP bound proving optimality
+takes much more search than in CP-SAT or Choco; search effort also swings by up to 1.5x between encodings of its
+all-different from one size to the next. Linear models stay behind CP-SAT and SCIP, which use LP relaxations.
 
 ## Next stages and acceptance gates
 
