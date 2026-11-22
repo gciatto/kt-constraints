@@ -174,23 +174,28 @@ restarts, block-distance clause reduction and blocker literals. Presolve refutes
 values than operands, and a permutation all-different also requires every value to be taken. Pigeonhole went
 from 661 ms at scale 4 and 38 s at scale 6 to 3–4 ms; knapsack and the integer program became 2–4× faster.
 
+Linear sums stay symbolic: a comparison involving one becomes a reified native constraint `sum(a * literal) <= k`
+in the SAT kernel, over the offset bits of integer variables, with lazily explained propagation; a linear objective's
+optimisation thresholds use the same constraints. Other consumers still receive the exact adder circuit, and sums
+whose coefficients exceed machine range keep it too. This took knapsack at scale 6 from 529 ms to 26 ms and the
+integer program from 322 ms to 38 ms.
+
 Cold solves on 2026-11-22 (16-thread Xeon Gold 6226R, JDK 21; one run, so expect noise), in milliseconds:
 
 | Family, scale 6 | `kotlin/direct` | `choco/direct` | Fastest route |
 |---|---:|---:|---|
-| n-queens (28) | 616 | 120 | Choco, 120 |
-| graph-coloring (17) | 8 | 15 | `kotlin/direct` |
-| pigeonhole (10) | 4 | 7 | `kotlin/direct` / CP-SAT, 4 |
-| knapsack (20) | 529 | 36 | CP-SAT, 4 |
-| assignment (10) | 58 | 22 | Choco, 22 |
-| job-shop | 7 | 6 | Choco, 6 |
-| bit-vectors (48) | 1 | — | `kotlin/direct` |
-| integer-program (9) | 322 | 24 | CP-SAT, 7 |
+| n-queens (28) | 680 | 126 | Choco, 126 |
+| graph-coloring (17) | 9 | 13 | `kotlin/direct` |
+| pigeonhole (10) | 3 | 7 | `kotlin/direct` |
+| knapsack (20) | 26 | 30 | CP-SAT, 4 |
+| assignment (10) | 69 | 24 | CP-SAT, 19 |
+| job-shop | 6 | 5 | Choco, 5 |
+| bit-vectors (48) | 2 | — | `kotlin/direct` |
+| integer-program (9) | 38 | 23 | SCIP, 7 |
 
-The remaining gaps are structural. Linear constraints become binary adder circuits, which propagate weakly;
-native pseudo-Boolean/linear propagation would close most of the knapsack and integer-program gap. All-different
-over expressions (the n-queens diagonals) uses pairwise comparators on binary encodings, where a direct or order
-encoding for small domains would propagate better.
+The largest remaining gap is all-different over expressions (the n-queens diagonals), which uses pairwise
+comparators on binary encodings; a direct or order encoding for small domains would propagate better. CP-SAT and
+SCIP stay ahead on linear models through LP relaxations, which this backend does not have.
 
 ## Next stages and acceptance gates
 
