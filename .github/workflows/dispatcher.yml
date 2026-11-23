@@ -10,6 +10,11 @@ permissions:
 
 jobs:
   build:
+    # Pushes to develop and master already run CI: skip their pull requests' duplicate run (forks still run).
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository ||
+      !contains(fromJSON('["develop","master"]'), github.head_ref)
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       mode: verify
@@ -48,7 +53,12 @@ jobs:
     secrets: inherit
 
   summary:
-    if: always()
+    if: >-
+      always() && (
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository ||
+      !contains(fromJSON('["develop","master"]'), github.head_ref)
+      )
     needs: [build, test-extensively, docs, release]
     runs-on: ubuntu-latest
     steps:
