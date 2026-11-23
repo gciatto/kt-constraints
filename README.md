@@ -1,141 +1,208 @@
 # Kt-Constraints
 
-**Solver-independent constraint modelling for Kotlin Multiplatform, with planned CP, SMT and CLP support.**
+**One typed constraint model for Kotlin, Java and TypeScript, solved by Z3, CP-SAT, Choco, SCIP, HiGHS,
+MiniZinc or a pure-Kotlin engine on the JVM, Node, the browser and native targets, with exact arithmetic throughout.**
 
-[Architecture](docs/ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Releasing](docs/RELEASING.md)
+[![CI](https://github.com/gciatto/kt-constraints/actions/workflows/dispatcher.yml/badge.svg)](https://github.com/gciatto/kt-constraints/actions/workflows/dispatcher.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF.svg)
+![Status](https://img.shields.io/badge/status-pre--release-orange.svg)
 
-[Bootstrap verification](docs/BOOTSTRAP.md) records build, wrapper, publication and platform evidence.
-[Backend availability](docs/AVAILABILITY.md) lists which solver routes are proven on which platforms, and by which CI job.
-[M1 validation](docs/M1.md) records the exact finite-domain modelling foundation and its API changes.
-[M2 validation](docs/M2.md) records resource-safe solving, real Gecode execution and measured phases.
-[M3 validation](docs/M3.md) covers the engine catalogue, Node CLI and browser Wasm transports.
-[M4 design](docs/M4-DESIGN.md) covers direct Z3 and incremental sessions (in progress).
-[Pure Kotlin implementation](solve-kotlin/README.md) documents the experimental `kotlin/direct` route;
-[its validation record](docs/PURE-KOTLIN-VALIDATION.md) records the executed suites.
+Kt-Constraints is a Kotlin Multiplatform library for constraint programming and SMT. You describe a problem once,
+as an immutable, solver-independent model. The library then hands it to whichever solver suits the problem and the
+platform, and reports which solver answered and what it actually proved.
 
-## Project status
+```kotlin
+import io.github.gciatto.ktconstraints.dsl.allDifferent
+import io.github.gciatto.ktconstraints.dsl.eq
+import io.github.gciatto.ktconstraints.dsl.plus
+import io.github.gciatto.ktconstraints.dsl.times
+import io.github.gciatto.ktconstraints.model.ConstraintScope
+import io.github.gciatto.ktconstraints.solve.portfolio.solveAuto
 
-Experimental **P0 / M5 implementation (in progress)**, not a stable release. The `:core`, `:model`, and `:dsl` modules
-contain an exact Boolean/integer algebra, finite domains, global nodes, a ground evaluator and a model builder,
-with shared Kotest property contracts. JVM MiniZinc routes execute Gecode, Chuffed, CP-SAT, HiGHS and CBC with shared
-conformance tests. MIP routes expose a bounded affine integer subset and do not enumerate all solutions.
-The official JS package runs Gecode through Node's CLI and Chuffed through browser Wasm.
-Direct Z3 (`z3/direct` on the JVM, `z3/wasm` on Node and isolated browsers, `z3/native` through the C API on desktop Kotlin/Native) solves the same IR with unbounded exact integers, exact linear reals and fixed-width bit-vectors and offers
-incremental sessions with checkpoints, assumptions and unsat cores.
-Direct OR-Tools CP-SAT (`cp-sat/direct`, JVM) solves the Boolean/integer IR within a conservative int64 margin
-with native globals, callback enumeration and proven optima.
-Direct Choco (`choco/direct`, JVM) solves it within `±10^7` with natively reified globals and lazy enumeration.
-SCIP and HiGHS through OR-Tools (`scip/or-tools`, `highs/or-tools`, JVM) solve it within `±10^6` through an exact
-linear lowering; HiGHS solves are always bounded by a backend limit, since OR-Tools cannot interrupt them.
-**A direct HiGHS C API adapter, Gurobi, Choco propagating sessions, FlatZinc interchange and Native MiniZinc execution remain planned**.
+suspend fun main() {
+    val scope = ConstraintScope.empty()
+    val x = scope.intVar("x", 1..9)
+    val y = scope.intVar("y", 1..9)
+    val z = scope.intVar("z", 1..9)
+    scope.add(allDifferent(x, y, z))
+    scope.add(x + y eq z * 2)
+    scope.maximize(x * y)
 
-The new `:solve-kotlin` module implements the current built-in IR in common Kotlin, with exact finite integer
-and bit-vector circuits, CDCL SAT, rational linear feasibility, root presolve, incremental assertions,
-enumeration and integer optimisation. Its shared contracts pass on the JVM, Node and Linux Native, and through the
-Java and JS facades; the module remains unpublished until performance work and the full CI matrix are done.
+    val result = solveAuto(scope.build()) // ranks the solvers bundled for this platform, falls back on failure
+    println("${result.status} by ${result.descriptor.id}: ${result.objectiveValue}") // OPTIMAL by cp-sat/direct: 63 (on the JVM)
+    println("x = ${result.assignment?.valueOf(x)}, y = ${result.assignment?.valueOf(y)}") // x = 9, y = 7
+}
+```
 
-## Design
+## Why Kt-Constraints
 
-* Independent from [2p-Kt](https://github.com/tuProlog/2p-kt): no direct dependency, no Prolog-specific semantics.
-* Follows its modular Kotlin multiplatform design, scope factories, explicit solver interfaces and test contracts.
-* Central immutable, typed expression and model representation, distinct from backend-specific encodings.
-* MiniZinc/FlatZinc compilation route + direct solvers; support for the same engine through multiple routes.
-* CP batch solving, SMT-style incremental sessions, and eventual propagation/backtracking CLP sessions are distinct capabilities.
-* Kotlin-native modelling DSL, plus dedicated Java and JavaScript/TypeScript facades.
-* Capability-checked rather than pretending every backend supports all sorts or operational modes.
+- **One model, many solvers.** Expressions, domains and global constraints are plain immutable values with no
+  solver inside them. Global constraints such as `Circuit` and `Cumulative` stay global until a specific solver
+  lowers them, so each solver can use its native propagator.
+- **Exact by construction.** Integers are arbitrary-precision, reals are exact rationals (`0.1` really is `1/10`),
+  and bit-vectors have a fixed width. Out-of-range values are never silently truncated, real values are never
+  approximated, and constraints are never dropped.
+- **Honest answers.** A result says whether it is `OPTIMAL`, `FEASIBLE`, `INFEASIBLE` or `UNKNOWN`, and which solver
+  produced it. A timeout keeps the best solution found so far, but never calls it optimal. A solver that cannot
+  represent your model rejects it up front and says why.
+- **Runs where your code runs.** It works on the JVM, Node, browsers (through WebAssembly) and Kotlin/Native
+  desktop targets, with idiomatic APIs for Kotlin, Java and TypeScript.
+- **More than one-shot solving.** There are streams of solutions, SMT-style incremental sessions with checkpoints
+  and unsat cores, and constraint stores for logic-programming engines.
+
+## What you can model today
+
+| | |
+|---|---|
+| **Sorts** | Booleans, bounded and unbounded integers, exact reals, fixed-width bit-vectors |
+| **Expressions** | Boolean connectives, integer and real arithmetic, comparisons, `min`/`max`/`abs`, int↔real and bool↔int conversions, bit-vector arithmetic and comparisons |
+| **Global constraints** | `allDifferent`, `element`, `table`, `regular` (automata), `circuit`, `subCircuit`, `inverse`, `cumulative`, `disjunctive`, `binPacking`, `noOverlap2D`, `count`, `among`, `globalCardinality`, `nValue`, `atMost`/`atLeast`/`exactly`, `increasing`/`decreasing`, `lexLess`/`lexLessOrEqual`, linear sums |
+| **Objectives** | Satisfaction, integer minimization and maximization, weighted soft constraints (`minimizeViolations`) |
+| **Models** | Named constraints, annotations, source locations, and output projection onto a subset of the variables |
+
+## Solvers and where they run
+
+Every ✅ means that CI runs the real engine there and fails if it is missing or misbehaves.
+
+| Solver (route) | JVM | Node | Browser | Native | Good at |
+|---|:---:|:---:|:---:|:---:|---|
+| Z3 (`z3/direct`, `z3/wasm`, `z3/native`) | ✅ | ✅ | ✅ | ✅ | Unbounded integers, exact reals, bit-vectors, incremental sessions |
+| OR-Tools CP-SAT (`cp-sat/direct`) | ✅ | | | | Combinatorial optimization with native globals |
+| Choco (`choco/direct`) | ✅ | | | | Classic CP with reified globals; a propagating constraint store |
+| SCIP, HiGHS via OR-Tools (`scip/or-tools`, `highs/or-tools`) | ✅ | | | | Linear integer models |
+| MiniZinc: Gecode, Chuffed, CP-SAT, HiGHS, CBC (`*/minizinc`) | ✅ | ✅ Gecode | ✅ Chuffed | | Any solver with a MiniZinc configuration |
+| Pure Kotlin (`kotlin/direct`), experimental | ✅ | ✅ | | ✅ | Zero dependencies: CDCL SAT, exact finite circuits, rational linear feasibility |
+
+The JVM solvers are tested on Linux, macOS and Windows, and Z3 Native on Linux, macOS and Windows. The JVM solvers
+need no separate installation, because their native libraries come with their Maven dependencies. The MiniZinc
+routes need a MiniZinc installation. See [Backend availability](docs/AVAILABILITY.md) for the exact
+platform-by-platform evidence.
+
+## Three ways to solve
+
+```kotlin
+// 1. Batch: one result, or `solutions(model)`, a cold stream of solutions that ends with a completion event.
+val result = Z3Backend().create().use { it.solve(model) }
+
+// 2. Incremental, SMT style: assert, set a checkpoint, check under assumptions, roll back.
+Z3Backend().create().use { solver ->
+    solver.openSession(model).use { session ->
+        val checkpoint = session.push()
+        session.add(x eq 3)
+        val check = session.check(assumptions = listOf(flag)) // SATISFIABLE, UNSATISFIABLE (+ unsatCore) or UNKNOWN
+        session.popTo(checkpoint)
+    }
+}
+
+// 3. Constraint stores, for logic engines: post constraints, propagate, ask about entailment, undo, fork.
+ChocoStore().use { store ->
+    val a = store.intVar("a", IntDomain.of(1..5))
+    val b = store.intVar("b", IntDomain.of(1..5))
+    store.constrain(a lt b)
+    val mark = store.mark()
+    store.constrain(b le 2)
+    store.domain(a)                // propagated to {1}
+    store.entails(a eq 1).value    // ENTAILED
+    store.undoTo(mark)
+}
+```
+
+Batch solving, incremental sessions and constraint stores are separate, capability-checked APIs. A solver only
+offers what it really supports; for example, it never re-solves from scratch while pretending to be incremental.
+`solveAuto` and `Portfolio` choose among the solvers available on the current platform. Ranking is extensible: a
+`Portfolio` can try solvers one after another or race several in parallel. See
+[Logic engines](docs/LOGIC-ENGINES.md) for the store API.
+
+## From Java and TypeScript
+
+Java code needs no Kotlin receivers, extension functions or coroutines (`:interop-java`):
+
+```java
+ConstraintScope scope = ConstraintScope.empty();
+IntVar x = scope.intVar("x", 1, 10);
+IntVar y = scope.intVar("y", 1, 10);
+scope.add(Expressions.eq(Expressions.plus(x, y), 10));
+scope.add(Expressions.allDifferent(x, y));
+try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
+    SolveResult result = solver.solve(scope.build());      // also solveAsync (CompletableFuture) and solutions (Iterator)
+    long vx = result.getAssignment().longValueOf(x);       // throws rather than truncates
+}
+```
+
+TypeScript gets an ES module with generated declarations, `bigint` integers, `Promise`s, `AbortSignal` cancellation
+and `for await` over solutions (`:interop-js`):
+
+```ts
+import { ModelBuilder, allDifferent, constant, loadZ3 } from "kt-constraints-interop-js";
+
+const builder = new ModelBuilder();
+const x = builder.intVar("x", 1n, 10n);
+const y = builder.intVar("y", 1n, 10n);
+builder.add(x.plus(y).eq(constant(10n))).add(allDifferent([x, y]));
+const backend = await loadZ3();                       // Z3 as WebAssembly, in Node or the browser
+const outcome = await backend.create().solve(builder.build());
+console.log(outcome.status, outcome.solution?.valueOf(x));
+backend.close();
+```
+
+Both facades are tested at their real boundary: Java sources compiled by `javac`, and the packaged npm module
+type-checked by `tsc --strict` and run on Node and Chromium.
+
+## Status: pre-release
+
+Kt-Constraints is under active development and has **not been released yet**:
+
+- Nothing is published on Maven Central or npm yet. Build from source as shown below.
+- The public API may still change between commits.
+- The pure-Kotlin engine passes the shared solver contracts but is experimental. It stays unpublished until its
+  performance work is done.
+- **Not available yet:** MiniZinc execution from Kotlin/Native, a direct HiGHS C API adapter, FlatZinc interchange,
+  Gurobi, and propagating constraint stores beyond Choco.
+
+## Getting it
+
+You need JDK 17 or newer. To build and install every artifact into your local Maven repository:
+
+```bash
+./gradlew publishToMavenLocal
+```
+
+```kotlin
+repositories { mavenLocal(); mavenCentral() }
+dependencies {
+    implementation("io.github.gciatto:kt-constraints-dsl:<version>")
+    implementation("io.github.gciatto:kt-constraints-solve-portfolio:<version>") // solveAuto + the default solvers
+}
+```
+
+The artifacts are `io.github.gciatto:kt-constraints-*`. The npm package is built by
+`./gradlew :interop-js:jsNodeProductionLibraryDistribution`. [Installation](docs/INSTALLATION.md) lists every
+artifact and the runtime each solver needs.
 
 ## Modules
 
-| Category | Modules | Status |
-|---|---|---|
-| Representation | `:core`, `:model`, `:dsl` | Exact integer/Boolean IR, finite domains, globals and immutable models |
-| Solver contracts | `:solve`, `:solve-spi` | Exact results/assignments and explicit backend eligibility; execution in progress |
-| Compiler/runtime route | `:solve-minizinc` | Portable checked compiler and five JVM engines, Node CLI and browser Chuffed Wasm |
-| FlatZinc interchange | `:solve-flatzinc` | Placeholder module |
-| Direct solver adapters | `:solve-z3` | JVM, Wasm (Node, isolated browsers) and desktop Native Z3: batch and incremental |
-| Direct solver adapters | `:solve-cpsat` | JVM OR-Tools CP-SAT: batch satisfaction, enumeration and optimization |
-| Direct solver adapters | `:solve-choco` | JVM Choco: batch satisfaction, enumeration and optimization |
-| Direct solver adapters | `:solve-mip` | JVM SCIP and HiGHS through OR-Tools: batch satisfaction and optimization |
-| Portable solver | `:solve-kotlin` | Pure common Kotlin implementation; shared contracts pass on JVM, Node and Linux Native; unpublished |
-| Direct solver adapters | `:solve-highs` | Placeholder module for the direct HiGHS C API |
-| Orchestration | `:solve-portfolio` | `solveAuto`: routes bundled per platform, ranked by model features, capabilities and platform (extensible heuristics, with a hook for benchmark evidence), run as fallback or race portfolios; see [docs/M8-DESIGN.md](docs/M8-DESIGN.md) and [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
-| Constraint stores | `:solve`, `:solve-spi`, `:solve-choco` | `ConstraintStore` for external logic engines: propagating `ChocoStore` (JVM) and proof-based `SatisfiabilityStore` over Z3 (JVM, Wasm, Native); see [docs/LOGIC-ENGINES.md](docs/LOGIC-ENGINES.md) |
-| Language interoperability | `:interop-java`, `:interop-js` | Java: `Expressions` static modelling facade and `BlockingSolver` (blocking, `CompletableFuture`, iterator) `BlockingSession` (incremental checks) and `BlockingStore` (constraint stores), tested from javac-compiled code against every bundled JVM backend; JS: ES module with TypeScript declarations, `bigint` integers, `Promise` solving with `AbortSignal` cancellation and `for await` iteration over Z3 Wasm and MiniZinc (Node CLI, browser Wasm), with exact reals, incremental sessions and constraint stores, type-checked and run on Node and in Chromium against the packaged library |
-| Testing and documentation | `:test-core`, `:test-solve`, `:documentation` | Shared contracts, capped finite test oracle and MkDocs |
+| Module | Purpose |
+|---|---|
+| `:core`, `:model`, `:dsl` | Expressions, domains, global constraints, immutable models, Kotlin operators and the Java `Expressions` facade |
+| `:solve`, `:solve-spi` | Solver, session, store and result APIs; the backend contract, capability checks and registry |
+| `:solve-z3`, `:solve-cpsat`, `:solve-choco`, `:solve-mip`, `:solve-minizinc` | Solver adapters |
+| `:solve-kotlin` | Pure-Kotlin solver (experimental, unpublished) |
+| `:solve-portfolio` | `solveAuto`, default solvers per platform, fallback and race portfolios |
+| `:interop-java`, `:interop-js` | Java blocking/`CompletableFuture` API; ES module with TypeScript declarations |
+| `:test-core`, `:test-solve` | Shared contract suites that every backend must pass |
 
-## Minimal Kotlin modelling example (P0)
-
-```kotlin
-import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.dsl.eq
-import io.github.gciatto.ktconstraints.dsl.plus
-
-val model = ConstraintModel.of {
-    val x = intVar("x", 1..10)
-    val y = intVar("y", 1..10)
-    add(x + y eq 10)
-    maximize(x)
-}
-
-println(model.variables.size)   // 2
-println(model.constraints.size) // 1
-```
-
-JVM solving uses `MiniZincBackend(MiniZincEngine.CHUFFED, executable)` for explicit engine selection;
-`MiniZincGecodeBackend(executable)` remains available. Install a matching MiniZinc solver configuration. See [ROADMAP.md](ROADMAP.md).
-
-Integer constants and finite-domain bounds use multiplatform kt-math `BigInteger`; `Int` and `Long` are
-convenience inputs. Domains support empty sets, sparse values, unions and intersections without enumerating
-intervals. The core retains `AllDifferent`, zero-based `Element`, allowed-tuple `Table`, `IntMin`/`IntMax`,
-`Inverse`, `Circuit`, `SubCircuit`, `Cumulative`, `Regular`, `BinPacking`, `NoOverlap2D`, `LinearSum` and Boolean
-cardinality nodes for later backend lowering; the DSL adds counting, ordering, scheduling and soft-constraint helpers. `GroundEvaluator` checks constants or complete typed bindings;
-it is not a solver. Models support named assertions, annotations, source locations and output projection.
-
-Streams distinguish solutions/incumbents from one definitive completion event. Close and cancellation release
-their processes and temporary files; timeout/limit outcomes retain incumbents without inventing optimality.
-The finite oracle in `:test-solve` is only an unpublished test utility, capped at 10,000 candidates and 64 variables.
+## Building and contributing
 
 ```bash
-# Real JVM integration tests; normal tests explicitly skip these when the variable is absent.
-MINIZINC_EXECUTABLE=/path/to/minizinc MINIZINC_ENGINES=gecode,chuffed,cp-sat,highs,cbc \
-  ./gradlew :solve-minizinc:jvmTest
-# Actual browser Wasm contracts (Chrome required); Node CLI is tested by jsNodeTest with the executable variable.
-MINIZINC_BROWSER_TEST=true ./gradlew :solve-minizinc:jsBrowserTest
-# Manual raw phase benchmark, excluded from routine check.
-MINIZINC_EXECUTABLE=/path/to/minizinc ./gradlew :solve-minizinc:jvmBenchmark
-# Manual cross-route benchmark of eight problem families (CSV; see docs/BENCHMARKS.md).
-./gradlew :solve-portfolio:jvmBenchmark
+./gradlew check --parallel --continue          # all platforms available on this host
+./gradlew jvmTest jsTest --parallel --continue # the quick loop
+./gradlew :documentation:assembleSite          # docs site (needs `pip install mkdocs-material`)
 ```
 
-## Build
-
-Prerequisites: JDK 21+ to run Gradle 9.9.1, Python 3 with MkDocs Material for docs, Node.js for JS tests.
-Apple Native tests also require full Xcode; Command Line Tools alone cannot link the test executables.
-
-```bash
-./gradlew jvmTest jsTest --parallel --continue
-./gradlew check --parallel --continue
-./gradlew :documentation:assembleSite
-```
-
-The repository includes the standard Gradle 9.9.1 wrapper scripts and JAR. The wrapper verifies the Gradle
-distribution against the SHA-256 checksum in `gradle-wrapper.properties`. Placeholder backend modules
-(`solve-highs`, `solve-flatzinc`) remain unpublished until functional and conformance-tested.
-The implemented `solve-kotlin` module also remains unpublished until its executable conformance gates pass.
-
-## Publishing coordinates
-
-* GitHub: `https://github.com/gciatto/kt-constraints`
-* Maven group: `io.github.gciatto`
-* Maven artifact family: `kt-constraints-core`, `kt-constraints-model`, `kt-constraints-solve`, etc.
-* Kotlin package root: `io.github.gciatto.ktconstraints`
-* Artifacts, source builds and solver runtimes: [docs/INSTALLATION.md](docs/INSTALLATION.md)
-* The coordinates do not overlap with `it.unibo.tuprolog:*` (2p-Kt) or `io.github.gciatto:kt-math`.
-
-Releases and GitHub Pages deployment are disabled until explicitly enabled by repository variables
-`ENABLE_RELEASE=true` and `ENABLE_PAGES=true`, respectively.
-See [docs/RELEASING.md](docs/RELEASING.md).
+Start with [Architecture](docs/ARCHITECTURE.md) and [Contributing](CONTRIBUTING.md). Kt-Constraints is independent
+of [2p-Kt](https://github.com/tuProlog/2p-kt), although it follows that project's conventions.
 
 ## License
 
-Apache License, Version 2.0. See [LICENSE](LICENSE).
+[Apache License 2.0](LICENSE).
