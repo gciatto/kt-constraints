@@ -56,3 +56,22 @@ tasks.withType<org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest>().co
 kotlin.targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
     binaries.test(listOf(org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType.RELEASE))
 }
+
+// Native tests (including the documentation's examples) solve through Z3's C API: load the pinned build that
+// :solve-z3 extracts for this host.
+mapOf("linuxX64" to "libz3.so", "macosArm64" to "libz3.dylib", "mingwX64" to "libz3.dll").forEach { (target, library) ->
+    tasks
+        .withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>()
+        .matching { it.name == "${target}Test" }
+        .configureEach {
+            dependsOn(":solve-z3:extractZ3Native")
+            environment(
+                "KT_CONSTRAINTS_Z3_LIBRARY",
+                project(":solve-z3")
+                    .layout.buildDirectory
+                    .file("z3-native/$target/$library")
+                    .get()
+                    .asFile.absolutePath,
+            )
+        }
+}
