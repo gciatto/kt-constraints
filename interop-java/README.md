@@ -35,4 +35,4 @@ incremental sessions (Z3) open one; others throw `UnsupportedOperationException`
 
 Constraint stores (`BlockingStore.of(new ChocoStore())`, or `BlockingStore.of(SatisfiabilityStore.of(solver))` over
 Z3) post, mark, undo, fork, and answer entailment and explanations, blocking or through `CompletableFuture`s. See
-`docs/LOGIC-ENGINES.md`.
+[solving modes](https://gciatto.github.io/kt-constraints/explanation/solving-modes/).

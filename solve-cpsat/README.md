@@ -21,4 +21,4 @@ CpSatBackend().create().use { solver ->
 }
 ```
 
-See [`docs/M5-DESIGN.md`](../docs/M5-DESIGN.md).
+See [the solvers and routes reference](https://gciatto.github.io/kt-constraints/reference/solvers-and-routes/).

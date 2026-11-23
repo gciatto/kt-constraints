@@ -19,4 +19,4 @@ Ranking is extensible: implement `RankingHeuristic` and add it with `RankingPoli
 Benchmark-driven ranking plugs in through `Heuristics.evidence(PerformanceEvidence)`, which is experimental.
 
 `./gradlew :solve-portfolio:jvmBenchmark` runs the benchmark catalogue on every eligible route (see
-`docs/BENCHMARKS.md`).
+[benchmarks](https://gciatto.github.io/kt-constraints/reference/benchmarks/)).

@@ -7,7 +7,9 @@ This is an independent Kotlin Multiplatform constraint programming, SMT and futu
 - https://github.com/tuProlog/2p-kt (`develop`)
 - https://github.com/gciatto/kt-math (`master`)
 
-Read `docs/ARCHITECTURE.md` and `ROADMAP.md` before introducing public types, backend implementation or build changes.
+Read `documentation/docs/explanation/architecture.md`, `documentation/docs/explanation/principles.md` and the status
+table in `documentation/docs/explanation/history-and-status.md` before introducing public types, backend
+implementation or build changes.
 
 ## Architecture invariants
 
@@ -49,7 +51,11 @@ Read `docs/ARCHITECTURE.md` and `ROADMAP.md` before introducing public types, ba
 - `./gradlew ktlintFormat` before `./gradlew ktlintCheck detektAll --parallel --continue` (avoid formatting/checking races)
 - `./gradlew jvmTest jsTest --parallel --continue`
 - `./gradlew check --parallel --continue`
-- `./gradlew :documentation:assembleSite` (requires `pip install mkdocs-material`)
+- `./gradlew :documentation:assembleSite` (requires `pip install mkdocs-material`; builds Dokka into `api/`)
+- Documentation follows `documentation/docs/`: tutorials, how-to guides, reference, explanation. Code shown on a
+  page is quoted with pymdownx.snippets from tested sources (`solve-portfolio` tests `…portfolio.examples`,
+  `interop-java` tests `…interop.examples`, `interop-js/src/test/typescript/examples`, `interop-c/src/nativeUsageTest/c`).
+  Never mention roadmap milestone labels in documentation.
 - `./gradlew publishAllPublicationsToProjectLocalRepository` (after publication configuration is verified)
 - `./gradlew zipMavenCentralPortalPublication --dry-run` (publication metadata dry run)
 - `allWarningsAsErrors=true`; do not suppress warnings merely to get CI green.
@@ -64,6 +70,7 @@ Do not claim modules with README-only placeholders as fully implemented solvers.
 
 ## Work order
 
-Follow P0 → P1 → P2 → P3 in `ROADMAP.md`; cross-cutting solver capabilities and tests precede backend code.
+Pick work from the status table in `documentation/docs/explanation/history-and-status.md`; cross-cutting solver
+capabilities and tests precede backend code.
 Reserve stable public API only after compiling Kotlin, Java and TypeScript usage examples. Keep backend wrappers
 small and prefer established MiniZinc solver configurations over duplicated algorithms when semantics permit.

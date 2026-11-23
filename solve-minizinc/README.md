@@ -63,7 +63,7 @@ The manual benchmark self-checks an exact optimum of 12, with a fresh native pro
 per sample. It separates model construction, translation, availability/setup, process
 spawn, runtime wall, decode/validation and projection; native flatten/solve statistics
 are reported independently. Raw observations are not regression thresholds or confidence
-intervals. See [M2 measurements](../docs/M2.md).
+intervals. See [benchmarks](https://gciatto.github.io/kt-constraints/reference/benchmarks/).
 
 ## JavaScript execution
 

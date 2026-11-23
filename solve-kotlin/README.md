@@ -3,7 +3,7 @@
 `:solve-kotlin` implements the `kotlin/direct` route in `commonMain`. Its current scope is the union of the
 **built-in modelling constructs already exposed by this repository**, with exact arithmetic and shared execution
 contracts. The implementation is experimental and remains unpublished pending profiling and full CI evidence.
-See [validation](../docs/PURE-KOTLIN-VALIDATION.md) for the actual verification status.
+See [validation](https://gciatto.github.io/kt-constraints/explanation/pure-kotlin-solver/#how-correctness-is-checked) for the actual verification status.
 
 ## Use from a source checkout
 
@@ -89,7 +89,7 @@ Rational predicates containing only discrete expressions are scaled by an exact 
 and compiled directly into SAT inequalities. They do not enumerate candidate integers through the real solver.
 Real witnesses use rational arithmetic throughout; `Double` is used only by SAT branching heuristics.
 
-Full architecture, invariants and the next implementation stages are in [the design](../docs/PURE-KOTLIN.md).
+Full architecture, invariants and the next implementation stages are in [the design](https://gciatto.github.io/kt-constraints/explanation/pure-kotlin-solver/).
 
 ## Limits and diagnostics
 

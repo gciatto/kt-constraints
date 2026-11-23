@@ -1,6 +1,6 @@
 # Add a backend
 
-Implement an engine adapter without changing solver-independent model semantics. Read the repository's `AGENTS.md`, `docs/ARCHITECTURE.md` and `ROADMAP.md` before introducing public types or build changes. Follow an existing adapter with the same transport: `solve-cpsat` for a JVM API, `solve-z3` for multiplatform bindings, or `solve-minizinc` for a compiler/process route.
+Implement an engine adapter without changing solver-independent model semantics. Read the repository's `AGENTS.md`, the [principles](../../explanation/principles.md), the [architecture](../../explanation/architecture.md) and the [status table](../../explanation/history-and-status.md#current-status) before introducing public types or build changes. Follow an existing adapter with the same transport: `solve-cpsat` for a JVM API, `solve-z3` for multiplatform bindings, or `solve-minizinc` for a compiler/process route.
 
 ## 1. Define the route and supported subset
 

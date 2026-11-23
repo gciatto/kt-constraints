@@ -12,6 +12,9 @@ Kt-Constraints is a Kotlin Multiplatform library for constraint programming and 
 as an immutable, solver-independent model. The library then hands it to whichever solver suits the problem and the
 platform, and reports which solver answered and what it actually proved.
 
+**[Documentation](https://gciatto.github.io/kt-constraints/)**: tutorials for each language, a cookbook of classic
+problems, the full reference with the [API docs](https://gciatto.github.io/kt-constraints/api/), and how it all works inside.
+
 ```kotlin
 import io.github.gciatto.ktconstraints.dsl.allDifferent
 import io.github.gciatto.ktconstraints.dsl.eq
@@ -78,8 +81,39 @@ Every ✅ means that CI runs the real engine there and fails if it is missing or
 
 The JVM solvers are tested on Linux, macOS and Windows, and Z3 Native on Linux, macOS and Windows. The JVM solvers
 need no separate installation, because their native libraries come with their Maven dependencies. The MiniZinc
-routes need a MiniZinc installation. See [Backend availability](docs/AVAILABILITY.md) for the exact
+routes need a MiniZinc installation. See [Backend availability](https://gciatto.github.io/kt-constraints/reference/platform-availability/) for the exact
 platform-by-platform evidence.
+
+## How fast is it?
+
+Median milliseconds to solve a fresh instance, setup included, on one Linux x64 host. These are the medium-size
+(scale 6) instances of the project's route benchmark, with 3 seeds and a 10 s timeout; every answer matched the
+known optimum or proof.
+
+| Family | JVM CP-SAT | JVM Choco | JVM Z3 | JVM SCIP | JVM HiGHS | JVM Kotlin | Node Z3 Wasm | Node Kotlin | Native Z3 | Native Kotlin |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 28-queens | 143 | 33 | 7419 | 6231 | 3856 | 21 | 4830 | 106 | 7492 | 50 |
+| Pigeonhole (infeasible) | 3 | 0 | timeout | timeout | timeout | 1 | timeout | 2 | timeout | 2 |
+| Knapsack | 5 | 15 | 17 | 6 | 8 | 7 | 81 | 22 | 23 | 7 |
+| Assignment | 17 | 9 | 410 | 1735 | 2328 | 117 | 1743 | 209 | 433 | 153 |
+| Job-shop | 9 | 2 | 10 | 9 | 18 | 4 | 41 | 9 | 15 | 3 |
+| Single-machine scheduling | 31 | timeout | timeout | timeout | 10000* | 10000* | timeout | timeout | timeout | 10000* |
+
+`*`: some seeds timed out.
+
+- **JVM:** CP-SAT is the all-rounder, and the only route that stays flat on scheduling with reified disjunctions.
+  Choco is the fastest on satisfaction and assignment. Z3 and the MIP solvers lag on counting arguments and large
+  `allDifferent` constraints.
+- **Node:** Z3 Wasm pays a fixed cost of about 40 ms per solve. The pure-Kotlin solver is 3–100× faster on every
+  family it supports.
+- **Native:** the pure-Kotlin solver beats or ties Z3's C API everywhere. Z3 remains the route for models it
+  rejects, such as unbounded integer domains.
+- The pure-Kotlin solver is still experimental and unpublished, so `solveAuto` does not pick it yet.
+- **MiniZinc routes** add a fixed 240–290 ms on the JVM (process start and flattening) and about 130 ms through
+  Node's CLI. They pay off on models that need a specific engine, or a decomposition that MiniZinc does better.
+
+The methodology, all families and scales, the MiniZinc engines, and the selection rules drawn from these numbers
+are in the [benchmarks reference](https://gciatto.github.io/kt-constraints/reference/benchmarks/).
 
 ## Three ways to solve
 
@@ -114,7 +148,7 @@ Batch solving, incremental sessions and constraint stores are separate, capabili
 offers what it really supports; for example, it never re-solves from scratch while pretending to be incremental.
 `solveAuto` and `Portfolio` choose among the solvers available on the current platform. Ranking is extensible: a
 `Portfolio` can try solvers one after another or race several in parallel. See
-[Logic engines](docs/LOGIC-ENGINES.md) for the store API.
+[Logic engines](https://gciatto.github.io/kt-constraints/explanation/solving-modes/) for the store API.
 
 ## From Java, TypeScript and C
 
@@ -189,7 +223,7 @@ echo '//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}' >> .npmrc
 npm install @gciatto/kt-constraints-interop-js
 ```
 
-[Installation](docs/INSTALLATION.md) covers Maven, the C library, building from source, and the runtime each solver
+[Installation](https://gciatto.github.io/kt-constraints/how-to/install/) covers Maven, the C library, building from source, and the runtime each solver
 needs. Publishing on Maven Central and npmjs is planned.
 
 **Good to know:** the pure-Kotlin engine passes the shared solver contracts but is experimental, so it is not
@@ -216,7 +250,7 @@ FlatZinc interchange, Gurobi, and propagating constraint stores beyond Choco.
 ./gradlew :documentation:assembleSite          # docs site (needs `pip install mkdocs-material`)
 ```
 
-Start with [Architecture](docs/ARCHITECTURE.md) and [Contributing](CONTRIBUTING.md). Kt-Constraints is independent
+Start with [Architecture](https://gciatto.github.io/kt-constraints/explanation/architecture/) and [Contributing](CONTRIBUTING.md). Kt-Constraints is independent
 of [2p-Kt](https://github.com/tuProlog/2p-kt), although it follows that project's conventions.
 
 ## License
