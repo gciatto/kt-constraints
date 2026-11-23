@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/gciatto/kt-constraints/compare/1.0.0...1.0.1) (2026-11-23)
+
+### Bug Fixes
+
+* **release:** pass the npm token file as --userconfig so npx's npm_config_userconfig cannot shadow it ([e1eb9d8](https://github.com/gciatto/kt-constraints/commit/e1eb9d8f8d85172906d73900bbe0b42d978a2a60))
+
 ## 1.0.0 (2026-11-23)
 
 ### ⚠ BREAKING CHANGES
