@@ -1,12 +1,12 @@
 # Kt-Constraints
 
-**One typed constraint model for Kotlin, Java and TypeScript, solved by Z3, CP-SAT, Choco, SCIP, HiGHS,
+**One typed constraint model for Kotlin, Java, TypeScript and C, solved by Z3, CP-SAT, Choco, SCIP, HiGHS,
 MiniZinc or a pure-Kotlin engine on the JVM, Node, the browser and native targets, with exact arithmetic throughout.**
 
 [![CI](https://github.com/gciatto/kt-constraints/actions/workflows/dispatcher.yml/badge.svg)](https://github.com/gciatto/kt-constraints/actions/workflows/dispatcher.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF.svg)
-![Status](https://img.shields.io/badge/status-pre--release-orange.svg)
+[![Release](https://img.shields.io/github/v/release/gciatto/kt-constraints)](https://github.com/gciatto/kt-constraints/releases)
 
 Kt-Constraints is a Kotlin Multiplatform library for constraint programming and SMT. You describe a problem once,
 as an immutable, solver-independent model. The library then hands it to whichever solver suits the problem and the
@@ -15,6 +15,7 @@ platform, and reports which solver answered and what it actually proved.
 ```kotlin
 import io.github.gciatto.ktconstraints.dsl.allDifferent
 import io.github.gciatto.ktconstraints.dsl.eq
+import io.github.gciatto.ktconstraints.dsl.gt
 import io.github.gciatto.ktconstraints.dsl.plus
 import io.github.gciatto.ktconstraints.dsl.times
 import io.github.gciatto.ktconstraints.model.ConstraintScope
@@ -27,6 +28,7 @@ suspend fun main() {
     val z = scope.intVar("z", 1..9)
     scope.add(allDifferent(x, y, z))
     scope.add(x + y eq z * 2)
+    scope.add(x gt y)
     scope.maximize(x * y)
 
     val result = solveAuto(scope.build()) // ranks the solvers bundled for this platform, falls back on failure
@@ -47,7 +49,7 @@ suspend fun main() {
   produced it. A timeout keeps the best solution found so far, but never calls it optimal. A solver that cannot
   represent your model rejects it up front and says why.
 - **Runs where your code runs.** It works on the JVM, Node, browsers (through WebAssembly) and Kotlin/Native
-  desktop targets, with idiomatic APIs for Kotlin, Java and TypeScript.
+  desktop targets, with idiomatic APIs for Kotlin, Java and TypeScript, plus a C shared library.
 - **More than one-shot solving.** There are streams of solutions, SMT-style incremental sessions with checkpoints
   and unsat cores, and constraint stores for logic-programming engines.
 
@@ -114,7 +116,7 @@ offers what it really supports; for example, it never re-solves from scratch whi
 `Portfolio` can try solvers one after another or race several in parallel. See
 [Logic engines](docs/LOGIC-ENGINES.md) for the store API.
 
-## From Java and TypeScript
+## From Java, TypeScript and C
 
 Java code needs no Kotlin receivers, extension functions or coroutines (`:interop-java`):
 
@@ -134,7 +136,7 @@ TypeScript gets an ES module with generated declarations, `bigint` integers, `Pr
 and `for await` over solutions (`:interop-js`):
 
 ```ts
-import { ModelBuilder, allDifferent, constant, loadZ3 } from "kt-constraints-interop-js";
+import { ModelBuilder, allDifferent, constant, loadZ3 } from "@gciatto/kt-constraints-interop-js";
 
 const builder = new ModelBuilder();
 const x = builder.intVar("x", 1n, 10n);
@@ -146,39 +148,53 @@ console.log(outcome.status, outcome.solution?.valueOf(x));
 backend.close();
 ```
 
-Both facades are tested at their real boundary: Java sources compiled by `javac`, and the packaged npm module
-type-checked by `tsc --strict` and run on Node and Chromium.
+C programs link a shared library with a generated header (`:interop-c`): build a model, call `solve`, and read
+results back as exact decimal strings. Solving uses Z3 through its C API. See [the C facade](interop-c/README.md).
 
-## Status: pre-release
-
-Kt-Constraints is under active development and has **not been released yet**:
-
-- Nothing is published on Maven Central or npm yet. Build from source as shown below.
-- The public API may still change between commits.
-- The pure-Kotlin engine passes the shared solver contracts but is experimental. It stays unpublished until its
-  performance work is done.
-- **Not available yet:** MiniZinc execution from Kotlin/Native, a direct HiGHS C API adapter, FlatZinc interchange,
-  Gurobi, and propagating constraint stores beyond Choco.
+Every facade is tested at its real boundary: Java sources compiled by `javac`, the packaged npm module
+type-checked by `tsc --strict` and run on Node and Chromium, and a C program compiled by `cc` against the shared
+library.
 
 ## Getting it
 
-You need JDK 17 or newer. To build and install every artifact into your local Maven repository:
+Releases are published on GitHub:
 
-```bash
-./gradlew publishToMavenLocal
-```
+| For | Where |
+|---|---|
+| Kotlin (JVM, JS, Native) and Java | [GitHub Packages](https://github.com/gciatto?tab=packages&repo_name=kt-constraints) Maven registry, `io.github.gciatto:kt-constraints-*` |
+| TypeScript / JavaScript | GitHub Packages npm registry, `@gciatto/kt-constraints-interop-js` |
+| C | `kt-constraints-c-<version>-<target>.zip` for Linux x64, macOS arm64 and Windows x64, attached to each [release](https://github.com/gciatto/kt-constraints/releases) |
+
+GitHub Packages asks for a token even for public packages: a personal access token with `read:packages`.
 
 ```kotlin
-repositories { mavenLocal(); mavenCentral() }
+repositories {
+    mavenCentral()
+    maven("https://maven.pkg.github.com/gciatto/kt-constraints") {
+        credentials {
+            username = providers.gradleProperty("gpr.user").orNull ?: System.getenv("GITHUB_ACTOR")
+            password = providers.gradleProperty("gpr.key").orNull ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
 dependencies {
     implementation("io.github.gciatto:kt-constraints-dsl:<version>")
     implementation("io.github.gciatto:kt-constraints-solve-portfolio:<version>") // solveAuto + the default solvers
 }
 ```
 
-The artifacts are `io.github.gciatto:kt-constraints-*`. The npm package is built by
-`./gradlew :interop-js:jsNodeProductionLibraryDistribution`. [Installation](docs/INSTALLATION.md) lists every
-artifact and the runtime each solver needs.
+```bash
+echo '@gciatto:registry=https://npm.pkg.github.com' >> .npmrc
+echo '//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}' >> .npmrc
+npm install @gciatto/kt-constraints-interop-js
+```
+
+[Installation](docs/INSTALLATION.md) covers Maven, the C library, building from source, and the runtime each solver
+needs. Publishing on Maven Central and npmjs is planned.
+
+**Good to know:** the pure-Kotlin engine passes the shared solver contracts but is experimental, so it is not
+published yet. Also not available yet: MiniZinc execution from Kotlin/Native, a direct HiGHS C API adapter,
+FlatZinc interchange, Gurobi, and propagating constraint stores beyond Choco.
 
 ## Modules
 
@@ -189,7 +205,7 @@ artifact and the runtime each solver needs.
 | `:solve-z3`, `:solve-cpsat`, `:solve-choco`, `:solve-mip`, `:solve-minizinc` | Solver adapters |
 | `:solve-kotlin` | Pure-Kotlin solver (experimental, unpublished) |
 | `:solve-portfolio` | `solveAuto`, default solvers per platform, fallback and race portfolios |
-| `:interop-java`, `:interop-js` | Java blocking/`CompletableFuture` API; ES module with TypeScript declarations |
+| `:interop-java`, `:interop-js`, `:interop-c` | Java blocking/`CompletableFuture` API; ES module with TypeScript declarations; C shared library |
 | `:test-core`, `:test-solve` | Shared contract suites that every backend must pass |
 
 ## Building and contributing

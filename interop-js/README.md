@@ -1,7 +1,8 @@
 # :interop-js
 
 An ES module with generated TypeScript declarations (`kt-constraints-interop-js.d.mts`), built by
-`./gradlew :interop-js:jsNodeProductionLibraryDistribution` into `build/dist/js/productionLibrary`.
+`./gradlew :interop-js:jsNodeProductionLibraryDistribution` into `build/dist/js/productionLibrary`. Releases publish it
+on GitHub Packages as `@gciatto/kt-constraints-interop-js` (see [Installation](../docs/INSTALLATION.md)).
 
 - **Modelling:** `new ModelBuilder()`, `intVar(name, min, max)` with `bigint` bounds, `boolVar(name)`, method-based
   expressions (`x.plus(y).eq(constant(10n))`, `a.and(b)`, `p.implies(q)`), and `sum`, `allDifferent`, `element`,
@@ -26,7 +27,7 @@ An ES module with generated TypeScript declarations (`kt-constraints-interop-js.
   `Outcome.termination` are the Kotlin enum names as strings.
 
 ```ts
-import { ModelBuilder, allDifferent, constant, loadZ3 } from "kt-constraints-interop-js";
+import { ModelBuilder, allDifferent, constant, loadZ3 } from "@gciatto/kt-constraints-interop-js";
 
 const builder = new ModelBuilder();
 const x = builder.intVar("x", 1n, 10n);
