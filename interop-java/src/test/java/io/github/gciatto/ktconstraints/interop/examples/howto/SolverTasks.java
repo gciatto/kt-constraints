@@ -126,7 +126,12 @@ public final class SolverTasks {
         for (int i = 0; i < pigeons.length; i++) {
             pigeons[i] = scope.intVar("p" + i, 0, 11);
         }
-        scope.add(Expressions.allDifferent(pigeons));
+        // Pairwise disequalities, unlike allDifferent, make this refutation slow enough to cancel.
+        for (int i = 0; i < pigeons.length; i++) {
+            for (int j = i + 1; j < pigeons.length; j++) {
+                scope.add(Expressions.neq(pigeons[i], pigeons[j]));
+            }
+        }
         try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
             CompletableFuture<SolveResult> pending = solver.solveAsync(scope.build());
             check(pending.cancel(true) && pending.isCancelled(), "cancelled");
