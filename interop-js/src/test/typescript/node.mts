@@ -1,6 +1,7 @@
 // Node entry: Z3 Wasm always; the MiniZinc CLI route too when MINIZINC_EXECUTABLE names an installed CLI.
 import { loadMiniZincNode, loadZ3 } from "kt-constraints-interop-js";
 import { check, runChecks } from "./checks.mjs";
+import { examples } from "./examples/index.mjs";
 
 const environment = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env ?? {};
 
@@ -23,5 +24,8 @@ if (executable) {
     }
 } else {
     console.log("MINIZINC_EXECUTABLE unset: the MiniZinc CLI route was not exercised");
+}
+for (const example of examples) {
+    await example.run((line) => console.log(`${example.name}: ${line}`));
 }
 console.log("TypeScript usage: all checks passed");

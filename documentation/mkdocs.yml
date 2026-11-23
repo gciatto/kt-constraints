@@ -1,15 +1,108 @@
 site_name: Kt-Constraints
 site_url: https://gciatto.github.io/kt-constraints/
 repo_url: https://github.com/gciatto/kt-constraints
-site_description: Kotlin Multiplatform CP, SMT and CLP constraint modelling
+edit_uri: edit/develop/documentation/docs/
+site_description: Constraint programming, SMT and optimization for Kotlin Multiplatform, Java, TypeScript and C
 nav:
   - Home: index.md
-  - Architecture: architecture.md
-  - Roadmap: roadmap.md
-  - Releasing: releasing.md
+  - Tutorials:
+      - tutorials/index.md
+      - Your first model in Kotlin: tutorials/kotlin-first-model.md
+      - One model, every platform: tutorials/kotlin-multiplatform.md
+      - Knapsack from Java: tutorials/java-knapsack.md
+      - Sudoku from TypeScript: tutorials/typescript-sudoku.md
+      - Scheduling in the browser: tutorials/browser-scheduling.md
+      - Assignment from C: tutorials/c-assignment.md
+  - How-to guides:
+      - how-to/index.md
+      - Install: how-to/install.md
+      - Choose a programming style: how-to/programming-styles.md
+      - Choose a solver: how-to/choose-a-solver.md
+      - Set limits and cancel: how-to/limits-and-cancellation.md
+      - Enumerate solutions: how-to/enumerate-solutions.md
+      - Optimize: how-to/optimize.md
+      - Use incremental sessions: how-to/incremental-sessions.md
+      - Use constraint stores: how-to/constraint-stores.md
+      - Use exact reals and bit-vectors: how-to/exact-reals-and-bitvectors.md
+      - Use MiniZinc: how-to/use-minizinc.md
+      - Run on Kotlin/Native with Z3: how-to/native-and-z3.md
+      - Classic problems:
+          - how-to/problems/index.md
+          - N-Queens: how-to/problems/n-queens.md
+          - Sudoku: how-to/problems/sudoku.md
+          - Graph coloring: how-to/problems/graph-coloring.md
+          - Knapsack: how-to/problems/knapsack.md
+          - Assignment: how-to/problems/assignment.md
+          - Bin packing: how-to/problems/bin-packing.md
+          - Job-shop scheduling: how-to/problems/job-shop.md
+          - Traveling salesman: how-to/problems/traveling-salesman.md
+          - Nurse rostering: how-to/problems/nurse-rostering.md
+          - Pigeonhole: how-to/problems/pigeonhole.md
+      - Contributing:
+          - Add a backend: how-to/contributing/add-a-backend.md
+          - Run tests and benchmarks: how-to/contributing/run-tests-and-benchmarks.md
+          - Release: how-to/contributing/release.md
+  - Reference:
+      - reference/index.md
+      - API (KDoc): reference/api.md
+      - Modules and artifacts: reference/modules-and-artifacts.md
+      - Modelling language: reference/modelling-language.md
+      - Solvers and routes: reference/solvers-and-routes.md
+      - Platform availability: reference/platform-availability.md
+      - Results and statuses: reference/results-and-statuses.md
+      - Configuration: reference/configuration.md
+      - Java API: reference/java-api.md
+      - TypeScript API: reference/typescript-api.md
+      - C API: reference/c-api.md
+      - Benchmarks: reference/benchmarks.md
+      - CI pipeline: reference/ci-pipeline.md
+  - Explanation:
+      - explanation/index.md
+      - Principles: explanation/principles.md
+      - Architecture: explanation/architecture.md
+      - Engines and routes: explanation/engines-and-routes.md
+      - Solving modes: explanation/solving-modes.md
+      - Global constraints: explanation/global-constraints.md
+      - Automatic solver selection: explanation/automatic-solver-selection.md
+      - The pure-Kotlin solver: explanation/pure-kotlin-solver.md
+      - History and status: explanation/history-and-status.md
 theme:
   name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - content.code.copy
+    - content.tabs.link
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle: { icon: material/brightness-7, name: Switch to dark mode }
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle: { icon: material/brightness-4, name: Switch to light mode }
+validation:
+  links:
+    # The API reference is linked absolutely (/kt-constraints/api/): Gradle copies it in after MkDocs builds.
+    absolute_links: info
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
+  - tables
   - toc:
       permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets:
+      # Code samples are quoted from compiled, tested sources: --8<-- "path/from/repo/root:section"
+      base_path: [".."]
+      check_paths: true

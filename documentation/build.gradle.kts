@@ -1,19 +1,36 @@
-// Same separate :documentation module / MkDocs site layout as kt-math, with a small initial task graph.
+// MkDocs Material site with the aggregated Dokka API reference copied under api/, as in 2p-kt.
+plugins {
+    id("org.jetbrains.dokka")
+}
+
+val documentedModules =
+    listOf(
+        "core", "model", "dsl", "solve", "solve-spi", "solve-kotlin", "solve-z3", "solve-choco", "solve-cpsat",
+        "solve-mip", "solve-minizinc", "solve-portfolio", "interop-java", "interop-js",
+    )
+
+dependencies {
+    documentedModules.forEach { dokka(project(":$it")) }
+}
+
+dokka {
+    moduleName.set("Kt-Constraints")
+}
+
 val siteDir = layout.buildDirectory.dir("assembledSite")
 
 tasks.register<Exec>("assembleSite") {
     group = "documentation"
-    description = "Build MkDocs Material documentation (pip install mkdocs-material)."
-    dependsOn("syncDocs")
+    description = "Build the MkDocs Material site (pip install mkdocs-material) with the Dokka API reference under api/."
+    dependsOn("dokkaGenerate")
     inputs.file("mkdocs.yml")
     inputs.dir("docs")
     workingDir = projectDir
     commandLine("mkdocs", "build", "--strict", "--site-dir", siteDir.get().asFile.absolutePath)
-}
-
-tasks.register<Copy>("syncDocs") {
-    from(rootProject.file("ROADMAP.md")) { rename { "roadmap.md" } }
-    from(rootProject.file("docs/ARCHITECTURE.md")) { rename { "architecture.md" } }
-    from(rootProject.file("docs/RELEASING.md")) { rename { "releasing.md" } }
-    into(layout.projectDirectory.dir("docs"))
+    doLast {
+        copy {
+            from(layout.buildDirectory.dir("dokka/html"))
+            into(siteDir.map { it.dir("api") })
+        }
+    }
 }

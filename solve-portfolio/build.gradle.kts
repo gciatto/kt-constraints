@@ -25,6 +25,8 @@ kotlin {
             dependencies {
                 implementation(project(":test-solve"))
                 implementation(project(":solve-kotlin"))
+                // The documentation's Kotlin examples (tutorials and how-tos) live in this module's tests.
+                implementation(project(":dsl"))
             }
         }
         nativeMain {

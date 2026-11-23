@@ -54,40 +54,47 @@ kotlin.targets
     .firstOrNull { it.name in usageLibraryTargets && it.konanTarget == HostManager.host }
     ?.let { target ->
         val library = target.binaries.getSharedLib(libraryName, NativeBuildType.DEBUG)
-        val source = layout.projectDirectory.file("src/nativeUsageTest/c/usage.c")
-        val executable = layout.buildDirectory.file("nativeUsageTest/usage")
-        val compile =
-            tasks.register<Exec>("compileNativeUsageTest") {
-                dependsOn(library.linkTaskProvider)
-                inputs.file(source)
-                outputs.file(executable)
-                doFirst {
-                    val dir = library.outputDirectory.absolutePath
-                    executable
-                        .get()
-                        .asFile.parentFile
-                        .mkdirs()
-                    commandLine(
-                        listOf("cc", "-Wall", "-Werror", "-I", dir, "-o", executable.get().asFile.absolutePath) +
-                            listOf(source.asFile.absolutePath, "-L", dir, "-l$libraryName", "-Wl,-rpath,$dir"),
+        val z3Library = if (target.name == "linuxX64") "libz3.so" else "libz3.dylib"
+        // Every C file is a standalone program: usage.c and the documentation's examples (tutorials and how-tos).
+        val runs =
+            fileTree("src/nativeUsageTest/c") { include("*.c") }.files.sortedBy { it.name }.map { source ->
+                val program = source.nameWithoutExtension.replaceFirstChar { it.uppercase() }
+                val executable = layout.buildDirectory.file("nativeUsageTest/${source.nameWithoutExtension}")
+                val compile =
+                    tasks.register<Exec>("compileNativeUsageTest$program") {
+                        dependsOn(library.linkTaskProvider)
+                        inputs.file(source)
+                        outputs.file(executable)
+                        doFirst {
+                            val dir = library.outputDirectory.absolutePath
+                            executable
+                                .get()
+                                .asFile.parentFile
+                                .mkdirs()
+                            commandLine(
+                                listOf("cc", "-Wall", "-Werror", "-I", dir, "-o", executable.get().asFile.absolutePath) +
+                                    listOf(source.absolutePath, "-L", dir, "-l$libraryName", "-Wl,-rpath,$dir"),
+                            )
+                        }
+                    }
+                tasks.register<Exec>("nativeUsageTest$program") {
+                    dependsOn(compile, ":solve-z3:extractZ3Native")
+                    environment(
+                        "KT_CONSTRAINTS_Z3_LIBRARY",
+                        project(":solve-z3")
+                            .layout.buildDirectory
+                            .file("z3-native/${target.name}/$z3Library")
+                            .get()
+                            .asFile.absolutePath,
                     )
+                    commandLine(executable.get().asFile.absolutePath)
                 }
             }
-        val z3Library = if (target.name == "linuxX64") "libz3.so" else "libz3.dylib"
         val run =
-            tasks.register<Exec>("nativeUsageTest") {
+            tasks.register("nativeUsageTest") {
                 group = "verification"
-                description = "Runs the C usage test against the shared library of the host's native target"
-                dependsOn(compile, ":solve-z3:extractZ3Native")
-                environment(
-                    "KT_CONSTRAINTS_Z3_LIBRARY",
-                    project(":solve-z3")
-                        .layout.buildDirectory
-                        .file("z3-native/${target.name}/$z3Library")
-                        .get()
-                        .asFile.absolutePath,
-                )
-                commandLine(executable.get().asFile.absolutePath)
+                description = "Compiles and runs every C program in src/nativeUsageTest/c against the host's library"
+                dependsOn(runs)
             }
         tasks.named("check") { dependsOn(run) }
     }

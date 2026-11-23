@@ -11,9 +11,8 @@
     "skipLibCheck": false,
     "outDir": "out"
   },
-  "files": [
-    "checks.mts",
-    "node.mts",
-    "browser.mts"
+  "include": [
+    "*.mts",
+    "examples/*.mts"
   ]
 }
