@@ -155,6 +155,12 @@ proof; timeouts and failures are reported, never treated as evidence.
 - `jsMain` / Wasm: MiniZinc-JS, Z3-Wasm interop, Promise-friendly facades.
 - Platform discovery is explicit and validates executables/libs rather than assuming presence.
 
+The experimental `:solve-kotlin` route additionally keeps its complete solver implementation in `commonMain`:
+exact finite circuits and CDCL, root integer presolve, rational linear feasibility, and managed incremental
+sessions/streams. Its public entry points are `KotlinBackend` and `KotlinConfiguration`. It reuses the existing
+core numeric and coroutine dependencies. The implementation design and execution evidence are recorded
+in `docs/PURE-KOTLIN.md` and `docs/PURE-KOTLIN-VALIDATION.md`.
+
 ## Backend conformance
 
 Backends register a descriptor and a compiler/transport pair. Compilation returns diagnostics and a supported
