@@ -35,38 +35,49 @@ The docs job builds the MkDocs site on every CI run. Publishing it to GitHub Pag
 set Settings → Pages → Build and deployment → Source to **GitHub Actions**, then set repository
 variable `ENABLE_PAGES=true`. Until this is configured, CI builds docs but skips the deployment.
 
-## Publishing credentials / actions
+## Where releases go
 
-The Maven Central namespace `io.github.gciatto` is already used by kt-math, so using the **same Central Portal
-account** should not require a new group namespace. Generate a **publishing user token** in Central Portal, and
-set these GitHub Actions repository secrets (or reuse existing personal credentials, copying them to this repo):
+semantic-release (`release.config.js`) runs on pushes to `master` once CI passes, and only when the repository
+variable `ENABLE_RELEASE=true` (Settings → Secrets and variables → Actions → Variables). It computes the version from
+Conventional Commits, tags it, and then:
 
-- `MAVEN_USERNAME`, `MAVEN_PASSWORD`: Central Portal publisher user token credentials.
-- `SIGNING_KEY`, `SIGNING_PASSWORD`: ASCII-armored signing key and passphrase, compatible with kt-mpp publishing.
-- `NPM_TOKEN`: only needed when enabling npm publishing later; npm is intentionally not part of bootstrap release.
-- `DEPLOYMENT_TOKEN`: optional token for release automation if GitHub Actions default permissions are insufficient.
+| Target | What | Enabled by |
+|---|---|---|
+| GitHub Packages, Maven (`https://maven.pkg.github.com/gciatto/kt-constraints`) | Every module in `publishedModules`, all platform variants | Always (with `ENABLE_RELEASE`) |
+| GitHub Packages, npm | `@gciatto/kt-constraints-interop-js` (`scripts/publish-npm.sh … github`) | Always (with `ENABLE_RELEASE`) |
+| GitHub release assets | `kt-constraints-c-<version>-<target>.zip`: the `:interop-c` shared library and header for `linuxX64`, `macosArm64`, `mingwX64` (`./gradlew :interop-c:releaseAssets`) | Always (with `ENABLE_RELEASE`) |
+| Maven Central | Same publications (`scripts/publish-maven-central.sh`) | Repository variable `ENABLE_MAVEN_CENTRAL=true` |
+| npmjs | `kt-constraints-interop-js`, unscoped (`scripts/publish-npm.sh … npmjs`) | Repository variable `ENABLE_NPMJS=true` |
 
-The release workflow uses `git-semver`, semantic-release and kt-mpp's Maven Portal publication tasks. Release
-is **disabled by default**. After verifying metadata and local publishing tasks, set repository variable
-`ENABLE_RELEASE=true` (Settings → Secrets and variables → Actions → Variables) and merge a Conventional Commit
-into `master`; the next push after successful CI will attempt release. Review Central Portal staging results before
-relying on unattended releases.
+The release job runs on macOS, because only a macOS host can build the Apple klibs (the `solve-z3` cinterop) and
+the `macosArm64` C library; it cross-builds the Linux and Windows ones.
 
-For multi-module publishing, use `scripts/publish-maven-central.sh` to retry only failing module publications,
-never blindly repeat successful GAV deployments (see 2p-Kt's corresponding script).
+## Credentials
 
-## Publication checklist (required before enabling release)
+GitHub Packages and the GitHub release need no extra secret: the release job's `GITHUB_TOKEN` has `contents: write`
+and `packages: write` (see `dispatcher.yml`). Optional or future secrets:
 
-- [ ] `./gradlew publishAllPublicationsToProjectLocalRepository` succeeds.
-- [ ] Inspect generated POMs: each `artifactId` starts with `kt-constraints-`, and group is `io.github.gciatto`.
-- [ ] Ensure platform publications have the same prefix (for example `kt-constraints-core-jvm`).
-- [ ] `./gradlew zipMavenCentralPortalPublication --dry-run` lists the intended modules only.
-- [ ] Backend placeholder modules are *not* published until operational and covered by capability contracts;
-      enable each module individually in `publishedModules` when ready.
-- [ ] Publish from macOS (as the release job does): Linux hosts cannot run the Apple cinterop of `solve-z3`, so its
-      macOS and iOS artifacts would be missing.
-- [ ] Central Portal and signing credentials are present in repository secrets.
-- [ ] `ENABLE_RELEASE` is explicitly set to `true` only after the above checks.
+- `SIGNING_KEY`, `SIGNING_PASSWORD`: ASCII-armored signing key and passphrase. Without them artifacts are unsigned,
+  which GitHub Packages accepts and Maven Central rejects.
+- `MAVEN_USERNAME`, `MAVEN_PASSWORD`: Central Portal publisher token, needed once `ENABLE_MAVEN_CENTRAL=true`. The
+  namespace `io.github.gciatto` is already verified through kt-math.
+- `NPM_TOKEN`: npmjs automation token, needed once `ENABLE_NPMJS=true`.
+- `DEPLOYMENT_TOKEN`: optional token for release automation if the default `GITHUB_TOKEN` permissions are insufficient.
+
+For multi-module Maven Central publishing, `scripts/publish-maven-central.sh` retries only failing module
+publications and never blindly repeats successful deployments (see 2p-Kt's corresponding script).
+
+## Release checklist
+
+- [ ] `./gradlew publishAllPublicationsToGithubRepository --dry-run` lists the intended modules only.
+- [ ] `./gradlew publishAllPublicationsToProjectLocalRepository` succeeds; generated POMs use group
+      `io.github.gciatto` and `kt-constraints-` artifact IDs, platform variants included (`kt-constraints-core-jvm`).
+- [ ] `./scripts/publish-npm.sh -PforceVersion=0.0.0 github --dry-run` shows `@gciatto/kt-constraints-interop-js`.
+- [ ] `./gradlew :interop-c:nativeUsageTest` passes on Linux and macOS (CI: `test-native`).
+- [ ] Placeholder modules are *not* in `publishedModules` until operational and covered by capability contracts.
+- [ ] `ENABLE_RELEASE=true` is set only after the above; `ENABLE_MAVEN_CENTRAL` / `ENABLE_NPMJS` only after the
+      matching secrets are present and `./gradlew zipMavenCentralPortalPublication --dry-run` lists the intended
+      modules.
 
 The root `gradle.properties` contains `placeholder` strings, **never live credentials**; CI passes secrets through
 Gradle project environment variables.

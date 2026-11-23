@@ -33,13 +33,19 @@ jobs:
         run: ./gradlew ktlintCheck detektAll --parallel --continue
       - name: Build and test
         run: ./gradlew check assemble koverXmlReport --parallel --continue
-      - name: Check Maven Central publication task graph (dry run)
-        run: ./gradlew publishAllPublicationsToProjectLocalRepository zipMavenCentralPortalPublication --dry-run
+      - name: Check GitHub Packages and Maven Central publication task graphs (dry run)
+        run: >-
+          ./gradlew publishAllPublicationsToGithubRepository publishAllPublicationsToProjectLocalRepository
+          zipMavenCentralPortalPublication --dry-run
+      - name: Build the C shared library zips attached to releases (Linux and Windows on this host)
+        run: ./gradlew :interop-c:releaseAssets
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check npm publication of the TypeScript facade (dry run)
-        run: ./scripts/publish-npm.sh -PforceVersion=0.0.0-ci --dry-run
+      - name: Check npm publication of the TypeScript facade on GitHub Packages and npmjs (dry run)
+        run: |
+          ./scripts/publish-npm.sh -PforceVersion=0.0.0-ci github --dry-run
+          ./scripts/publish-npm.sh -PforceVersion=0.0.0-ci npmjs --dry-run
       - name: Job summary
         if: always()
         uses: ./.github/actions/ci-summary
@@ -65,13 +71,18 @@ jobs:
       - name: Publish using semantic-release (opt-in only)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
-          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # GitHub Packages (Maven and npm), the live targets: GITHUB_TOKEN has packages:write on this job.
           ORG_GRADLE_PROJECT_otherMavenUsername: ${{ github.actor }}
           ORG_GRADLE_PROJECT_otherMavenPassword: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
+          # Maven Central and npmjs: wired but off until these repository variables are 'true' (see release.config.js).
+          ENABLE_MAVEN_CENTRAL: ${{ vars.ENABLE_MAVEN_CENTRAL }}
+          ENABLE_NPMJS: ${{ vars.ENABLE_NPMJS }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_PASSWORD }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm install
           npx semantic-release
@@ -79,5 +90,5 @@ jobs:
         if: always()
         uses: ./.github/actions/ci-summary
         with:
-          title: Maven Central release
+          title: Release (GitHub Packages and release assets)
           status: ${{ job.status }}
