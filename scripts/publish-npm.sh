@@ -42,4 +42,5 @@ fi
 npmrc="$(mktemp)"
 trap 'rm -f "$npmrc"; rm -rf "${staged:-}"' EXIT
 echo "//${url#https://}/:_authToken=${token}" >"$npmrc"
-NPM_CONFIG_USERCONFIG="$npmrc" npm publish "$package" --access public --registry "$url"
+# A flag, not NPM_CONFIG_USERCONFIG: `npx semantic-release` exports npm_config_userconfig=~/.npmrc, which npm may prefer.
+npm publish "$package" --access public --registry "$url" --userconfig "$npmrc"
