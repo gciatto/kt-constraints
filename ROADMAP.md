@@ -21,7 +21,7 @@ are a deliberate compatibility preference, **not** a runtime dependency.
    appropriate backends, without pretending MiniZinc batch solving implements CLP propagation.
 5. Retain predictable semantics across backends and avoid hidden relaxation of numeric or global constraints.
 6. Provide a pure common Kotlin engine for the current IR, then extend it through measured, independently
-   checked propagation and optimisation stages; see [the implementation design](docs/PURE-KOTLIN.md).
+   checked propagation and optimisation stages; see [the implementation design](https://github.com/gciatto/kt-constraints/blob/master/docs/PURE-KOTLIN.md).
 
 ## Non-goals
 
@@ -47,7 +47,7 @@ this module remains unpublished pending profiling and the full CI matrix.
 - [ ] Replace repeated real elimination with incremental exact simplex where measurements justify it.
 - [ ] Extend the IR and corresponding contracts for scheduling, set/graph constraints and richer optimisation.
 
-See [the module](solve-kotlin/README.md) and [validation evidence](docs/PURE-KOTLIN-VALIDATION.md).
+See [the module](https://github.com/gciatto/kt-constraints/blob/master/solve-kotlin/README.md) and [validation evidence](https://github.com/gciatto/kt-constraints/blob/master/docs/PURE-KOTLIN-VALIDATION.md).
 
 ## Baseline architectural contracts
 
