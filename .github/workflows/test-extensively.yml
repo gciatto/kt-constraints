@@ -75,6 +75,9 @@ jobs:
           :test-solve:${{ matrix.target }}Test :solve-kotlin:${{ matrix.target }}Test
           :solve-minizinc:${{ matrix.target }}Test :solve-z3:${{ matrix.target }}Test
           --parallel --continue
+      - name: Test the C shared library from C, against the pinned Z3
+        if: matrix.target != 'mingwX64'
+        run: ./gradlew :interop-c:nativeUsageTest
       - name: Job summary
         if: always()
         uses: ./.github/actions/ci-summary

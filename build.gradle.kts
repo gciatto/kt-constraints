@@ -79,7 +79,7 @@ val publishedModules =
         "interop-java",
         "interop-js",
     )
-val nonPublished = setOf("documentation", "test-core", "test-solve")
+val nonPublished = setOf("documentation", "test-core", "test-solve", "interop-c")
 subprojects {
     if (name in publishedModules) {
         plugins.withId("org.jetbrains.kotlin.multiplatform") {
