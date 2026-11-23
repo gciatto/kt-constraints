@@ -1,8 +1,8 @@
 package io.github.gciatto.ktconstraints.solve.kotlin
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.test.solve.FiniteOracle
-import io.github.gciatto.ktconstraints.test.solve.enumerate
+import io.github.gciatto.ktconstraints.test.solve.oracle.FiniteOracle
+import io.github.gciatto.ktconstraints.test.solve.oracle.enumerate
 import io.kotest.matchers.shouldBe
 
 /** The backend's status and solution set, or optimum, equal the finite oracle's on [model]. */

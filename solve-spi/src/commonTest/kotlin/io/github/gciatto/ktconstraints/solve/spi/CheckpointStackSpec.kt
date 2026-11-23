@@ -1,5 +1,6 @@
 package io.github.gciatto.ktconstraints.solve.spi
 
+import io.github.gciatto.ktconstraints.solve.spi.managed.CheckpointStack
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe

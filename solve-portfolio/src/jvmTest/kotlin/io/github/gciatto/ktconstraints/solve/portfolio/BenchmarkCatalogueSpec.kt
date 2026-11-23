@@ -3,8 +3,8 @@ package io.github.gciatto.ktconstraints.solve.portfolio
 import io.github.gciatto.ktconstraints.solve.cpsat.CpSatBackend
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
 import io.github.gciatto.ktconstraints.solve.z3.Z3Backend
-import io.github.gciatto.ktconstraints.test.solve.BenchmarkCatalogue
-import io.github.gciatto.ktconstraints.test.solve.BenchmarkInstance
+import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkCatalogue
+import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkInstance
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests
 import io.kotest.matchers.shouldBe

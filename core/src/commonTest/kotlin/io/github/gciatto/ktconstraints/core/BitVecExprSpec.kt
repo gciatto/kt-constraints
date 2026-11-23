@@ -1,5 +1,18 @@
 package io.github.gciatto.ktconstraints.core
 
+import io.github.gciatto.ktconstraints.core.bitvector.BitVecLiteral
+import io.github.gciatto.ktconstraints.core.bitvector.BitVecToInt
+import io.github.gciatto.ktconstraints.core.bitvector.BitVecVar
+import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecBinary
+import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecComparison
+import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecNegation
+import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecNot
+import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecOperator
+import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecRelation
+import io.github.gciatto.ktconstraints.core.bool.BoolVar
+import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.evaluation.Valuation
+import io.github.gciatto.ktconstraints.core.integer.IntVar
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests

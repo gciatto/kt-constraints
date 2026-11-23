@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.mip
 
-import io.github.gciatto.ktconstraints.solve.SolveStatus
-import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.longs.shouldBeLessThan

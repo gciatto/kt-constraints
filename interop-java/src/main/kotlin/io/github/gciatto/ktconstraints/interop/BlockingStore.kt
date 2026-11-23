@@ -1,17 +1,17 @@
 package io.github.gciatto.ktconstraints.interop
 
-import io.github.gciatto.ktconstraints.core.BoolExpr
-import io.github.gciatto.ktconstraints.core.BoolVar
-import io.github.gciatto.ktconstraints.core.IntDomain
-import io.github.gciatto.ktconstraints.core.IntVar
-import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Variable
-import io.github.gciatto.ktconstraints.solve.ConstraintStore
-import io.github.gciatto.ktconstraints.solve.EntailmentResult
-import io.github.gciatto.ktconstraints.solve.Propagation
-import io.github.gciatto.ktconstraints.solve.Residual
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
+import io.github.gciatto.ktconstraints.core.bool.BoolVar
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.core.integer.IntVar
+import io.github.gciatto.ktconstraints.core.real.RealVar
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
-import io.github.gciatto.ktconstraints.solve.StoreMark
+import io.github.gciatto.ktconstraints.solve.store.ConstraintStore
+import io.github.gciatto.ktconstraints.solve.store.EntailmentResult
+import io.github.gciatto.ktconstraints.solve.store.Propagation
+import io.github.gciatto.ktconstraints.solve.store.Residual
+import io.github.gciatto.ktconstraints.solve.store.StoreMark
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -6,7 +6,7 @@ import io.github.gciatto.ktconstraints.solve.minizinc.MiniZincBackend
 import io.github.gciatto.ktconstraints.solve.minizinc.MiniZincEngine
 import io.github.gciatto.ktconstraints.solve.mip.OrToolsMipBackend
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
-import io.github.gciatto.ktconstraints.solve.spi.SolverRegistry
+import io.github.gciatto.ktconstraints.solve.spi.registry.SolverRegistry
 import io.github.gciatto.ktconstraints.solve.z3.Z3Backend
 
 /** JVM routes. */

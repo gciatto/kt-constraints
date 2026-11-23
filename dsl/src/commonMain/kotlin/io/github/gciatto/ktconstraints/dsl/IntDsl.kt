@@ -3,12 +3,12 @@
 
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.IntDifference
-import io.github.gciatto.ktconstraints.core.IntExpr
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.IntNegation
-import io.github.gciatto.ktconstraints.core.IntProduct
-import io.github.gciatto.ktconstraints.core.IntSum
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntDifference
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntNegation
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntProduct
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntSum
 import org.gciatto.kt.math.BigInteger
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName

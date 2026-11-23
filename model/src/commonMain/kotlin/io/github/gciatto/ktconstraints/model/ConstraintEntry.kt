@@ -1,6 +1,6 @@
 package io.github.gciatto.ktconstraints.model
 
-import io.github.gciatto.ktconstraints.core.BoolExpr
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
 
 /** Immutable assertion and its optional diagnostic metadata. */
 class ConstraintEntry(

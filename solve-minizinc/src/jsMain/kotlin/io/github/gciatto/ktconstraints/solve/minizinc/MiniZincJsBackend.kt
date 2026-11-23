@@ -4,10 +4,14 @@ import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.minizinc.runtime.MiniZincApi
+import io.github.gciatto.ktconstraints.solve.minizinc.runtime.MiniZincJsSolver
+import io.github.gciatto.ktconstraints.solve.minizinc.runtime.MiniZincJsStream
+import io.github.gciatto.ktconstraints.solve.minizinc.runtime.newMiniZincModel
 import io.github.gciatto.ktconstraints.solve.spi.BackendAvailability
-import io.github.gciatto.ktconstraints.solve.spi.BackendUnavailableException
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
-import io.github.gciatto.ktconstraints.solve.spi.SupportReport
+import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
+import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

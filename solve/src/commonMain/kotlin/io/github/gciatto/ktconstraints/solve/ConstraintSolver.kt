@@ -1,6 +1,8 @@
 package io.github.gciatto.ktconstraints.solve
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
+import io.github.gciatto.ktconstraints.solve.stream.SolutionStream
 
 /** Common batch-solving contract. Backend implementations will be added incrementally. */
 interface ConstraintSolver : AutoCloseable {

@@ -1,10 +1,10 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.solve.SolutionFound
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.TerminationReason
-import io.github.gciatto.ktconstraints.solve.spi.BackendUnavailableException
+import io.github.gciatto.ktconstraints.solve.result.TerminationReason
+import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
+import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow

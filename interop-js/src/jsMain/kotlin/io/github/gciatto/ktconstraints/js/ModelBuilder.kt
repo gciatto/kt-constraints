@@ -2,10 +2,16 @@
 
 package io.github.gciatto.ktconstraints.js
 
-import io.github.gciatto.ktconstraints.core.BoolNot
-import io.github.gciatto.ktconstraints.core.BoolToInt
-import io.github.gciatto.ktconstraints.core.IntDomain
-import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.bool.BoolNot
+import io.github.gciatto.ktconstraints.core.bool.BoolToInt
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.LinearSum
+import io.github.gciatto.ktconstraints.js.expression.BoolExpression
+import io.github.gciatto.ktconstraints.js.expression.IntExpression
+import io.github.gciatto.ktconstraints.js.expression.RealExpression
+import io.github.gciatto.ktconstraints.js.global.max
+import io.github.gciatto.ktconstraints.js.global.min
+import io.github.gciatto.ktconstraints.js.platform.toBigInteger
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.JsBigInt

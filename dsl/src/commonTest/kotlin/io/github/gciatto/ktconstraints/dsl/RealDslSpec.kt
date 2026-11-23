@@ -1,16 +1,16 @@
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.BoolNot
-import io.github.gciatto.ktconstraints.core.IntToReal
 import io.github.gciatto.ktconstraints.core.Rational
-import io.github.gciatto.ktconstraints.core.RealDifference
-import io.github.gciatto.ktconstraints.core.RealEquality
-import io.github.gciatto.ktconstraints.core.RealLessOrEqual
-import io.github.gciatto.ktconstraints.core.RealLessThan
-import io.github.gciatto.ktconstraints.core.RealLiteral
-import io.github.gciatto.ktconstraints.core.RealNegation
-import io.github.gciatto.ktconstraints.core.RealScale
-import io.github.gciatto.ktconstraints.core.RealSum
+import io.github.gciatto.ktconstraints.core.bool.BoolNot
+import io.github.gciatto.ktconstraints.core.integer.IntToReal
+import io.github.gciatto.ktconstraints.core.real.RealLiteral
+import io.github.gciatto.ktconstraints.core.real.arithmetic.RealDifference
+import io.github.gciatto.ktconstraints.core.real.arithmetic.RealNegation
+import io.github.gciatto.ktconstraints.core.real.arithmetic.RealScale
+import io.github.gciatto.ktconstraints.core.real.arithmetic.RealSum
+import io.github.gciatto.ktconstraints.core.real.relation.RealEquality
+import io.github.gciatto.ktconstraints.core.real.relation.RealLessOrEqual
+import io.github.gciatto.ktconstraints.core.real.relation.RealLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe

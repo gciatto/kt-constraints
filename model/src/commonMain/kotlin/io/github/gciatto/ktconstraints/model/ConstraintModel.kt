@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.model
 
-import io.github.gciatto.ktconstraints.core.BoolExpr
 import io.github.gciatto.ktconstraints.core.Variable
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
 
 /** Frozen, solver-independent constraint problem. */
 class ConstraintModel internal constructor(

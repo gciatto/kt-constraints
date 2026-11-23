@@ -1,14 +1,14 @@
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.BinPacking
-import io.github.gciatto.ktconstraints.core.BoolVar
-import io.github.gciatto.ktconstraints.core.GroundEvaluator
-import io.github.gciatto.ktconstraints.core.IntExpr
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.IntVar
-import io.github.gciatto.ktconstraints.core.NoOverlap2D
-import io.github.gciatto.ktconstraints.core.SubCircuit
-import io.github.gciatto.ktconstraints.core.Valuation
+import io.github.gciatto.ktconstraints.core.bool.BoolVar
+import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.evaluation.Valuation
+import io.github.gciatto.ktconstraints.core.global.graph.SubCircuit
+import io.github.gciatto.ktconstraints.core.global.scheduling.BinPacking
+import io.github.gciatto.ktconstraints.core.global.scheduling.NoOverlap2D
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.IntVar
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
 import io.kotest.core.spec.style.FunSpec

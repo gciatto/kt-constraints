@@ -2,10 +2,10 @@ package io.github.gciatto.ktconstraints.solve.portfolio
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
-import io.github.gciatto.ktconstraints.solve.SolutionStream
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.SolveResult
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
+import io.github.gciatto.ktconstraints.solve.stream.SolutionStream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 

@@ -1,10 +1,10 @@
 package io.github.gciatto.ktconstraints.solve.portfolio
 
 import io.github.gciatto.ktconstraints.core.Rational
-import io.github.gciatto.ktconstraints.core.RealLessThan
-import io.github.gciatto.ktconstraints.core.RealLiteral
+import io.github.gciatto.ktconstraints.core.real.RealLiteral
+import io.github.gciatto.ktconstraints.core.real.relation.RealLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.solve.SolveStatus
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

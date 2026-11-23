@@ -9,10 +9,12 @@ import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.cpsat.runtime.CpSatSolver
+import io.github.gciatto.ktconstraints.solve.cpsat.translation.CpSatSupport
 import io.github.gciatto.ktconstraints.solve.spi.BackendAvailability
-import io.github.gciatto.ktconstraints.solve.spi.BackendUnavailableException
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
-import io.github.gciatto.ktconstraints.solve.spi.SupportReport
+import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
+import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 
 /** Direct JVM CP-SAT route through the official OR-Tools Java API; distinct from `cp-sat/minizinc`. */
 class CpSatBackend

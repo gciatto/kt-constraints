@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
-import io.github.gciatto.ktconstraints.solve.spi.SatisfiabilityStore
-import io.github.gciatto.ktconstraints.test.solve.benchmarkStore
+import io.github.gciatto.ktconstraints.solve.spi.store.SatisfiabilityStore
+import io.github.gciatto.ktconstraints.test.solve.benchmark.benchmarkStore
 import kotlinx.coroutines.runBlocking
 
 /** Manual store benchmark (`./gradlew :solve-z3:jvmStoreBenchmark`); never part of routine check. */

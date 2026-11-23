@@ -1,9 +1,11 @@
 package io.github.gciatto.ktconstraints.solve.spi
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.solve.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.spi.managed.ManagedConstraintSolver
+import io.github.gciatto.ktconstraints.solve.spi.managed.ManagedSolutionStream
+import io.github.gciatto.ktconstraints.solve.stream.SolutionEvent
 
 internal class RecordingSolver(
     private val onOpen: () -> Unit = {},

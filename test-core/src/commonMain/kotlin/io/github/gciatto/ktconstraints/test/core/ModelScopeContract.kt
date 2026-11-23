@@ -1,8 +1,8 @@
 package io.github.gciatto.ktconstraints.test.core
 
-import io.github.gciatto.ktconstraints.core.IntEquality
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.IntSum
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntSum
+import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.common.ExperimentalKotest

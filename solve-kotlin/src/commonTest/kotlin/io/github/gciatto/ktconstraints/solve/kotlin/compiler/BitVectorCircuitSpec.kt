@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.kotlin.compiler
 
-import io.github.gciatto.ktconstraints.core.BitVecOperator
-import io.github.gciatto.ktconstraints.core.BitVecRelation
+import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecOperator
+import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecRelation
 import io.github.gciatto.ktconstraints.solve.kotlin.sat.SatStatus
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe

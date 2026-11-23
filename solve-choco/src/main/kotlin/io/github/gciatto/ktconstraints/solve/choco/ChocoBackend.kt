@@ -5,10 +5,12 @@ import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.choco.runtime.ChocoSolver
+import io.github.gciatto.ktconstraints.solve.choco.translation.ChocoSupport
 import io.github.gciatto.ktconstraints.solve.spi.BackendAvailability
-import io.github.gciatto.ktconstraints.solve.spi.BackendUnavailableException
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
-import io.github.gciatto.ktconstraints.solve.spi.SupportReport
+import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
+import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 import org.chocosolver.solver.Model
 
 /** Direct JVM Choco route through the Choco Java API. */

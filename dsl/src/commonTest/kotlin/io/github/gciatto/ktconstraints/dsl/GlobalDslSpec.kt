@@ -1,8 +1,8 @@
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.BoolLiteral
-import io.github.gciatto.ktconstraints.core.GroundEvaluator
-import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.bool.BoolLiteral
+import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

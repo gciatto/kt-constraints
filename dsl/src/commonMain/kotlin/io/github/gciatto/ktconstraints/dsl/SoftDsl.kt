@@ -3,10 +3,10 @@
 
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.BoolExpr
-import io.github.gciatto.ktconstraints.core.BoolNot
-import io.github.gciatto.ktconstraints.core.BoolToInt
-import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
+import io.github.gciatto.ktconstraints.core.bool.BoolNot
+import io.github.gciatto.ktconstraints.core.bool.BoolToInt
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.LinearSum
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import org.gciatto.kt.math.BigInteger
 import kotlin.jvm.JvmMultifileClass

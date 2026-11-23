@@ -1,15 +1,15 @@
 package io.github.gciatto.ktconstraints.solve.kotlin
 
-import io.github.gciatto.ktconstraints.core.BoolExpr
-import io.github.gciatto.ktconstraints.core.IntEquality
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.IntToReal
 import io.github.gciatto.ktconstraints.core.Rational
-import io.github.gciatto.ktconstraints.core.RealEquality
-import io.github.gciatto.ktconstraints.core.RealLessThan
-import io.github.gciatto.ktconstraints.core.RealLiteral
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.IntToReal
+import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
+import io.github.gciatto.ktconstraints.core.real.RealLiteral
+import io.github.gciatto.ktconstraints.core.real.relation.RealEquality
+import io.github.gciatto.ktconstraints.core.real.relation.RealLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.solve.CheckStatus
+import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger

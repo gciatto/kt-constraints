@@ -1,11 +1,11 @@
 package io.github.gciatto.ktconstraints.solve.portfolio
 
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.SolveResult
 import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
-import io.github.gciatto.ktconstraints.test.solve.BenchmarkCatalogue
-import io.github.gciatto.ktconstraints.test.solve.BenchmarkInstance
+import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkCatalogue
+import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkInstance
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlin.system.measureNanoTime

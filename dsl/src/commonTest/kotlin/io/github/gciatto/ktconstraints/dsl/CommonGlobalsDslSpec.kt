@@ -1,12 +1,12 @@
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.BoolLiteral
-import io.github.gciatto.ktconstraints.core.Circuit
-import io.github.gciatto.ktconstraints.core.Cumulative
-import io.github.gciatto.ktconstraints.core.GroundEvaluator
-import io.github.gciatto.ktconstraints.core.IntExpr
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.Inverse
+import io.github.gciatto.ktconstraints.core.bool.BoolLiteral
+import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.global.graph.Circuit
+import io.github.gciatto.ktconstraints.core.global.graph.Inverse
+import io.github.gciatto.ktconstraints.core.global.scheduling.Cumulative
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -22,7 +22,7 @@ class CommonGlobalsDslSpec :
 
         fun eval(expression: Any) =
             when (expression) {
-                is io.github.gciatto.ktconstraints.core.BoolExpr -> GroundEvaluator.evaluate(expression)
+                is io.github.gciatto.ktconstraints.core.bool.BoolExpr -> GroundEvaluator.evaluate(expression)
                 is IntExpr -> GroundEvaluator.evaluate(expression).toString()
                 else -> error("Not an expression")
             }

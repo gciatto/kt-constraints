@@ -3,16 +3,16 @@
 
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.AllDifferent
-import io.github.gciatto.ktconstraints.core.BoolCardinality
-import io.github.gciatto.ktconstraints.core.BoolExpr
-import io.github.gciatto.ktconstraints.core.CardinalityRelation
-import io.github.gciatto.ktconstraints.core.Element
-import io.github.gciatto.ktconstraints.core.IntExpr
-import io.github.gciatto.ktconstraints.core.IntMax
-import io.github.gciatto.ktconstraints.core.IntMin
-import io.github.gciatto.ktconstraints.core.IntNegation
-import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
+import io.github.gciatto.ktconstraints.core.global.counting.AllDifferent
+import io.github.gciatto.ktconstraints.core.global.counting.BoolCardinality
+import io.github.gciatto.ktconstraints.core.global.counting.CardinalityRelation
+import io.github.gciatto.ktconstraints.core.global.extensional.Element
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntMax
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntMin
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntNegation
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.LinearSum
 import org.gciatto.kt.math.BigInteger
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName

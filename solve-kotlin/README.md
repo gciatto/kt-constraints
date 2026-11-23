@@ -16,10 +16,10 @@ dependencies {
 The following example belongs in a suspending caller:
 
 ```kotlin
-import io.github.gciatto.ktconstraints.core.IntEquality
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.IntProduct
-import io.github.gciatto.ktconstraints.core.IntSum
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntProduct
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntSum
+import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
 

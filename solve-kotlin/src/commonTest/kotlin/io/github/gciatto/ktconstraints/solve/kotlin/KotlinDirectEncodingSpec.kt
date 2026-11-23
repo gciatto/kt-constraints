@@ -1,16 +1,16 @@
 package io.github.gciatto.ktconstraints.solve.kotlin
 
-import io.github.gciatto.ktconstraints.core.AllDifferent
-import io.github.gciatto.ktconstraints.core.BoolNot
-import io.github.gciatto.ktconstraints.core.BoolOr
-import io.github.gciatto.ktconstraints.core.Element
-import io.github.gciatto.ktconstraints.core.IntDifference
-import io.github.gciatto.ktconstraints.core.IntDomain
-import io.github.gciatto.ktconstraints.core.IntEquality
-import io.github.gciatto.ktconstraints.core.IntLessOrEqual
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.IntSum
-import io.github.gciatto.ktconstraints.core.Table
+import io.github.gciatto.ktconstraints.core.bool.BoolNot
+import io.github.gciatto.ktconstraints.core.bool.BoolOr
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.core.global.counting.AllDifferent
+import io.github.gciatto.ktconstraints.core.global.extensional.Element
+import io.github.gciatto.ktconstraints.core.global.extensional.Table
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntDifference
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntSum
+import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
+import io.github.gciatto.ktconstraints.core.integer.relation.IntLessOrEqual
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.kotest.core.spec.style.FunSpec
 import org.gciatto.kt.math.BigInteger

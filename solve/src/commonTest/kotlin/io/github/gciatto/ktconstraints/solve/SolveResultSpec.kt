@@ -1,5 +1,9 @@
 package io.github.gciatto.ktconstraints.solve
 
+import io.github.gciatto.ktconstraints.solve.assignment.Assignment
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests

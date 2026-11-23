@@ -1,12 +1,12 @@
 package io.github.gciatto.ktconstraints.solve.portfolio
 
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.spi.Platform
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
-import io.github.gciatto.ktconstraints.test.solve.BenchmarkCatalogue
-import io.github.gciatto.ktconstraints.test.solve.BenchmarkInstance
+import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkCatalogue
+import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkInstance
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CancellationException

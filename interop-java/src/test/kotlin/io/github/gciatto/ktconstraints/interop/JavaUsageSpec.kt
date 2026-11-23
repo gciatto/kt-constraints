@@ -5,8 +5,8 @@ import io.github.gciatto.ktconstraints.solve.choco.ChocoBackend
 import io.github.gciatto.ktconstraints.solve.choco.ChocoStore
 import io.github.gciatto.ktconstraints.solve.cpsat.CpSatBackend
 import io.github.gciatto.ktconstraints.solve.mip.OrToolsMipBackend
-import io.github.gciatto.ktconstraints.solve.spi.SatisfiabilityStore
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
+import io.github.gciatto.ktconstraints.solve.spi.store.SatisfiabilityStore
 import io.github.gciatto.ktconstraints.solve.z3.Z3Backend
 import io.kotest.core.spec.style.FunSpec
 

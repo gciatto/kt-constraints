@@ -1,11 +1,11 @@
 package io.github.gciatto.ktconstraints.solve.kotlin
 
-import io.github.gciatto.ktconstraints.core.IntDomain
-import io.github.gciatto.ktconstraints.core.IntEquality
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.IntProduct
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntProduct
+import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.solve.SolveStatus
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract

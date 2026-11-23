@@ -1,6 +1,6 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
-import io.github.gciatto.ktconstraints.solve.spi.BackendUnavailableException
+import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe

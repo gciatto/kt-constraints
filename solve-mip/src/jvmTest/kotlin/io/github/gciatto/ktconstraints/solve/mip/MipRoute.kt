@@ -1,18 +1,18 @@
 package io.github.gciatto.ktconstraints.solve.mip
 
-import io.github.gciatto.ktconstraints.core.IntEquality
-import io.github.gciatto.ktconstraints.core.IntLessThan
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.IntProduct
-import io.github.gciatto.ktconstraints.core.IntSum
-import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntProduct
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntSum
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.LinearSum
+import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
+import io.github.gciatto.ktconstraints.core.integer.relation.IntLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.SolverCapability
-import io.github.gciatto.ktconstraints.solve.TerminationReason
-import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.result.TerminationReason
+import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
 import io.github.gciatto.ktconstraints.test.solve.DifferentialCase
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract

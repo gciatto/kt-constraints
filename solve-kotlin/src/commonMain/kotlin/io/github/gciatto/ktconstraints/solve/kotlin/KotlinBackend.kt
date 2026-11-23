@@ -1,13 +1,14 @@
 package io.github.gciatto.ktconstraints.solve.kotlin
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.solve.IncrementalConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.incremental.IncrementalConstraintSolver
+import io.github.gciatto.ktconstraints.solve.kotlin.runtime.KotlinSolver
 import io.github.gciatto.ktconstraints.solve.spi.BackendAvailability
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
-import io.github.gciatto.ktconstraints.solve.spi.SupportReport
+import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 
 /** Pure Kotlin backend: exact finite discrete circuits, clause learning and rational linear feasibility. */
 class KotlinBackend(

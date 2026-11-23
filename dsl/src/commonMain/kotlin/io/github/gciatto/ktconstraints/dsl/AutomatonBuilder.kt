@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.Automaton
-import io.github.gciatto.ktconstraints.core.Transition
+import io.github.gciatto.ktconstraints.core.global.extensional.Automaton
+import io.github.gciatto.ktconstraints.core.global.extensional.Transition
 import org.gciatto.kt.math.BigInteger
 
 /** Collects the transitions of a deterministic automaton inside [automaton]. */

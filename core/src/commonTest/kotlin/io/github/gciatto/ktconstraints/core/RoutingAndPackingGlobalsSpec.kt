@@ -1,5 +1,21 @@
 package io.github.gciatto.ktconstraints.core
 
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
+import io.github.gciatto.ktconstraints.core.bool.BoolVar
+import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.evaluation.Valuation
+import io.github.gciatto.ktconstraints.core.evaluation.fold
+import io.github.gciatto.ktconstraints.core.global.DecomposableConstraint
+import io.github.gciatto.ktconstraints.core.global.extensional.Automaton
+import io.github.gciatto.ktconstraints.core.global.extensional.Regular
+import io.github.gciatto.ktconstraints.core.global.extensional.Transition
+import io.github.gciatto.ktconstraints.core.global.graph.Circuit
+import io.github.gciatto.ktconstraints.core.global.graph.SubCircuit
+import io.github.gciatto.ktconstraints.core.global.scheduling.BinPacking
+import io.github.gciatto.ktconstraints.core.global.scheduling.NoOverlap2D
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.IntVar
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FunSpec

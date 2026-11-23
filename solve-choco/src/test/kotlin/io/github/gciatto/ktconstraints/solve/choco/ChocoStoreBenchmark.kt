@@ -1,6 +1,6 @@
 package io.github.gciatto.ktconstraints.solve.choco
 
-import io.github.gciatto.ktconstraints.test.solve.benchmarkStore
+import io.github.gciatto.ktconstraints.test.solve.benchmark.benchmarkStore
 import kotlinx.coroutines.runBlocking
 
 /** Manual store benchmark (`./gradlew :solve-choco:storeBenchmark`); never part of routine check. */

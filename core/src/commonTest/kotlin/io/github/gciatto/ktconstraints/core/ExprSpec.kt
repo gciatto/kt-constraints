@@ -1,5 +1,12 @@
 package io.github.gciatto.ktconstraints.core
 
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.core.evaluation.fold
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntNegation
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntProduct
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntSum
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

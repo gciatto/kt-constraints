@@ -1,6 +1,6 @@
 package io.github.gciatto.ktconstraints.solve.kotlin.cp
 
-import io.github.gciatto.ktconstraints.core.IntDomain
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec

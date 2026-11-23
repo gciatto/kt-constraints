@@ -1,8 +1,8 @@
 package io.github.gciatto.ktconstraints.solve.kotlin
 
-import io.github.gciatto.ktconstraints.core.BoolAnd
-import io.github.gciatto.ktconstraints.core.BoolExpr
-import io.github.gciatto.ktconstraints.core.BoolLiteral
+import io.github.gciatto.ktconstraints.core.bool.BoolAnd
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
+import io.github.gciatto.ktconstraints.core.bool.BoolLiteral
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

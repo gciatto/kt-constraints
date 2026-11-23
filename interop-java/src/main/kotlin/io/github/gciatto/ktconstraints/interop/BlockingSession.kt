@@ -1,10 +1,10 @@
 package io.github.gciatto.ktconstraints.interop
 
-import io.github.gciatto.ktconstraints.core.BoolExpr
-import io.github.gciatto.ktconstraints.solve.CheckResult
-import io.github.gciatto.ktconstraints.solve.Checkpoint
-import io.github.gciatto.ktconstraints.solve.IncrementalSession
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.incremental.CheckResult
+import io.github.gciatto.ktconstraints.solve.incremental.Checkpoint
+import io.github.gciatto.ktconstraints.solve.incremental.IncrementalSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking

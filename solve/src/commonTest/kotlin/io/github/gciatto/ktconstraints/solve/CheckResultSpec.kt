@@ -1,6 +1,10 @@
 package io.github.gciatto.ktconstraints.solve
 
-import io.github.gciatto.ktconstraints.core.BoolLiteral
+import io.github.gciatto.ktconstraints.core.bool.BoolLiteral
+import io.github.gciatto.ktconstraints.solve.assignment.Assignment
+import io.github.gciatto.ktconstraints.solve.incremental.CheckResult
+import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
+import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests

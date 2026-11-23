@@ -1,15 +1,15 @@
 package io.github.gciatto.ktconstraints.test.solve
 
-import io.github.gciatto.ktconstraints.core.BoolExpr
-import io.github.gciatto.ktconstraints.core.BoolNot
-import io.github.gciatto.ktconstraints.core.BoolOr
-import io.github.gciatto.ktconstraints.core.IntDomain
-import io.github.gciatto.ktconstraints.core.IntEquality
-import io.github.gciatto.ktconstraints.core.IntLessOrEqual
-import io.github.gciatto.ktconstraints.core.IntLessThan
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.IntSum
-import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
+import io.github.gciatto.ktconstraints.core.bool.BoolNot
+import io.github.gciatto.ktconstraints.core.bool.BoolOr
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.IntVar
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntSum
+import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
+import io.github.gciatto.ktconstraints.core.integer.relation.IntLessOrEqual
+import io.github.gciatto.ktconstraints.core.integer.relation.IntLessThan
 
 /** A tiny model replayed into both a store and the [FiniteOracle], with a [probe] for entailment. */
 internal class StoreCase(

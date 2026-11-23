@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.kotlin
 
-import io.github.gciatto.ktconstraints.core.BoolExpr
 import io.github.gciatto.ktconstraints.core.Expr
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
 
 /** Records support traversal without allowing structural hashing or equality of source expressions. */
 internal class SupportProbeExpression(

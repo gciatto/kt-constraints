@@ -1,8 +1,0 @@
-package io.github.gciatto.ktconstraints.solve.kotlin
-
-import io.github.gciatto.ktconstraints.solve.TerminationReason
-
-/** Internal control flow for a checked search limit; it must not be interpreted as a conflict. */
-internal class SearchStopped(
-    val reason: TerminationReason,
-) : RuntimeException(reason.name)

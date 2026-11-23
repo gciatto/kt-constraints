@@ -3,6 +3,9 @@ package io.github.gciatto.ktconstraints.solve.spi
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.spi.exception.NoCompatibleBackendException
+import io.github.gciatto.ktconstraints.solve.spi.registry.SolverRegistry
+import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe

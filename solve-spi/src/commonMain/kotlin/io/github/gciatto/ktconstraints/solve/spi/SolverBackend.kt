@@ -4,6 +4,7 @@ import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 
 /** Provider with separate runtime, capability and whole-model support declarations. */
 interface SolverBackend {

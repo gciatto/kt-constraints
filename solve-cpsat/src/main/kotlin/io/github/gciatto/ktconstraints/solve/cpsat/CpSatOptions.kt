@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.cpsat
 
-import io.github.gciatto.ktconstraints.solve.Assignment
 import io.github.gciatto.ktconstraints.solve.BackendOptions
+import io.github.gciatto.ktconstraints.solve.assignment.Assignment
 
 /**
  * Per-solve CP-SAT tuning, overriding the [CpSatBackend] defaults: `SolveOptions() + CpSatOptions(workers = 8)`.

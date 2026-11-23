@@ -1,13 +1,14 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
-import io.github.gciatto.ktconstraints.core.BoolVar
-import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.bool.BoolVar
+import io.github.gciatto.ktconstraints.core.integer.IntVar
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.SolveOptions
+import io.github.gciatto.ktconstraints.solve.minizinc.lowering.MiniZincLowering
 import io.github.gciatto.ktconstraints.solve.spi.ConstraintCompiler
-import io.github.gciatto.ktconstraints.solve.spi.SupportReport
-import io.github.gciatto.ktconstraints.solve.spi.UnsupportedModelException
+import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
+import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 
 /** Pure compiler for a selected engine's checked finite subset, using MiniZinc for flattening and global lowering. */
 class MiniZincCompiler(

@@ -1,21 +1,21 @@
 package io.github.gciatto.ktconstraints.solve.kotlin
 
-import io.github.gciatto.ktconstraints.core.BoolCardinality
-import io.github.gciatto.ktconstraints.core.BoolImplies
-import io.github.gciatto.ktconstraints.core.BoolNot
-import io.github.gciatto.ktconstraints.core.BoolOr
-import io.github.gciatto.ktconstraints.core.CardinalityRelation
-import io.github.gciatto.ktconstraints.core.IntEquality
-import io.github.gciatto.ktconstraints.core.IntLessOrEqual
-import io.github.gciatto.ktconstraints.core.IntLessThan
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.IntSum
-import io.github.gciatto.ktconstraints.core.IntToReal
 import io.github.gciatto.ktconstraints.core.Rational
-import io.github.gciatto.ktconstraints.core.RealLessOrEqual
-import io.github.gciatto.ktconstraints.core.RealLessThan
-import io.github.gciatto.ktconstraints.core.RealLiteral
-import io.github.gciatto.ktconstraints.core.RealSum
+import io.github.gciatto.ktconstraints.core.bool.BoolImplies
+import io.github.gciatto.ktconstraints.core.bool.BoolNot
+import io.github.gciatto.ktconstraints.core.bool.BoolOr
+import io.github.gciatto.ktconstraints.core.global.counting.BoolCardinality
+import io.github.gciatto.ktconstraints.core.global.counting.CardinalityRelation
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.IntToReal
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntSum
+import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
+import io.github.gciatto.ktconstraints.core.integer.relation.IntLessOrEqual
+import io.github.gciatto.ktconstraints.core.integer.relation.IntLessThan
+import io.github.gciatto.ktconstraints.core.real.RealLiteral
+import io.github.gciatto.ktconstraints.core.real.arithmetic.RealSum
+import io.github.gciatto.ktconstraints.core.real.relation.RealLessOrEqual
+import io.github.gciatto.ktconstraints.core.real.relation.RealLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 
 /** Fixed, small models with known witnesses; these are smoke workloads, not a representative benchmark corpus. */

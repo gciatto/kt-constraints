@@ -1,9 +1,10 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
-import io.github.gciatto.ktconstraints.core.IntDomain
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.minizinc.lowering.MiniZincDecoder
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests
 import io.kotest.matchers.shouldBe

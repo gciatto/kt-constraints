@@ -1,5 +1,10 @@
 package io.github.gciatto.ktconstraints.core
 
+import io.github.gciatto.ktconstraints.core.bitvector.BitVecVar
+import io.github.gciatto.ktconstraints.core.bool.BoolVar
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.core.integer.IntVar
+import io.github.gciatto.ktconstraints.core.real.RealVar
 import kotlin.jvm.JvmStatic
 
 /** Owns variable identities for one symbolic scope without exposing internal constructors. */

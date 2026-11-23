@@ -2,7 +2,9 @@ package io.github.gciatto.ktconstraints.test.solve
 
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
-import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.result.TerminationReason
+import io.github.gciatto.ktconstraints.test.solve.oracle.FiniteOracle
+import io.github.gciatto.ktconstraints.test.solve.oracle.enumerate
 import io.kotest.core.spec.style.funSpec
 import io.kotest.datatest.withTests
 import io.kotest.matchers.collections.shouldBeIn

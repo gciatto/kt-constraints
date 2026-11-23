@@ -1,13 +1,13 @@
 package io.github.gciatto.ktconstraints.solve.spi
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.solve.Assignment
-import io.github.gciatto.ktconstraints.solve.SolutionFound
-import io.github.gciatto.ktconstraints.solve.SolveCompleted
-import io.github.gciatto.ktconstraints.solve.SolveResult
-import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
-import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.assignment.Assignment
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.result.TerminationReason
+import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
+import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe

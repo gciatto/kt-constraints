@@ -2,17 +2,17 @@ package io.github.gciatto.ktconstraints.solve.portfolio
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
-import io.github.gciatto.ktconstraints.solve.SolveMetadata
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.SolveResult
-import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
-import io.github.gciatto.ktconstraints.solve.TerminationReason
-import io.github.gciatto.ktconstraints.solve.spi.Candidate
+import io.github.gciatto.ktconstraints.solve.result.SolveMetadata
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.Platform
-import io.github.gciatto.ktconstraints.solve.spi.RankingPolicy
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
-import io.github.gciatto.ktconstraints.solve.spi.SolverRegistry
+import io.github.gciatto.ktconstraints.solve.spi.ranking.RankingPolicy
+import io.github.gciatto.ktconstraints.solve.spi.registry.Candidate
+import io.github.gciatto.ktconstraints.solve.spi.registry.SolverRegistry
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel

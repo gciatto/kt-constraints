@@ -1,17 +1,17 @@
 package io.github.gciatto.ktconstraints.solve.kotlin
 
-import io.github.gciatto.ktconstraints.core.BoolLiteral
-import io.github.gciatto.ktconstraints.core.BoolOr
-import io.github.gciatto.ktconstraints.core.Element
-import io.github.gciatto.ktconstraints.core.IntEquality
-import io.github.gciatto.ktconstraints.core.IntLiteral
+import io.github.gciatto.ktconstraints.core.bool.BoolLiteral
+import io.github.gciatto.ktconstraints.core.bool.BoolOr
+import io.github.gciatto.ktconstraints.core.global.extensional.Element
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.solve.CheckStatus
-import io.github.gciatto.ktconstraints.solve.SolutionFound
-import io.github.gciatto.ktconstraints.solve.SolveCompleted
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.SolveStatus
-import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.result.TerminationReason
+import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
+import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger

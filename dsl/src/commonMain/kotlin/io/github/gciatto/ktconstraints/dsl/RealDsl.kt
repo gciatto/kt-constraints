@@ -3,15 +3,15 @@
 
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.IntExpr
-import io.github.gciatto.ktconstraints.core.IntToReal
 import io.github.gciatto.ktconstraints.core.Rational
-import io.github.gciatto.ktconstraints.core.RealDifference
-import io.github.gciatto.ktconstraints.core.RealExpr
-import io.github.gciatto.ktconstraints.core.RealLiteral
-import io.github.gciatto.ktconstraints.core.RealNegation
-import io.github.gciatto.ktconstraints.core.RealScale
-import io.github.gciatto.ktconstraints.core.RealSum
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.IntToReal
+import io.github.gciatto.ktconstraints.core.real.RealExpr
+import io.github.gciatto.ktconstraints.core.real.RealLiteral
+import io.github.gciatto.ktconstraints.core.real.arithmetic.RealDifference
+import io.github.gciatto.ktconstraints.core.real.arithmetic.RealNegation
+import io.github.gciatto.ktconstraints.core.real.arithmetic.RealScale
+import io.github.gciatto.ktconstraints.core.real.arithmetic.RealSum
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName
 

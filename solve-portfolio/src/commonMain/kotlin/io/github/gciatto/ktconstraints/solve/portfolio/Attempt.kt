@@ -1,6 +1,6 @@
 package io.github.gciatto.ktconstraints.solve.portfolio
 
-import io.github.gciatto.ktconstraints.solve.SolveResult
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
 
 /** Outcome of running one backend inside a portfolio. */
 internal sealed interface Attempt {

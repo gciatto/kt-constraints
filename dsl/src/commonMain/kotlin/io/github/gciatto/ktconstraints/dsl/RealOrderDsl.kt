@@ -3,12 +3,12 @@
 
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.BoolExpr
 import io.github.gciatto.ktconstraints.core.Rational
-import io.github.gciatto.ktconstraints.core.RealExpr
-import io.github.gciatto.ktconstraints.core.RealLessOrEqual
-import io.github.gciatto.ktconstraints.core.RealLessThan
-import io.github.gciatto.ktconstraints.core.RealLiteral
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
+import io.github.gciatto.ktconstraints.core.real.RealExpr
+import io.github.gciatto.ktconstraints.core.real.RealLiteral
+import io.github.gciatto.ktconstraints.core.real.relation.RealLessOrEqual
+import io.github.gciatto.ktconstraints.core.real.relation.RealLessThan
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName
 

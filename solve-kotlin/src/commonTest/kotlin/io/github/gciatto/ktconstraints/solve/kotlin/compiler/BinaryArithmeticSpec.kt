@@ -1,12 +1,14 @@
 package io.github.gciatto.ktconstraints.solve.kotlin.compiler
 
-import io.github.gciatto.ktconstraints.core.IntDomain
-import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
 import io.github.gciatto.ktconstraints.solve.kotlin.KotlinConfiguration
-import io.github.gciatto.ktconstraints.solve.kotlin.SearchBudget
-import io.github.gciatto.ktconstraints.solve.kotlin.SearchStopped
+import io.github.gciatto.ktconstraints.solve.kotlin.compiler.circuit.BinaryArithmetic
+import io.github.gciatto.ktconstraints.solve.kotlin.compiler.circuit.Circuit
 import io.github.gciatto.ktconstraints.solve.kotlin.sat.SatSolver
 import io.github.gciatto.ktconstraints.solve.kotlin.sat.SatStatus
+import io.github.gciatto.ktconstraints.solve.kotlin.search.SearchBudget
+import io.github.gciatto.ktconstraints.solve.kotlin.search.SearchStopped
+import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe

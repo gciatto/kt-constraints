@@ -1,6 +1,6 @@
 package io.github.gciatto.ktconstraints.solve.portfolio
 
-import io.github.gciatto.ktconstraints.solve.spi.SolverRegistry
+import io.github.gciatto.ktconstraints.solve.spi.registry.SolverRegistry
 import io.github.gciatto.ktconstraints.solve.z3.Z3NativeBackend
 
 /** Native routes. */

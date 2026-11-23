@@ -2,6 +2,10 @@
 
 package io.github.gciatto.ktconstraints.js
 
+import io.github.gciatto.ktconstraints.js.expression.BoolExpression
+import io.github.gciatto.ktconstraints.js.expression.constant
+import io.github.gciatto.ktconstraints.js.expression.real
+import io.github.gciatto.ktconstraints.js.solve.Solver
 import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec

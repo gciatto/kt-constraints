@@ -1,14 +1,16 @@
 package io.github.gciatto.ktconstraints.solve.kotlin
 
-import io.github.gciatto.ktconstraints.core.BitVecVar
-import io.github.gciatto.ktconstraints.core.BoolVar
-import io.github.gciatto.ktconstraints.core.GroundEvaluator
-import io.github.gciatto.ktconstraints.core.IntVar
-import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Variable
-import io.github.gciatto.ktconstraints.solve.Assignment
-import io.github.gciatto.ktconstraints.solve.CheckStatus
-import io.github.gciatto.ktconstraints.solve.project
+import io.github.gciatto.ktconstraints.core.bitvector.BitVecVar
+import io.github.gciatto.ktconstraints.core.bool.BoolVar
+import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.integer.IntVar
+import io.github.gciatto.ktconstraints.core.real.RealVar
+import io.github.gciatto.ktconstraints.solve.assignment.Assignment
+import io.github.gciatto.ktconstraints.solve.assignment.project
+import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
+import io.github.gciatto.ktconstraints.solve.kotlin.runtime.KotlinEngine
+import io.github.gciatto.ktconstraints.solve.kotlin.search.SearchBudget
 import kotlinx.coroutines.runBlocking
 
 /** Manual raw JVM phase measurements, invoked only by `:solve-kotlin:jvmBenchmark`, outside routine check. */

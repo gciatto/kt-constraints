@@ -1,6 +1,6 @@
 package io.github.gciatto.ktconstraints.test.core
 
-import io.github.gciatto.ktconstraints.core.IntDomain
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.funSpec
 import io.kotest.matchers.shouldBe

@@ -1,10 +1,10 @@
 package io.github.gciatto.ktconstraints.test.core
 
-import io.github.gciatto.ktconstraints.core.IntDifference
-import io.github.gciatto.ktconstraints.core.IntExpr
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.IntProduct
-import io.github.gciatto.ktconstraints.core.IntSum
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntDifference
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntProduct
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntSum
 import io.kotest.common.ExperimentalKotest
 import io.kotest.core.spec.style.funSpec
 import io.kotest.matchers.shouldBe

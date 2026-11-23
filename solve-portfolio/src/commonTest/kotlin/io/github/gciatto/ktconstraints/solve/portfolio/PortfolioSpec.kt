@@ -1,16 +1,16 @@
 package io.github.gciatto.ktconstraints.solve.portfolio
 
-import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.integer.IntVar
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.solve.Assignment
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.SolveResult
-import io.github.gciatto.ktconstraints.solve.SolveStatus
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
-import io.github.gciatto.ktconstraints.solve.TerminationReason
-import io.github.gciatto.ktconstraints.solve.spi.BackendExecutionException
-import io.github.gciatto.ktconstraints.solve.spi.RankingPolicy
-import io.github.gciatto.ktconstraints.solve.spi.SolverRegistry
+import io.github.gciatto.ktconstraints.solve.assignment.Assignment
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.result.TerminationReason
+import io.github.gciatto.ktconstraints.solve.spi.exception.BackendExecutionException
+import io.github.gciatto.ktconstraints.solve.spi.ranking.RankingPolicy
+import io.github.gciatto.ktconstraints.solve.spi.registry.SolverRegistry
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactly

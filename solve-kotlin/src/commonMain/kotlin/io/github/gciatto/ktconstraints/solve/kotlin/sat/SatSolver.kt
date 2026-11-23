@@ -1,5 +1,11 @@
 package io.github.gciatto.ktconstraints.solve.kotlin.sat
 
+import io.github.gciatto.ktconstraints.solve.kotlin.sat.cdcl.SatConflictAnalysis
+import io.github.gciatto.ktconstraints.solve.kotlin.sat.cdcl.SatDatabase
+import io.github.gciatto.ktconstraints.solve.kotlin.sat.cdcl.SatLinear
+import io.github.gciatto.ktconstraints.solve.kotlin.sat.cdcl.SatPropagation
+import io.github.gciatto.ktconstraints.solve.kotlin.sat.cdcl.SatState
+
 /**
  * Single-consumer CDCL solver with watched clauses, first-UIP learning and temporary assumptions.
  * Positive integers name variables, negation changes the sign, and zero is never a literal.

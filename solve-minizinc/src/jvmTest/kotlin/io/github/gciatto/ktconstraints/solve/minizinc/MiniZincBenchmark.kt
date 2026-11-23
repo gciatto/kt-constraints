@@ -1,12 +1,15 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
-import io.github.gciatto.ktconstraints.core.IntLessOrEqual
-import io.github.gciatto.ktconstraints.core.IntLiteral
-import io.github.gciatto.ktconstraints.core.IntSum
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntSum
+import io.github.gciatto.ktconstraints.core.integer.relation.IntLessOrEqual
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.solve.SolveResult
-import io.github.gciatto.ktconstraints.solve.SolveStatus
-import io.github.gciatto.ktconstraints.solve.project
+import io.github.gciatto.ktconstraints.solve.assignment.project
+import io.github.gciatto.ktconstraints.solve.minizinc.lowering.MiniZincDecoder
+import io.github.gciatto.ktconstraints.solve.minizinc.runtime.MiniZincProcess
+import io.github.gciatto.ktconstraints.solve.minizinc.runtime.solverArguments
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import kotlinx.coroutines.runBlocking
 import org.gciatto.kt.math.BigInteger
 import kotlin.system.measureNanoTime
@@ -49,7 +52,7 @@ object MiniZincBenchmark {
                     val projectionNanos =
                         measureNanoTime {
                             val projected = requireNotNull(result.assignment).project(model.variables.take(1))
-                            check(projected.valueOf(model.variables.first() as io.github.gciatto.ktconstraints.core.IntVar) != null)
+                            check(projected.valueOf(model.variables.first() as io.github.gciatto.ktconstraints.core.integer.IntVar) != null)
                         }
                     val stats = result.metadata.statistics
                     println(

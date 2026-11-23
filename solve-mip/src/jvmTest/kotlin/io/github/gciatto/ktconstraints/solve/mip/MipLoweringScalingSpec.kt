@@ -1,7 +1,8 @@
 package io.github.gciatto.ktconstraints.solve.mip
 
-import io.github.gciatto.ktconstraints.core.AllDifferent
+import io.github.gciatto.ktconstraints.core.global.counting.AllDifferent
 import io.github.gciatto.ktconstraints.model.ConstraintScope
+import io.github.gciatto.ktconstraints.solve.mip.program.MipLowering
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kotlin.time.Duration.Companion.seconds

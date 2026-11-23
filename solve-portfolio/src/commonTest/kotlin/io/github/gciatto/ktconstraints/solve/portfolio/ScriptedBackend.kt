@@ -3,12 +3,12 @@ package io.github.gciatto.ktconstraints.solve.portfolio
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.SolveResult
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.spi.BackendAvailability
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
-import io.github.gciatto.ktconstraints.solve.spi.SupportReport
+import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 
 /** A backend whose solvers wait [delayMillis] (capped by the solve timeout) and then run [script]. */
 internal class ScriptedBackend(

@@ -2,6 +2,7 @@ package io.github.gciatto.ktconstraints.solve.spi
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.SolveOptions
+import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 
 /** Lossless whole-model compilation; unsupported semantics are rejected explicitly. */
 interface ConstraintCompiler<out C : CompiledModel> {

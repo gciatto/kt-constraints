@@ -1,5 +1,6 @@
 package io.github.gciatto.ktconstraints.core
 
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests

@@ -1,12 +1,12 @@
 package io.github.gciatto.ktconstraints.solve.choco
 
-import io.github.gciatto.ktconstraints.core.AllDifferent
-import io.github.gciatto.ktconstraints.core.IntLessThan
-import io.github.gciatto.ktconstraints.core.LinearSum
+import io.github.gciatto.ktconstraints.core.global.counting.AllDifferent
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.LinearSum
+import io.github.gciatto.ktconstraints.core.integer.relation.IntLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.test.solve.FiniteOracle
-import io.github.gciatto.ktconstraints.test.solve.enumerate
+import io.github.gciatto.ktconstraints.test.solve.oracle.FiniteOracle
+import io.github.gciatto.ktconstraints.test.solve.oracle.enumerate
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests
 import io.kotest.matchers.shouldBe

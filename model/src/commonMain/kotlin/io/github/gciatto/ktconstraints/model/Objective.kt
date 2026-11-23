@@ -1,6 +1,6 @@
 package io.github.gciatto.ktconstraints.model
 
-import io.github.gciatto.ktconstraints.core.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
 
 /** Optimization objective, separate from satisfiability constraints. */
 sealed interface Objective {

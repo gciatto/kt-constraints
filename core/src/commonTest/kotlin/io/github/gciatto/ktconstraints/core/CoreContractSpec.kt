@@ -1,5 +1,7 @@
 package io.github.gciatto.ktconstraints.core
 
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
 import io.github.gciatto.ktconstraints.test.core.exactAlgebraContract
 import io.github.gciatto.ktconstraints.test.core.integerDomainContract
 import io.kotest.core.spec.style.FunSpec

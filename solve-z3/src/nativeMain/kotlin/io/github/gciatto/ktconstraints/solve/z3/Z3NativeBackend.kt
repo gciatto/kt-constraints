@@ -3,15 +3,19 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.solve.CheckStatus
-import io.github.gciatto.ktconstraints.solve.IncrementalConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
+import io.github.gciatto.ktconstraints.solve.incremental.IncrementalConstraintSolver
 import io.github.gciatto.ktconstraints.solve.spi.BackendAvailability
-import io.github.gciatto.ktconstraints.solve.spi.BackendUnavailableException
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
-import io.github.gciatto.ktconstraints.solve.spi.SupportReport
+import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
+import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
+import io.github.gciatto.ktconstraints.solve.z3.port.NativeZ3Library
+import io.github.gciatto.ktconstraints.solve.z3.port.NativeZ3Owner
+import io.github.gciatto.ktconstraints.solve.z3.session.Z3Solver
+import io.github.gciatto.ktconstraints.solve.z3.translation.Z3Support
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.runBlocking
 

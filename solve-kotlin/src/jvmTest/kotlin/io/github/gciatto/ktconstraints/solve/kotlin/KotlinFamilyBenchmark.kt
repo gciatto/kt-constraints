@@ -1,9 +1,9 @@
 package io.github.gciatto.ktconstraints.solve.kotlin
 
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.SolveStatus
-import io.github.gciatto.ktconstraints.test.solve.BenchmarkCatalogue
-import io.github.gciatto.ktconstraints.test.solve.BenchmarkInstance
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkCatalogue
+import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkInstance
 import kotlinx.coroutines.runBlocking
 
 /**

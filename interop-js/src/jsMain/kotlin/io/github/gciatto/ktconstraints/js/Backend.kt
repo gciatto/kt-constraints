@@ -1,9 +1,11 @@
 package io.github.gciatto.ktconstraints.js
 
-import io.github.gciatto.ktconstraints.solve.IncrementalConstraintSolver
+import io.github.gciatto.ktconstraints.js.solve.Solver
+import io.github.gciatto.ktconstraints.js.store.Store
+import io.github.gciatto.ktconstraints.solve.incremental.IncrementalConstraintSolver
 import io.github.gciatto.ktconstraints.solve.minizinc.MiniZincJsBackend
-import io.github.gciatto.ktconstraints.solve.spi.SatisfiabilityStore
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
+import io.github.gciatto.ktconstraints.solve.spi.store.SatisfiabilityStore
 import io.github.gciatto.ktconstraints.solve.z3.Z3JsBackend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.promise

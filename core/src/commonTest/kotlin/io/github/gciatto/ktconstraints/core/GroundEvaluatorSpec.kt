@@ -1,5 +1,27 @@
 package io.github.gciatto.ktconstraints.core
 
+import io.github.gciatto.ktconstraints.core.bool.BoolAnd
+import io.github.gciatto.ktconstraints.core.bool.BoolEquality
+import io.github.gciatto.ktconstraints.core.bool.BoolImplies
+import io.github.gciatto.ktconstraints.core.bool.BoolLiteral
+import io.github.gciatto.ktconstraints.core.bool.BoolNot
+import io.github.gciatto.ktconstraints.core.bool.BoolOr
+import io.github.gciatto.ktconstraints.core.bool.BoolVar
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.evaluation.UndefinedExpressionException
+import io.github.gciatto.ktconstraints.core.evaluation.Valuation
+import io.github.gciatto.ktconstraints.core.global.extensional.Element
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.IntVar
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntDifference
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntNegation
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntProduct
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntSum
+import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
+import io.github.gciatto.ktconstraints.core.integer.relation.IntLessOrEqual
+import io.github.gciatto.ktconstraints.core.integer.relation.IntLessThan
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests

@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.portfolio
 
 import io.github.gciatto.ktconstraints.solve.minizinc.MiniZincJsBackend
-import io.github.gciatto.ktconstraints.solve.spi.SolverRegistry
+import io.github.gciatto.ktconstraints.solve.spi.registry.SolverRegistry
 import io.github.gciatto.ktconstraints.solve.z3.Z3JsBackend
 
 private val miniZincExecutable: String? =

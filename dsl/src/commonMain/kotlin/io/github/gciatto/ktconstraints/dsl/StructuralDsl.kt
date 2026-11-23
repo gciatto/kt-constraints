@@ -3,13 +3,13 @@
 
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.BinPacking
-import io.github.gciatto.ktconstraints.core.Circuit
-import io.github.gciatto.ktconstraints.core.Cumulative
-import io.github.gciatto.ktconstraints.core.IntExpr
-import io.github.gciatto.ktconstraints.core.Inverse
-import io.github.gciatto.ktconstraints.core.NoOverlap2D
-import io.github.gciatto.ktconstraints.core.SubCircuit
+import io.github.gciatto.ktconstraints.core.global.graph.Circuit
+import io.github.gciatto.ktconstraints.core.global.graph.Inverse
+import io.github.gciatto.ktconstraints.core.global.graph.SubCircuit
+import io.github.gciatto.ktconstraints.core.global.scheduling.BinPacking
+import io.github.gciatto.ktconstraints.core.global.scheduling.Cumulative
+import io.github.gciatto.ktconstraints.core.global.scheduling.NoOverlap2D
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
 import org.gciatto.kt.math.BigInteger
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName

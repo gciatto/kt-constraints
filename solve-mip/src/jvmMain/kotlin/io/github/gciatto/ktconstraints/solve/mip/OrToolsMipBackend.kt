@@ -7,10 +7,12 @@ import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.mip.ortools.OrToolsMipSolver
+import io.github.gciatto.ktconstraints.solve.mip.program.MipLowering
 import io.github.gciatto.ktconstraints.solve.spi.BackendAvailability
-import io.github.gciatto.ktconstraints.solve.spi.BackendUnavailableException
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
-import io.github.gciatto.ktconstraints.solve.spi.SupportReport
+import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
+import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 
 /**
  * A MIP engine bundled with OR-Tools, reached through its `MPSolver` wrapper. These routes are distinct from both the

@@ -1,5 +1,16 @@
 package io.github.gciatto.ktconstraints.core
 
+import io.github.gciatto.ktconstraints.core.bool.BoolAnd
+import io.github.gciatto.ktconstraints.core.bool.BoolLiteral
+import io.github.gciatto.ktconstraints.core.bool.BoolToInt
+import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.evaluation.fold
+import io.github.gciatto.ktconstraints.core.global.DecomposableConstraint
+import io.github.gciatto.ktconstraints.core.global.graph.Circuit
+import io.github.gciatto.ktconstraints.core.global.graph.Inverse
+import io.github.gciatto.ktconstraints.core.global.scheduling.Cumulative
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FunSpec

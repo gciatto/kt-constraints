@@ -1,5 +1,18 @@
 package io.github.gciatto.ktconstraints.core
 
+import io.github.gciatto.ktconstraints.core.bool.BoolLiteral
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.global.counting.AllDifferent
+import io.github.gciatto.ktconstraints.core.global.counting.BoolCardinality
+import io.github.gciatto.ktconstraints.core.global.counting.CardinalityRelation
+import io.github.gciatto.ktconstraints.core.global.extensional.Element
+import io.github.gciatto.ktconstraints.core.global.extensional.Table
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntMax
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntMin
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.LinearSum
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe

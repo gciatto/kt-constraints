@@ -1,5 +1,6 @@
 package io.github.gciatto.ktconstraints.solve
 
+import io.github.gciatto.ktconstraints.solve.result.SolveMetadata
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

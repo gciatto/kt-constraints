@@ -1,20 +1,20 @@
 package io.github.gciatto.ktconstraints.model
 
-import io.github.gciatto.ktconstraints.core.BitVecExpr
-import io.github.gciatto.ktconstraints.core.BitVecVar
-import io.github.gciatto.ktconstraints.core.BoolExpr
-import io.github.gciatto.ktconstraints.core.BoolVar
 import io.github.gciatto.ktconstraints.core.Expr
-import io.github.gciatto.ktconstraints.core.IntDomain
-import io.github.gciatto.ktconstraints.core.IntExpr
-import io.github.gciatto.ktconstraints.core.IntVar
-import io.github.gciatto.ktconstraints.core.RealExpr
-import io.github.gciatto.ktconstraints.core.RealVar
 import io.github.gciatto.ktconstraints.core.Sort
 import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.VariableFactory
 import io.github.gciatto.ktconstraints.core.VariableId
-import io.github.gciatto.ktconstraints.core.fold
+import io.github.gciatto.ktconstraints.core.bitvector.BitVecExpr
+import io.github.gciatto.ktconstraints.core.bitvector.BitVecVar
+import io.github.gciatto.ktconstraints.core.bool.BoolExpr
+import io.github.gciatto.ktconstraints.core.bool.BoolVar
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.core.evaluation.fold
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.integer.IntVar
+import io.github.gciatto.ktconstraints.core.real.RealExpr
+import io.github.gciatto.ktconstraints.core.real.RealVar
 import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmStatic
 

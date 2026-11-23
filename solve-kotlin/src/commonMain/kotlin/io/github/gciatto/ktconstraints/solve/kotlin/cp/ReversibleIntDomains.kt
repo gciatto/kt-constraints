@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.kotlin.cp
 
-import io.github.gciatto.ktconstraints.core.IntDomain
-import io.github.gciatto.ktconstraints.core.IntVar
+import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.core.integer.IntVar
 
 /** Exact interval-domain store with change-proportional restoration and detached snapshots. */
 internal class ReversibleIntDomains(

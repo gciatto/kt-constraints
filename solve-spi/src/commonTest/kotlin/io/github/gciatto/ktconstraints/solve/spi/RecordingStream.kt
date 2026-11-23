@@ -1,8 +1,9 @@
 package io.github.gciatto.ktconstraints.solve.spi
 
-import io.github.gciatto.ktconstraints.solve.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
-import io.github.gciatto.ktconstraints.solve.TerminationReason
+import io.github.gciatto.ktconstraints.solve.result.TerminationReason
+import io.github.gciatto.ktconstraints.solve.spi.managed.ManagedSolutionStream
+import io.github.gciatto.ktconstraints.solve.stream.SolutionEvent
 
 internal class RecordingStream(
     events: List<SolutionEvent> = emptyList(),

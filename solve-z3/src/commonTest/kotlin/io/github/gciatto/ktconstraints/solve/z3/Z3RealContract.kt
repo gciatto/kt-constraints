@@ -1,17 +1,17 @@
 package io.github.gciatto.ktconstraints.solve.z3
 
-import io.github.gciatto.ktconstraints.core.IntToReal
 import io.github.gciatto.ktconstraints.core.Rational
-import io.github.gciatto.ktconstraints.core.RealDifference
-import io.github.gciatto.ktconstraints.core.RealEquality
-import io.github.gciatto.ktconstraints.core.RealLessThan
-import io.github.gciatto.ktconstraints.core.RealLiteral
-import io.github.gciatto.ktconstraints.core.RealScale
-import io.github.gciatto.ktconstraints.core.RealSum
+import io.github.gciatto.ktconstraints.core.integer.IntToReal
+import io.github.gciatto.ktconstraints.core.real.RealLiteral
+import io.github.gciatto.ktconstraints.core.real.arithmetic.RealDifference
+import io.github.gciatto.ktconstraints.core.real.arithmetic.RealScale
+import io.github.gciatto.ktconstraints.core.real.arithmetic.RealSum
+import io.github.gciatto.ktconstraints.core.real.relation.RealEquality
+import io.github.gciatto.ktconstraints.core.real.relation.RealLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.solve.CheckStatus
-import io.github.gciatto.ktconstraints.solve.IncrementalConstraintSolver
-import io.github.gciatto.ktconstraints.solve.SolveStatus
+import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
+import io.github.gciatto.ktconstraints.solve.incremental.IncrementalConstraintSolver
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.kotest.core.factory.TestFactory
 import io.kotest.core.spec.style.funSpec
 import io.kotest.matchers.shouldBe

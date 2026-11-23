@@ -3,9 +3,9 @@
 
 package io.github.gciatto.ktconstraints.dsl
 
-import io.github.gciatto.ktconstraints.core.Automaton
-import io.github.gciatto.ktconstraints.core.IntExpr
-import io.github.gciatto.ktconstraints.core.Regular
+import io.github.gciatto.ktconstraints.core.global.extensional.Automaton
+import io.github.gciatto.ktconstraints.core.global.extensional.Regular
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName
 
