@@ -3,7 +3,6 @@ package io.github.gciatto.ktconstraints.interop.examples.howto;
 import io.github.gciatto.ktconstraints.core.Rational;
 import io.github.gciatto.ktconstraints.core.integer.IntVar;
 import io.github.gciatto.ktconstraints.core.real.RealVar;
-import io.github.gciatto.ktconstraints.dsl.Expressions;
 import io.github.gciatto.ktconstraints.interop.BlockingSession;
 import io.github.gciatto.ktconstraints.interop.BlockingSolutionStream;
 import io.github.gciatto.ktconstraints.interop.BlockingSolver;
@@ -38,7 +37,7 @@ public final class SolverTasks {
         ConstraintScope scope = ConstraintScope.empty();
         IntVar x = scope.intVar("x", 0, 3);
         IntVar y = scope.intVar("y", 0, 3);
-        scope.add(Expressions.eq(Expressions.plus(x, y), 3));
+        scope.add(x.plus(y).eq(3));
         scope.maximize(x);
         try (BlockingSolver solver = BlockingSolver.of(new Z3Backend())) {
             CompletionStage<SolveResult> pending = solver.solveAsync(scope.buildModel(), new SolveOptions(1_000L, null));
@@ -79,11 +78,11 @@ public final class SolverTasks {
         // --8<-- [start:session]
         ConstraintScope scope = ConstraintScope.empty();
         IntVar x = scope.intVar("x", 0, 3);
-        scope.add(Expressions.ge(x, 1));
+        scope.add(x.ge(1));
         try (BlockingSolver solver = BlockingSolver.of(new Z3Backend());
              BlockingSession session = solver.openSession(scope.buildModel())) {
             Checkpoint before = session.push();
-            session.add(Expressions.eq(x, 0));
+            session.add(x.eq(0));
             check(session.check().getStatus() == CheckStatus.UNSATISFIABLE, "contradiction");
             session.popTo(before);
             check(session.check().getStatus() == CheckStatus.SATISFIABLE, "restored");
@@ -97,10 +96,10 @@ public final class SolverTasks {
         try (BlockingStore store = BlockingStore.of(new ChocoStore())) {
             IntVar x = store.intVar("x", 0, 3);
             StoreMark before = store.mark();
-            store.constrain(Expressions.eq(x, 2));
-            check(store.entails(Expressions.eq(x, 2)).getValue() == Entailment.ENTAILED, "entailed");
+            store.constrain(x.eq(2));
+            check(store.entails(x.eq(2)).getValue() == Entailment.ENTAILED, "entailed");
             store.undoTo(before);
-            check(store.entails(Expressions.eq(x, 2)).getValue() == Entailment.UNKNOWN, "restored");
+            check(store.entails(x.eq(2)).getValue() == Entailment.UNKNOWN, "restored");
         }
         // --8<-- [end:store]
     }
@@ -110,7 +109,7 @@ public final class SolverTasks {
         // --8<-- [start:real]
         ConstraintScope scope = ConstraintScope.empty();
         RealVar r = scope.realVar("r");
-        scope.add(Expressions.eq(r, JavaNumbers.rational(new BigDecimal("0.1"))));
+        scope.add(r.eq(JavaNumbers.rational(new BigDecimal("0.1"))));
         try (BlockingSolver solver = BlockingSolver.of(new Z3Backend())) {
             SolveResult result = solver.solve(scope.buildModel());
             check(Rational.of(1, 10).equals(result.getAssignment().valueOf(r)), "exact tenth");
@@ -129,7 +128,7 @@ public final class SolverTasks {
         // Pairwise disequalities, unlike allDifferent, make this refutation slow enough to cancel.
         for (int i = 0; i < pigeons.length; i++) {
             for (int j = i + 1; j < pigeons.length; j++) {
-                scope.add(Expressions.neq(pigeons[i], pigeons[j]));
+                scope.add(pigeons[i].neq(pigeons[j]));
             }
         }
         try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {

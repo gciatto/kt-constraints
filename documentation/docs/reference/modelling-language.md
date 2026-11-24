@@ -4,7 +4,7 @@ An **expression** is a symbolic operation or value; its **sort** is its value ty
 or integer. **Linear** expressions combine variables with constant weights; **affine** expressions
 may also add a constant. **AST** means abstract syntax tree: the expression tree stored by the model.
 
-`:core` supplies solver-independent immutable expressions, `:model` supplies snapshots and `ConstraintScope`, and `:dsl` supplies the operators below in `io.github.gciatto.ktconstraints.dsl`. A construct's presence here does not imply support by every [solver route](solvers-and-routes.md).
+`:core` supplies solver-independent immutable expressions, whose interfaces `BoolExpr`, `IntExpr` and `RealExpr` carry the arithmetic, comparison, Boolean and conversion operators below as members. `:model` supplies snapshots and `ConstraintScope`, and `:dsl` supplies the remaining helpers below, such as `sum`, `min` and the global constraints, in `io.github.gciatto.ktconstraints.dsl`. A construct's presence here does not imply support by every [solver route](solvers-and-routes.md).
 
 ## Sorts, variables and constants
 

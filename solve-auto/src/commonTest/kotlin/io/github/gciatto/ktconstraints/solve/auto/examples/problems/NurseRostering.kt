@@ -4,10 +4,7 @@ package io.github.gciatto.ktconstraints.solve.auto.examples.problems
 import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.github.gciatto.ktconstraints.core.integer.IntVar
 import io.github.gciatto.ktconstraints.dsl.count
-import io.github.gciatto.ktconstraints.dsl.eq
-import io.github.gciatto.ktconstraints.dsl.le
 import io.github.gciatto.ktconstraints.dsl.minimizeViolations
-import io.github.gciatto.ktconstraints.dsl.plus
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus

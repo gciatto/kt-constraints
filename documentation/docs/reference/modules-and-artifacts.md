@@ -6,9 +6,9 @@ All modules below are included by `settings.gradle.kts`. Publication eligibility
 
 | Gradle module | Purpose | Platforms | Maven publication | Maven coordinate (without version) |
 |---|---|---|---|---|
-| `:core` | Immutable expressions, sorts, exact numbers, domains and global nodes | Portable | Yes | `io.github.gciatto:kt-constraints-core` |
+| `:core` | Immutable expressions with their operators, sorts, exact numbers, domains and global nodes | Portable | Yes | `io.github.gciatto:kt-constraints-core` |
 | `:model` | Model snapshots, metadata, objectives and ConstraintScope | Portable | Yes | `io.github.gciatto:kt-constraints-model` |
-| `:dsl` | Kotlin operators and Java Expressions static facade | Portable | Yes | `io.github.gciatto:kt-constraints-dsl` |
+| `:dsl` | Kotlin modelling helpers (sums, counting, globals, automata) and the Java `Expressions` static facade | Portable | Yes | `io.github.gciatto:kt-constraints-dsl` |
 | `:solve` | Batch, stream, session, store and result APIs | Portable | Yes | `io.github.gciatto:kt-constraints-solve` |
 | `:solve-spi` | Backend/compiler SPI, support, registry, ranking and managed lifecycle | Portable | Yes | `io.github.gciatto:kt-constraints-solve-spi` |
 | `:solve-z3` | Z3 Java, JS Wasm and Native C API adapters | Portable; runtime varies | Yes | `io.github.gciatto:kt-constraints-solve-z3` |

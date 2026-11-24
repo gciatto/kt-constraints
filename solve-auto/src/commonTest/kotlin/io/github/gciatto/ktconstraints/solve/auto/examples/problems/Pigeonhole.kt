@@ -4,7 +4,6 @@ package io.github.gciatto.ktconstraints.solve.auto.examples.problems
 import io.github.gciatto.ktconstraints.core.bool.BoolExpr
 import io.github.gciatto.ktconstraints.core.integer.IntVar
 import io.github.gciatto.ktconstraints.dsl.allDifferent
-import io.github.gciatto.ktconstraints.dsl.neq
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend

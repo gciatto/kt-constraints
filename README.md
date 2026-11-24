@@ -160,7 +160,7 @@ Java code needs no Kotlin receivers, extension functions or coroutines (`:intero
 ConstraintScope scope = ConstraintScope.empty();
 IntVar x = scope.intVar("x", 1, 10);
 IntVar y = scope.intVar("y", 1, 10);
-scope.add(Expressions.eq(Expressions.plus(x, y), 10));
+scope.add(x.plus(y).eq(10));
 scope.add(Expressions.allDifferent(x, y));
 try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
     SolveResult result = solver.solve(scope.buildModel()); // also solveAsync (CompletableFuture) and solutions (Iterator)
@@ -235,7 +235,7 @@ FlatZinc interchange, Gurobi, and propagating constraint stores beyond Choco.
 
 | Module | Purpose |
 |---|---|
-| `:core`, `:model`, `:dsl` | Expressions, domains, global constraints, immutable models, Kotlin operators and the Java `Expressions` facade |
+| `:core`, `:model`, `:dsl` | Expressions, domains, global constraints, immutable models, expression operators and the Java `Expressions` facade |
 | `:solve`, `:solve-spi` | Solver, session, store and result APIs; the backend contract, capability checks and registry |
 | `:solve-z3`, `:solve-cpsat`, `:solve-choco`, `:solve-mip`, `:solve-minizinc` | Solver adapters |
 | `:solve-kotlin` | Pure-Kotlin solver, on every platform |

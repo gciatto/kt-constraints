@@ -7,7 +7,7 @@
 | Surface | Members / behavior |
 |---|---|
 | `ConstraintScope.empty()` | Fresh builder; `boolVar`, `intVar`, `realVar`, `bitVecVar`, `add`, `project`, `minimize`, `maximize`, `satisfy`, `buildModel` |
-| `io.github.gciatto.ktconstraints.dsl.Expressions` | Static facade for Kotlin DSL functions: arithmetic, comparisons, Boolean operations, conversions, counting, ordering and globals |
+| `io.github.gciatto.ktconstraints.dsl.Expressions` | Static facade for Kotlin DSL functions without a receiver expression: sums, minima/maxima, counting, ordering and globals |
 | Primitive inputs | `scope.intVar("x", 1, 10)` and arithmetic/comparison overloads accept machine integers without truncation |
 | `org.gciatto.kt.math.BigInteger` | Exact model integers and objective values |
 | `JvmUtils.toKotlin(java.math.BigInteger)` | kt-math's lossless conversion into a model integer |
@@ -16,7 +16,7 @@
 | `Rational.parse(text)` | Exact integer, fraction or decimal parsing |
 | `Assignment.intValueOf` / `longValueOf` | Checked machine integer extraction; throws `ArithmeticException` on overflow |
 
-Static expression calls take the receiver as their first argument: `Expressions.plus(x, 3)`, `Expressions.eq(x, y)`, `Expressions.toReal(x)`. Symbolic equality is `Expressions.eq`; object equality remains `equals`. There are no `double` arithmetic overloads. Full core node constructors remain available where the DSL has no wrapper, such as `Table` and bit-vector nodes. See [Modelling language](modelling-language.md).
+Arithmetic, comparison, Boolean and conversion operators are instance methods of the expression interfaces: `x.plus(3)`, `x.minus(y).eq(1)`, `p.and(q)`, `p.not()`, `x.unaryMinus()`, `n.toReal()`, `p.toInt()`. Helpers without a receiver expression are static: `Expressions.sum(terms).le(5)`, `Expressions.allDifferent(x, y)`. Symbolic equality is `eq`; object equality remains `equals`. There are no `double` arithmetic overloads. Full core node constructors remain available where the DSL has no wrapper, such as `Table` and bit-vector nodes. See [Modelling language](modelling-language.md).
 
 ## Solvers and streams
 

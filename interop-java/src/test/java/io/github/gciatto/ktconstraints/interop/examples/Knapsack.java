@@ -28,10 +28,10 @@ public final class Knapsack {
         IntExpr[] valueTerms = new IntExpr[weights.length];
         for (int i = 0; i < take.length; i++) {
             take[i] = scope.intVar("take" + i, 0, 1);
-            weightTerms[i] = Expressions.times(take[i], weights[i]);
-            valueTerms[i] = Expressions.times(take[i], values[i]);
+            weightTerms[i] = take[i].times(weights[i]);
+            valueTerms[i] = take[i].times(values[i]);
         }
-        scope.add(Expressions.le(Expressions.sum(weightTerms), 5));
+        scope.add(Expressions.sum(weightTerms).le(5));
         scope.maximize(Expressions.sum(valueTerms));
         ConstraintModel model = scope.buildModel();
         // --8<-- [end:model]

@@ -9,11 +9,10 @@ import kotlin.js.JsBigInt
 import io.github.gciatto.ktconstraints.dsl.among as dslAmong
 import io.github.gciatto.ktconstraints.dsl.count as dslCount
 import io.github.gciatto.ktconstraints.dsl.globalCardinality as dslGlobalCardinality
-import io.github.gciatto.ktconstraints.dsl.toInt as dslToInt
 
 /** 1 when [condition] holds, 0 otherwise. */
 @JsExport
-fun toInt(condition: BoolExpression): IntExpression = IntExpression(condition.expr.dslToInt())
+fun toInt(condition: BoolExpression): IntExpression = IntExpression(condition.expr.toInt())
 
 /** Number of [operands] equal to [value]. */
 @JsExport

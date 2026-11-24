@@ -11,10 +11,6 @@ import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecComparison
 import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecOperator
 import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecRelation
 import io.github.gciatto.ktconstraints.core.domain.IntDomain
-import io.github.gciatto.ktconstraints.dsl.eq
-import io.github.gciatto.ktconstraints.dsl.ge
-import io.github.gciatto.ktconstraints.dsl.lt
-import io.github.gciatto.ktconstraints.dsl.plus
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolveOptions

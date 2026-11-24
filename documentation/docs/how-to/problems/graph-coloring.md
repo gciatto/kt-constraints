@@ -4,7 +4,7 @@ Assign colours to vertices so that adjacent vertices have different colours, usi
 
 ## 1. Build the model
 
-Use `:dsl` for the operators. The examples solve with `AutoBackend` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
+Use `:dsl` for `sum` and the global constraints; the arithmetic and comparison operators are members of the `:core` expressions. The examples solve with `AutoBackend` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
 Imports used by the example:
 

@@ -1,11 +1,6 @@
 package io.github.gciatto.ktconstraints.c
 
 import io.github.gciatto.ktconstraints.core.bool.BoolExpr
-import io.github.gciatto.ktconstraints.dsl.and
-import io.github.gciatto.ktconstraints.dsl.eq
-import io.github.gciatto.ktconstraints.dsl.implies
-import io.github.gciatto.ktconstraints.dsl.not
-import io.github.gciatto.ktconstraints.dsl.or
 
 /** Immutable Boolean expression, usable as a constraint. */
 class BoolExpression internal constructor(

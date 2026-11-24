@@ -5,9 +5,7 @@ import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntSum
 import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
 import io.github.gciatto.ktconstraints.dsl.automaton
-import io.github.gciatto.ktconstraints.dsl.eq
 import io.github.gciatto.ktconstraints.dsl.minimizeViolations
-import io.github.gciatto.ktconstraints.dsl.plus
 import io.github.gciatto.ktconstraints.dsl.regular
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope

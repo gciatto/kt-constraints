@@ -37,7 +37,7 @@ Create `src/main/java/io/github/gciatto/ktconstraints/interop/examples/Knapsack.
 ```
 
 Each `take` variable is 0 or 1. The first weighted sum enforces capacity; the second is the value to
-maximize. `Expressions.eq` and the comparison methods construct constraints; Java's `==` does not.
+maximize. `eq` and the comparison methods such as `le` construct constraints; Java's `==` does not.
 
 The result is read only after checking `OPTIMAL` and the assignment. `longValueOf` performs an exact
 range-checked conversion. The small item values fit in a Java `long`.

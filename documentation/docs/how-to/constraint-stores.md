@@ -42,7 +42,7 @@ suspending function. The shown imports also cover later Kotlin helpers on this p
     --8<-- "interop-js/src/test/typescript/examples/howto-store.mts:store"
     ```
 
-Kotlin imports `ChocoStore`, `IntDomain` and the DSL operators.
+Kotlin imports `ChocoStore` and `IntDomain`; the operators are members of the expressions.
 Java's `check` helper throws on failure. The TypeScript snippet runs inside a backend
 loaded with `loadZ3`, closed in the enclosing `finally` block. It uses `constant` from the
 [installed package](install.md). The TypeScript example tests entailment and rollback;

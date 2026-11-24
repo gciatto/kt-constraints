@@ -2,23 +2,24 @@
 
 Java entry points; no Kotlin receivers, extension functions or `suspend` calls are needed.
 
-- **Modelling:** `ConstraintScope` as in Kotlin, with expressions from the static facade
-  `io.github.gciatto.ktconstraints.dsl.Expressions` (`plus`, `minus`, `times`, `eq`, `lt`, `and`, `allDifferent`, ...).
+- **Modelling:** `ConstraintScope` as in Kotlin, with operators as instance methods of the expressions
+  (`x.plus(y).eq(10)`, `x.lt(y).and(p)`, `p.not()`, ...) and helpers such as `sum` and `allDifferent` from the static facade
+  `io.github.gciatto.ktconstraints.dsl.Expressions`.
 - **Solving:** `BlockingSolver.of(backend)` owns one solver and offers `solve` (blocking), `solveAsync`
   (`CompletableFuture`; cancelling it cancels the search) and `solutions` (a closeable `Iterator` of solutions,
   then one `SolveCompleted`). Closing it cancels pending futures and open streams.
 - **Numbers** stay exact. Model integers are kt-math `org.gciatto.kt.math.BigInteger`s, but primitives work where
-  they fit: `scope.intVar("x", 1, 10)`, `Expressions.plus(x, 3)`, and `assignment.longValueOf(x)` / `intValueOf(x)`,
+  they fit: `scope.intVar("x", 1, 10)`, `x.plus(3)`, and `assignment.longValueOf(x)` / `intValueOf(x)`,
   which throw `ArithmeticException` rather than truncate. `JavaNumbers` converts `java.math.BigInteger` both ways and
-  `BigDecimal` to `Rational` exactly; `Rational.parse("0.1")` also reads decimals exactly. Real expressions use the
-  same `Expressions` methods (`plus`, `times(x, rational)`, `le`, ...), with `Expressions.toReal(n)` to embed integers. There are deliberately no `double` overloads: binary floating point would either
+  `BigDecimal` to `Rational` exactly; `Rational.parse("0.1")` also reads decimals exactly. Real expressions offer the
+  same methods (`plus`, `times(rational)`, `le`, ...), with `n.toReal()` to embed integers. There are deliberately no `double` overloads: binary floating point would either
   turn `0.1` into a surprising fraction or need rounding.
 
 ```java
 ConstraintScope scope = ConstraintScope.empty();
 IntVar x = scope.intVar("x", 1, 10);
 IntVar y = scope.intVar("y", 1, 10);
-scope.add(Expressions.eq(Expressions.plus(x, y), 10));
+scope.add(x.plus(y).eq(10));
 scope.add(Expressions.allDifferent(x, y));
 try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
     SolveResult result = solver.solve(scope.buildModel());

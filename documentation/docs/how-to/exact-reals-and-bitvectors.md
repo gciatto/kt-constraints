@@ -35,7 +35,7 @@ TypeScript imports `ModelBuilder`, `real` and `loadZ3` from the
 solver and backend closed in `finally`. TypeScript real values return as exact rational text.
 
 For mixed integer/real arithmetic, explicitly embed an integer expression using Kotlin
-`toReal()`, Java `Expressions.toReal(...)` or TypeScript `toReal(...)`. Multiply real
+`toReal()`, Java `n.toReal()` or TypeScript `toReal(...)`. Multiply real
 expressions by rational constants; products of real variables are not offered by the
 linear real API. Real variables are unbounded; add inequalities when you need bounds.
 Optimization objectives remain integer expressions; see [optimization](optimize.md).

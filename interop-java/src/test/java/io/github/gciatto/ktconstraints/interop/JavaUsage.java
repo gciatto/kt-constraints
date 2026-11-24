@@ -46,8 +46,8 @@ public final class JavaUsage {
         ConstraintScope scope = ConstraintScope.empty();
         IntVar x = scope.intVar("x", IntDomain.of(BigInteger.of(1), BigInteger.of(10)));
         IntVar y = scope.intVar("y", IntDomain.of(BigInteger.of(1), BigInteger.of(10)));
-        scope.add(Expressions.eq(Expressions.plus(x, y), 10));
-        scope.add(Expressions.and(Expressions.gt(x, y), Expressions.allDifferent(x, y)));
+        scope.add(x.plus(y).eq(10));
+        scope.add(x.gt(y).and(Expressions.allDifferent(x, y)));
         ConstraintModel model = scope.buildModel();
         try (BlockingSolver solver = BlockingSolver.of(backend)) {
             SolveResult result = solver.solve(model);
@@ -63,8 +63,8 @@ public final class JavaUsage {
         ConstraintScope scope = ConstraintScope.empty();
         IntVar x = scope.intVar("x", IntDomain.of(BigInteger.of(0), BigInteger.of(10)));
         IntVar y = scope.intVar("y", IntDomain.of(BigInteger.of(0), BigInteger.of(10)));
-        scope.add(Expressions.le(Expressions.plus(x, y), 12));
-        scope.maximize(Expressions.minus(Expressions.times(x, 3), y));
+        scope.add(x.plus(y).le(12));
+        scope.maximize(x.times(3).minus(y));
         ConstraintModel model = scope.buildModel();
         try (BlockingSolver solver = BlockingSolver.of(backend)) {
             CompletionStage<SolveResult> stage = solver.solveAsync(model, new SolveOptions(60_000L, null));
@@ -79,7 +79,7 @@ public final class JavaUsage {
         ConstraintScope scope = ConstraintScope.empty();
         IntVar x = scope.intVar("x", IntDomain.of(BigInteger.of(0), BigInteger.of(2)));
         IntVar y = scope.intVar("y", IntDomain.of(BigInteger.of(0), BigInteger.of(2)));
-        scope.add(Expressions.lt(x, y));
+        scope.add(x.lt(y));
         List<String> found = new ArrayList<>();
         SolveCompleted completion = null;
         try (BlockingSolver solver = BlockingSolver.of(backend);
@@ -105,7 +105,7 @@ public final class JavaUsage {
         BigInteger value = JvmUtils.toKotlin(huge);
         ConstraintScope scope = ConstraintScope.empty();
         IntVar x = scope.intVar("x", IntDomain.of(BigInteger.ZERO, value.times(BigInteger.of(2))));
-        scope.add(Expressions.eq(Expressions.minus(x, value), 1));
+        scope.add(x.minus(value).eq(1));
         try (BlockingSolver solver = BlockingSolver.of(backend)) {
             BigInteger result = solver.solve(scope.buildModel()).getAssignment().valueOf(x);
             check(JvmUtils.toJava(result).equals(huge.add(java.math.BigInteger.ONE)), "value " + result);
@@ -121,7 +121,7 @@ public final class JavaUsage {
         }
         for (int i = 0; i < pigeons.size(); i++) {
             for (int j = i + 1; j < pigeons.size(); j++) {
-                BoolExpr distinct = Expressions.neq(pigeons.get(i), pigeons.get(j));
+                BoolExpr distinct = pigeons.get(i).neq(pigeons.get(j));
                 scope.add(distinct);
             }
         }
@@ -159,9 +159,8 @@ public final class JavaUsage {
         ConstraintScope scope = ConstraintScope.empty();
         IntVar n = scope.intVar("n", 0, 100);
         RealVar r = scope.realVar("r");
-        scope.add(Expressions.le(Expressions.plus(Expressions.times(Expressions.toReal(n), Rational.parse("0.1")), r),
-            JavaNumbers.rational(new BigDecimal("1.25"))));
-        scope.add(Expressions.ge(r, Rational.parse("0.5")));
+        scope.add(n.toReal().times(Rational.parse("0.1")).plus(r).le(JavaNumbers.rational(new BigDecimal("1.25"))));
+        scope.add(r.ge(Rational.parse("0.5")));
         scope.maximize(n);
         try (BlockingSolver solver = BlockingSolver.of(backend)) {
             SolveResult result = solver.solve(scope.buildModel());
@@ -176,22 +175,22 @@ public final class JavaUsage {
     public static void sessions(SolverBackend backend) throws Exception {
         ConstraintScope scope = ConstraintScope.empty();
         IntVar x = scope.intVar("x", 0, 10);
-        scope.add(Expressions.gt(x, 3));
+        scope.add(x.gt(3));
         try (BlockingSolver solver = BlockingSolver.of(backend);
              BlockingSession session = solver.openSession(scope.buildModel())) {
             Checkpoint checkpoint = session.push();
-            session.add(Expressions.lt(x, 2));
+            session.add(x.lt(2));
             check(session.check().getStatus() == CheckStatus.UNSATISFIABLE, "contradictory frame");
             session.popTo(checkpoint);
             CheckResult restored = session.check();
             check(restored.getStatus() == CheckStatus.SATISFIABLE, "restored status " + restored.getStatus());
             check(restored.getAssignment().intValueOf(x) > 3, "restored x " + restored.getAssignment().valueOf(x));
-            BoolExpr low = Expressions.lt(x, 1);
-            BoolExpr high = Expressions.gt(x, 8);
+            BoolExpr low = x.lt(1);
+            BoolExpr high = x.gt(8);
             CheckResult assumed = session.check(Arrays.asList(low, high));
             check(assumed.getStatus() == CheckStatus.UNSATISFIABLE, "assumption status " + assumed.getStatus());
             check(assumed.getUnsatCore().contains(low), "core " + assumed.getUnsatCore());
-            CheckResult async = session.checkAsync(Collections.singletonList(Expressions.eq(x, 7)), 60_000L)
+            CheckResult async = session.checkAsync(Collections.singletonList(x.eq(7)), 60_000L)
                 .get(120, TimeUnit.SECONDS);
             check(Integer.valueOf(7).equals(async.getAssignment().intValueOf(x)), "async x " + async.getAssignment().valueOf(x));
         }
@@ -216,15 +215,15 @@ public final class JavaUsage {
         try (BlockingStore store = BlockingStore.of(backing)) {
             IntVar x = store.intVar("x", 0, 9);
             IntVar y = store.intVar("y", 0, 9);
-            Propagation posted = store.constrain(Expressions.lt(Expressions.plus(x, y), 3));
+            Propagation posted = store.constrain(x.plus(y).lt(3));
             check(posted.getStatus() != StoreStatus.FAILED, "post status " + posted.getStatus());
             StoreMark mark = store.mark();
-            store.constrain(Expressions.eq(x, 2));
-            check(store.entails(Expressions.eq(y, 0)).getValue() == Entailment.ENTAILED, "y is forced to 0");
+            store.constrain(x.eq(2));
+            check(store.entails(y.eq(0)).getValue() == Entailment.ENTAILED, "y is forced to 0");
             store.undoTo(mark);
-            Entailment bound = store.entailsAsync(Expressions.lt(x, 3)).get(60, TimeUnit.SECONDS).getValue();
+            Entailment bound = store.entailsAsync(x.lt(3)).get(60, TimeUnit.SECONDS).getValue();
             check(bound == Entailment.ENTAILED, "x < 3 is entailed, got " + bound);
-            BoolExpr impossible = Expressions.gt(x, 5);
+            BoolExpr impossible = x.gt(5);
             check(store.constrainAsync(impossible).get(60, TimeUnit.SECONDS).getStatus() == StoreStatus.FAILED, "x > 5 fails");
             check(store.isFailed(), "store is failed");
             check(store.explain().contains(impossible), "explanation " + store.explain());

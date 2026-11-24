@@ -17,9 +17,6 @@ import org.gciatto.kt.math.BigInteger
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName
 
-/** 1 when this holds, 0 otherwise. */
-fun BoolExpr.toInt(): BoolToInt = BoolToInt(this)
-
 /** Number of [operands] equal to [value]. */
 fun count(
     value: IntExpr,

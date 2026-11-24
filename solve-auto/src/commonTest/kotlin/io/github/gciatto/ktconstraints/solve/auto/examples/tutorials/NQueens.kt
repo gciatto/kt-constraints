@@ -3,10 +3,6 @@ package io.github.gciatto.ktconstraints.solve.auto.examples.tutorials
 // --8<-- [start:imports]
 import io.github.gciatto.ktconstraints.core.integer.IntVar
 import io.github.gciatto.ktconstraints.dsl.allDifferent
-import io.github.gciatto.ktconstraints.dsl.lt
-import io.github.gciatto.ktconstraints.dsl.minus
-import io.github.gciatto.ktconstraints.dsl.neq
-import io.github.gciatto.ktconstraints.dsl.plus
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus

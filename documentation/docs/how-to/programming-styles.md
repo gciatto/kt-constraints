@@ -5,8 +5,9 @@ All builders produce an immutable model that you can pass to a compatible solver
 
 ## Build a model in Kotlin
 
-Use `ConstraintModel.of { }` when the model fits a receiver block. Import the required
-operators from `io.github.gciatto.ktconstraints.dsl`; use symbolic `eq` for a constraint.
+Use `ConstraintModel.of { }` when the model fits a receiver block. Operators such as `+`, `eq`
+and `and` are members of the expression types; import helpers such as `sum` and `allDifferent` from
+`io.github.gciatto.ktconstraints.dsl`. Use symbolic `eq` for a constraint.
 Kotlin `==` tests object equality.
 
 The Kotlin examples are complete helper functions. Call a `suspend` helper from a coroutine or another

@@ -2,9 +2,7 @@ package io.github.gciatto.ktconstraints.solve.auto.examples.problems
 
 // --8<-- [start:imports]
 import io.github.gciatto.ktconstraints.core.integer.IntVar
-import io.github.gciatto.ktconstraints.dsl.le
 import io.github.gciatto.ktconstraints.dsl.sum
-import io.github.gciatto.ktconstraints.dsl.times
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
