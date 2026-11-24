@@ -23,9 +23,10 @@ import io.github.gciatto.ktconstraints.dsl.plus
 import io.github.gciatto.ktconstraints.dsl.times
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 
 suspend fun main() =
-    with(ConstraintScope.empty()) {
+    ConstraintScope.empty {
         val x = intVar("x", 1..9)
         val y = intVar("y", 1..9)
         val z = intVar("z", 1..9)
@@ -35,7 +36,7 @@ suspend fun main() =
         maximize(x * y)
 
         // The automatic backend ranks the solvers bundled for this platform and falls back on failure.
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(build()) } }
+        val result = AutoBackend.load().use { auto -> auto.withSolver { it.solve(buildModel()) } }
         println("${result.status} by ${result.descriptor.id}: ${result.objectiveValue}") // OPTIMAL by cp-sat/direct: 63 (on the JVM)
         println("x = ${result.assignment?.valueOf(x)}, y = ${result.assignment?.valueOf(y)}") // x = 9, y = 7
     }
@@ -120,10 +121,10 @@ are in the [benchmarks reference](https://gciatto.github.io/kt-constraints/refer
 
 ```kotlin
 // 1. Batch: one result, or `solutions(model)`, a cold stream of solutions that ends with a completion event.
-val result = Z3Backend().create().use { it.solve(model) }
+val result = Z3Backend().withSolver { it.solve(model) }
 
 // 2. Incremental, SMT style: assert, set a checkpoint, check under assumptions, roll back.
-Z3Backend().create().use { solver ->
+Z3Backend().createSolver().use { solver ->
     solver.openSession(model).use { session ->
         val checkpoint = session.push()
         session.add(x eq 3)
@@ -162,7 +163,7 @@ IntVar y = scope.intVar("y", 1, 10);
 scope.add(Expressions.eq(Expressions.plus(x, y), 10));
 scope.add(Expressions.allDifferent(x, y));
 try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
-    SolveResult result = solver.solve(scope.build());      // also solveAsync (CompletableFuture) and solutions (Iterator)
+    SolveResult result = solver.solve(scope.buildModel()); // also solveAsync (CompletableFuture) and solutions (Iterator)
     long vx = result.getAssignment().longValueOf(x);       // throws rather than truncates
 }
 ```
@@ -178,8 +179,8 @@ const x = builder.intVar("x", 1n, 10n);
 const y = builder.intVar("y", 1n, 10n);
 builder.add(x.plus(y).eq(constant(10n))).add(allDifferent([x, y]));
 const backend = await loadZ3();                       // Z3 as WebAssembly, in Node or the browser
-const outcome = await backend.create().solve(builder.build());
-console.log(outcome.status, outcome.solution?.valueOf(x));
+const outcome = await backend.createSolver().solve(builder.build());
+console.log(outcome.status, outcome.solution?.intValueOf(x));
 backend.close();
 ```
 

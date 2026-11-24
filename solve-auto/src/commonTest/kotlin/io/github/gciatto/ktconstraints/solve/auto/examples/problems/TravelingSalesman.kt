@@ -8,10 +8,14 @@ import io.github.gciatto.ktconstraints.dsl.element
 import io.github.gciatto.ktconstraints.dsl.sum
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
-import io.github.gciatto.ktconstraints.solve.result.SolveResult
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
+import org.gciatto.kt.math.BigInteger
 // --8<-- [end:imports]
 
 // --8<-- [start:model]
+
+/** Declares the successor of each of four cities on one tour, minimizing its length; returns successors by city. */
 internal fun ConstraintScope.travelingSalesman(distances: List<List<Int>>): List<IntVar> {
     val next = List(4) { intVar("next-$it", 0..3) }
     add(circuit(*next.toTypedArray()))
@@ -25,14 +29,28 @@ internal fun ConstraintScope.travelingSalesman(distances: List<List<Int>>): List
 // --8<-- [end:model]
 
 // --8<-- [start:solve]
-internal suspend fun solveTravelingSalesman(distances: List<List<Int>>): Pair<SolveResult, List<Int>> =
+
+/** The successor of each city on the tour and the tour length. */
+internal data class Tour(
+    val next: List<Int>,
+    val length: BigInteger,
+)
+
+/** Finds a shortest tour visiting every city once. */
+internal suspend fun solveTravelingSalesman(distances: List<List<Int>>): Tour =
     ConstraintScope.empty {
         val next = travelingSalesman(distances)
-        val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
-        println("${result.status}: length = ${result.objectiveValue}")
-        val assignment = requireNotNull(result.assignment)
-        println(next.map { assignment.valueOf(it) })
-        val successors = next.map { requireNotNull(assignment.valueOf(it)).toInt() }
-        result to successors
+        val model = buildModel()
+        AutoBackend.load().use { auto ->
+            auto.withSolver { solver ->
+                val result = solver.solve(model)
+                println("${result.status}: length = ${result.objectiveValue}")
+                check(result.status == SolveStatus.OPTIMAL) { result.toString() }
+                val assignment = checkNotNull(result.assignment)
+                val successors = next.map { checkNotNull(assignment.intValueOf(it)) }
+                println(successors)
+                Tour(successors, checkNotNull(result.objectiveValue))
+            }
+        }
     }
 // --8<-- [end:solve]

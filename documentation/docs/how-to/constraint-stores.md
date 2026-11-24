@@ -11,7 +11,7 @@ solver to own the entire search.
   and checks satisfiability after posts. It answers entailment by checks, while domains stay
   as declared. It closes the solver when its last owning store closes.
 - Java wraps either implementation in `BlockingStore.of(...)`.
-- TypeScript's Z3 backend exposes `backend.openStore()`, a satisfiability store.
+- TypeScript's Z3 backend exposes `backend.createStore()`, a satisfiability store.
 
 ## 2. Post, mark and undo
 

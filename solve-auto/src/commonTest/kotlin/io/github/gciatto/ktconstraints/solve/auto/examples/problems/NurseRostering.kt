@@ -10,11 +10,14 @@ import io.github.gciatto.ktconstraints.dsl.minimizeViolations
 import io.github.gciatto.ktconstraints.dsl.plus
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
-import io.github.gciatto.ktconstraints.solve.result.SolveResult
+import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import org.gciatto.kt.math.BigInteger
 // --8<-- [end:imports]
 
 // --8<-- [start:model]
+
+/** Rosters two nurses over three days, minimizing weighted violated requests; returns work[nurse][day]. */
 internal fun ConstraintScope.nurseRostering(): List<List<IntVar>> {
     val work =
         List(2) { nurse ->
@@ -38,14 +41,28 @@ internal fun ConstraintScope.nurseRostering(): List<List<IntVar>> {
 // --8<-- [end:model]
 
 // --8<-- [start:solve]
-internal suspend fun solveNurseRostering(): Pair<SolveResult, List<List<BigInteger?>>> =
+
+/** Whether each nurse works each day (`work[nurse][day]`) and the penalty of the violated requests. */
+internal data class Roster(
+    val work: List<List<Int>>,
+    val penalty: BigInteger,
+)
+
+/** Finds a roster violating the cheapest requests. */
+internal suspend fun solveNurseRostering(): Roster =
     ConstraintScope.empty {
         val work = nurseRostering()
-        val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
-        println("${result.status}: penalty = ${result.objectiveValue}")
-        val assignment = requireNotNull(result.assignment)
-        val roster = work.map { shifts -> shifts.map { assignment.valueOf(it) } }
-        println(roster)
-        result to roster
+        val model = buildModel()
+        AutoBackend.load().use { auto ->
+            auto.withSolver { solver ->
+                val result = solver.solve(model)
+                println("${result.status}: penalty = ${result.objectiveValue}")
+                check(result.status == SolveStatus.OPTIMAL) { result.toString() }
+                val assignment = checkNotNull(result.assignment)
+                val roster = work.map { shifts -> shifts.map { checkNotNull(assignment.intValueOf(it)) } }
+                println(roster)
+                Roster(roster, checkNotNull(result.objectiveValue))
+            }
+        }
     }
 // --8<-- [end:solve]

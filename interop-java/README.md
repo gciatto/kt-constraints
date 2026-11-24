@@ -21,7 +21,7 @@ IntVar y = scope.intVar("y", 1, 10);
 scope.add(Expressions.eq(Expressions.plus(x, y), 10));
 scope.add(Expressions.allDifferent(x, y));
 try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
-    SolveResult result = solver.solve(scope.build());
+    SolveResult result = solver.solve(scope.buildModel());
     long vx = result.getAssignment().longValueOf(x);
 }
 ```

@@ -29,13 +29,13 @@ val y = scope.intVar("y", 0..10)
 scope.add(IntEquality(IntSum(x, y), IntLiteral(10)))
 scope.maximize(IntProduct(x, y))
 
-val result = KotlinBackend().create().use { solver ->
-    solver.solve(scope.build())
+val result = KotlinBackend().createSolver().use { solver ->
+    solver.solve(scope.buildModel())
 }
 // Mathematical optimum: x = y = 5, objective = 25.
 ```
 
-`create()` returns an `IncrementalConstraintSolver`. Use `solutions(model, options)` for distinct projected
+`createSolver()` returns an `IncrementalConstraintSolver`. Use `solutions(model, options)` for distinct projected
 solutions or improving integer incumbents; use `openSession(model)` for assertion frames, `push`, `popTo`, and
 temporary `check(assumptions, timeoutMillis)`. Sessions answer satisfiability queries; model objectives are used
 by batch solving and optimisation streams.

@@ -64,7 +64,7 @@ suspending function. The shown imports also cover later Kotlin helpers on this p
     --8<-- "interop-js/src/test/typescript/examples/howto-cancel.mts:cancel"
     ```
 
-    The example runs inside a loaded Z3 backend with a solver created by `backend.create()`;
+    The example runs inside a loaded Z3 backend with a solver created by `backend.createSolver()`;
     both are closed in its enclosing `finally` block. For a running search, call
     `controller.abort()` from your cancel button or another application event.
 

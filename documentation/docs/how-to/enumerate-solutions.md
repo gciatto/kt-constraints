@@ -2,9 +2,9 @@
 
 ## 1. Use a solver with enumeration support
 
-`AutoBackend.load().create()` can enumerate directly: `solutions(model)` delegates to the best
-eligible route declaring `SolverCapability.ENUMERATION`. The complete Kotlin example below
-includes model construction and resource cleanup. To choose a specific route instead, require
+A solver of `AutoBackend.load()` can enumerate directly: `solutions(model)` delegates to the best
+eligible route declaring `SolverCapability.ENUMERATION`. Keep the backend, the solver and the stream in
+`use` blocks (or `withSolver`) so all three are released; the complete Kotlin example below does so. To choose a specific route instead, require
 that capability when [selecting a backend](choose-a-solver.md); TypeScript callers inspect
 the backend’s `capabilities`. A stream API alone does not promise exhaustive enumeration.
 Optimization streams can report improving incumbents; mixed-integer programming (MIP) routes
@@ -40,13 +40,15 @@ suspending function. The shown imports also cover later Kotlin helpers on this p
     --8<-- "interop-js/src/test/typescript/examples/howto-enumerate.mts:enumerate"
     ```
 
-Kotlin imports the stream event types from `io.github.gciatto.ktconstraints.solve.stream`.
+Kotlin reads the stream with `forEachSolution` from `io.github.gciatto.ktconstraints.solve.stream`: it passes
+each `SolutionFound` to the block and returns the final `SolveResult`, whose termination reason the example
+checks before trusting the list as complete.
 TypeScript imports `ModelBuilder` and `loadZ3` from the
 [installed package](install.md); its example runs inside a solver lifetime enclosed by
 `try/finally`, which closes both solver and backend.
 
 `SolutionFound` carries an assignment. `SolveCompleted` carries the final result;
-Kotlin `next()` returns `null` after that event. Java exposes the same distinction through
+Kotlin `next()` returns `null` after that event, and `forEachSolution` hides this loop. Java exposes the same distinction through
 an iterator. TypeScript events carry either `solution` or the final `outcome`.
 A completion event can describe timeout or cancellation, so inspect its termination reason
 before treating the outputs as exhaustive. Solution order is not specified here.

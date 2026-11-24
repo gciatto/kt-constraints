@@ -7,11 +7,14 @@ import io.github.gciatto.ktconstraints.dsl.sum
 import io.github.gciatto.ktconstraints.dsl.times
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
-import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
+import org.gciatto.kt.math.BigInteger
 // --8<-- [end:imports]
 
 // --8<-- [start:model]
+
+/** Declares a zero-one take decision per item, maximizing value within [capacity]; returns the decisions by item. */
 internal fun ConstraintScope.knapsack(
     weights: List<Int>,
     values: List<Int>,
@@ -27,18 +30,32 @@ internal fun ConstraintScope.knapsack(
 // --8<-- [end:model]
 
 // --8<-- [start:solve]
+
+/** The indices of the selected items and their total value. */
+internal data class Selection(
+    val items: List<Int>,
+    val value: BigInteger,
+)
+
+/** Finds the most valuable selection of items that fits the knapsack. */
 internal suspend fun solveKnapsack(
     weights: List<Int>,
     values: List<Int>,
     capacity: Int,
-): Pair<SolveResult, List<Int>> =
+): Selection =
     ConstraintScope.empty {
         val take = knapsack(weights, values, capacity)
-        val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
-        check(result.status == SolveStatus.OPTIMAL)
-        val assignment = requireNotNull(result.assignment)
-        val selected = take.indices.filter { assignment.intValueOf(take[it]) == 1 }
-        println("Items: $selected; value: ${result.objectiveValue}")
-        result to selected
+        val model = buildModel()
+        AutoBackend.load().use { auto ->
+            auto.withSolver { solver ->
+                val result = solver.solve(model)
+                check(result.status == SolveStatus.OPTIMAL) { result.toString() }
+                val assignment = checkNotNull(result.assignment)
+                val items = take.indices.filter { assignment.intValueOf(take[it]) == 1 }
+                val selection = Selection(items, checkNotNull(result.objectiveValue))
+                println("Items: ${selection.items}; value: ${selection.value}")
+                selection
+            }
+        }
     }
 // --8<-- [end:solve]

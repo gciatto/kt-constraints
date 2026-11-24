@@ -11,7 +11,7 @@ on GitHub Packages as `@gciatto/kt-constraints-interop-js` (see [Installation](h
   `regular` with `new Automaton(initial, accepting).transition(from, symbol, to)`, `binPacking`, `noOverlap2D`,
   `nValue`, and `builder.minimizeViolations(constraints, weights)` for soft constraints. `build()` returns an immutable `Model`.
 - **Solving:** `await loadZ3()` starts the z3-solver Wasm route (Node, or cross-origin-isolated browsers).
-  `backend.create()` gives a `Solver`:
+  `backend.createSolver()` gives a `Solver`:
   - `solve(model, timeoutMillis?, solutionLimit?, signal?)` returns a `Promise<Outcome>`; aborting the `AbortSignal`
     cancels the search and rejects the promise;
   - `solutions(model, timeoutMillis?, solutionLimit?)` is an `AsyncIterable` of events, each carrying a `solution` or,
@@ -34,9 +34,9 @@ const x = builder.intVar("x", 1n, 10n);
 const y = builder.intVar("y", 1n, 10n);
 builder.add(x.plus(y).eq(constant(10n))).add(allDifferent([x, y]));
 const backend = await loadZ3();
-const solver = backend.create();
+const solver = backend.createSolver();
 const outcome = await solver.solve(builder.build());
-console.log(outcome.status, outcome.solution?.valueOf(x));
+console.log(outcome.status, outcome.solution?.intValueOf(x));
 backend.close();
 ```
 
@@ -51,7 +51,7 @@ entries run:
 - `browser.mts` runs them in Chromium on Z3 and Chuffed. Run it with
   `INTEROP_BROWSER_TEST=true CHROME_BIN=... ./gradlew :interop-js:typescriptBrowserUsageTest`.
 
-Constraint stores: `backend.openStore()` returns a `Store` (Z3 Wasm only; other routes refuse) with `intVar`,
+Constraint stores: `backend.createStore()` returns a `Store` (Z3 Wasm only; other routes refuse) with `intVar`,
 `constrain`, `mark`/`undoTo`, `entails`, `explain` (returning the caller's own expressions), `domain` and `fork`.
 
 Not yet exposed: bit-vector expressions and store residual projection. The declarations also list kt-math's own exported number API, which this

@@ -1,6 +1,5 @@
 package io.github.gciatto.ktconstraints.solve.auto.examples.problems
 
-import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
@@ -17,18 +16,17 @@ class TravelingSalesmanSpec :
                     listOf(9, 3, 0, 2),
                     listOf(3, 9, 2, 0),
                 )
-            val (result, successors) = solveTravelingSalesman(distances)
+            val tour = solveTravelingSalesman(distances)
             // --8<-- [end:example]
-            result.status shouldBe SolveStatus.OPTIMAL
-            result.objectiveValue shouldBe BigInteger.of(10)
+            tour.length shouldBe BigInteger.of(10)
             val visited = mutableSetOf<Int>()
             var city = 0
             repeat(4) {
                 visited.add(city) shouldBe true
-                city = successors[city]
+                city = tour.next[city]
             }
             city shouldBe 0
             visited.size shouldBe 4
-            successors.indices.sumOf { distances[it][successors[it]] } shouldBe 10
+            tour.next.indices.sumOf { distances[it][tour.next[it]] } shouldBe 10
         }
     })

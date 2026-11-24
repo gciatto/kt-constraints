@@ -17,7 +17,7 @@ API (Java 17). Availability is an actual startup solve. Other Kotlin targets hav
 - No propagating or incremental sessions yet.
 
 ```kotlin
-ChocoBackend().create().use { solver ->
+ChocoBackend().createSolver().use { solver ->
     val result = solver.solve(model)
 }
 ```

@@ -17,7 +17,7 @@ C API route, which stays reserved in `:solve-highs`.
   HiGHS stop exposes no incumbent through OR-Tools, so it reports `UNKNOWN`.
 
 ```kotlin
-OrToolsMipBackend.scip().create().use { solver ->
+OrToolsMipBackend.scip().createSolver().use { solver ->
     val result = solver.solve(model)
 }
 ```

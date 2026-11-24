@@ -9,7 +9,7 @@ and backend publication remains disabled.
 val backend = MiniZincBackend(MiniZincEngine.CHUFFED, executable = "/path/to/minizinc")
 val availability = backend.availability()
 val support = backend.support(model)
-backend.create().use { solver ->
+backend.createSolver().use { solver ->
     val result = solver.solve(model)
 }
 ```
@@ -73,11 +73,11 @@ Node invokes an installed Gecode configuration through a native CLI.
 ```kotlin
 // Kotlin/JS browser; serve the official package's three assets from your web server.
 MiniZincJsBackend.loadBrowser(workerURL, wasmURL, dataURL).use { backend ->
-    backend.create().use { solver -> solver.solve(model) }
+    backend.createSolver().use { solver -> solver.solve(model) }
 }
 // Kotlin/JS on Node; executes a native CLI, not browser Wasm.
 MiniZincJsBackend.loadNode("/path/to/minizinc").use { backend ->
-    backend.create().use { solver -> solver.solve(model) }
+    backend.createSolver().use { solver -> solver.solve(model) }
 }
 ```
 

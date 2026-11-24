@@ -3,7 +3,7 @@
 `AutoBackend`: a solver backend that picks, per model, among other routes. Use it like any other backend:
 
 ```kotlin
-AutoBackend.load().use { auto -> auto.create().use { it.solve(model) } }
+AutoBackend.load().use { auto -> auto.withSolver { it.solve(model) } }
 ```
 
 - `AutoBackend.load()` registers the routes bundled for the current platform:

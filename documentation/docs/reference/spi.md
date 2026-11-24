@@ -1,6 +1,6 @@
 # Backend SPI
 
-The service provider interface (SPI) in `:solve-spi` connects solver-independent models to engine adapters. Start with [Add a backend](../how-to/contributing/add-a-backend.md) for the implementation workflow, and [Kotlin solver API](solver-api.md#backends-capabilities-and-availability) for `SolverBackend`, `BackendAvailability`, `SupportReport`, descriptors and registry selection. The [generated API](/kt-constraints/api/index.html) lists exhaustive signatures.
+The service provider interface (SPI) in `:solve-spi` connects solver-independent models to engine adapters. Start with [Add a backend](../how-to/contributing/add-a-backend.md) for the implementation workflow, and [Kotlin solver API](solver-api.md#backends-capabilities-and-availability) for `SolverBackend`, `BackendAvailability`, `SupportReport`, descriptors and registry selection. A backend creates solvers with `createSolver()` and is `AutoCloseable`: override `close()` only when it owns a runtime to release. The [generated API](/kt-constraints/api/index.html) lists exhaustive signatures.
 
 ## Compilation and errors
 

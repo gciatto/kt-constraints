@@ -16,7 +16,7 @@ and startup solve. Other Kotlin targets have no backend in this module.
 - No incremental sessions or scheduling globals yet.
 
 ```kotlin
-CpSatBackend().create().use { solver ->
+CpSatBackend().createSolver().use { solver ->
     val result = solver.solve(model)
 }
 ```

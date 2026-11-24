@@ -17,7 +17,7 @@ Direct Z3 routes, distinct from every MiniZinc route:
 Both share one translation, stream and session implementation behind an internal platform port.
 
 ```kotlin
-Z3Backend().create().use { solver ->
+Z3Backend().createSolver().use { solver ->
     val result = solver.solve(model)                 // batch: satisfy, optimize, enumerate
     solver.openSession(model).use { session ->       // incremental
         val checkpoint = session.push()
@@ -47,14 +47,21 @@ Z3Backend().create().use { solver ->
   for one check. Capabilities: incremental assertions, backtracking, assumptions and unsat
   cores. Repeated checks are not domain propagation or entailment.
 
+From common code, `Z3.loadBackend()` loads whichever of these routes the running platform has; close the returned
+backend to release its runtime:
+
+```kotlin
+Z3.loadBackend().use { z3 -> z3.withSolver { solver -> solver.solve(model) } }
+```
+
 ```kotlin
 // Kotlin/JS: owns the module's worker threads; close it to terminate them.
-Z3JsBackend.load().use { backend -> backend.create().use { solver -> solver.solve(model) } }
+Z3JsBackend.load().use { backend -> backend.createSolver().use { solver -> solver.solve(model) } }
 ```
 
 ```kotlin
 // Kotlin/Native: pass the library path explicitly or set KT_CONSTRAINTS_Z3_LIBRARY.
-Z3NativeBackend("/opt/z3/lib/libz3.so").create().use { solver -> solver.solve(model) }
+Z3NativeBackend("/opt/z3/lib/libz3.so").createSolver().use { solver -> solver.solve(model) }
 ```
 
 ```bash

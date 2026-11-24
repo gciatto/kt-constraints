@@ -10,8 +10,6 @@ cannot represent faithfully instead of approximating it.
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:imports"
 
---8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:variables"
-
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:model"
 
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:solve"

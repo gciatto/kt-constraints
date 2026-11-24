@@ -127,10 +127,14 @@ Scheduling intervals are half-open: an end may equal another start. Parallel lis
 | API | Effect |
 |---|---|
 | `ConstraintScope.empty()` | Fresh mutable builder with independent variable identities |
+| `ConstraintScope.empty { ... }` | Run the block on a fresh scope as receiver and return the block's result, such as variable handles or a solve outcome |
+| `ConstraintScope.of(model)`, `of(scope)` | Fresh scope seeded with a model's, or another scope's current, variables, constraints, projection and objective; the variables keep their identity. Both accept a trailing receiver block, like `empty { ... }` |
 | `ConstraintModel.of { ... }` | Build a model using a fresh scope as a Kotlin receiver |
+| `ConstraintModel.empty()` | Model with no variables, constraints or objective |
+| `model.extend { ... }` | New model holding `model` plus what the block adds; `model` is unchanged. An explicit projection is kept; otherwise new variables become outputs too |
 | `add(constraint, name, annotations, source)` | Assert a Boolean expression; optional unique name, string annotations and `SourceLocation` |
 | `project(*variables)` | Ordered output subset; defaults to all variables; an explicit empty projection is valid |
-| `build()` | Detached immutable snapshot |
+| `buildModel()` | Detached immutable snapshot |
 | `minimize(expression)` / `Objective.Minimize` | Minimize one integer expression, replacing the objective |
 | `maximize(expression)` / `Objective.Maximize` | Maximize one integer expression, replacing the objective |
 | `satisfy()` / null objective | Clear optimization and select satisfaction |

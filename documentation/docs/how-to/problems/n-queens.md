@@ -34,7 +34,7 @@ Alternatively, add two inequalities for every pair of columns:
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:pairwise"
 ```
 
-Inside `with(ConstraintScope.empty())`, call `queensBoard` and pass its returned rows to either helper. The encodings describe the same legal boards;
+Inside `ConstraintScope.empty { }`, call `queensBoard` and pass its returned rows to either helper. The encodings describe the same legal boards;
 the pairwise version adds N(N−1) diagonal inequalities. It still uses a global `allDifferent` for rows.
 The global version exposes the diagonal structure to the backend. Actual propagation and performance depend
 on the route; see [Global constraints](../../explanation/global-constraints.md).
@@ -56,8 +56,9 @@ full rotation/reflection class. Leave it out when counting all boards.
 
 ## 4. Enumerate and count complete solutions
 
-`AutoBackend` delegates enumeration to the best eligible route supporting `ENUMERATION`. Consume its solution
-stream through the completion event. Keep the backend runtime, solver and stream open until consumption finishes:
+`AutoBackend` delegates enumeration to the best eligible route supporting `ENUMERATION`. Read its solution
+stream with `forEachSolution`, which returns the terminal result. Keep the backend runtime, solver and stream open
+until consumption finishes:
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:enumerate"
@@ -71,7 +72,7 @@ The tests assert two boards for size 4 with either diagonal encoding, one with r
 boards for size 3. They compare boards independently of search order. No output projection is applied, so
 each assignment contains every queen variable.
 
-The completion checks reject a timeout, cancellation or solution limit as an exhaustive count. This helper
-stores every board in memory; for larger instances, increment a counter in the `SolutionFound` branch instead.
+The termination check rejects a timeout, cancellation or solution limit as an exhaustive count. This helper
+stores every board in memory; for larger instances, increment a counter in the `forEachSolution` block instead.
 See [Enumerate solutions](../enumerate-solutions.md) for projection and bounded searches, and
 [Set limits and cancel](../limits-and-cancellation.md) for stopping long runs.

@@ -6,7 +6,7 @@
 
 | Surface | Members / behavior |
 |---|---|
-| `ConstraintScope.empty()` | Fresh builder; `boolVar`, `intVar`, `realVar`, `bitVecVar`, `add`, `project`, `minimize`, `maximize`, `satisfy`, `build` |
+| `ConstraintScope.empty()` | Fresh builder; `boolVar`, `intVar`, `realVar`, `bitVecVar`, `add`, `project`, `minimize`, `maximize`, `satisfy`, `buildModel` |
 | `io.github.gciatto.ktconstraints.dsl.Expressions` | Static facade for Kotlin DSL functions: arithmetic, comparisons, Boolean operations, conversions, counting, ordering and globals |
 | Primitive inputs | `scope.intVar("x", 1, 10)` and arithmetic/comparison overloads accept machine integers without truncation |
 | `org.gciatto.kt.math.BigInteger` | Exact model integers and objective values |
@@ -22,7 +22,7 @@ Static expression calls take the receiver as their first argument: `Expressions.
 
 | Type | Public surface |
 |---|---|
-| `BlockingSolver` | Static `of(SolverBackend)` creates a solver; `of(ConstraintSolver)` takes ownership. `getDescriptor`, `solve(model, options)`, `solveAsync(model, options)`, `solutions(model, options)`, `openSession(model)`, `close` |
+| `BlockingSolver` | Static `of(SolverBackend)` creates a solver with `createSolver()` but does not close the backend, so close a backend that owns a runtime yourself; `of(ConstraintSolver)` takes ownership. `getDescriptor`, `solve(model, options)`, `solveAsync(model, options)`, `solutions(model, options)`, `openSession(model)`, `close` |
 | `BlockingSolutionStream` | `Iterator<SolutionEvent>` and `AutoCloseable`; `hasNext`, `next`, `getTerminalResult`, `cancel`, `close` |
 | `BlockingSession` | `getDescriptor`, `add`, `push`, `popTo`, `check(assumptions, timeoutMillis)`, `checkAsync(assumptions, timeoutMillis)`, `close` |
 

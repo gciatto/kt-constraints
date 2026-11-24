@@ -36,12 +36,13 @@ No batch descriptor advertises `DOMAIN_PROPAGATION` or `ENTAILMENT`. Those belon
 
 ## Concrete backend entry points
 
-All backend classes implement `availability`, `support`, `create`, `isAvailable` and `descriptor` through the [backend contract](solver-api.md#backends-capabilities-and-availability).
+All backend classes implement `availability`, `support`, `createSolver`, `isAvailable`, `descriptor` and `close` through the [backend contract](solver-api.md#backends-capabilities-and-availability).
 
 | Entry point | Additional public surface |
 |---|---|
-| `Z3Backend()`, `Z3NativeBackend(libraryPath)` | `create()` returns `IncrementalConstraintSolver`; companion `DESCRIPTOR` identifies the route before creating a solver |
-| `Z3JsBackend.load()` | Suspending loader; `create()` returns `IncrementalConstraintSolver`. `DESCRIPTOR` identifies `z3/wasm`; idempotent `close()` closes created solvers and terminates runtime workers |
+| `Z3.loadBackend()` | Suspending common entry point: returns `Z3Backend` on the JVM, `Z3NativeBackend` on Kotlin/Native and `Z3JsBackend` on JavaScript. Close the returned backend to release its runtime |
+| `Z3Backend()`, `Z3NativeBackend(libraryPath)` | `createSolver()` returns `IncrementalConstraintSolver`; companion `DESCRIPTOR` identifies the route before creating a solver |
+| `Z3JsBackend.load()` | Suspending loader; `createSolver()` returns `IncrementalConstraintSolver`. `DESCRIPTOR` identifies `z3/wasm`; idempotent `close()` closes created solvers and terminates runtime workers |
 | `CpSatBackend(workers, seed)` | Readable `workers` and `seed` defaults; companion `DESCRIPTOR` identifies `cp-sat/direct` |
 | `ChocoBackend()` | Companion `DESCRIPTOR` identifies batch `choco/direct` |
 | `ChocoStore()` | Companion `DESCRIPTOR` identifies its separate store capabilities under `choco/direct`; operations follow the [store contract](solver-api.md#constraint-stores) |

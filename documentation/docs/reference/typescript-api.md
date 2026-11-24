@@ -39,7 +39,7 @@ Collections are arrays; integer sizes, symbols and capacities use `bigint`. Stat
 | `loadMiniZincNode(executable?)` | `Backend` for installed Gecode, `gecode/minizinc-js-cli`; default executable `minizinc` |
 | `loadMiniZincBrowser(workerURL, wasmURL, dataURL)` | `Backend` for Chuffed, `chuffed/minizinc-wasm`; asset URLs must be absolute |
 
-`Backend.id` is the route ID; `Backend.capabilities` is an array of capability enum names. `create()` returns a `Solver`; `openStore()` returns a Z3 satisfiability `Store` and rejects other routes. `close()` releases the loaded runtime. Close child solvers/stores and then their backend. MiniZinc permits one owning JS backend at a time.
+`Backend.id` is the route ID; `Backend.capabilities` is an array of capability enum names. `createSolver()` returns a `Solver`; `createStore()` returns a Z3 satisfiability `Store` and rejects other routes. `close()` releases the loaded runtime. Close child solvers/stores and then their backend. MiniZinc permits one owning JS backend at a time.
 
 Browser Z3 requires cross-origin isolation: `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`. Load `z3-built.js` as a classic script before the application bundle, with `z3-built.wasm` beside it. Bundlers must map Node's `global` to `globalThis` (for esbuild, `--define:global=globalThis`). This is Kotlin/JS invoking solver Wasm, not a Kotlin/Wasm target.
 
@@ -63,7 +63,7 @@ Timeouts and solution counts use machine numbers; null/omitted values use defaul
 | `Outcome.solution` | Nullable validated `Solution` |
 | `Outcome.objective`, `Outcome.bestBound` | Nullable exact `bigint` values |
 | `Solution.objective` | Nullable exact incumbent objective |
-| `Solution.valueOf(variable)` | Nullable integer `bigint` |
+| `Solution.intValueOf(variable)` | Nullable integer `bigint` |
 | `Solution.boolValueOf(variable)` | Nullable Boolean |
 | `Solution.realValueOf(variable)` | Nullable exact `p` or `p/q` text |
 

@@ -64,7 +64,7 @@ You should see:
 4 3 2 1
 ```
 
-`solution.valueOf(cell)` returns `bigint`, and `String` converts it for display. Keep values as
+`solution.intValueOf(cell)` returns `bigint`, and `String` converts it for display. Keep values as
 `bigint` when doing integer calculations; converting them through `number` can lose precision.
 The satisfaction solve reports `FEASIBLE`; it does not prove that the puzzle has a unique solution.
 

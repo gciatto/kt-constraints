@@ -8,7 +8,7 @@ This page explains the implementation and the consequences of its choices. For o
 
 ## A portable route within the solver architecture
 
-[`KotlinBackend`][backend] implements `SolverBackend`. Its descriptor distinguishes the engine `kotlin` from the execution route `direct`. `availability()` reports available without probing an installation; `support(model, options)` delegates to [`KotlinSupport`][support]. `create()` returns an `IncrementalConstraintSolver` implemented by [`KotlinSolver`][solver].
+[`KotlinBackend`][backend] implements `SolverBackend`. Its descriptor distinguishes the engine `kotlin` from the execution route `direct`. `availability()` reports available without probing an installation; `support(model, options)` delegates to [`KotlinSupport`][support]. `createSolver()` returns an `IncrementalConstraintSolver` implemented by [`KotlinSolver`][solver].
 
 The descriptor advertises satisfaction, optimization, enumeration, incremental assertions, backtracking, assumptions, integer arithmetic, real arithmetic, bit-vectors, global constraints and unsat cores. These are capability categories, not promises to accept every possible expression of those kinds. Support inspection walks variables, constraints, the objective and decompositions, reporting unsupported expression classes and the decompositions it will use. Unsupported nodes are rejected even inside an inactive Boolean branch. A structurally supported model can still exceed compilation or search limits.
 

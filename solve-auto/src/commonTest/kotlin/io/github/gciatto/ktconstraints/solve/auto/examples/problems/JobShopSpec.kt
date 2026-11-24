@@ -1,7 +1,5 @@
 package io.github.gciatto.ktconstraints.solve.auto.examples.problems
 
-import io.github.gciatto.ktconstraints.dsl.plus
-import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
@@ -10,10 +8,8 @@ import org.gciatto.kt.math.BigInteger
 class JobShopSpec :
     FunSpec({
         test("minimize the makespan of two jobs on two machines") {
-            val (result, starts) = solveJobShop()
-            result.status shouldBe SolveStatus.OPTIMAL
-            result.objectiveValue shouldBe BigInteger.of(3)
-            starts shouldBe
-                listOf(BigInteger.ZERO, BigInteger.TWO, BigInteger.ZERO, BigInteger.TWO)
+            val schedule = solveJobShop()
+            schedule.makespan shouldBe BigInteger.of(3)
+            schedule.starts shouldBe mapOf("A-machine-0" to 0, "A-machine-1" to 2, "B-machine-1" to 0, "B-machine-0" to 2)
         }
     })

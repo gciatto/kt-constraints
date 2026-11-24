@@ -19,7 +19,7 @@ Create a bin index per item and a load variable per candidate bin. The load doma
 ```
 
 The builder preserves the global by default. Pass `useDecomposition = true` to post its exact variable-free
-decomposition instead. Both forms are tested. `nValue(bins)` minimizes distinct occupied bins, including
+decomposition instead. Both forms are tested. `nValue(binOf)` minimizes distinct occupied bins, including
 bins that hold only zero-sized items.
 
 ## 2. Solve and read the result
@@ -51,7 +51,7 @@ The solve call suspends; run it in a coroutine. See [Results and statuses](../..
 
 - For feasibility with a fixed number of bins, create only that many load variables, restrict bin indices accordingly, and omit the objective.
 - For different capacities, give each load its own upper bound.
-- For positive-sized items, counting positive loads is another occupied-bin objective. With zero-sized items, `nValue(bins)` also counts bins holding only those items; choose the definition your application needs.
+- For positive-sized items, counting positive loads is another occupied-bin objective. With zero-sized items, `nValue(binOf)` also counts bins holding only those items; choose the definition your application needs.
 - For identical bins, fixing the first item’s bin to 0 removes some label symmetry. Do not impose label symmetry when capacities or costs distinguish bins.
 
 See the [modelling language reference](../../reference/modelling-language.md), [global constraints explanation](../../explanation/global-constraints.md), and [API reference](/kt-constraints/api/index.html) for the operators and their semantics.

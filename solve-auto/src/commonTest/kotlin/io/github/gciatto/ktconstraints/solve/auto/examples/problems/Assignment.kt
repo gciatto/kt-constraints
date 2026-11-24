@@ -8,11 +8,14 @@ import io.github.gciatto.ktconstraints.dsl.element
 import io.github.gciatto.ktconstraints.dsl.sum
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
-import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
+import org.gciatto.kt.math.BigInteger
 // --8<-- [end:imports]
 
 // --8<-- [start:model]
+
+/** Declares one task per worker, all distinct, minimizing the total cost; returns the tasks in worker order. */
 internal fun ConstraintScope.assignment(costs: List<List<Int>>): List<IntVar> {
     val task = List(costs.size) { intVar("task-$it", costs.indices) }
     add(allDifferent(*task.toTypedArray()))
@@ -26,14 +29,28 @@ internal fun ConstraintScope.assignment(costs: List<List<Int>>): List<IntVar> {
 // --8<-- [end:model]
 
 // --8<-- [start:solve]
-internal suspend fun solveAssignment(costs: List<List<Int>>): Pair<SolveResult, List<Int>> =
+
+/** The task of each worker, in worker order, and the total cost. */
+internal data class Staffing(
+    val tasks: List<Int>,
+    val cost: BigInteger,
+)
+
+/** Finds a minimum-cost assignment of workers to tasks. */
+internal suspend fun solveAssignment(costs: List<List<Int>>): Staffing =
     ConstraintScope.empty {
         val task = assignment(costs)
-        val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
-        check(result.status == SolveStatus.OPTIMAL)
-        val assignment = requireNotNull(result.assignment)
-        val tasks = task.map { requireNotNull(assignment.intValueOf(it)) }
-        println("Tasks by worker: $tasks; cost: ${result.objectiveValue}")
-        result to tasks
+        val model = buildModel()
+        AutoBackend.load().use { auto ->
+            auto.withSolver { solver ->
+                val result = solver.solve(model)
+                check(result.status == SolveStatus.OPTIMAL) { result.toString() }
+                val assignment = checkNotNull(result.assignment)
+                val tasks = task.map { checkNotNull(assignment.intValueOf(it)) }
+                val staffing = Staffing(tasks, checkNotNull(result.objectiveValue))
+                println("Tasks by worker: ${staffing.tasks}; cost: ${staffing.cost}")
+                staffing
+            }
+        }
     }
 // --8<-- [end:solve]

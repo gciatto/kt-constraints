@@ -84,5 +84,5 @@ name; installed applications use `@gciatto/kt-constraints-interop-js`.
 ```
 
 The worker loads from a blob, so pass absolute URLs. The loaded route is `chuffed/minizinc-wasm`.
-Create a solver with `miniZinc.create()`, solve your model in `try/finally`, then close the solver
+Create a solver with `miniZinc.createSolver()`, solve your model in `try/finally`, then close the solver
 and `miniZinc`. The boundary test exercises this loader and cleanup in Chromium.

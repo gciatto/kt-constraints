@@ -18,7 +18,7 @@ suspending function. The shown imports also cover later Kotlin helpers on this p
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStyles.kt:receiver"
 ```
 
-Use `with(ConstraintScope.empty()) { ... }` and `build()` when you need to retain variable references for
+Use `ConstraintScope.empty { ... }` and `buildModel()` when you need to retain variable references for
 reading assignments, or assemble the model across several functions. You can construct
 expression nodes explicitly:
 

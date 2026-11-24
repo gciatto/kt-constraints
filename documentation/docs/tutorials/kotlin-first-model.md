@@ -53,11 +53,12 @@ The scope collects declarations and constraints. Leading letters have domain `1.
 `allDifferent` prevents letters from sharing a digit. `+` and `*` construct symbolic expressions, and `eq`
 constructs symbolic equality. Kotlin's `==` compares objects and does not add a constraint.
 
-## 3. Solve and try an extra constraint
+## 3. Solve the puzzle
 
-Use the extension inside `with(ConstraintScope.empty())` so the variable references remain available when
-reading assignments. `build()` captures an immutable model. Load `AutoBackend`, create its solver, and close
-both with `use`:
+Call the extension inside `ConstraintScope.empty { }`: the block runs on a fresh scope, so the returned letters
+remain available when reading the assignment. `buildModel()` captures an immutable model. Load `AutoBackend` with
+`use`, so its runtime is released, and run the solve inside `withSolver`, which creates a solver and closes it
+afterwards:
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:solve"
@@ -66,16 +67,26 @@ both with `use`:
 The suspending `solve` ranks compatible, available routes and tries them in order. The result descriptor
 identifies the answering route. Check the status before reading an assignment.
 
-The digits are `[9, 5, 6, 7, 1, 0, 8, 2]`: **9567 + 1085 = 10652**. `intValueOf` is safe because the domains
-contain decimal digits. For larger integers, `valueOf` returns the exact integer; bounded conversions throw
-if the value does not fit. See [Results and statuses](../reference/results-and-statuses.md).
+The helper returns each letter's digit, read with `intValueOf`: `{S=9, E=5, N=6, D=7, M=1, O=0, R=8, Y=2}`,
+that is, **9567 + 1085 = 10652**. `intValueOf` is safe because the domains contain decimal digits. For larger
+integers, `valueOf` returns the exact integer; bounded conversions throw if the value does not fit. See
+[Results and statuses](../reference/results-and-statuses.md).
 
-The helper then adds `D eq 6` to the same scope and solves a new snapshot. The result is `INFEASIBLE`; the
-earlier snapshot and result still describe the original puzzle. It returns the digits and final status so
-`SendMoreMoneySpec` can assert both outcomes.
+## 4. Add a constraint to a built model
 
-Add `suspend fun main() { solveSendMoreMoney() }` to the same file and run it from your IDE. The output shows
-the feasible solution followed by `INFEASIBLE`.
+A built model never changes. To try a variation, `extend` it: the block receives a scope seeded with the
+model's variables and constraints, and returns a new model with the additions. The variables keep their
+identity, so the handles returned by the extension still refer to them:
+
+```kotlin
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:twist"
+```
+
+`solveSendMoreMoneyWithD(6)` returns `INFEASIBLE`, because D is 7 in the only solution. The original `puzzle`
+model is unchanged and still has that solution. `SendMoreMoneySpec` asserts both outcomes.
+
+Add `suspend fun main() { solveSendMoreMoney(); println(solveSendMoreMoneyWithD(6)) }` to the same file and run
+it from your IDE. The output shows the answering route, the digits, then `INFEASIBLE`.
 
 ## Where next
 

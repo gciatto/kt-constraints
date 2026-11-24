@@ -8,7 +8,8 @@ Use this page to choose an operation and manage its lifetime. See [Modelling lan
 
 | API | When to use it and what it does |
 |---|---|
-| `SolverBackend.create()` | Create a fresh `ConstraintSolver`. The caller should first check availability and support for the intended model and options; `create()` takes no model |
+| `SolverBackend.createSolver()` | Create a fresh `ConstraintSolver`. The caller should first check availability and support for the intended model and options; `createSolver()` takes no model |
+| `SolverBackend.withSolver { solver -> ... }` | Create a solver, run the block on it and close it, also when the block throws; returns the block's result |
 | `ConstraintSolver.descriptor` | Identify the solver's engine, route and advertised capabilities |
 | `solve(model, options)` | Suspending call returning `SolveResult`. Satisfaction returns the first witness; optimization returns the final result |
 | `solutions(model, options)` | Open a `SolutionStream` for multiple solutions or improving optimization candidates |
@@ -17,6 +18,7 @@ Use this page to choose an operation and manage its lifetime. See [Modelling lan
 | `SolutionFound.assignment`, `objectiveValue` | A projected solution and its optional exact integer objective. An optimization candidate is an **incumbent**: the best feasible answer found so far |
 | `SolveCompleted.result` | The stream's single definitive completion result; subsequent reads return null |
 | `SolutionStream.terminalResult` | Null until completion or cancellation, then the definitive result, even before its event is consumed |
+| `SolutionStream.forEachSolution { found -> ... }` | Suspending read to the end of the stream, passing each `SolutionFound` to the block and returning the terminal `SolveResult`; the stream stays open, so wrap it in `use` |
 | `SolutionStream.cancel()` / `close()` | Stop unfinished work and release resources; repeated calls are safe and preserve a definitive result |
 
 Closing an automatic solver closes its open enumeration streams. An automatic batch `solve` in
@@ -53,7 +55,7 @@ A projected assignment may omit variables needed to evaluate a compound expressi
 
 An **incremental session** keeps assertions between checks. A **frame** groups changes that can be undone together. This is repeated satisfiability checking, separate from batch optimization and from domain propagation (removing impossible values).
 
-`IncrementalConstraintSolver` extends `ConstraintSolver`. Its `openSession(model)` puts the model's constraints and variables in the root frame; closing the solver closes its sessions. Session checks ask for satisfiability even when the source model has an objective.
+`IncrementalConstraintSolver` extends `ConstraintSolver`; obtain one with `backend.createIncrementalSolver()`, which fails explicitly on routes without sessions. Its `openSession(model)` puts the model's constraints and variables in the root frame; closing the solver closes its sessions. Session checks ask for satisfiability even when the source model has an objective.
 
 | `IncrementalSession` member | Contract |
 |---|---|
@@ -102,6 +104,9 @@ See [tentative posts and rollback](../how-to/constraint-stores.md#3-handle-failu
 
 A route can be installed yet reject a particular model. Conversely, declaring a capability does not establish that its runtime is installed.
 
+Every `SolverBackend` is `AutoCloseable`, so `AutoBackend.load().use { auto -> auto.withSolver { ... } }` releases
+both the solver and the backend runtime.
+
 | Type/member | Meaning |
 |---|---|
 | `SolverDescriptor.engine`, `route`, `id` | Stable identifiers; `id` joins engine and route with `/`. Components must be non-blank, contain no whitespace and contain no slash |
@@ -112,7 +117,9 @@ A route can be installed yet reject a particular model. Conversely, declaring a 
 | `support(model, options)` | Whole-model `SupportReport`, including options and numeric range checks |
 | `SupportReport.unsupported`, `isSupported` | Any rejection makes `isSupported` false |
 | `SupportReport.losslessDecompositions` | Required translations into equivalent constraints; these do not reject the model |
-| `create()` | Fresh solver, failing explicitly if the runtime cannot start |
+| `createSolver()` | Fresh solver, failing explicitly if the runtime cannot start |
+| `createIncrementalSolver()` | Fresh `IncrementalConstraintSolver`; throws `UnsupportedOperationException`, after closing the solver, when the route has no sessions |
+| `close()` | Release the backend's runtime, such as a loaded Wasm module or the routes of an `AutoBackend`; a no-op for backends without one. Close solvers created from it first |
 
 | `SolverCapability` | Operation or construct advertised |
 |---|---|

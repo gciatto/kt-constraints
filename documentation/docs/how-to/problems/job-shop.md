@@ -41,10 +41,10 @@ an optimal schedule for this instance; choose a justified **horizon**, an upper 
 
 ```text
 OPTIMAL: makespan = 3
-[0, 2, 0, 2]
+{A-machine-0=0, A-machine-1=2, B-machine-1=0, B-machine-0=2}
 ```
 
-The start times are in the order A on machine 0, A on machine 1, B on machine 1, B on machine 0.
+The model returns its start-time variables keyed by operation name, so the schedule reads them by name.
 Each job needs three time units, so a makespan below three is impossible.
 
 ## Variations

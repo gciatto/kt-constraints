@@ -19,7 +19,8 @@ Implement `SolverBackend` in `:solve-spi`:
 | `descriptor` | Stable engine/route identity and tested capabilities |
 | `availability()` | Probe actual runtime availability; return `BackendAvailability(false, reason)` with a non-blank explanation when unavailable |
 | `support(model, options)` | Assess all declared variables, assertions, objectives and requested options; return a `SupportReport` |
-| `create()` | Create a fresh owned solver or throw `BackendUnavailableException` |
+| `createSolver()` | Create a fresh owned solver or throw `BackendUnavailableException`. Declare an `IncrementalConstraintSolver` return type when the route supports sessions |
+| `close()` | Optional: release a runtime the backend owns, such as a loaded module or worker pool. The default is a no-op; override it only when there is something to release, and make it idempotent |
 
 `isAvailable()` delegates to `availability()`. Capabilities, runtime availability and model support are separate checks. Support reports list both unsupported features and lossless decompositions; a non-empty `unsupported` list rejects the whole model. Do not silently skip unknown custom nodes or approximate values.
 

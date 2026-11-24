@@ -9,13 +9,13 @@ class BinPackingSpec :
     FunSpec({
         listOf(false, true).forEach { useDecomposition ->
             test("minimize bins with decomposition=$useDecomposition") {
-                val sizes = listOf(4, 3, 2).map { BigInteger.of(it) }
-                val (result, binOf, actualLoads) = binPackingExample(useDecomposition)
-                result.objectiveValue.toString() shouldBe "2"
-                binOf.toSet().size shouldBe 2
-                actualLoads.sorted() shouldBe listOf(0, 4, 5)
-                actualLoads.indices.forEach { bin ->
-                    sizes.indices.filter { binOf[it] == bin }.sumOf { sizes[it].toIntExact() } shouldBe actualLoads[bin]
+                val sizes = listOf(4, 3, 2)
+                val packing = binPackingExample(useDecomposition)
+                packing.binCount shouldBe BigInteger.TWO
+                packing.binOf.toSet().size shouldBe 2
+                packing.loads.sorted() shouldBe listOf(0, 4, 5)
+                packing.loads.forEachIndexed { bin, load ->
+                    sizes.indices.filter { packing.binOf[it] == bin }.sumOf { sizes[it] } shouldBe load
                 }
             }
         }

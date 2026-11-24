@@ -51,7 +51,7 @@ enumeration, and CP-SAT and Z3 reproduce it in `BenchmarkCatalogueSpec`, so the 
 The columns are:
 - `build_ms`: model construction;
 - `support_ms`: the route's support check, which runs its translation;
-- `cold_ms`: the first solve on a fresh solver (after `backend.create()`);
+- `cold_ms`: the first solve on a fresh solver (after `backend.createSolver()`);
 - `warm_ms`: a second solve on the same solver.
 
 For `auto` rows, `cold_ms` covers ranking plus a run of the fallback automatic backend, and the route after `auto:` is the one
