@@ -1,3 +1,39 @@
+## [2.0.0](https://github.com/gciatto/kt-constraints/compare/1.0.1...2.0.0) (2026-11-24)
+
+### ⚠ BREAKING CHANGES
+
+* **solve-auto:** `solveAuto(model, options)` is removed; use
+`AutoBackend.load().use { auto -> auto.create().use { it.solve(model, options) } }`.
+`Portfolio`, `DefaultBackends` and `LoadedBackends` are no longer public.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01X2xs6ExEnwgHgap41DajQW
+* **solve-auto:** depend on `io.github.gciatto:kt-constraints-solve-auto` and import
+from `io.github.gciatto.ktconstraints.solve.auto` instead of `...solve.portfolio`.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01X2xs6ExEnwgHgap41DajQW
+
+### Features
+
+* **solve-auto:** replace solveAuto with AutoBackend, a backend like any other ([d4ae5df](https://github.com/gciatto/kt-constraints/commit/d4ae5df4aeaf8038e661747c91ff04f6987b5578))
+
+### Documentation
+
+* add a backends section, a reading order and reference for every public API ([5662a20](https://github.com/gciatto/kt-constraints/commit/5662a206bfc62e9491925d7fd15c867faf380350))
+
+### Tests
+
+* build models through scope receivers in every module's tests ([5cb7718](https://github.com/gciatto/kt-constraints/commit/5cb771876765e7cb1ffe87c53b90567803961b7d))
+
+### Build and continuous integration
+
+* **docs:** dedent quoted snippet sections and link pages in navigation order ([70df451](https://github.com/gciatto/kt-constraints/commit/70df45170e57a174fe626f119e1785b9c330ec57))
+
+### Refactoring
+
+* **solve-auto:** rename the solve-portfolio module to solve-auto ([2c4fc2f](https://github.com/gciatto/kt-constraints/commit/2c4fc2f73a89dbcb7ffac299099b0cb0f3446212))
+
 ## [1.0.1](https://github.com/gciatto/kt-constraints/compare/1.0.0...1.0.1) (2026-11-23)
 
 ### Bug Fixes
