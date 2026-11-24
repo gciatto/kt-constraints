@@ -9,15 +9,15 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
 /** On Node the bundled routes are loaded asynchronously and Z3 Wasm answers SMT models. */
-class DefaultBackendsJsSpec :
+class AutoBackendJsSpec :
     FunSpec({
         test("defaults/js-routes-reals-to-z3-wasm") {
             val reals = ConstraintModel.of { add(RealLessThan(RealLiteral(Rational.of(1, 2)), realVar("r"))) }
-            DefaultBackends.load().use { loaded ->
+            AutoBackend.load().use { loaded ->
                 loaded.registry
                     .rank(reals)
                     .best.backend.descriptor.id shouldBe "z3/wasm"
             }
-            solveAuto(reals).status shouldBe SolveStatus.FEASIBLE
+            AutoBackend.load().use { auto -> auto.create().use { it.solve(reals) } }.status shouldBe SolveStatus.FEASIBLE
         }
     })

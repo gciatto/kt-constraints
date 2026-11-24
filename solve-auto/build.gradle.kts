@@ -41,7 +41,7 @@ tasks.register<JavaExec>("jvmBenchmark") {
     val compilation = kotlin.jvm().compilations.getByName("test")
     dependsOn("jvmTestClasses")
     classpath(compilation.output.allOutputs, compilation.runtimeDependencyFiles)
-    mainClass.set("io.github.gciatto.ktconstraints.solve.auto.PortfolioBenchmark")
+    mainClass.set("io.github.gciatto.ktconstraints.solve.auto.AutoBenchmark")
 }
 
 // Kotlin/JS test runners do not inherit arbitrary variables; forward the opt-in route benchmark settings and the

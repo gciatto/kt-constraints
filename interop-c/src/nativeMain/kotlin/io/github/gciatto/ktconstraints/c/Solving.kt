@@ -2,7 +2,7 @@ package io.github.gciatto.ktconstraints.c
 
 import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.auto.solveAuto
+import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
 import kotlinx.coroutines.runBlocking
 import org.gciatto.kt.math.BigInteger
 import io.github.gciatto.ktconstraints.dsl.allDifferent as dslAllDifferent
@@ -30,7 +30,11 @@ fun solve(
     timeoutMillis: Long,
 ): Outcome =
     runCatching {
-        runBlocking { solveAuto(model.model, SolveOptions(timeoutMillis = timeoutMillis.takeIf { it > 0 })) }
+        runBlocking {
+            AutoBackend.load().use { auto ->
+                auto.create().use { it.solve(model.model, SolveOptions(timeoutMillis = timeoutMillis.takeIf { it > 0 })) }
+            }
+        }
     }.fold(
         onSuccess = { Outcome(it, null) },
         onFailure = { Outcome(null, it.message ?: it::class.simpleName ?: "Unknown failure") },

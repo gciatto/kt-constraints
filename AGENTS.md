@@ -53,7 +53,7 @@ implementation or build changes.
 - `./gradlew check --parallel --continue`
 - `./gradlew :documentation:assembleSite` (requires `pip install mkdocs-material`; builds Dokka into `api/`)
 - Documentation follows `documentation/docs/`: tutorials, how-to guides, reference, explanation. Code shown on a
-  page is quoted with pymdownx.snippets from tested sources (`solve-auto` tests `…portfolio.examples`,
+  page is quoted with pymdownx.snippets from tested sources (`solve-auto` tests `…auto.examples`,
   `interop-java` tests `…interop.examples`, `interop-js/src/test/typescript/examples`, `interop-c/src/nativeUsageTest/c`).
   Never mention roadmap milestone labels in documentation.
 - `./gradlew publishAllPublicationsToProjectLocalRepository` (after publication configuration is verified)

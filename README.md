@@ -22,22 +22,23 @@ import io.github.gciatto.ktconstraints.dsl.gt
 import io.github.gciatto.ktconstraints.dsl.plus
 import io.github.gciatto.ktconstraints.dsl.times
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.solve.auto.solveAuto
+import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
 
-suspend fun main() {
-    val scope = ConstraintScope.empty()
-    val x = scope.intVar("x", 1..9)
-    val y = scope.intVar("y", 1..9)
-    val z = scope.intVar("z", 1..9)
-    scope.add(allDifferent(x, y, z))
-    scope.add(x + y eq z * 2)
-    scope.add(x gt y)
-    scope.maximize(x * y)
+suspend fun main() =
+    with(ConstraintScope.empty()) {
+        val x = intVar("x", 1..9)
+        val y = intVar("y", 1..9)
+        val z = intVar("z", 1..9)
+        add(allDifferent(x, y, z))
+        add(x + y eq z * 2)
+        add(x gt y)
+        maximize(x * y)
 
-    val result = solveAuto(scope.build()) // ranks the solvers bundled for this platform, falls back on failure
-    println("${result.status} by ${result.descriptor.id}: ${result.objectiveValue}") // OPTIMAL by cp-sat/direct: 63 (on the JVM)
-    println("x = ${result.assignment?.valueOf(x)}, y = ${result.assignment?.valueOf(y)}") // x = 9, y = 7
-}
+        // The automatic backend ranks the solvers bundled for this platform and falls back on failure.
+        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(build()) } }
+        println("${result.status} by ${result.descriptor.id}: ${result.objectiveValue}") // OPTIMAL by cp-sat/direct: 63 (on the JVM)
+        println("x = ${result.assignment?.valueOf(x)}, y = ${result.assignment?.valueOf(y)}") // x = 9, y = 7
+    }
 ```
 
 ## Why Kt-Constraints
@@ -108,7 +109,7 @@ known optimum or proof.
   family it supports.
 - **Native:** the pure-Kotlin solver beats or ties Z3's C API everywhere. Z3 remains the route for models it
   rejects, such as unbounded integer domains.
-- The pure-Kotlin solver is still experimental and unpublished, so `solveAuto` does not pick it yet.
+- The pure-Kotlin solver is still experimental and unpublished, so `AutoBackend.load()` does not include it yet.
 - **MiniZinc routes** add a fixed 240–290 ms on the JVM (process start and flattening) and about 130 ms through
   Node's CLI. They pay off on models that need a specific engine, or a decomposition that MiniZinc does better.
 
@@ -146,8 +147,8 @@ ChocoStore().use { store ->
 
 Batch solving, incremental sessions and constraint stores are separate, capability-checked APIs. A solver only
 offers what it really supports; for example, it never re-solves from scratch while pretending to be incremental.
-`solveAuto` and `Portfolio` choose among the solvers available on the current platform. Ranking is extensible: a
-`Portfolio` can try solvers one after another or race several in parallel. See
+`AutoBackend` is a backend like the others that chooses among the solvers available on the current platform. Ranking
+is extensible, and it can try solvers one after another or race several in parallel. See
 [Logic engines](https://gciatto.github.io/kt-constraints/explanation/solving-modes/) for the store API.
 
 ## From Java, TypeScript and C
@@ -213,7 +214,7 @@ repositories {
 }
 dependencies {
     implementation("io.github.gciatto:kt-constraints-dsl:<version>")
-    implementation("io.github.gciatto:kt-constraints-solve-auto:<version>") // solveAuto + the default solvers
+    implementation("io.github.gciatto:kt-constraints-solve-auto:<version>") // AutoBackend + the default solvers
 }
 ```
 
@@ -238,7 +239,7 @@ FlatZinc interchange, Gurobi, and propagating constraint stores beyond Choco.
 | `:solve`, `:solve-spi` | Solver, session, store and result APIs; the backend contract, capability checks and registry |
 | `:solve-z3`, `:solve-cpsat`, `:solve-choco`, `:solve-mip`, `:solve-minizinc` | Solver adapters |
 | `:solve-kotlin` | Pure-Kotlin solver (experimental, unpublished) |
-| `:solve-auto` | `solveAuto`, default solvers per platform, fallback and race portfolios |
+| `:solve-auto` | `AutoBackend`: default solvers per platform, fallback and race strategies |
 | `:interop-java`, `:interop-js`, `:interop-c` | Java blocking/`CompletableFuture` API; ES module with TypeScript declarations; C shared library |
 | `:test-core`, `:test-solve` | Shared contract suites that every backend must pass |
 

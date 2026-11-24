@@ -14,7 +14,7 @@ import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
 
 /** The bundled JVM routes, ranked by the default policy, pick the engine each model family suits. */
-class DefaultBackendsJvmSpec :
+class AutoBackendJvmSpec :
     FunSpec({
         val linear =
             ConstraintModel.of {
@@ -27,7 +27,7 @@ class DefaultBackendsJvmSpec :
         val reals = ConstraintModel.of { add(RealLessThan(RealLiteral(Rational.of(1, 2)), realVar("r"))) }
 
         test("defaults/jvm-ranks-routes-by-model-features") {
-            DefaultBackends.load().use { loaded ->
+            AutoBackend.load().use { loaded ->
                 loaded.registry
                     .rank(linear)
                     .best.backend.descriptor.id shouldBe "scip/or-tools"
@@ -40,8 +40,8 @@ class DefaultBackendsJvmSpec :
             }
         }
 
-        test("defaults/solve-auto-proves-an-optimum") {
-            val result = solveAuto(linear)
+        test("defaults/auto-backend-proves-an-optimum") {
+            val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(linear) } }
             result.status shouldBe SolveStatus.OPTIMAL
             result.objectiveValue shouldBe BigInteger.of(19)
         }

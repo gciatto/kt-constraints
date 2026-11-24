@@ -14,7 +14,7 @@ import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 internal class ScriptedBackend(
     private val name: String,
     private val delayMillis: Long,
-    private val log: PortfolioLog,
+    private val log: AutoLog,
     private val available: Boolean = true,
     private val script: (ConstraintModel, SolverDescriptor, Boolean) -> SolveResult,
 ) : SolverBackend {

@@ -35,7 +35,7 @@ class RouteBenchmarkSpec :
         test("route-benchmark/catalogue").config(enabled = enabled, timeout = 6.hours, invocationTimeout = 6.hours) {
             val platform = Platform.current().let { "${it.runtime}-${it.os}".lowercase() }
             val options = SolveOptions(timeoutMillis = timeout)
-            DefaultBackends.load().use { loaded ->
+            AutoBackend.load().use { loaded ->
                 fun routes(instance: BenchmarkInstance): List<SolverBackend> =
                     loaded.registry
                         .rank(instance.model, options)

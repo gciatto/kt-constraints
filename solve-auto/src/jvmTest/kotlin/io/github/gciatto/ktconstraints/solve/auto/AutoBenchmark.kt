@@ -16,7 +16,7 @@ import kotlin.system.measureNanoTime
  * cold solve on a fresh solver, warm solve on the same solver, and correctness against the known answer. Set
  * `BENCHMARK_SCALE` (default 1) to grow sizes and `BENCHMARK_CSV` to also write a file. Raw observations only.
  */
-object PortfolioBenchmark {
+object AutoBenchmark {
     private const val TIMEOUT_MILLIS = 30_000L
 
     /** Unpublished routes measured alongside the bundled ones, never offered by `auto`. */
@@ -30,7 +30,7 @@ object PortfolioBenchmark {
             val scale = System.getenv("BENCHMARK_SCALE")?.toInt() ?: 1
             val options = SolveOptions(timeoutMillis = TIMEOUT_MILLIS)
             val rows = mutableListOf(HEADER)
-            DefaultBackends.load().use { loaded ->
+            AutoBackend.load().use { loaded ->
                 for (builder in BenchmarkCatalogue.builders(scale)) {
                     lateinit var instance: BenchmarkInstance
                     val build = millis { instance = builder() }
@@ -56,7 +56,7 @@ object PortfolioBenchmark {
                         }
                     }
                     lateinit var auto: SolveResult
-                    val autoMillis = millis { auto = Portfolio(loaded.registry).fallback(instance.model, options) }
+                    val autoMillis = millis { auto = loaded.create().use { it.solve(instance.model, options) } }
                     rows +=
                         row(
                             instance,

@@ -13,7 +13,7 @@ import kotlinx.coroutines.delay
 internal class ScriptedSolver(
     override val descriptor: SolverDescriptor,
     private val delayMillis: Long,
-    private val log: PortfolioLog,
+    private val log: AutoLog,
     private val script: (ConstraintModel, SolverDescriptor, Boolean) -> SolveResult,
 ) : ConstraintSolver {
     override suspend fun solve(
@@ -37,7 +37,7 @@ internal class ScriptedSolver(
     override fun solutions(
         model: ConstraintModel,
         options: SolveOptions,
-    ): SolutionStream = error("Portfolios use solve")
+    ): SolutionStream = error("Scripted solvers only solve")
 
     override fun close() = Unit
 }

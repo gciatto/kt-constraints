@@ -3,6 +3,7 @@ package io.github.gciatto.ktconstraints.solve.auto
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.SolveOptions
+import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.result.SolveMetadata
 import io.github.gciatto.ktconstraints.solve.result.SolveResult
@@ -10,9 +11,12 @@ import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.Platform
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
+import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
 import io.github.gciatto.ktconstraints.solve.spi.ranking.RankingPolicy
 import io.github.gciatto.ktconstraints.solve.spi.registry.Candidate
+import io.github.gciatto.ktconstraints.solve.spi.registry.Selection
 import io.github.gciatto.ktconstraints.solve.spi.registry.SolverRegistry
+import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -24,12 +28,14 @@ import kotlinx.coroutines.launch
  * unbounded, or any solution of a satisfaction model) comes from a single backend's own result. Timeouts, crashes,
  * unavailable routes and unsupported models are never evidence, and every skipped or failed backend is reported
  * in the result's metadata messages. The answering backend's descriptor identifies the result. When none answers,
- * the result is `UNKNOWN` from the `portfolio/fallback` or `portfolio/race` route.
+ * the result is `UNKNOWN` from [descriptor]; when no backend is eligible, solving fails with
+ * [UnsupportedModelException].
  */
-class Portfolio(
+internal class Portfolio(
     private val registry: SolverRegistry,
-    private val policy: RankingPolicy = RankingPolicy.DEFAULT,
-    private val platform: Platform = Platform.current(),
+    private val policy: RankingPolicy,
+    private val platform: Platform,
+    private val descriptor: SolverDescriptor,
 ) {
     /** Tries the ranked backends one at a time under one shared deadline, moving on only after UNKNOWN or failure. */
     suspend fun fallback(
@@ -53,7 +59,7 @@ class Portfolio(
                 is Attempt.Failure -> notes += attempt.message
             }
         }
-        return undecided(FALLBACK, deadline, notes)
+        return undecided(deadline, notes)
     }
 
     /**
@@ -64,9 +70,8 @@ class Portfolio(
     suspend fun race(
         model: ConstraintModel,
         options: SolveOptions = SolveOptions.DEFAULT,
-        parallelism: Int = DEFAULT_PARALLELISM,
+        parallelism: Int,
     ): SolveResult {
-        require(parallelism > 0) { "Parallelism must be positive" }
         val notes = mutableListOf<String>()
         val deadline = Deadline(options.timeoutMillis)
         val queue = ArrayDeque(rank(model, options, notes))
@@ -102,16 +107,33 @@ class Portfolio(
                 jobs.forEach { it.cancel() }
                 winner
             }
-        return (proof ?: best)?.let { annotated(it, notes) } ?: undecided(RACE, deadline, notes)
+        return (proof ?: best)?.let { annotated(it, notes) } ?: undecided(deadline, notes)
+    }
+
+    /** The best-ranked route able to enumerate solutions of [model]. */
+    fun enumerator(
+        model: ConstraintModel,
+        options: SolveOptions,
+    ): SolverBackend = rank(model, options, mutableListOf(), setOf(SolverCapability.ENUMERATION)).first().backend
+
+    /** Whether some route is eligible for [model], with every rejection reason otherwise. */
+    fun support(
+        model: ConstraintModel,
+        options: SolveOptions,
+    ): SupportReport {
+        val selection = registry.rank(model, options, policy = policy, platform = platform)
+        return SupportReport(if (selection.candidates.isEmpty()) rejections(selection) else emptyList())
     }
 
     private fun rank(
         model: ConstraintModel,
         options: SolveOptions,
         notes: MutableList<String>,
+        required: Set<SolverCapability> = emptySet(),
     ): List<Candidate> {
-        val selection = registry.rank(model, options, policy = policy, platform = platform)
-        selection.rejections.forEach { (id, reasons) -> notes += "$id rejected: ${reasons.joinToString("; ")}" }
+        val selection = registry.rank(model, options, required, policy, platform)
+        if (selection.candidates.isEmpty()) throw UnsupportedModelException(SupportReport(rejections(selection)))
+        notes += rejections(selection)
         return selection.candidates
     }
 
@@ -137,29 +159,26 @@ class Portfolio(
         result.copy(
             metadata =
                 SolveMetadata(
-                    result.metadata.messages + notes + "portfolio: answered by ${result.descriptor.id}",
+                    result.metadata.messages + notes + "auto: answered by ${result.descriptor.id}",
                     result.metadata.statistics,
                 ),
         )
 
     private fun undecided(
-        mode: SolverDescriptor,
         deadline: Deadline,
         notes: List<String>,
     ): SolveResult =
         SolveResult(
             SolveStatus.UNKNOWN,
             null,
-            mode,
+            descriptor,
             if (deadline.expired) TerminationReason.TIMEOUT else TerminationReason.COMPLETED,
-            metadata = SolveMetadata(notes + "portfolio: no backend answered"),
+            metadata = SolveMetadata(notes + "auto: no backend answered"),
         )
 
-    /** Route descriptors of undecided portfolio results. */
-    companion object {
-        private const val DEFAULT_PARALLELISM = 2
-        private val FALLBACK = SolverDescriptor("portfolio", "fallback", emptySet())
-        private val RACE = SolverDescriptor("portfolio", "race", emptySet())
+    private companion object {
+        private fun rejections(selection: Selection) =
+            selection.rejections.map { (id, reasons) -> "$id rejected: ${reasons.joinToString("; ")}" }
 
         private fun unknown(result: SolveResult) = "${result.descriptor.id}: UNKNOWN (${result.terminationReason})"
 

@@ -1,61 +1,63 @@
 package io.github.gciatto.ktconstraints.solve.auto.examples.problems
 
 // --8<-- [start:imports]
+import io.github.gciatto.ktconstraints.core.integer.IntVar
 import io.github.gciatto.ktconstraints.dsl.binPacking
 import io.github.gciatto.ktconstraints.dsl.nValue
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.solve.auto.solveAuto
+import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
 // --8<-- [end:imports]
 
-internal object BinPacking {
-    suspend fun run(useDecomposition: Boolean) {
-        // --8<-- [start:model]
-        val sizes = listOf(4, 3, 2).map { BigInteger.of(it) }
-        val capacity = 5
-        val scope = ConstraintScope.empty()
-        val bins = List(sizes.size) { scope.intVar("bin-$it", sizes.indices) }
-        val loads = List(sizes.size) { scope.intVar("load-$it", 0..capacity) }
-        val packing = binPacking(bins, sizes, loads)
-        // --8<-- [end:model]
-        if (useDecomposition) {
-            // --8<-- [start:decomposition]
-            scope.add(packing.decomposition)
-            // --8<-- [end:decomposition]
-        } else {
-            // --8<-- [start:global]
-            scope.add(packing)
-            // --8<-- [end:global]
-        }
-        // --8<-- [start:objective]
-        scope.minimize(nValue(bins))
-        // --8<-- [end:objective]
-        // --8<-- [start:solve]
-        val result = solveAuto(scope.build())
+// --8<-- [start:model]
+internal fun ConstraintScope.binPacking(
+    sizes: List<BigInteger>,
+    capacity: Int,
+    useDecomposition: Boolean = false,
+): Pair<List<IntVar>, List<IntVar>> {
+    val bins = List(sizes.size) { intVar("bin-$it", sizes.indices) }
+    val loads = List(sizes.size) { intVar("load-$it", 0..capacity) }
+    val packing = binPacking(bins, sizes, loads)
+    if (useDecomposition) {
+        // --8<-- [start:decomposition]
+        add(packing.decomposition)
+        // --8<-- [end:decomposition]
+    } else {
+        // --8<-- [start:global]
+        add(packing)
+        // --8<-- [end:global]
+    }
+    // --8<-- [start:objective]
+    minimize(nValue(bins))
+    // --8<-- [end:objective]
+    return bins to loads
+}
+// --8<-- [end:model]
+
+// --8<-- [start:solve]
+internal suspend fun solveBinPacking(
+    sizes: List<BigInteger>,
+    capacity: Int,
+    useDecomposition: Boolean = false,
+): Triple<SolveResult, List<Int>, List<Int>> =
+    with(ConstraintScope.empty()) {
+        val (bins, loads) = binPacking(sizes, capacity, useDecomposition)
+        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(build()) } }
         check(result.status == SolveStatus.OPTIMAL)
         val assignment = requireNotNull(result.assignment)
         val binOf = bins.map { requireNotNull(assignment.intValueOf(it)) }
         val actualLoads = loads.map { requireNotNull(assignment.intValueOf(it)) }
         println("Bins: ${result.objectiveValue}; sorted loads: ${actualLoads.sorted()}")
-        // --8<-- [end:solve]
-        result.objectiveValue.toString() shouldBe "2"
-        binOf.toSet().size shouldBe 2
-        actualLoads.sorted() shouldBe listOf(0, 4, 5)
-        loads.indices.forEach { bin ->
-            sizes.indices.filter { binOf[it] == bin }.sumOf { sizes[it].toIntExact() } shouldBe actualLoads[bin]
-        }
+        Triple(result, binOf, actualLoads)
     }
-}
+// --8<-- [end:solve]
 
-/** Checks both the preserved global and its variable-free decomposition. */
-class BinPackingSpec :
-    FunSpec({
-        listOf(false, true).forEach { useDecomposition ->
-            test("minimize bins with decomposition=$useDecomposition") {
-                BinPacking.run(useDecomposition)
-            }
-        }
-    })
+// --8<-- [start:example]
+internal suspend fun binPackingExample(useDecomposition: Boolean = false): Triple<SolveResult, List<Int>, List<Int>> {
+    val sizes = listOf(4, 3, 2).map { BigInteger.of(it) }
+    val capacity = 5
+    return solveBinPacking(sizes, capacity, useDecomposition)
+}
+// --8<-- [end:example]

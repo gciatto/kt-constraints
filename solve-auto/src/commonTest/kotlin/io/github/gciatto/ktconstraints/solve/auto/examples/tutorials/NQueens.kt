@@ -8,9 +8,7 @@ import io.github.gciatto.ktconstraints.dsl.minus
 import io.github.gciatto.ktconstraints.dsl.neq
 import io.github.gciatto.ktconstraints.dsl.plus
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.solve.SolverCapability
-import io.github.gciatto.ktconstraints.solve.auto.DefaultBackends
-import io.github.gciatto.ktconstraints.solve.auto.solveAuto
+import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
@@ -18,12 +16,11 @@ import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 // --8<-- [end:imports]
 
 // --8<-- [start:board]
-internal fun queensBoard(size: Int): Pair<ConstraintScope, List<IntVar>> {
+internal fun ConstraintScope.queensBoard(size: Int): List<IntVar> {
     require(size > 0)
-    val scope = ConstraintScope.empty()
-    val rows = List(size) { column -> scope.intVar("q$column", 0 until size) }
-    scope.add(allDifferent(*rows.toTypedArray()))
-    return scope to rows
+    val rows = List(size) { column -> intVar("q$column", 0 until size) }
+    add(allDifferent(*rows.toTypedArray()))
+    return rows
 }
 // --8<-- [end:board]
 
@@ -53,15 +50,16 @@ internal fun ConstraintScope.breakRowReflection(rows: List<IntVar>) {
 // --8<-- [end:symmetry]
 
 // --8<-- [start:solve]
-internal suspend fun solveFourQueens(): List<Int> {
-    val (scope, rows) = queensBoard(4)
-    scope.diagonalGlobals(rows)
-    val result = solveAuto(scope.build())
-    println("${result.status} by ${result.descriptor.id}")
-    check(result.status == SolveStatus.FEASIBLE) { result.toString() }
-    val assignment = checkNotNull(result.assignment)
-    return rows.map { checkNotNull(assignment.intValueOf(it)) }
-}
+internal suspend fun solveFourQueens(): List<Int> =
+    with(ConstraintScope.empty()) {
+        val rows = queensBoard(4)
+        diagonalGlobals(rows)
+        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(build()) } }
+        println("${result.status} by ${result.descriptor.id}")
+        check(result.status == SolveStatus.FEASIBLE) { result.toString() }
+        val assignment = checkNotNull(result.assignment)
+        rows.map { checkNotNull(assignment.intValueOf(it)) }
+    }
 // --8<-- [end:solve]
 
 // --8<-- [start:enumerate]
@@ -69,30 +67,30 @@ internal suspend fun enumerateQueens(
     size: Int,
     pairwise: Boolean = false,
     symmetry: Boolean = false,
-): List<List<Int>> {
-    val (scope, rows) = queensBoard(size)
-    if (pairwise) scope.pairwiseDiagonals(rows) else scope.diagonalGlobals(rows)
-    if (symmetry) scope.breakRowReflection(rows)
-    val model = scope.build()
-    val boards = mutableListOf<List<Int>>()
-    DefaultBackends.load().use { loaded ->
-        val backend = loaded.registry.select(model, requiredCapabilities = setOf(SolverCapability.ENUMERATION))
-        backend.create().use { solver ->
-            solver.solutions(model).use { stream ->
-                while (true) {
-                    when (val event = stream.next()) {
-                        is SolutionFound -> boards.add(rows.map { checkNotNull(event.assignment.intValueOf(it)) })
-                        is SolveCompleted -> {
-                            check(event.result.terminationReason == TerminationReason.COMPLETED)
-                            check(event.result.status == SolveStatus.FEASIBLE || event.result.status == SolveStatus.INFEASIBLE)
-                            break
+): List<List<Int>> =
+    with(ConstraintScope.empty()) {
+        val rows = queensBoard(size)
+        if (pairwise) pairwiseDiagonals(rows) else diagonalGlobals(rows)
+        if (symmetry) breakRowReflection(rows)
+        val model = build()
+        val boards = mutableListOf<List<Int>>()
+        AutoBackend.load().use { auto ->
+            auto.create().use { solver ->
+                solver.solutions(model).use { stream ->
+                    while (true) {
+                        when (val event = stream.next()) {
+                            is SolutionFound -> boards.add(rows.map { checkNotNull(event.assignment.intValueOf(it)) })
+                            is SolveCompleted -> {
+                                check(event.result.terminationReason == TerminationReason.COMPLETED)
+                                check(event.result.status == SolveStatus.FEASIBLE || event.result.status == SolveStatus.INFEASIBLE)
+                                break
+                            }
+                            null -> error("Search ended without a completion event")
                         }
-                        null -> error("Search ended without a completion event")
                     }
                 }
             }
         }
+        boards
     }
-    return boards
-}
 // --8<-- [end:enumerate]

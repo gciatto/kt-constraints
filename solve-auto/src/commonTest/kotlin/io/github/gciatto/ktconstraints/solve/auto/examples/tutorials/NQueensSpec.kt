@@ -5,15 +5,20 @@ import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 
 // --8<-- [start:platform-test]
+internal suspend fun verifiedFourQueens(): List<Int> {
+    val board = solveFourQueens()
+    check(board in listOf(listOf(1, 3, 0, 2), listOf(2, 0, 3, 1)))
+    return board
+}
+// --8<-- [end:platform-test]
 
 /** Checks the common model with the platform defaults. */
 class NQueensSpec :
     FunSpec({
         test("solve the common four-queen model with the platform defaults") {
-            listOf(listOf(1, 3, 0, 2), listOf(2, 0, 3, 1)) shouldContain solveFourQueens()
+            listOf(listOf(1, 3, 0, 2), listOf(2, 0, 3, 1)) shouldContain verifiedFourQueens()
         }
     })
-// --8<-- [end:platform-test]
 
 /** Checks both encodings, exhaustive counts and symmetry reduction on every target. */
 class NQueensEnumerationSpec :
