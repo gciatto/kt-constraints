@@ -25,6 +25,6 @@ interface BoolExpr : Expr {
     /** Creates a symbolic Boolean negation. */
     operator fun not(): BoolExpr = BoolNot(this)
 
-    /** 1 when this holds, 0 otherwise. */
-    fun toInt(): BoolToInt = BoolToInt(this)
+    /** Integer-sorted constraint expression worth 1 when this holds and 0 otherwise; not a value conversion. */
+    fun asIntExpr(): BoolToInt = BoolToInt(this)
 }

@@ -10,9 +10,9 @@ import io.github.gciatto.ktconstraints.dsl.among as dslAmong
 import io.github.gciatto.ktconstraints.dsl.count as dslCount
 import io.github.gciatto.ktconstraints.dsl.globalCardinality as dslGlobalCardinality
 
-/** 1 when [condition] holds, 0 otherwise. */
+/** Integer expression worth 1 when [condition] holds and 0 otherwise. */
 @JsExport
-fun toInt(condition: BoolExpression): IntExpression = IntExpression(condition.expr.toInt())
+fun asIntExpression(condition: BoolExpression): IntExpression = IntExpression(condition.expr.asIntExpr())
 
 /** Number of [operands] equal to [value]. */
 @JsExport

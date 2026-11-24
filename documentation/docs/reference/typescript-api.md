@@ -10,7 +10,7 @@
 | `IntExpression` | `plus`, `minus`, `times`, `negate`, `eq`, `neq`, `lt`, `le`, `gt`, `ge` |
 | `BoolExpression` | `and`, `or`, `implies`, `iff`, `not` |
 | `RealExpression` | `plus`, `minus`, `scale(factorText)`, `negate`, `eq`, `neq`, `lt`, `le`, `gt`, `ge` |
-| Constant/conversion functions | `constant(bigint)`, `real(text)`, `toReal(integerExpression)`, `toInt(booleanExpression)` |
+| Constant/conversion functions | `constant(bigint)`, `real(text)`, `asRealExpression(integerExpression)`, `asIntExpression(booleanExpression)` |
 | `Model` | Immutable snapshot returned by `build()` |
 
 Integer bounds, constants and weights are `bigint`; integer results do not round through `number`. Real constants and scale factors use exact integer, fraction or decimal strings. `minimizeViolations(constraints, weights)` takes parallel arrays with non-negative `bigint` weights, replaces the objective, and returns the integer penalty expression.

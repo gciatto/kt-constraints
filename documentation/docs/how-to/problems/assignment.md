@@ -48,7 +48,7 @@ The solve call suspends; run it in a coroutine. See [Results and statuses](../..
 
 - With more tasks than workers, widen the task domains and keep `allDifferent`; some tasks remain unused.
 - Remove a forbidden task from a worker’s domain, or add a symbolic inequality for it.
-- A Boolean worker-by-task matrix is an alternative: use `exactly(1, ...)` on each row and column and minimize the sum of cost times `toInt()` of each decision.
+- A Boolean worker-by-task matrix is an alternative: use `exactly(1, ...)` on each row and column and minimize the sum of cost times `asIntExpr()` of each decision.
 - If tasks have capacities rather than unique ownership, replace `allDifferent` with counts, using `globalCardinality` and bounded count variables.
 
 See the [modelling language reference](../../reference/modelling-language.md), [global constraints explanation](../../explanation/global-constraints.md), and [API reference](/kt-constraints/api/index.html) for the operators and their semantics.

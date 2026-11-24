@@ -28,7 +28,7 @@ class CommonGlobalsDslSpec :
             }
 
         test("dsl/counting") {
-            eval(BoolLiteral(true).toInt()) shouldBe "1"
+            eval(BoolLiteral(true).asIntExpr()) shouldBe "1"
             eval(count(IntLiteral(2), *ints(2, 1, 2).toTypedArray())) shouldBe "2"
             eval(count(IntLiteral(2))) shouldBe "0"
             eval(among(big(1, 3), *ints(1, 2, 3, 3).toTypedArray())) shouldBe "3"

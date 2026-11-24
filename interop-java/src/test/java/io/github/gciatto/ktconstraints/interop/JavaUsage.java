@@ -163,7 +163,7 @@ public final class JavaUsage {
         ConstraintScope scope = ConstraintScope.empty();
         IntVar n = scope.intVar("n", 0, 100);
         RealVar r = scope.realVar("r");
-        scope.add(n.toReal().times(Rational.parse("0.1")).plus(r).le(JavaNumbers.rational(new BigDecimal("1.25"))));
+        scope.add(n.asRealExpr().times(Rational.parse("0.1")).plus(r).le(JavaNumbers.rational(new BigDecimal("1.25"))));
         scope.add(r.ge(Rational.parse("0.5")));
         scope.maximize(n);
         try (BlockingSolver solver = BlockingSolver.of(backend)) {

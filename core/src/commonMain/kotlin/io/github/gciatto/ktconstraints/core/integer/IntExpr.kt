@@ -129,6 +129,9 @@ interface IntExpr : Expr {
     /** Creates an exact symbolic additive inverse. */
     operator fun unaryMinus(): IntExpr = IntNegation(this)
 
-    /** Embeds this integer expression into the reals explicitly. */
-    fun toReal(): RealExpr = IntToReal(this)
+    /** Creates an exact symbolic additive inverse; the same as [unaryMinus], named for Java. */
+    fun negate(): IntExpr = unaryMinus()
+
+    /** Real-sorted constraint expression with this integer expression's value; not a value conversion. */
+    fun asRealExpr(): RealExpr = IntToReal(this)
 }

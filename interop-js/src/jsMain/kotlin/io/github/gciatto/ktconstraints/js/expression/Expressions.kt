@@ -26,7 +26,7 @@ fun real(value: String): RealExpression = RealExpression(RealLiteral(Rational.pa
 
 /** Embeds an integer expression into the reals. */
 @JsExport
-fun toReal(value: IntExpression): RealExpression = RealExpression(IntToReal(value.expr))
+fun asRealExpression(value: IntExpression): RealExpression = RealExpression(IntToReal(value.expr))
 
 /** Sum of [terms]; empty is zero. */
 @JsExport

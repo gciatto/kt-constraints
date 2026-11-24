@@ -17,7 +17,7 @@ on GitHub Packages as `@gciatto/kt-constraints-interop-js` (see [Installation](h
     cancels the search and rejects the promise;
   - `solutions(model, timeoutMillis?, solutionLimit?)` is an `AsyncIterable` of events, each carrying a `solution` or,
     last, the completion `outcome`; leaving `for await` early closes the search.
-- **Reals** are exact: `builder.realVar(name)`, constants `real("0.1")` or `real("1/3")`, `toReal(intExpression)`,
+- **Reals** are exact: `builder.realVar(name)`, constants `real("0.1")` or `real("1/3")`, `asRealExpression(intExpression)`,
   `scale("0.5")` for constant factors, and `solution.realValueOf(r)` returning exact `p/q` text.
 - **Sessions:** `solver.openSession(model)` (routes with `INCREMENTAL_ASSERTIONS` in `backend.capabilities`) offers
   `add`, `push`/`popTo` checkpoints and `check(assumptions?, timeoutMillis?, signal?)`, whose `unsatCore` contains

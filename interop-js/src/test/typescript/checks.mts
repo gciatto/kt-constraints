@@ -24,7 +24,7 @@ import {
     max,
     min,
     real,
-    toReal,
+    asRealExpression,
 } from "kt-constraints-interop-js";
 
 /** What a route must do beyond the common checks; routes lacking a feature must reject it instead. */
@@ -193,7 +193,7 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
         const builder = new ModelBuilder();
         const n = builder.intVar("n", 0n, 100n);
         const r = builder.realVar("r");
-        builder.add(toReal(n).scale("0.1").plus(r).le(real("1.25")));
+        builder.add(asRealExpression(n).scale("0.1").plus(r).le(real("1.25")));
         builder.add(r.ge(real("1/2")));
         builder.maximize(n);
         if (!profile.reals) {

@@ -32,7 +32,7 @@ Integer literals accept `Int`, `Long` and `BigInteger`. Machine integer inputs d
 | `BoolImplies` | `p implies q` | Material implication |
 | `BoolEquality` | `p eq q` | Equivalence |
 | Negated equivalence | `p neq q` | Different truth values |
-| `BoolToInt` | `p.toInt()` | Integer 1 when true, 0 when false |
+| `BoolToInt` | `p.asIntExpr()` | Integer 1 when true, 0 when false |
 
 `BoolAnd.of(collection)` constructs a conjunction; the empty conjunction is true. Kotlin `==` tests object equality. Use `eq` for symbolic equality. Boolean operators build expressions without short-circuiting construction.
 
@@ -53,7 +53,7 @@ Integer literals accept `Int`, `Long` and `BigInteger`. Machine integer inputs d
 | Negated equality | `x neq y` | Disequality |
 | `IntLessThan` | `x lt y`, `x gt y` | Strict comparison; `gt` reverses operands |
 | `IntLessOrEqual` | `x le y`, `x ge y` | Non-strict comparison; `ge` reverses operands |
-| `IntToReal` | `x.toReal()` | Exact embedding into real arithmetic |
+| `IntToReal` | `x.asRealExpr()` | Exact embedding into real arithmetic |
 
 Arithmetic and comparison overloads accept `Int`, `Long` and `BigInteger` on the right. Division and remainder are not expression nodes.
 
@@ -169,7 +169,7 @@ An **expression** is an immutable calculation or condition. Its **sort** identif
 | `IntDomain` | `intervals`, nullable `min`/`max`, `isEmpty`, exact `cardinality`, `isFinite = true`, membership via `contains`, `union` and `intersect` |
 | `IntInterval(min, max)` | Non-empty inclusive interval; rejects reversed bounds |
 | `Rational` | Normalized `numerator` and positive `denominator`, `isInteger`, exact `plus`, `minus`, `times`, `unaryMinus` and comparison; `ZERO` and `ONE` constants. Text output is an integer or `p/q`; parsing rejects exponent notation |
-| DSL `unaryMinus` | Kotlin `-expression` builds `IntNegation` or `RealNegation`; it does not solve or mutate the operand |
+| `unaryMinus`, `negate` | Kotlin `-expression`, or `negate()` from Java, builds `IntNegation` or `RealNegation`; it does not solve or mutate the operand |
 | `BitVecOperator` | Operation selector for `BitVecBinary`: arithmetic, bitwise and shift values listed above |
 | `BitVecRelation` | Relation selector for `BitVecComparison`: equality and signed/unsigned ordering listed above |
 | `CardinalityRelation` | `AT_MOST`, `EXACTLY`, `AT_LEAST` compare `BoolCardinality`'s number of true operands with its `count` |

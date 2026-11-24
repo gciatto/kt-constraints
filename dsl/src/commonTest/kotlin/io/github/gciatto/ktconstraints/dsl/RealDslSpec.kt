@@ -53,7 +53,7 @@ class RealDslSpec :
         test("real/integers-embed-explicitly") {
             ConstraintScope.empty {
                 val n = intVar("n", 0..3)
-                n.toReal() shouldBe IntToReal(n)
+                n.asRealExpr() shouldBe IntToReal(n)
             }
         }
     })

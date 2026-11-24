@@ -124,4 +124,7 @@ interface RealExpr : Expr {
 
     /** Creates an exact real negation. */
     operator fun unaryMinus(): RealExpr = RealNegation(this)
+
+    /** Creates an exact real negation; the same as [unaryMinus], named for Java. */
+    fun negate(): RealExpr = unaryMinus()
 }

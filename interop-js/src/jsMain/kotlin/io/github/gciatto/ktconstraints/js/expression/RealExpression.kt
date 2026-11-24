@@ -2,7 +2,7 @@ package io.github.gciatto.ktconstraints.js.expression
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.real.RealExpr
 
-/** Immutable exact linear real expression; constants come from [real], integers embed through [toReal]. */
+/** Immutable exact linear real expression; constants come from [real], integers embed through [asRealExpression]. */
 @JsExport
 class RealExpression internal constructor(
     internal val expr: RealExpr,

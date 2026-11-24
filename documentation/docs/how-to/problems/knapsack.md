@@ -18,7 +18,7 @@ Use a `0..1` integer decision for each item and two weighted sums.
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Knapsack.kt:model"
 ```
 
-A decision of 1 includes an item and 0 excludes it. Multiplication by a constant and `sum` suffice; no packing global is needed for this single-capacity selection problem. Boolean variables with `toInt()` are an alternative when the selection also participates in logical constraints.
+A decision of 1 includes an item and 0 excludes it. Multiplication by a constant and `sum` suffice; no packing global is needed for this single-capacity selection problem. Boolean variables with `asIntExpr()` are an alternative when the selection also participates in logical constraints.
 
 ## 2. Solve and read the result
 
