@@ -43,10 +43,12 @@ fun mipRoute(
     }
 
     test("$id/out-of-range-models-are-rejected-before-execution") {
-        val scope = ConstraintScope.empty()
-        scope.intVar("x", 0..2_000_000)
-        backend().support(scope.build()).isSupported shouldBe false
-        backend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(scope.build()) } }
+        val model =
+            ConstraintModel.of {
+                intVar("x", 0..2_000_000)
+            }
+        backend().support(model).isSupported shouldBe false
+        backend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
     }
 
     include(
@@ -63,19 +65,20 @@ fun mipRoute(
     )
 
     test("$id/objectives-near-the-limit-are-exact-and-optimal") {
-        val scope = ConstraintScope.empty()
-        val x = scope.intVar("x", -100_000..300_000)
-        val hidden = scope.intVar("hidden", 0..3)
-        scope.add(IntLessThan(x, IntSum(IntProduct(IntLiteral(100_000), hidden), IntLiteral(-7))))
-        scope.maximize(LinearSum(listOf(x, hidden), listOf(BigInteger.of(3), BigInteger.ONE), BigInteger.ONE))
-        scope.project(x)
-        backend().create().use { solver ->
-            val result = solver.solve(scope.build())
-            result.status shouldBe SolveStatus.OPTIMAL
-            result.assignment?.valueOf(x) shouldBe BigInteger.of(299_992)
-            result.objectiveValue shouldBe BigInteger.of(899_980)
-            result.bestBound shouldBe result.objectiveValue
-            result.assignment?.valueOf(hidden) shouldBe null
+        with(ConstraintScope.empty()) {
+            val x = intVar("x", -100_000..300_000)
+            val hidden = intVar("hidden", 0..3)
+            add(IntLessThan(x, IntSum(IntProduct(IntLiteral(100_000), hidden), IntLiteral(-7))))
+            maximize(LinearSum(listOf(x, hidden), listOf(BigInteger.of(3), BigInteger.ONE), BigInteger.ONE))
+            project(x)
+            backend().create().use { solver ->
+                val result = solver.solve(build())
+                result.status shouldBe SolveStatus.OPTIMAL
+                result.assignment?.valueOf(x) shouldBe BigInteger.of(299_992)
+                result.objectiveValue shouldBe BigInteger.of(899_980)
+                result.bestBound shouldBe result.objectiveValue
+                result.assignment?.valueOf(hidden) shouldBe null
+            }
         }
     }
 
@@ -91,12 +94,12 @@ fun mipRoute(
 /** A market-split instance: few equalities over binaries, notoriously hard for LP-based branch and bound. */
 internal fun marketSplit(): ConstraintModel {
     val random = Random(7)
-    val scope = ConstraintScope.empty()
-    val xs = (0 until 40).map { scope.intVar("x$it", 0..1) }
-    repeat(5) {
-        val weights = xs.map { BigInteger.of(random.nextInt(100).toLong()) }
-        val half = weights.fold(BigInteger.ZERO) { total, weight -> total + weight } / BigInteger.TWO
-        scope.add(IntEquality(LinearSum(xs, weights), IntLiteral(half)))
+    return ConstraintModel.of {
+        val xs = (0 until 40).map { intVar("x$it", 0..1) }
+        repeat(5) {
+            val weights = xs.map { BigInteger.of(random.nextInt(100).toLong()) }
+            val half = weights.fold(BigInteger.ZERO) { total, weight -> total + weight } / BigInteger.TWO
+            add(IntEquality(LinearSum(xs, weights), IntLiteral(half)))
+        }
     }
-    return scope.build()
 }

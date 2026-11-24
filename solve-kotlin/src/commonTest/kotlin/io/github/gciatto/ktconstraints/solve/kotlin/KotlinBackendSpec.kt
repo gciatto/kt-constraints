@@ -4,6 +4,7 @@ import io.github.gciatto.ktconstraints.core.domain.IntDomain
 import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntProduct
 import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
+import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
@@ -27,23 +28,26 @@ class KotlinBackendSpec :
 
         test("finite integers and intermediate products remain exact above Long") {
             val base = BigInteger.ONE shl 80
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", IntDomain.of(base, base + 2))
-            scope.add(IntEquality(IntProduct(x, x), IntLiteral((base + 1) * (base + 1))))
-            KotlinBackend().create().use { solver ->
-                val result = solver.solve(scope.build())
-                result.status shouldBe SolveStatus.FEASIBLE
-                result.assignment?.valueOf(x) shouldBe base + 1
+            with(ConstraintScope.empty()) {
+                val x = intVar("x", IntDomain.of(base, base + 2))
+                add(IntEquality(IntProduct(x, x), IntLiteral((base + 1) * (base + 1))))
+                KotlinBackend().create().use { solver ->
+                    val result = solver.solve(build())
+                    result.status shouldBe SolveStatus.FEASIBLE
+                    result.assignment?.valueOf(x) shouldBe base + 1
+                }
             }
         }
 
         test("minimizing a negative product is not machine wrapping arithmetic") {
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", -7..5)
-            val y = scope.intVar("y", -3..4)
-            scope.minimize(IntProduct(x, y))
+            val model =
+                ConstraintModel.of {
+                    val x = intVar("x", -7..5)
+                    val y = intVar("y", -3..4)
+                    minimize(IntProduct(x, y))
+                }
             KotlinBackend().create().use { solver ->
-                solver.solve(scope.build()).objectiveValue shouldBe BigInteger.of(-28)
+                solver.solve(model).objectiveValue shouldBe BigInteger.of(-28)
             }
         }
     })

@@ -188,39 +188,40 @@ fun storeContract(
             val xs = case.domains.mapIndexed { index, domain -> store.intVar("x$index", domain) }
             var status = StoreStatus.UNKNOWN
             for (constraint in case.constraints(xs)) status = store.constrain(constraint).status
-            val scope = ConstraintScope.empty()
-            val ys = case.domains.mapIndexed { index, domain -> scope.intVar("x$index", domain) }
-            case.constraints(ys).forEach { scope.add(it) }
-            val solutions = FiniteOracle().use { oracle -> enumerate(oracle, scope.build()).first }
-            when {
-                solutions.isEmpty() -> if (!propagates) status shouldBe StoreStatus.FAILED
-                else -> status shouldNotBe StoreStatus.FAILED
-            }
-            // An unsatisfiable store entails everything vacuously, so only satisfiable cases probe entailment.
-            if (solutions.isEmpty()) return@withTests
-            val probe = case.probe(xs)
-            val holds =
-                solutions
-                    .map { values ->
-                        GroundEvaluator.evaluate(
-                            case.probe(ys),
-                            Assignment.of(
-                                integers =
-                                    ys.zip(values).associate { (y, v) ->
-                                        y to
-                                            v as BigInteger
-                                    },
-                            ),
-                        )
-                    }.toSet()
-            val truth =
-                when (holds) {
-                    setOf(true) -> Entailment.ENTAILED
-                    setOf(false) -> Entailment.DISENTAILED
-                    else -> Entailment.UNDETERMINED
+            with(ConstraintScope.empty()) {
+                val ys = case.domains.mapIndexed { index, domain -> intVar("x$index", domain) }
+                case.constraints(ys).forEach { add(it) }
+                val solutions = FiniteOracle().use { oracle -> enumerate(oracle, build()).first }
+                when {
+                    solutions.isEmpty() -> if (!propagates) status shouldBe StoreStatus.FAILED
+                    else -> status shouldNotBe StoreStatus.FAILED
                 }
-            val answer = store.entails(probe).value
-            if (propagates) answer shouldBeIn listOf(truth, Entailment.UNKNOWN) else answer shouldBe truth
+                // An unsatisfiable store entails everything vacuously, so only satisfiable cases probe entailment.
+                if (solutions.isEmpty()) return@withTests
+                val probe = case.probe(xs)
+                val holds =
+                    solutions
+                        .map { values ->
+                            GroundEvaluator.evaluate(
+                                case.probe(ys),
+                                Assignment.of(
+                                    integers =
+                                        ys.zip(values).associate { (y, v) ->
+                                            y to
+                                                v as BigInteger
+                                        },
+                                ),
+                            )
+                        }.toSet()
+                val truth =
+                    when (holds) {
+                        setOf(true) -> Entailment.ENTAILED
+                        setOf(false) -> Entailment.DISENTAILED
+                        else -> Entailment.UNDETERMINED
+                    }
+                val answer = store.entails(probe).value
+                if (propagates) answer shouldBeIn listOf(truth, Entailment.UNKNOWN) else answer shouldBe truth
+            }
         }
     }
 

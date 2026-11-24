@@ -14,6 +14,7 @@ import io.github.gciatto.ktconstraints.core.integer.relation.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.integer.relation.IntLessThan
 import io.github.gciatto.ktconstraints.core.real.RealLiteral
 import io.github.gciatto.ktconstraints.core.real.relation.RealEquality
+import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverCapability
@@ -53,54 +54,58 @@ class CpSatSpec :
 
         withTests(
             nameFn = { "cp-sat/int64-guard/${it.first}" },
-            listOf<Pair<String, (ConstraintScope) -> Unit>>(
-                "domain-bound" to { scope -> scope.intVar("x", IntDomain.of(BigInteger.ZERO, BigInteger.TWO.pow(62))) },
-                "literal" to { scope ->
-                    val x = scope.intVar("x", 0..1)
-                    scope.add(IntLessOrEqual(x, IntLiteral(BigInteger.TWO.pow(64))))
+            listOf<Pair<String, ConstraintScope.() -> Unit>>(
+                "domain-bound" to { intVar("x", IntDomain.of(BigInteger.ZERO, BigInteger.TWO.pow(62))) },
+                "literal" to {
+                    val x = intVar("x", 0..1)
+                    add(IntLessOrEqual(x, IntLiteral(BigInteger.TWO.pow(64))))
                 },
-                "sum-magnitude" to { scope ->
-                    val x = scope.intVar("x", IntDomain.of(BigInteger.ZERO, BigInteger.TWO.pow(60)))
-                    val y = scope.intVar("y", IntDomain.of(BigInteger.ZERO, BigInteger.TWO.pow(60)))
-                    scope.add(IntLessOrEqual(LinearSum(listOf(x, y), listOf(BigInteger.TWO, BigInteger.TWO)), IntLiteral(5)))
+                "sum-magnitude" to {
+                    val x = intVar("x", IntDomain.of(BigInteger.ZERO, BigInteger.TWO.pow(60)))
+                    val y = intVar("y", IntDomain.of(BigInteger.ZERO, BigInteger.TWO.pow(60)))
+                    add(IntLessOrEqual(LinearSum(listOf(x, y), listOf(BigInteger.TWO, BigInteger.TWO)), IntLiteral(5)))
                 },
-                "product-interval" to { scope ->
-                    val x = scope.intVar("x", IntDomain.of(BigInteger.ZERO, BigInteger.TWO.pow(40)))
-                    scope.add(IntLessOrEqual(IntProduct(x, x), IntLiteral(5)))
+                "product-interval" to {
+                    val x = intVar("x", IntDomain.of(BigInteger.ZERO, BigInteger.TWO.pow(40)))
+                    add(IntLessOrEqual(IntProduct(x, x), IntLiteral(5)))
                 },
-                "objective-magnitude" to { scope ->
-                    val x = scope.intVar("x", IntDomain.of(BigInteger.ZERO, BigInteger.TWO.pow(60)))
-                    scope.maximize(LinearSum(listOf(x), listOf(BigInteger.of(4))))
+                "objective-magnitude" to {
+                    val x = intVar("x", IntDomain.of(BigInteger.ZERO, BigInteger.TWO.pow(60)))
+                    maximize(LinearSum(listOf(x), listOf(BigInteger.of(4))))
                 },
             ),
         ) { (_, build) ->
-            val scope = ConstraintScope.empty()
-            build(scope)
-            val model = scope.build()
+            val model = ConstraintModel.of(build)
             CpSatBackend().support(model).isSupported shouldBe false
             CpSatBackend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
         }
 
         test("cp-sat/reals-are-rejected-before-execution") {
-            val scope = ConstraintScope.empty()
-            val r = scope.realVar("r")
-            scope.add(RealEquality(r, RealLiteral(Rational.of(1, 2))))
-            CpSatBackend().support(scope.build()).isSupported shouldBe false
-            CpSatBackend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(scope.build()) } }
+            val model =
+                ConstraintModel.of {
+                    val r = realVar("r")
+                    add(RealEquality(r, RealLiteral(Rational.of(1, 2))))
+                }
+            CpSatBackend().support(model).isSupported shouldBe false
+            CpSatBackend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
         }
 
         test("cp-sat/bit-vectors-are-rejected-before-execution") {
-            val scope = ConstraintScope.empty()
-            scope.bitVecVar("v", 8)
-            CpSatBackend().support(scope.build()).isSupported shouldBe false
+            val model =
+                ConstraintModel.of {
+                    bitVecVar("v", 8)
+                }
+            CpSatBackend().support(model).isSupported shouldBe false
         }
 
         test("cp-sat/nested-globals-declare-their-decompositions") {
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", 0..2)
-            val y = scope.intVar("y", 0..2)
-            scope.add(BoolOr(AllDifferent(listOf(x, y)), Table(listOf(x, y), listOf(listOf(BigInteger.ONE, BigInteger.ONE)))))
-            val report = CpSatBackend().support(scope.build())
+            val model =
+                ConstraintModel.of {
+                    val x = intVar("x", 0..2)
+                    val y = intVar("y", 0..2)
+                    add(BoolOr(AllDifferent(listOf(x, y)), Table(listOf(x, y), listOf(listOf(BigInteger.ONE, BigInteger.ONE)))))
+                }
+            val report = CpSatBackend().support(model)
             report.isSupported shouldBe true
             report.losslessDecompositions.size shouldBe 2
         }
@@ -109,42 +114,47 @@ class CpSatSpec :
 
         test("cp-sat/wide-objectives-are-exact-and-optimal") {
             val big = BigInteger.TWO.pow(40)
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", IntDomain.of(-big, big * BigInteger.of(4)))
-            val hidden = scope.intVar("hidden", 0..3)
-            scope.add(IntLessThan(x, IntSum(IntProduct(hidden, IntLiteral(big)), IntLiteral(-7))))
-            scope.maximize(LinearSum(listOf(x, hidden), listOf(BigInteger.of(3), BigInteger.ONE), BigInteger.ONE))
-            scope.project(x)
-            CpSatBackend().create().use { solver ->
-                val result = solver.solve(scope.build())
-                result.status shouldBe SolveStatus.OPTIMAL
-                val best = big * BigInteger.of(3) - BigInteger.of(8)
-                result.assignment?.valueOf(x) shouldBe best
-                result.objectiveValue shouldBe best * BigInteger.of(3) + BigInteger.of(4)
-                result.bestBound shouldBe result.objectiveValue
-                result.assignment?.valueOf(hidden) shouldBe null
+            with(ConstraintScope.empty()) {
+                val x = intVar("x", IntDomain.of(-big, big * BigInteger.of(4)))
+                val hidden = intVar("hidden", 0..3)
+                add(IntLessThan(x, IntSum(IntProduct(hidden, IntLiteral(big)), IntLiteral(-7))))
+                maximize(LinearSum(listOf(x, hidden), listOf(BigInteger.of(3), BigInteger.ONE), BigInteger.ONE))
+                project(x)
+                CpSatBackend().create().use { solver ->
+                    val result = solver.solve(build())
+                    result.status shouldBe SolveStatus.OPTIMAL
+                    val best = big * BigInteger.of(3) - BigInteger.of(8)
+                    result.assignment?.valueOf(x) shouldBe best
+                    result.objectiveValue shouldBe best * BigInteger.of(3) + BigInteger.of(4)
+                    result.bestBound shouldBe result.objectiveValue
+                    result.assignment?.valueOf(hidden) shouldBe null
+                }
             }
         }
 
         test("cp-sat/incumbents-strictly-improve") {
-            val scope = ConstraintScope.empty()
-            val xs = (0 until 6).map { scope.intVar("x$it", 0..9) }
-            scope.add(AllDifferent(xs))
-            scope.minimize(LinearSum(xs, xs.indices.map { BigInteger.of(it.toLong() + 1) }))
-            val (found, result) = CpSatBackend().create().use { enumerate(it, scope.build(), objectives = true) }
+            val model =
+                ConstraintModel.of {
+                    val xs = (0 until 6).map { intVar("x$it", 0..9) }
+                    add(AllDifferent(xs))
+                    minimize(LinearSum(xs, xs.indices.map { BigInteger.of(it.toLong() + 1) }))
+                }
+            val (found, result) = CpSatBackend().create().use { enumerate(it, model, objectives = true) }
             result.status shouldBe SolveStatus.OPTIMAL
             result.objectiveValue shouldBe BigInteger.of(35)
             found.map { -(it.single() as BigInteger).toLong() }.shouldBeStrictlyIncreasing()
         }
 
         test("cp-sat/fixed-workers-and-seed-still-prove-optimality") {
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", -5..5)
-            val y = scope.intVar("y", -5..5)
-            scope.add(IntEquality(IntProduct(x, y), IntLiteral(-6)))
-            scope.minimize(IntSum(x, y))
+            val model =
+                ConstraintModel.of {
+                    val x = intVar("x", -5..5)
+                    val y = intVar("y", -5..5)
+                    add(IntEquality(IntProduct(x, y), IntLiteral(-6)))
+                    minimize(IntSum(x, y))
+                }
             CpSatBackend(workers = 2, seed = 7).create().use { solver ->
-                val result = solver.solve(scope.build())
+                val result = solver.solve(model)
                 result.status shouldBe SolveStatus.OPTIMAL
                 result.objectiveValue shouldBe BigInteger.of(-1)
             }
@@ -152,10 +162,12 @@ class CpSatSpec :
         }
 
         test("cp-sat/solution-limit-stops-enumeration") {
-            val scope = ConstraintScope.empty()
-            scope.intVar("x", 0..2)
+            val model =
+                ConstraintModel.of {
+                    intVar("x", 0..2)
+                }
             CpSatBackend().create().use { solver ->
-                val (found, result) = enumerate(solver, scope.build(), SolveOptions(solutionLimit = 2))
+                val (found, result) = enumerate(solver, model, SolveOptions(solutionLimit = 2))
                 found.size shouldBe 2
                 result.status shouldBe SolveStatus.FEASIBLE
                 result.terminationReason shouldBe TerminationReason.RESOURCE_LIMIT
@@ -163,10 +175,12 @@ class CpSatSpec :
         }
 
         test("cp-sat/deadline-during-enumeration-is-a-timeout") {
-            val scope = ConstraintScope.empty()
-            repeat(9) { scope.intVar("x$it", 0..9) }
+            val model =
+                ConstraintModel.of {
+                    repeat(9) { intVar("x$it", 0..9) }
+                }
             CpSatBackend().create().use { solver ->
-                val (found, result) = enumerate(solver, scope.build(), SolveOptions(timeoutMillis = 300))
+                val (found, result) = enumerate(solver, model, SolveOptions(timeoutMillis = 300))
                 (found.size > 0) shouldBe true
                 result.status shouldBe SolveStatus.FEASIBLE
                 result.terminationReason shouldBe TerminationReason.TIMEOUT
@@ -174,20 +188,21 @@ class CpSatSpec :
         }
 
         test("cp-sat/closing-a-stream-stops-its-search-thread") {
-            val scope = ConstraintScope.empty()
-            repeat(9) { scope.intVar("x$it", 0..9) }
-            val solver = CpSatBackend().create()
-            val stream = solver.solutions(scope.build())
-            repeat(3) { (stream.next() is SolutionFound) shouldBe true }
-            stream.close()
-            stream.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
-            stream.terminalResult?.status shouldBe SolveStatus.FEASIBLE
-            searchThreads() shouldBe 0
-            val other = solver.solutions(scope.build())
-            (other.next() is SolutionFound) shouldBe true
-            solver.close()
-            other.terminalResult shouldNotBe null
-            searchThreads() shouldBe 0
+            with(ConstraintScope.empty()) {
+                repeat(9) { intVar("x$it", 0..9) }
+                val solver = CpSatBackend().create()
+                val stream = solver.solutions(build())
+                repeat(3) { (stream.next() is SolutionFound) shouldBe true }
+                stream.close()
+                stream.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
+                stream.terminalResult?.status shouldBe SolveStatus.FEASIBLE
+                searchThreads() shouldBe 0
+                val other = solver.solutions(build())
+                (other.next() is SolutionFound) shouldBe true
+                solver.close()
+                other.terminalResult shouldNotBe null
+                searchThreads() shouldBe 0
+            }
         }
     })
 

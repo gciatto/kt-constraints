@@ -6,7 +6,7 @@ import io.github.gciatto.ktconstraints.core.integer.IntExpr
 import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntDifference
 import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
-import io.github.gciatto.ktconstraints.model.ConstraintScope
+import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.store.ConstraintStore
@@ -63,11 +63,13 @@ suspend fun benchmarkStore(
 
     for (depth in 0..queens) {
         timed("rebuild-and-solve") {
-            val scope = ConstraintScope.empty()
-            val xs = List(queens) { scope.intVar("q$it", 0 until queens) }
-            queensConstraints(xs).forEach { scope.add(it) }
-            xs.zip(solution).take(depth).forEach { (x, value) -> scope.add(IntEquality(x, IntLiteral(value))) }
-            batch().use { check(it.solve(scope.build()).status == SolveStatus.FEASIBLE) }
+            val model =
+                ConstraintModel.of {
+                    val xs = List(queens) { intVar("q$it", 0 until queens) }
+                    queensConstraints(xs).forEach { add(it) }
+                    xs.zip(solution).take(depth).forEach { (x, value) -> add(IntEquality(x, IntLiteral(value))) }
+                }
+            batch().use { check(it.solve(model).status == SolveStatus.FEASIBLE) }
         }
     }
     return timings.entries.joinToString("\n") { (operation, samples) ->

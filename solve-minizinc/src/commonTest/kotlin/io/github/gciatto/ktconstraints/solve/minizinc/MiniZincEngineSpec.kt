@@ -1,6 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
 import io.github.gciatto.ktconstraints.core.domain.IntDomain
+import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.minizinc.lowering.MiniZincDecoder
@@ -22,16 +23,20 @@ class MiniZincEngineSpec :
             result.descriptor shouldBe engine.descriptor
         }
         test("engine/chuffed-rejects-values-outside-its-conservative-range") {
-            val scope = ConstraintScope.empty()
-            scope.intVar("x", IntDomain.of(600_000_000, 600_000_001))
-            MiniZincCompiler(MiniZincEngine.GECODE).support(scope.build()).isSupported shouldBe true
-            MiniZincCompiler(MiniZincEngine.CHUFFED).support(scope.build()).isSupported shouldBe false
+            val model =
+                ConstraintModel.of {
+                    intVar("x", IntDomain.of(600_000_000, 600_000_001))
+                }
+            MiniZincCompiler(MiniZincEngine.GECODE).support(model).isSupported shouldBe true
+            MiniZincCompiler(MiniZincEngine.CHUFFED).support(model).isSupported shouldBe false
         }
         test("engine/chuffed-rejects-its-reserved-unbounded-sentinels") {
             for (value in listOf(-500_000_000L, 500_000_000L)) {
-                val scope = ConstraintScope.empty()
-                scope.intVar("x", IntDomain.of(value, value))
-                MiniZincCompiler(MiniZincEngine.CHUFFED).support(scope.build()).isSupported shouldBe false
+                val model =
+                    ConstraintModel.of {
+                        intVar("x", IntDomain.of(value, value))
+                    }
+                MiniZincCompiler(MiniZincEngine.CHUFFED).support(model).isSupported shouldBe false
             }
         }
         test("engine/decoder-retains-the-explicit-execution-route") {

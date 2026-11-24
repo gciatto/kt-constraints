@@ -64,51 +64,55 @@ class ChocoSpec :
 
         withTests(
             nameFn = { "choco/int32-guard/${it.first}" },
-            listOf<Pair<String, (ConstraintScope) -> Unit>>(
-                "domain-bound" to { scope -> scope.intVar("x", IntDomain.of(BigInteger.ZERO, BigInteger.TWO.pow(24))) },
-                "literal" to { scope ->
-                    val x = scope.intVar("x", 0..1)
-                    scope.add(IntLessOrEqual(x, IntLiteral(BigInteger.TWO.pow(40))))
+            listOf<Pair<String, ConstraintScope.() -> Unit>>(
+                "domain-bound" to { intVar("x", IntDomain.of(BigInteger.ZERO, BigInteger.TWO.pow(24))) },
+                "literal" to {
+                    val x = intVar("x", 0..1)
+                    add(IntLessOrEqual(x, IntLiteral(BigInteger.TWO.pow(40))))
                 },
-                "sum-magnitude" to { scope ->
-                    val x = scope.intVar("x", 0..6_000_000)
-                    val y = scope.intVar("y", 0..6_000_000)
-                    scope.add(IntLessOrEqual(IntSum(x, y), IntLiteral(5)))
+                "sum-magnitude" to {
+                    val x = intVar("x", 0..6_000_000)
+                    val y = intVar("y", 0..6_000_000)
+                    add(IntLessOrEqual(IntSum(x, y), IntLiteral(5)))
                 },
-                "product-interval" to { scope ->
-                    val x = scope.intVar("x", 0..5_000)
-                    scope.add(IntLessOrEqual(IntProduct(x, x), IntLiteral(5)))
+                "product-interval" to {
+                    val x = intVar("x", 0..5_000)
+                    add(IntLessOrEqual(IntProduct(x, x), IntLiteral(5)))
                 },
-                "objective-magnitude" to { scope ->
-                    val x = scope.intVar("x", 0..6_000_000)
-                    scope.maximize(LinearSum(listOf(x), listOf(BigInteger.TWO)))
+                "objective-magnitude" to {
+                    val x = intVar("x", 0..6_000_000)
+                    maximize(LinearSum(listOf(x), listOf(BigInteger.TWO)))
                 },
             ),
         ) { (_, build) ->
-            val scope = ConstraintScope.empty()
-            build(scope)
-            val model = scope.build()
+            val model = ConstraintModel.of(build)
             ChocoBackend().support(model).isSupported shouldBe false
             ChocoBackend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
         }
 
         test("choco/reals-and-bit-vectors-are-rejected-before-execution") {
-            val scope = ConstraintScope.empty()
-            val r = scope.realVar("r")
-            scope.add(RealEquality(r, RealLiteral(Rational.of(1, 2))))
-            ChocoBackend().support(scope.build()).isSupported shouldBe false
-            ChocoBackend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(scope.build()) } }
-            val vectors = ConstraintScope.empty()
-            vectors.bitVecVar("v", 8)
-            ChocoBackend().support(vectors.build()).isSupported shouldBe false
+            val scopeModel =
+                ConstraintModel.of {
+                    val r = realVar("r")
+                    add(RealEquality(r, RealLiteral(Rational.of(1, 2))))
+                }
+            ChocoBackend().support(scopeModel).isSupported shouldBe false
+            ChocoBackend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(scopeModel) } }
+            val model =
+                ConstraintModel.of {
+                    bitVecVar("v", 8)
+                }
+            ChocoBackend().support(model).isSupported shouldBe false
         }
 
         test("choco/nested-globals-are-reified-natively") {
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", 0..2)
-            val y = scope.intVar("y", 0..2)
-            scope.add(BoolOr(AllDifferent(listOf(x, y)), Table(listOf(x, y), listOf(listOf(BigInteger.ONE, BigInteger.ONE)))))
-            val report = ChocoBackend().support(scope.build())
+            val model =
+                ConstraintModel.of {
+                    val x = intVar("x", 0..2)
+                    val y = intVar("y", 0..2)
+                    add(BoolOr(AllDifferent(listOf(x, y)), Table(listOf(x, y), listOf(listOf(BigInteger.ONE, BigInteger.ONE)))))
+                }
+            val report = ChocoBackend().support(model)
             report.isSupported shouldBe true
             report.losslessDecompositions shouldBe emptyList()
         }
@@ -117,47 +121,54 @@ class ChocoSpec :
 
         test("choco/objectives-near-the-limit-are-exact-and-optimal") {
             val million = BigInteger.of(1_000_000)
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", -1_000_000..3_000_000)
-            val hidden = scope.intVar("hidden", 0..3)
-            scope.add(IntLessThan(x, IntSum(IntProduct(hidden, IntLiteral(million)), IntLiteral(-7))))
-            scope.maximize(LinearSum(listOf(x, hidden), listOf(BigInteger.of(3), BigInteger.ONE), BigInteger.ONE))
-            scope.project(x)
-            ChocoBackend().create().use { solver ->
-                val result = solver.solve(scope.build())
-                result.status shouldBe SolveStatus.OPTIMAL
-                result.assignment?.valueOf(x) shouldBe BigInteger.of(2_999_992)
-                result.objectiveValue shouldBe BigInteger.of(8_999_980)
-                result.bestBound shouldBe result.objectiveValue
-                result.assignment?.valueOf(hidden) shouldBe null
+            with(ConstraintScope.empty()) {
+                val x = intVar("x", -1_000_000..3_000_000)
+                val hidden = intVar("hidden", 0..3)
+                add(IntLessThan(x, IntSum(IntProduct(hidden, IntLiteral(million)), IntLiteral(-7))))
+                maximize(LinearSum(listOf(x, hidden), listOf(BigInteger.of(3), BigInteger.ONE), BigInteger.ONE))
+                project(x)
+                ChocoBackend().create().use { solver ->
+                    val result = solver.solve(build())
+                    result.status shouldBe SolveStatus.OPTIMAL
+                    result.assignment?.valueOf(x) shouldBe BigInteger.of(2_999_992)
+                    result.objectiveValue shouldBe BigInteger.of(8_999_980)
+                    result.bestBound shouldBe result.objectiveValue
+                    result.assignment?.valueOf(hidden) shouldBe null
+                }
             }
         }
 
         test("choco/long-sums-translate-in-linear-time").config(timeout = 30.seconds) {
-            val scope = ConstraintScope.empty()
-            val flags = (0 until 40_000).map { scope.boolVar("b$it") }
-            val xs = (0 until 40_000).map { scope.intVar("x$it", 0..1) }
-            scope.add(BoolCardinality(flags, 1, CardinalityRelation.AT_MOST))
-            scope.add(IntLessOrEqual(LinearSum(xs, xs.map { BigInteger.ONE }), IntLiteral(1)))
-            ChocoTranslation(scope.build())
+            val model =
+                ConstraintModel.of {
+                    val flags = (0 until 40_000).map { boolVar("b$it") }
+                    val xs = (0 until 40_000).map { intVar("x$it", 0..1) }
+                    add(BoolCardinality(flags, 1, CardinalityRelation.AT_MOST))
+                    add(IntLessOrEqual(LinearSum(xs, xs.map { BigInteger.ONE }), IntLiteral(1)))
+                }
+            ChocoTranslation(model)
         }
 
         test("choco/incumbents-strictly-improve") {
-            val scope = ConstraintScope.empty()
-            val xs = (0 until 6).map { scope.intVar("x$it", 0..9) }
-            scope.add(AllDifferent(xs))
-            scope.minimize(LinearSum(xs, xs.indices.map { BigInteger.of(it.toLong() + 1) }))
-            val (found, result) = ChocoBackend().create().use { enumerate(it, scope.build(), objectives = true) }
+            val model =
+                ConstraintModel.of {
+                    val xs = (0 until 6).map { intVar("x$it", 0..9) }
+                    add(AllDifferent(xs))
+                    minimize(LinearSum(xs, xs.indices.map { BigInteger.of(it.toLong() + 1) }))
+                }
+            val (found, result) = ChocoBackend().create().use { enumerate(it, model, objectives = true) }
             result.status shouldBe SolveStatus.OPTIMAL
             result.objectiveValue shouldBe BigInteger.of(35)
             found.map { -(it.single() as BigInteger).toLong() }.shouldBeStrictlyIncreasing()
         }
 
         test("choco/solution-limit-stops-enumeration") {
-            val scope = ConstraintScope.empty()
-            scope.intVar("x", 0..2)
+            val model =
+                ConstraintModel.of {
+                    intVar("x", 0..2)
+                }
             ChocoBackend().create().use { solver ->
-                val (found, result) = enumerate(solver, scope.build(), SolveOptions(solutionLimit = 2))
+                val (found, result) = enumerate(solver, model, SolveOptions(solutionLimit = 2))
                 found.size shouldBe 2
                 result.status shouldBe SolveStatus.FEASIBLE
                 result.terminationReason shouldBe TerminationReason.RESOURCE_LIMIT
@@ -165,10 +176,12 @@ class ChocoSpec :
         }
 
         test("choco/deadline-during-enumeration-is-a-timeout") {
-            val scope = ConstraintScope.empty()
-            repeat(9) { scope.intVar("x$it", 0..9) }
+            val model =
+                ConstraintModel.of {
+                    repeat(9) { intVar("x$it", 0..9) }
+                }
             ChocoBackend().create().use { solver ->
-                val (found, result) = enumerate(solver, scope.build(), SolveOptions(timeoutMillis = 300))
+                val (found, result) = enumerate(solver, model, SolveOptions(timeoutMillis = 300))
                 (found.size > 0) shouldBe true
                 result.status shouldBe SolveStatus.FEASIBLE
                 result.terminationReason shouldBe TerminationReason.TIMEOUT
@@ -192,33 +205,34 @@ class ChocoSpec :
         }
 
         test("choco/interleaved-streams-are-isolated") {
-            val first = ConstraintScope.empty()
-            val x = first.intVar("x", 0..2)
-            val second = ConstraintScope.empty()
-            val y = second.intVar("y", 5..6)
-            second.add(IntLessOrEqual(IntLiteral(6), y))
-            ChocoBackend().create().use { solver ->
-                val left = solver.solutions(first.build())
-                val right = solver.solutions(second.build())
-                val values = mutableListOf<BigInteger?>()
-                values += (left.next() as SolutionFound).assignment.valueOf(x)
-                (right.next() as SolutionFound).assignment.valueOf(y) shouldBe BigInteger.of(6)
-                values += (left.next() as SolutionFound).assignment.valueOf(x)
-                (right.next() as SolveCompleted).result.status shouldBe SolveStatus.FEASIBLE
-                values += (left.next() as SolutionFound).assignment.valueOf(x)
-                values.toSet() shouldBe setOf(BigInteger.ZERO, BigInteger.ONE, BigInteger.TWO)
-                left.close()
-                right.close()
+            with(ConstraintScope.empty()) first@{
+                val x = intVar("x", 0..2)
+                with(ConstraintScope.empty()) {
+                    val y = intVar("y", 5..6)
+                    add(IntLessOrEqual(IntLiteral(6), y))
+                    ChocoBackend().create().use { solver ->
+                        val left = solver.solutions(this@first.build())
+                        val right = solver.solutions(build())
+                        val values = mutableListOf<BigInteger?>()
+                        values += (left.next() as SolutionFound).assignment.valueOf(x)
+                        (right.next() as SolutionFound).assignment.valueOf(y) shouldBe BigInteger.of(6)
+                        values += (left.next() as SolutionFound).assignment.valueOf(x)
+                        (right.next() as SolveCompleted).result.status shouldBe SolveStatus.FEASIBLE
+                        values += (left.next() as SolutionFound).assignment.valueOf(x)
+                        values.toSet() shouldBe setOf(BigInteger.ZERO, BigInteger.ONE, BigInteger.TWO)
+                        left.close()
+                        right.close()
+                    }
+                }
             }
         }
     })
 
 /** Thirteen pigeons in twelve holes through pairwise disequalities, which propagate too weakly to refute quickly. */
-private fun pigeonholes(): ConstraintModel {
-    val scope = ConstraintScope.empty()
-    val pigeons = (0 until 13).map { scope.intVar("p$it", 0..11) }
-    for (i in pigeons.indices) {
-        for (j in i + 1 until pigeons.size) scope.add(BoolNot(IntEquality(pigeons[i], pigeons[j])))
+private fun pigeonholes(): ConstraintModel =
+    ConstraintModel.of {
+        val pigeons = (0 until 13).map { intVar("p$it", 0..11) }
+        for (i in pigeons.indices) {
+            for (j in i + 1 until pigeons.size) add(BoolNot(IntEquality(pigeons[i], pigeons[j])))
+        }
     }
-    return scope.build()
-}

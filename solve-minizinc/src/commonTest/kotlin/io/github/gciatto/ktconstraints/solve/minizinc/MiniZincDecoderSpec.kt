@@ -2,6 +2,7 @@ package io.github.gciatto.ktconstraints.solve.minizinc
 
 import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
+import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.minizinc.lowering.MiniZincDecoder
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
@@ -15,24 +16,27 @@ import org.gciatto.kt.math.BigInteger
 class MiniZincDecoderSpec :
     FunSpec({
         test("decoder/validates-full-solutions-before-projecting-and-deduplicating") {
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", 0..2)
-            val hidden = scope.boolVar("hidden")
-            scope.add(IntEquality(x, IntLiteral(1)))
-            scope.project(x)
-            val decoder = MiniZincDecoder(MiniZincCompiler().compile(scope.build()))
-            val first = requireNotNull(decoder.accept("""{"type":"solution","output":{"default":"{\"v0\":1,\"v1\":false}"}}"""))
-            first.assignment.valueOf(x) shouldBe BigInteger.ONE
-            first.assignment.valueOf(hidden) shouldBe null
-            decoder.accept("""{"type":"solution","output":{"default":"{\"v0\":1,\"v1\":true}"}}""") shouldBe null
-            decoder.accept("""{"type":"status","status":"ALL_SOLUTIONS"}""")
-            decoder.finish(0, "").status shouldBe SolveStatus.FEASIBLE
+            with(ConstraintScope.empty()) {
+                val x = intVar("x", 0..2)
+                val hidden = boolVar("hidden")
+                add(IntEquality(x, IntLiteral(1)))
+                project(x)
+                val decoder = MiniZincDecoder(MiniZincCompiler().compile(build()))
+                val first = requireNotNull(decoder.accept("""{"type":"solution","output":{"default":"{\"v0\":1,\"v1\":false}"}}"""))
+                first.assignment.valueOf(x) shouldBe BigInteger.ONE
+                first.assignment.valueOf(hidden) shouldBe null
+                decoder.accept("""{"type":"solution","output":{"default":"{\"v0\":1,\"v1\":true}"}}""") shouldBe null
+                decoder.accept("""{"type":"status","status":"ALL_SOLUTIONS"}""")
+                decoder.finish(0, "").status shouldBe SolveStatus.FEASIBLE
+            }
         }
         test("decoder/rejects-invalid-missing-or-wrongly-typed-values") {
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", 0..2)
-            scope.add(IntEquality(x, IntLiteral(1)))
-            val compiled = MiniZincCompiler().compile(scope.build())
+            val model =
+                ConstraintModel.of {
+                    val x = intVar("x", 0..2)
+                    add(IntEquality(x, IntLiteral(1)))
+                }
+            val compiled = MiniZincCompiler().compile(model)
             for (value in listOf("{}", "{\"v0\":0}", "{\"v0\":3}", "{\"v0\":\"1\"}")) {
                 val escaped = value.replace("\\", "\\\\").replace("\"", "\\\"")
                 shouldThrow<BackendExecutionException> {

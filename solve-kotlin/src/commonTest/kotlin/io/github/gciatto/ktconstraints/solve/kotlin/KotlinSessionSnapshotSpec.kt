@@ -19,19 +19,20 @@ class KotlinSessionSnapshotSpec :
         test("kotlin-session/assumptions-are-copied-before-the-first-yield") {
             withContext(Dispatchers.Default.limitedParallelism(1)) {
                 coroutineScope {
-                    val scope = ConstraintScope.empty()
-                    val x = scope.intVar("x", 0..1)
-                    val assumptions = mutableListOf<BoolExpr>(IntEquality(x, IntLiteral(0)))
-                    KotlinBackend().create().use { solver ->
-                        solver.openSession(scope.build()).use { session ->
-                            // The single dispatcher lane keeps the yielded continuation queued until await below.
-                            val pending = async(start = CoroutineStart.UNDISPATCHED) { session.check(assumptions) }
-                            pending.isCompleted shouldBe false
-                            assumptions[0] = IntEquality(x, IntLiteral(1))
-                            val result = pending.await()
-                            result.status shouldBe CheckStatus.SATISFIABLE
-                            requireNotNull(result.assignment).intValueOf(x) shouldBe 0
-                            session.check(assumptions).assignment?.intValueOf(x) shouldBe 1
+                    with(ConstraintScope.empty()) {
+                        val x = intVar("x", 0..1)
+                        val assumptions = mutableListOf<BoolExpr>(IntEquality(x, IntLiteral(0)))
+                        KotlinBackend().create().use { solver ->
+                            solver.openSession(build()).use { session ->
+                                // The single dispatcher lane keeps the yielded continuation queued until await below.
+                                val pending = async(start = CoroutineStart.UNDISPATCHED) { session.check(assumptions) }
+                                pending.isCompleted shouldBe false
+                                assumptions[0] = IntEquality(x, IntLiteral(1))
+                                val result = pending.await()
+                                result.status shouldBe CheckStatus.SATISFIABLE
+                                requireNotNull(result.assignment).intValueOf(x) shouldBe 0
+                                session.check(assumptions).assignment?.intValueOf(x) shouldBe 1
+                            }
                         }
                     }
                 }

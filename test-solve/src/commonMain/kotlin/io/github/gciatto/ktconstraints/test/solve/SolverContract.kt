@@ -12,6 +12,7 @@ import io.github.gciatto.ktconstraints.core.global.extensional.Table
 import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.github.gciatto.ktconstraints.core.integer.arithmetic.LinearSum
 import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
+import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
@@ -33,107 +34,114 @@ fun solverContract(
     create: () -> ConstraintSolver,
 ) = funSpec {
     test("solver-contract/satisfiable-assignment-is-independently-validated") {
-        val scope = ConstraintScope.empty()
-        val x = scope.intVar("x", 0..3)
-        scope.add(IntEquality(x, IntLiteral(2)))
-        create().use { solver ->
-            val result = solver.solve(scope.build())
-            result.status shouldBe SolveStatus.FEASIBLE
-            val assignment = requireNotNull(result.assignment)
-            GroundEvaluator.evaluate(scope.build().constraints.single(), assignment) shouldBe true
-            assignment.valueOf(x) shouldBe BigInteger.TWO
+        with(ConstraintScope.empty()) {
+            val x = intVar("x", 0..3)
+            add(IntEquality(x, IntLiteral(2)))
+            create().use { solver ->
+                val result = solver.solve(build())
+                result.status shouldBe SolveStatus.FEASIBLE
+                val assignment = requireNotNull(result.assignment)
+                GroundEvaluator.evaluate(build().constraints.single(), assignment) shouldBe true
+                assignment.valueOf(x) shouldBe BigInteger.TWO
+            }
         }
     }
     test("solver-contract/unsatisfiable-is-completed-without-an-assignment") {
-        val scope = ConstraintScope.empty()
-        val x = scope.intVar("x", 0..1)
-        scope.add(IntEquality(x, IntLiteral(2)))
+        val model =
+            ConstraintModel.of {
+                val x = intVar("x", 0..1)
+                add(IntEquality(x, IntLiteral(2)))
+            }
         create().use { solver ->
-            val result = solver.solve(scope.build())
+            val result = solver.solve(model)
             result.status shouldBe SolveStatus.INFEASIBLE
             result.terminationReason shouldBe TerminationReason.COMPLETED
             result.assignment shouldBe null
         }
     }
     withTests(nameFn = { "solver-contract/optimization/maximize=$it" }, listOf(false, true)) { maximize ->
-        val scope = ConstraintScope.empty()
-        val x = scope.intVar("x", -2..3)
-        if (maximize) scope.maximize(x) else scope.minimize(x)
-        create().use { solver ->
-            val result = solver.solve(scope.build())
-            result.status shouldBe SolveStatus.OPTIMAL
-            result.objectiveValue shouldBe BigInteger.of(if (maximize) 3 else -2)
-            result.assignment?.valueOf(x) shouldBe result.objectiveValue
+        with(ConstraintScope.empty()) {
+            val x = intVar("x", -2..3)
+            if (maximize) maximize(x) else minimize(x)
+            create().use { solver ->
+                val result = solver.solve(build())
+                result.status shouldBe SolveStatus.OPTIMAL
+                result.objectiveValue shouldBe BigInteger.of(if (maximize) 3 else -2)
+                result.assignment?.valueOf(x) shouldBe result.objectiveValue
+            }
         }
     }
     test("solver-contract/enumeration-is-unique-and-valid").config(enabled = enumeration) {
-        val scope = ConstraintScope.empty()
-        val x = scope.intVar("x", 0..2)
-        val flag = scope.boolVar("flag")
-        scope.add(IntEquality(x, IntLiteral(1)))
-        val answers = mutableListOf<Boolean?>()
-        create().use { solver ->
-            solver.solutions(scope.build()).use { stream ->
-                while (true) {
-                    when (val event = stream.next()) {
-                        is SolutionFound -> {
-                            GroundEvaluator.evaluate(scope.build().constraints.single(), event.assignment) shouldBe true
-                            answers += event.assignment.valueOf(flag)
+        with(ConstraintScope.empty()) {
+            val x = intVar("x", 0..2)
+            val flag = boolVar("flag")
+            add(IntEquality(x, IntLiteral(1)))
+            val answers = mutableListOf<Boolean?>()
+            create().use { solver ->
+                solver.solutions(build()).use { stream ->
+                    while (true) {
+                        when (val event = stream.next()) {
+                            is SolutionFound -> {
+                                GroundEvaluator.evaluate(build().constraints.single(), event.assignment) shouldBe true
+                                answers += event.assignment.valueOf(flag)
+                            }
+                            is SolveCompleted -> break
+                            null -> error("Missing terminal event")
                         }
-                        is SolveCompleted -> break
-                        null -> error("Missing terminal event")
                     }
+                    stream.next() shouldBe null
                 }
-                stream.next() shouldBe null
             }
+            answers.size shouldBe 2
+            answers.toSet() shouldBe setOf(false, true)
         }
-        answers.size shouldBe 2
-        answers.toSet() shouldBe setOf(false, true)
     }
     test("solver-contract/output-projection-hides-variables-and-deduplicates-solutions").config(enabled = enumeration) {
-        val scope = ConstraintScope.empty()
-        val x = scope.intVar("x", 0..2)
-        val hidden = scope.boolVar("hidden")
-        scope.project(x)
-        val answers = mutableListOf<BigInteger?>()
-        create().use { solver ->
-            solver.solutions(scope.build()).use { stream ->
-                while (true) {
-                    when (val event = stream.next()) {
-                        is SolutionFound -> {
-                            event.assignment.valueOf(hidden) shouldBe null
-                            answers += event.assignment.valueOf(x)
+        with(ConstraintScope.empty()) {
+            val x = intVar("x", 0..2)
+            val hidden = boolVar("hidden")
+            project(x)
+            val answers = mutableListOf<BigInteger?>()
+            create().use { solver ->
+                solver.solutions(build()).use { stream ->
+                    while (true) {
+                        when (val event = stream.next()) {
+                            is SolutionFound -> {
+                                event.assignment.valueOf(hidden) shouldBe null
+                                answers += event.assignment.valueOf(x)
+                            }
+                            is SolveCompleted -> break
+                            null -> error("Missing completion")
                         }
-                        is SolveCompleted -> break
-                        null -> error("Missing completion")
                     }
                 }
             }
+            answers.size shouldBe 3
+            answers.toSet() shouldBe setOf(BigInteger.ZERO, BigInteger.ONE, BigInteger.TWO)
         }
-        answers.size shouldBe 3
-        answers.toSet() shouldBe setOf(BigInteger.ZERO, BigInteger.ONE, BigInteger.TWO)
     }
     test("solver-contract/globals-and-projection-match-the-independent-oracle") {
-        val scope = ConstraintScope.empty()
-        val x = scope.intVar("x", 0..2)
-        val y = scope.intVar("y", 0..2)
-        val flag = scope.boolVar("flag")
-        scope.add(AllDifferent(listOf(x, y)))
-        scope.add(Table(listOf(x, y), listOf(listOf(BigInteger.ZERO, BigInteger.ONE), listOf(BigInteger.ONE, BigInteger.TWO))))
-        scope.add(IntEquality(Element(y, listOf(IntLiteral(3), IntLiteral(3), IntLiteral(3))), IntLiteral(3)))
-        scope.add(IntEquality(LinearSum(listOf(x, y), listOf(BigInteger.ONE, BigInteger.of(-1))), IntLiteral(-1)))
-        scope.add(BoolCardinality(listOf(flag), 1, CardinalityRelation.EXACTLY))
-        scope.maximize(x)
-        scope.project(x)
-        val model = scope.build()
-        val expected = FiniteOracle().use { it.solve(model) }
-        create().use { solver ->
-            val result = solver.solve(model)
-            result.status shouldBe expected.status
-            result.objectiveValue shouldBe expected.objectiveValue
-            result.assignment?.valueOf(x) shouldBe expected.assignment?.valueOf(x)
-            result.assignment?.valueOf(y) shouldBe null
-            result.assignment?.valueOf(flag) shouldBe null
+        with(ConstraintScope.empty()) {
+            val x = intVar("x", 0..2)
+            val y = intVar("y", 0..2)
+            val flag = boolVar("flag")
+            add(AllDifferent(listOf(x, y)))
+            add(Table(listOf(x, y), listOf(listOf(BigInteger.ZERO, BigInteger.ONE), listOf(BigInteger.ONE, BigInteger.TWO))))
+            add(IntEquality(Element(y, listOf(IntLiteral(3), IntLiteral(3), IntLiteral(3))), IntLiteral(3)))
+            add(IntEquality(LinearSum(listOf(x, y), listOf(BigInteger.ONE, BigInteger.of(-1))), IntLiteral(-1)))
+            add(BoolCardinality(listOf(flag), 1, CardinalityRelation.EXACTLY))
+            maximize(x)
+            project(x)
+            val model = build()
+            val expected = FiniteOracle().use { it.solve(model) }
+            create().use { solver ->
+                val result = solver.solve(model)
+                result.status shouldBe expected.status
+                result.objectiveValue shouldBe expected.objectiveValue
+                result.assignment?.valueOf(x) shouldBe expected.assignment?.valueOf(x)
+                result.assignment?.valueOf(y) shouldBe null
+                result.assignment?.valueOf(flag) shouldBe null
+            }
         }
     }
     test("solver-contract/zero-timeout-is-unknown-and-not-infeasible") {
@@ -156,18 +164,22 @@ fun solverContract(
         shouldThrow<IllegalStateException> { solver.solutions(ConstraintScope.empty().build()) }
     }
     test("solver-contract/limit-does-not-invent-optimality") {
-        val scope = ConstraintScope.empty()
-        val x = scope.intVar("x", 0..3)
-        scope.maximize(x)
+        val model =
+            ConstraintModel.of {
+                val x = intVar("x", 0..3)
+                maximize(x)
+            }
         create().use { solver ->
-            val result = solver.solve(scope.build(), SolveOptions(solutionLimit = 1))
+            val result = solver.solve(model, SolveOptions(solutionLimit = 1))
             result.status shouldBe SolveStatus.FEASIBLE
             result.terminationReason shouldBe TerminationReason.RESOURCE_LIMIT
         }
     }
     test("solver-contract/unknown-nodes-are-rejected-before-execution") {
-        val scope = ConstraintScope.empty()
-        scope.add(BoolAnd(BoolLiteral(false), object : BoolExpr {}))
-        create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(scope.build()) } }
+        val model =
+            ConstraintModel.of {
+                add(BoolAnd(BoolLiteral(false), object : BoolExpr {}))
+            }
+        create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
     }
 }

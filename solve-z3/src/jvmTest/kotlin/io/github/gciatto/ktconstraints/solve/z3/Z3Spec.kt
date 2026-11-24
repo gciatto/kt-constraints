@@ -74,71 +74,77 @@ class Z3Spec :
 
         test("z3/integers-beyond-64-bits-are-exact") {
             val huge = BigInteger.of("1000000000000000000000000000001")
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", IntDomain.of(-huge, huge))
-            scope.add(IntEquality(LinearSum(listOf(x), listOf(BigInteger.TWO), BigInteger.ONE), IntLiteral(huge + huge + BigInteger.ONE)))
-            Z3Backend().create().use { solver ->
-                val result = solver.solve(scope.build())
-                result.status shouldBe SolveStatus.FEASIBLE
-                result.assignment?.valueOf(x) shouldBe huge
+            with(ConstraintScope.empty()) {
+                val x = intVar("x", IntDomain.of(-huge, huge))
+                add(IntEquality(LinearSum(listOf(x), listOf(BigInteger.TWO), BigInteger.ONE), IntLiteral(huge + huge + BigInteger.ONE)))
+                Z3Backend().create().use { solver ->
+                    val result = solver.solve(build())
+                    result.status shouldBe SolveStatus.FEASIBLE
+                    result.assignment?.valueOf(x) shouldBe huge
+                }
             }
         }
 
         test("z3/unknown-nodes-are-reported-unsupported") {
-            val scope = ConstraintScope.empty()
-            scope.add(object : BoolExpr {})
-            val report = Z3Backend().support(scope.build())
+            val model =
+                ConstraintModel.of {
+                    add(object : BoolExpr {})
+                }
+            val report = Z3Backend().support(model)
             report.isSupported shouldBe false
         }
 
         test("z3/globals-declare-lossless-decompositions") {
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", 0..2)
-            val y = scope.intVar("y", 0..2)
-            scope.add(AllDifferent(listOf(x, y)))
-            val report = Z3Backend().support(scope.build())
+            val model =
+                ConstraintModel.of {
+                    val x = intVar("x", 0..2)
+                    val y = intVar("y", 0..2)
+                    add(AllDifferent(listOf(x, y)))
+                }
+            val report = Z3Backend().support(model)
             report.isSupported shouldBe true
             report.losslessDecompositions shouldContain "allDifferent -> distinct"
         }
 
         withTests(
             nameFn = { "z3/differential/${it.name}" },
-            DifferentialCase("element-index-definedness") { scope ->
-                val index = scope.intVar("i", -1..4)
-                val value = scope.intVar("v", 0..9)
-                scope.add(IntEquality(Element(index, listOf(IntLiteral(5), value, IntLiteral(7))), value))
+            DifferentialCase("element-index-definedness") {
+                val index = intVar("i", -1..4)
+                val value = intVar("v", 0..9)
+                add(IntEquality(Element(index, listOf(IntLiteral(5), value, IntLiteral(7))), value))
                 listOf(index, value)
             },
-            DifferentialCase("nonlinear-product") { scope ->
-                val x = scope.intVar("x", -4..4)
-                val y = scope.intVar("y", -4..4)
-                scope.add(IntEquality(IntProduct(x, y), IntLiteral(-4)))
+            DifferentialCase("nonlinear-product") {
+                val x = intVar("x", -4..4)
+                val y = intVar("y", -4..4)
+                add(IntEquality(IntProduct(x, y), IntLiteral(-4)))
                 listOf(x, y)
             },
-            DifferentialCase("table-or-cardinality") { scope ->
-                val x = scope.intVar("x", 0..3)
-                val a = scope.boolVar("a")
-                val b = scope.boolVar("b")
-                scope.add(
+            DifferentialCase("table-or-cardinality") {
+                val x = intVar("x", 0..3)
+                val a = boolVar("a")
+                val b = boolVar("b")
+                add(
                     BoolOr(
                         Table(listOf(x), listOf(listOf(BigInteger.ONE), listOf(BigInteger.of(3)))),
                         BoolCardinality(listOf(a, b), 2, CardinalityRelation.EXACTLY),
                     ),
                 )
-                scope.add(BoolCardinality(listOf(a, b), 1, CardinalityRelation.AT_LEAST))
+                add(BoolCardinality(listOf(a, b), 1, CardinalityRelation.AT_LEAST))
                 listOf(x, a, b)
             },
-            DifferentialCase("sparse-domains-and-order") { scope ->
-                val x = scope.intVar("x", IntDomain.values(-3, 0, 4, 9))
-                val y = scope.intVar("y", IntDomain.values(-3, 4))
-                scope.add(IntLessThan(y, x))
+            DifferentialCase("sparse-domains-and-order") {
+                val x = intVar("x", IntDomain.values(-3, 0, 4, 9))
+                val y = intVar("y", IntDomain.values(-3, 4))
+                add(IntLessThan(y, x))
                 listOf(x, y)
             },
         ) { case ->
-            val scope = ConstraintScope.empty()
-            val outputs = case.build(scope)
-            val model = scope.build()
-            answers(Z3Backend().create(), model, outputs) shouldBe answers(FiniteOracle(), model, outputs)
+            with(ConstraintScope.empty()) {
+                val outputs = case.build(this)
+                val model = build()
+                answers(Z3Backend().create(), model, outputs) shouldBe answers(FiniteOracle(), model, outputs)
+            }
         }
 
         test("z3/owned-deadline-stops-a-hard-check") {
@@ -201,19 +207,20 @@ class Z3Spec :
         }
 
         test("z3/repeated-frames-stay-consistent") {
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", 0..1_000)
-            Z3Backend().create().use { solver ->
-                solver.openSession(scope.build()).use { session ->
-                    repeat(200) { round ->
-                        val checkpoint = session.push()
-                        session.add(IntEquality(x, IntLiteral(round.toLong())))
-                        session.check().assignment?.valueOf(x) shouldBe BigInteger.of(round.toLong())
-                        session.add(IntLessThan(x, IntLiteral(round.toLong())))
-                        session.check().status shouldBe CheckStatus.UNSATISFIABLE
-                        session.popTo(checkpoint)
+            with(ConstraintScope.empty()) {
+                val x = intVar("x", 0..1_000)
+                Z3Backend().create().use { solver ->
+                    solver.openSession(build()).use { session ->
+                        repeat(200) { round ->
+                            val checkpoint = session.push()
+                            session.add(IntEquality(x, IntLiteral(round.toLong())))
+                            session.check().assignment?.valueOf(x) shouldBe BigInteger.of(round.toLong())
+                            session.add(IntLessThan(x, IntLiteral(round.toLong())))
+                            session.check().status shouldBe CheckStatus.UNSATISFIABLE
+                            session.popTo(checkpoint)
+                        }
+                        session.check().status shouldBe CheckStatus.SATISFIABLE
                     }
-                    session.check().status shouldBe CheckStatus.SATISFIABLE
                 }
             }
         }
@@ -221,17 +228,16 @@ class Z3Spec :
 
 private class DifferentialCase(
     val name: String,
-    val build: (ConstraintScope) -> List<Variable>,
+    val build: ConstraintScope.() -> List<Variable>,
 ) {
     override fun toString(): String = name
 }
 
-private fun pigeonhole(holes: Int = 12): ConstraintModel {
-    val scope = ConstraintScope.empty()
-    val pigeons = (0..holes).map { scope.intVar("p$it", 0 until holes) }
-    scope.add(AllDifferent(pigeons))
-    return scope.build()
-}
+private fun pigeonhole(holes: Int = 12): ConstraintModel =
+    ConstraintModel.of {
+        val pigeons = (0..holes).map { intVar("p$it", 0 until holes) }
+        add(AllDifferent(pigeons))
+    }
 
 @Suppress("RedundantSuspendModifier")
 private suspend fun answers(

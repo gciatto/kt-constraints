@@ -1,6 +1,6 @@
 package io.github.gciatto.ktconstraints.test.solve
 
-import io.github.gciatto.ktconstraints.model.ConstraintScope
+import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.test.solve.oracle.FiniteOracle
@@ -21,9 +21,7 @@ fun differentialContract(
     create: () -> ConstraintSolver,
 ) = funSpec {
     withTests(nameFn = { "$prefix/matches-the-oracle/${it.name}" }, cases) { case ->
-        val scope = ConstraintScope.empty()
-        case.build(scope)
-        val model = scope.build()
+        val model = ConstraintModel.of(case.build)
         val (expected, expectedResult) = FiniteOracle().use { enumerate(it, model) }
         val (actual, actualResult) = create().use { enumerate(it, model) }
         actualResult.status shouldBe expectedResult.status

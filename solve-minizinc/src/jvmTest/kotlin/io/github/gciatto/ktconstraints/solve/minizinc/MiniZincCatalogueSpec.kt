@@ -43,15 +43,16 @@ class MiniZincCatalogueSpec :
             test("catalogue/exact-integer-boundaries/${engine.engineId}")
                 .config(enabled = executable != null && engine.engineId in requested) {
                     for (value in listOf(-engine.maximumInteger, engine.maximumInteger)) {
-                        val scope = ConstraintScope.empty()
-                        val x = scope.intVar("x", IntDomain.of(value, value))
-                        scope.maximize(x)
-                        MiniZincBackend(engine, requireNotNull(executable)).create().use { solver ->
-                            val result = solver.solve(scope.build())
-                            result.descriptor shouldBe engine.descriptor
-                            result.status shouldBe SolveStatus.OPTIMAL
-                            result.objectiveValue shouldBe value
-                            result.assignment?.valueOf(x) shouldBe value
+                        with(ConstraintScope.empty()) {
+                            val x = intVar("x", IntDomain.of(value, value))
+                            maximize(x)
+                            MiniZincBackend(engine, requireNotNull(executable)).create().use { solver ->
+                                val result = solver.solve(build())
+                                result.descriptor shouldBe engine.descriptor
+                                result.status shouldBe SolveStatus.OPTIMAL
+                                result.objectiveValue shouldBe value
+                                result.assignment?.valueOf(x) shouldBe value
+                            }
                         }
                     }
                 }

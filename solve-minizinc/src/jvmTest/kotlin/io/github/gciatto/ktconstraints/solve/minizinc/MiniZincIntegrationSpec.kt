@@ -44,34 +44,39 @@ class MiniZincIntegrationSpec :
                 },
             )
             test("integration/tuning-options-keep-the-answers") {
-                val scope = ConstraintScope.empty()
-                val x = scope.intVar("x", 0..3)
-                val y = scope.intVar("y", 0..3)
-                scope.add(AllDifferent(listOf(x, y)))
-                scope.maximize(LinearSum(listOf(x, y), listOf(BigInteger.TWO, BigInteger.ONE)))
-                val tuned = SolveOptions() + MiniZincOptions(randomSeed = 5, threads = 2, freeSearch = true)
-                val result = MiniZincGecodeBackend(executable).create().use { it.solve(scope.build(), tuned) }
-                result.objectiveValue shouldBe BigInteger.of(8)
+                with(ConstraintScope.empty()) {
+                    val x = intVar("x", 0..3)
+                    val y = intVar("y", 0..3)
+                    add(AllDifferent(listOf(x, y)))
+                    maximize(LinearSum(listOf(x, y), listOf(BigInteger.TWO, BigInteger.ONE)))
+                    val tuned = SolveOptions() + MiniZincOptions(randomSeed = 5, threads = 2, freeSearch = true)
+                    val result = MiniZincGecodeBackend(executable).create().use { it.solve(build(), tuned) }
+                    result.objectiveValue shouldBe BigInteger.of(8)
+                }
             }
             test("integration/globals-match-the-independent-finite-oracle") {
-                val scope = ConstraintScope.empty()
-                val x = scope.intVar("x", 0..2)
-                val y = scope.intVar("y", 0..2)
-                val flag = scope.boolVar("flag")
-                scope.add(AllDifferent(listOf(x, y)))
-                scope.add(Table(listOf(x, y), listOf(listOf(BigInteger.ZERO, BigInteger.ONE), listOf(BigInteger.ONE, BigInteger.TWO))))
-                scope.add(IntEquality(Element(y, listOf(IntLiteral(3), IntLiteral(3), IntLiteral(3))), IntLiteral(3)))
-                scope.add(IntEquality(LinearSum(listOf(x, y), listOf(BigInteger.ONE, BigInteger.of(-1))), IntLiteral(-1)))
-                scope.add(BoolCardinality(listOf(flag), 1, CardinalityRelation.EXACTLY))
-                val model = scope.build()
+                with(ConstraintScope.empty()) {
+                    val x = intVar("x", 0..2)
+                    val y = intVar("y", 0..2)
+                    val flag = boolVar("flag")
+                    add(AllDifferent(listOf(x, y)))
+                    add(Table(listOf(x, y), listOf(listOf(BigInteger.ZERO, BigInteger.ONE), listOf(BigInteger.ONE, BigInteger.TWO))))
+                    add(IntEquality(Element(y, listOf(IntLiteral(3), IntLiteral(3), IntLiteral(3))), IntLiteral(3)))
+                    add(IntEquality(LinearSum(listOf(x, y), listOf(BigInteger.ONE, BigInteger.of(-1))), IntLiteral(-1)))
+                    add(BoolCardinality(listOf(flag), 1, CardinalityRelation.EXACTLY))
+                    val model = build()
 
-                answers(MiniZincGecodeBackend(executable).create(), model, x, y, flag) shouldBe answers(FiniteOracle(), model, x, y, flag)
+                    answers(MiniZincGecodeBackend(executable).create(), model, x, y, flag) shouldBe
+                        answers(FiniteOracle(), model, x, y, flag)
+                }
             }
             test("integration/early-close-kills-the-process-and-deletes-its-workspace") {
-                val scope = ConstraintScope.empty()
-                scope.intVar("x", 0..1_000_000)
+                val model =
+                    ConstraintModel.of {
+                        intVar("x", 0..1_000_000)
+                    }
                 MiniZincGecodeBackend(executable).create().use { solver ->
-                    val stream = solver.solutions(scope.build()) as MiniZincStream
+                    val stream = solver.solutions(model) as MiniZincStream
                     (stream.next() is SolutionFound) shouldBe true
                     val directory = requireNotNull(stream.workDirectory)
                     val process = ProcessHandle.of(requireNotNull(stream.processId)).orElseThrow()
@@ -84,17 +89,21 @@ class MiniZincIntegrationSpec :
                 }
             }
             test("integration/owned-deadline-stops-real-execution") {
-                val scope = ConstraintScope.empty()
-                scope.intVar("x", 0..1_000_000_000)
+                val model =
+                    ConstraintModel.of {
+                        intVar("x", 0..1_000_000_000)
+                    }
                 MiniZincGecodeBackend(executable).create().use { solver ->
-                    solver.solve(scope.build(), SolveOptions(timeoutMillis = 20)).terminationReason shouldBe TerminationReason.TIMEOUT
+                    solver.solve(model, SolveOptions(timeoutMillis = 20)).terminationReason shouldBe TerminationReason.TIMEOUT
                 }
             }
             test("integration/early-close-also-releases-a-long-deadline-timer") {
-                val scope = ConstraintScope.empty()
-                scope.intVar("x", 0..1_000_000)
+                val model =
+                    ConstraintModel.of {
+                        intVar("x", 0..1_000_000)
+                    }
                 MiniZincGecodeBackend(executable).create().use { solver ->
-                    val stream = solver.solutions(scope.build(), SolveOptions(timeoutMillis = 60_000))
+                    val stream = solver.solutions(model, SolveOptions(timeoutMillis = 60_000))
                     stream.next()
                     val timers = Thread.getAllStackTraces().keys.filter { it.name == "kt-constraints-minizinc-deadline" && it.isAlive }
                     stream.close()

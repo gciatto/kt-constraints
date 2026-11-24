@@ -3,7 +3,7 @@ package io.github.gciatto.ktconstraints.solve.z3
 import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.github.gciatto.ktconstraints.core.integer.arithmetic.LinearSum
 import io.github.gciatto.ktconstraints.core.integer.relation.IntLessThan
-import io.github.gciatto.ktconstraints.model.ConstraintScope
+import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
@@ -17,14 +17,16 @@ import org.gciatto.kt.math.BigInteger
 fun z3OptimizationContract(create: () -> ConstraintSolver): TestFactory =
     funSpec {
         test("z3-optimization/wide-domain-optimum-is-proven-within-the-deadline") {
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", 0..1_000_000_000)
-            val y = scope.intVar("y", 0..1_000_000_000)
-            val sum = LinearSum(listOf(x, y), listOf(BigInteger.ONE, BigInteger.ONE), BigInteger.ZERO)
-            scope.add(IntLessThan(sum, IntLiteral(1_500_000_000)))
-            scope.maximize(sum)
+            val model =
+                ConstraintModel.of {
+                    val x = intVar("x", 0..1_000_000_000)
+                    val y = intVar("y", 0..1_000_000_000)
+                    val sum = LinearSum(listOf(x, y), listOf(BigInteger.ONE, BigInteger.ONE), BigInteger.ZERO)
+                    add(IntLessThan(sum, IntLiteral(1_500_000_000)))
+                    maximize(sum)
+                }
             create().use { solver ->
-                val result = solver.solve(scope.build(), SolveOptions(timeoutMillis = 30_000))
+                val result = solver.solve(model, SolveOptions(timeoutMillis = 30_000))
                 result.status shouldBe SolveStatus.OPTIMAL
                 result.terminationReason shouldBe TerminationReason.COMPLETED
                 result.objectiveValue shouldBe BigInteger.of(1_499_999_999)
@@ -33,12 +35,14 @@ fun z3OptimizationContract(create: () -> ConstraintSolver): TestFactory =
         }
 
         test("z3-optimization/minimization-over-negative-bounds-is-proven") {
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", -1_000_000_000..1_000_000_000)
-            scope.add(IntLessThan(IntLiteral(-777_777_777), x))
-            scope.minimize(x)
+            val model =
+                ConstraintModel.of {
+                    val x = intVar("x", -1_000_000_000..1_000_000_000)
+                    add(IntLessThan(IntLiteral(-777_777_777), x))
+                    minimize(x)
+                }
             create().use { solver ->
-                val result = solver.solve(scope.build(), SolveOptions(timeoutMillis = 30_000))
+                val result = solver.solve(model, SolveOptions(timeoutMillis = 30_000))
                 result.status shouldBe SolveStatus.OPTIMAL
                 result.objectiveValue shouldBe BigInteger.of(-777_777_776)
             }

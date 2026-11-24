@@ -1,5 +1,6 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
+import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
@@ -58,10 +59,12 @@ class MiniZincJsSpec :
                 }
             }
             test("js/early-close-cancels-a-real-enumeration") {
-                val scope = ConstraintScope.empty()
-                scope.intVar("x", 0..1_000_000)
+                val model =
+                    ConstraintModel.of {
+                        intVar("x", 0..1_000_000)
+                    }
                 loaded().create().use { solver ->
-                    val stream = solver.solutions(scope.build())
+                    val stream = solver.solutions(model)
                     (stream.next() is SolutionFound) shouldBe true
                     stream.close()
                     stream.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
@@ -77,9 +80,11 @@ class MiniZincJsSpec :
             test("js/backend-close-cancels-streams-and-allows-a-new-runtime-owner") {
                 val selected = loaded()
                 val solver = selected.create()
-                val scope = ConstraintScope.empty()
-                scope.intVar("x", 0..1_000_000)
-                val stream = solver.solutions(scope.build())
+                val model =
+                    ConstraintModel.of {
+                        intVar("x", 0..1_000_000)
+                    }
+                val stream = solver.solutions(model)
                 (stream.next() is SolutionFound) shouldBe true
                 selected.close()
                 selected.close()
@@ -98,9 +103,11 @@ class MiniZincJsSpec :
                 js("process.env").TMPDIR = isolated
                 try {
                     val selected = loaded()
-                    val scope = ConstraintScope.empty()
-                    scope.intVar("x", 0..1_000_000)
-                    val stream = selected.create().solutions(scope.build())
+                    val model =
+                        ConstraintModel.of {
+                            intVar("x", 0..1_000_000)
+                        }
+                    val stream = selected.create().solutions(model)
                     (stream.next() is SolutionFound) shouldBe true
                     selected.close()
                     restore()
@@ -118,9 +125,11 @@ class MiniZincJsSpec :
                 js("window").addEventListener("error", listener)
                 try {
                     val selected = loaded()
-                    val scope = ConstraintScope.empty()
-                    scope.intVar("x", 0..1_000_000)
-                    val stream = selected.create().solutions(scope.build())
+                    val model =
+                        ConstraintModel.of {
+                            intVar("x", 0..1_000_000)
+                        }
+                    val stream = selected.create().solutions(model)
                     coroutineScope {
                         // Starting a run spawns a replacement pool worker that loads asynchronously.
                         val first = async { runCatching { stream.next() } }
@@ -141,10 +150,12 @@ class MiniZincJsSpec :
                 backend = load()
             }
             test("js/owned-deadline-stops-real-execution") {
-                val scope = ConstraintScope.empty()
-                scope.intVar("x", 0..1_000_000)
+                val model =
+                    ConstraintModel.of {
+                        intVar("x", 0..1_000_000)
+                    }
                 loaded().create().use { solver ->
-                    solver.solve(scope.build(), SolveOptions(timeoutMillis = 10)).terminationReason shouldBe TerminationReason.TIMEOUT
+                    solver.solve(model, SolveOptions(timeoutMillis = 10)).terminationReason shouldBe TerminationReason.TIMEOUT
                 }
             }
         }

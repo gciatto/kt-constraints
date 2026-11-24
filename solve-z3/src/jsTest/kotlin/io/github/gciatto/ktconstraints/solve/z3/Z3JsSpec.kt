@@ -63,25 +63,27 @@ class Z3JsSpec :
 
             test("z3-js/integers-beyond-64-bits-are-exact") {
                 val huge = BigInteger.of("1000000000000000000000000000001")
-                val scope = ConstraintScope.empty()
-                val x = scope.intVar("x", IntDomain.of(-huge, huge))
-                scope.add(
-                    IntEquality(LinearSum(listOf(x), listOf(BigInteger.TWO), BigInteger.ONE), IntLiteral(huge + huge + BigInteger.ONE)),
-                )
-                loaded().create().use { solver ->
-                    val result = solver.solve(scope.build())
-                    result.status shouldBe SolveStatus.FEASIBLE
-                    result.assignment?.valueOf(x) shouldBe huge
+                with(ConstraintScope.empty()) {
+                    val x = intVar("x", IntDomain.of(-huge, huge))
+                    add(
+                        IntEquality(LinearSum(listOf(x), listOf(BigInteger.TWO), BigInteger.ONE), IntLiteral(huge + huge + BigInteger.ONE)),
+                    )
+                    loaded().create().use { solver ->
+                        val result = solver.solve(build())
+                        result.status shouldBe SolveStatus.FEASIBLE
+                        result.assignment?.valueOf(x) shouldBe huge
+                    }
                 }
             }
 
             test("z3-js/element-definedness-matches-the-oracle") {
-                val scope = ConstraintScope.empty()
-                val index = scope.intVar("i", -1..4)
-                val value = scope.intVar("v", -2..3)
-                scope.add(IntEquality(Element(index, listOf(IntLiteral(-2), value, IntLiteral(3))), value))
-                val model = scope.build()
-                answers(loaded().create(), model, index, value) shouldBe answers(FiniteOracle(), model, index, value)
+                with(ConstraintScope.empty()) {
+                    val index = intVar("i", -1..4)
+                    val value = intVar("v", -2..3)
+                    add(IntEquality(Element(index, listOf(IntLiteral(-2), value, IntLiteral(3))), value))
+                    val model = build()
+                    answers(loaded().create(), model, index, value) shouldBe answers(FiniteOracle(), model, index, value)
+                }
             }
 
             test("z3-js/owned-deadline-stops-a-hard-check") {
@@ -116,11 +118,10 @@ class Z3JsSpec :
         }
     })
 
-private fun pigeonhole(holes: Int = 12): ConstraintModel {
-    val scope = ConstraintScope.empty()
-    scope.add(AllDifferent((0..holes).map { scope.intVar("p$it", 0 until holes) }))
-    return scope.build()
-}
+private fun pigeonhole(holes: Int = 12): ConstraintModel =
+    ConstraintModel.of {
+        add(AllDifferent((0..holes).map { intVar("p$it", 0 until holes) }))
+    }
 
 private suspend fun answers(
     solver: ConstraintSolver,

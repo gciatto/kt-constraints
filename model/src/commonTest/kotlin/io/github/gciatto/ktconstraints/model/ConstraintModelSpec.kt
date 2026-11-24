@@ -9,27 +9,29 @@ import io.kotest.matchers.shouldBe
 class ConstraintModelSpec :
     FunSpec({
         test("model/variables-cannot-be-cleared") {
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", 0..10)
-            val y = scope.intVar("y", 0..10)
-            val model = scope.build()
+            with(ConstraintScope.empty()) {
+                val x = intVar("x", 0..10)
+                val y = intVar("y", 0..10)
+                val model = build()
 
-            runCatching { (model.variables as MutableList).clear() }
+                runCatching { (model.variables as MutableList).clear() }
 
-            model.variables shouldBe listOf(x, y)
-            scope.build().variables shouldBe listOf(x, y)
+                model.variables shouldBe listOf(x, y)
+                build().variables shouldBe listOf(x, y)
+            }
         }
 
         test("model/constraints-cannot-be-cleared") {
-            val scope = ConstraintScope.empty()
-            val x = scope.intVar("x", 0..10)
-            val first = IntEquality(x, IntLiteral(1))
-            val second = IntEquality(x, IntLiteral(2))
-            val model = scope.add(first).add(second).build()
+            with(ConstraintScope.empty()) {
+                val x = intVar("x", 0..10)
+                val first = IntEquality(x, IntLiteral(1))
+                val second = IntEquality(x, IntLiteral(2))
+                val model = add(first).add(second).build()
 
-            runCatching { (model.constraints as MutableList).clear() }
+                runCatching { (model.constraints as MutableList).clear() }
 
-            model.constraints shouldBe listOf(first, second)
-            scope.build().constraints shouldBe listOf(first, second)
+                model.constraints shouldBe listOf(first, second)
+                build().constraints shouldBe listOf(first, second)
+            }
         }
     })
