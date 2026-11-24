@@ -10,8 +10,8 @@
 | `io.github.gciatto.ktconstraints.dsl.Expressions` | Static facade for Kotlin DSL functions: arithmetic, comparisons, Boolean operations, conversions, counting, ordering and globals |
 | Primitive inputs | `scope.intVar("x", 1, 10)` and arithmetic/comparison overloads accept machine integers without truncation |
 | `org.gciatto.kt.math.BigInteger` | Exact model integers and objective values |
-| `JavaNumbers.integer(java.math.BigInteger)` | Lossless conversion into kt-math |
-| `JavaNumbers.toJava(...)` | Lossless conversion back to `java.math.BigInteger` |
+| `JvmUtils.toKotlin(java.math.BigInteger)` | kt-math's lossless conversion into a model integer |
+| `JvmUtils.toJava(BigInteger)` | kt-math's lossless conversion back to `java.math.BigInteger` |
 | `JavaNumbers.rational(BigDecimal)` | Exact decimal-to-rational conversion |
 | `Rational.parse(text)` | Exact integer, fraction or decimal parsing |
 | `Assignment.intValueOf` / `longValueOf` | Checked machine integer extraction; throws `ArithmeticException` on overflow |

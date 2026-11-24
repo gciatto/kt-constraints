@@ -35,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import org.gciatto.kt.math.BigInteger;
+import org.gciatto.kt.math.JvmUtils;
 
 /** Compiled by javac: exercises the Java modelling and solving boundary without Kotlin receivers or suspension. */
 public final class JavaUsage {
@@ -98,16 +99,16 @@ public final class JavaUsage {
             "completion " + completion);
     }
 
-    /** Integers beyond 64 bits survive the Java boundary; java.math.BigInteger converts through its decimal form. */
+    /** Integers beyond 64 bits survive the Java boundary; kt-math converts java.math.BigInteger directly. */
     public static void exactIntegers(SolverBackend backend) {
         java.math.BigInteger huge = java.math.BigInteger.ONE.shiftLeft(70);
-        BigInteger value = BigInteger.of(huge.toString());
+        BigInteger value = JvmUtils.toKotlin(huge);
         ConstraintScope scope = ConstraintScope.empty();
         IntVar x = scope.intVar("x", IntDomain.of(BigInteger.ZERO, value.times(BigInteger.of(2))));
         scope.add(Expressions.eq(Expressions.minus(x, value), 1));
         try (BlockingSolver solver = BlockingSolver.of(backend)) {
             BigInteger result = solver.solve(scope.buildModel()).getAssignment().valueOf(x);
-            check(new java.math.BigInteger(result.toString()).equals(huge.add(java.math.BigInteger.ONE)), "value " + result);
+            check(JvmUtils.toJava(result).equals(huge.add(java.math.BigInteger.ONE)), "value " + result);
         }
     }
 
@@ -147,7 +148,7 @@ public final class JavaUsage {
             // the value does not fit an int
         }
         java.math.BigInteger huge = java.math.BigInteger.ONE.shiftLeft(70).negate();
-        check(JavaNumbers.toJava(JavaNumbers.integer(huge)).equals(huge), "java.math.BigInteger round trip");
+        check(JvmUtils.toJava(JvmUtils.toKotlin(huge)).equals(huge), "java.math.BigInteger round trip");
         check(JavaNumbers.rational(new BigDecimal("-2.50")).equals(Rational.of(-5, 2)), "negative decimal");
         check(JavaNumbers.rational(new BigDecimal("0.125")).equals(Rational.of(1, 8)), "fractional decimal");
         check(JavaNumbers.rational(new BigDecimal("1E+3")).equals(Rational.of(1000, 1)), "negative scale");
