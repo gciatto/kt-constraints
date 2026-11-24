@@ -295,7 +295,7 @@ Use this route when a portable implementation with no external solver installati
 [backend]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/KotlinBackend.kt
 [support]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/KotlinSupport.kt
 [solver]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/runtime/KotlinSolver.kt
-[portfolio]: https://github.com/gciatto/kt-constraints/blob/develop/solve-portfolio/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/Portfolio.kt
+[portfolio]: https://github.com/gciatto/kt-constraints/blob/develop/solve-auto/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/auto/Portfolio.kt
 [engine]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/runtime/KotlinEngine.kt
 [translation]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/compiler/KotlinTranslation.kt
 [compiled-term]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/compiler/CompiledTerm.kt

@@ -18,7 +18,7 @@ numeric ranges and individual operations can still make the model unsupported.
 ## 2. Check availability and support
 
 For automatic batch selection, call `solveAuto(model)` from
-`io.github.gciatto.ktconstraints.solve.portfolio`. It loads the platform's default routes,
+`io.github.gciatto.ktconstraints.solve.auto`. It loads the platform's default routes,
 ranks eligible ones and tries them under a shared time budget. Inspect the result's
 `descriptor.id` and `metadata.messages` to see who answered and why routes were skipped.
 On JS, asynchronous runtime initialization happens before ranking and can throw; handle
@@ -28,7 +28,7 @@ To control the candidate set or require a capability, use an explicit registry. 
 example requires enumeration before selecting a backend:
 
 ```kotlin
---8<-- "solve-portfolio/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/SolverTasksSpec.kt:selection"
+--8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:selection"
 ```
 
 `selection.rejections` gives reasons for rejected routes. `selection.best` fails if no

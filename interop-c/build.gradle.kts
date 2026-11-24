@@ -9,7 +9,7 @@ kotlin {
         nativeMain {
             dependencies {
                 implementation(project(":dsl"))
-                implementation(project(":solve-portfolio"))
+                implementation(project(":solve-auto"))
                 implementation(libs.kotlinx.coroutines.core)
             }
         }

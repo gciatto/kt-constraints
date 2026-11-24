@@ -74,7 +74,7 @@ jobs:
           :solve:${{ matrix.target }}Test :solve-spi:${{ matrix.target }}Test
           :test-solve:${{ matrix.target }}Test :solve-kotlin:${{ matrix.target }}Test
           :solve-minizinc:${{ matrix.target }}Test :solve-z3:${{ matrix.target }}Test
-          :solve-portfolio:${{ matrix.target }}Test
+          :solve-auto:${{ matrix.target }}Test
           --parallel --continue
       - name: Test the C shared library from C, against the pinned Z3
         if: matrix.target != 'mingwX64'

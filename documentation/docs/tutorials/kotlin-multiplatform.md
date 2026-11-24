@@ -17,7 +17,7 @@ linuxX64()
 ```
 
 Add `io.github.gciatto:kt-constraints-dsl:<version>` and
-`io.github.gciatto:kt-constraints-solve-portfolio:<version>` to `commonMain.dependencies`, using the same
+`io.github.gciatto:kt-constraints-solve-auto:<version>` to `commonMain.dependencies`, using the same
 published version for both. Put the model and solving helpers below in `src/commonMain/kotlin/NQueens.kt`.
 They use common APIs throughout.
 
@@ -31,13 +31,13 @@ Copy the imports from the tested example. The later how-to helpers use the enume
 you can omit those imports if you copy only the tutorial helpers.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/NQueens.kt:imports"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:imports"
 ```
 
 Create one variable per column. Its value is the queen's row, numbered from zero:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/NQueens.kt:board"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:board"
 ```
 
 A list with one variable per column already guarantees one queen per column. The `allDifferent` constraint
@@ -49,7 +49,7 @@ Queens share a diagonal when either `row + column` or `row - column` is equal. A
 both sets of expressions to be distinct:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/NQueens.kt:diagonal-globals"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:diagonal-globals"
 ```
 
 ## 4. Solve from common code
@@ -57,7 +57,7 @@ both sets of expressions to be distinct:
 Add this suspending helper:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/NQueens.kt:solve"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:solve"
 ```
 
 The returned list gives rows in column order. Either `[1, 3, 0, 2]` or `[2, 0, 3, 1]` is valid. Do not rely on a
@@ -93,7 +93,7 @@ import io.kotest.matchers.collections.shouldContain
 Copy this test class into `src/commonTest/kotlin/NQueensSpec.kt`, in the same package as your helpers:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/NQueensSpec.kt:platform-test"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueensSpec.kt:platform-test"
 ```
 
 Kotest's test body is suspending, so it can call `solveFourQueens()` directly. Run `./gradlew jvmTest`,
@@ -103,8 +103,8 @@ plugin; Native needs the host toolchain and the Z3 library described above.
 To run the checked-in examples from this repository's root instead:
 
 ```shell
-./gradlew :solve-portfolio:jvmTest :solve-portfolio:jsNodeTest --continue
-KT_CONSTRAINTS_Z3_LIBRARY=/absolute/path/to/libz3.so ./gradlew :solve-portfolio:linuxX64Test
+./gradlew :solve-auto:jvmTest :solve-auto:jsNodeTest --continue
+KT_CONSTRAINTS_Z3_LIBRARY=/absolute/path/to/libz3.so ./gradlew :solve-auto:linuxX64Test
 ```
 
 The repository keeps these helpers in `commonTest` so the documentation examples compile and execute on all

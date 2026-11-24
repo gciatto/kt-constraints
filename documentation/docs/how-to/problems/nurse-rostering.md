@@ -7,11 +7,11 @@ two, and nurse 1's has weight one.
 ## Model
 
 These examples run in a suspending caller and use `ConstraintScope`, the Kotlin DSL, and
-`solveAuto` from `:solve-portfolio`, which picks a bundled solver for your platform. See
+`solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See
 [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/NurseRostering.kt:model"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/NurseRostering.kt:model"
 ```
 
 ## Modelling choices
@@ -29,7 +29,7 @@ replaces any earlier objective.
 ## Solve
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/NurseRostering.kt:solve"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/NurseRostering.kt:solve"
 ```
 
 ## Expected output

@@ -4,30 +4,30 @@ Place every item in one bin without exceeding its capacity, and minimize the num
 
 ## 1. Build the model
 
-Use `:dsl` for the operators. The examples solve with `solveAuto` from `:solve-portfolio`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
+Use `:dsl` for the operators. The examples solve with `solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
 Imports used by the example and its test:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/BinPacking.kt:imports"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:imports"
 ```
 
 Create a bin index per item and a load variable per candidate bin. The load domains impose capacity; `binPacking` equates each load with the sum of sizes assigned to that bin.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/BinPacking.kt:model"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:model"
 ```
 
 Preserve the global when posting it:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/BinPacking.kt:global"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:global"
 ```
 
 To post its exact variable-free decomposition instead, replace that assertion with:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/BinPacking.kt:decomposition"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:decomposition"
 ```
 
 The decomposition bounds each item’s bin index and sets each load to a weighted sum of `(binOfItem eq bin).toInt()`. Both forms are tested. The global keeps the packing structure available for backend lowering; the pure-Kotlin engine used here decomposes it.
@@ -35,7 +35,7 @@ The decomposition bounds each item’s bin index and sets each load to a weighte
 Minimize occupied bins, counting distinct assigned indices rather than the greatest index:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/BinPacking.kt:objective"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:objective"
 ```
 
 ## 2. Solve and read the result
@@ -45,7 +45,7 @@ Require `OPTIMAL` and read both placements and loads. Two bins suffice, with loa
 See [Optimize](../optimize.md) for optimality checks.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/BinPacking.kt:solve"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:solve"
 ```
 
 Expected output:

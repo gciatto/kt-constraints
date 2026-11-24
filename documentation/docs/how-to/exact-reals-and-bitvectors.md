@@ -9,7 +9,7 @@ JavaScript `number`. Select a route supporting exact real arithmetic, such as Z3
 === "Kotlin"
 
     ```kotlin
-    --8<-- "solve-portfolio/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/SolverTasksSpec.kt:real"
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:real"
     ```
 
 === "Java"
@@ -42,7 +42,7 @@ same-width operands. This JVM example uses explicit core nodes with Z3 to solve
 `x + 1 = 0` modulo 256:
 
 ```kotlin
---8<-- "solve-portfolio/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/SolverTasksSpec.kt:bits"
+--8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:bits"
 ```
 
 Import `BitVecLiteral` from `core.bitvector` and the operation types from

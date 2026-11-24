@@ -5,11 +5,11 @@ thresholds until several reproducible baselines exist.
 
 | Command | What it measures |
 |---|---|
-| `./gradlew :solve-portfolio:jvmBenchmark` | Catalogue families on every eligible bundled JVM route, plus `kotlin/direct` and `auto` |
+| `./gradlew :solve-auto:jvmBenchmark` | Catalogue families on every eligible bundled JVM route, plus `kotlin/direct` and `auto` |
 | `./gradlew :solve-choco:storeBenchmark`, `./gradlew :solve-z3:jvmStoreBenchmark` | CLP-style constraint-store operations |
 | `MINIZINC_EXECUTABLE=... ./gradlew :solve-minizinc:jvmBenchmark` | MiniZinc phases |
 | `KT_CONSTRAINTS_PLATFORM_BENCHMARK=1 ./gradlew :solve-kotlin:<jvmTest\|jsNodeTest> -i` | The same catalogue on each target; rows start with `BENCH,` (Kotlin/JS prints them only with `-i`). For Native, run `:solve-kotlin:linkReleaseTestLinuxX64` and then `solve-kotlin/build/bin/linuxX64/releaseTest/test.kexe` with the variable set: the default Native test binary is an unoptimised debug build, about 10x slower |
-| `KT_CONSTRAINTS_ROUTE_BENCHMARK=1 ./gradlew :solve-portfolio:<jvmTest\|jsNodeTest> --tests 'io.github.gciatto.ktconstraints.solve.portfolio.RouteBenchmarkSpec' -i` | Every bundled route of the target, plus `kotlin/direct`, over seeded instances; rows start with `ROUTE,` and give each route's rank under the default policy. `_SCALES` (default `1 2 3`), `_SEEDS` (3) and `_TIMEOUT` (ms, 10000) size it. For Native, run `:solve-portfolio:linkReleaseTestLinuxX64`, then `solve-portfolio/build/bin/linuxX64/releaseTest/test.kexe` with `KT_CONSTRAINTS_Z3_LIBRARY` pointing at `solve-z3/build/z3-native/linuxX64/libz3.so` |
+| `KT_CONSTRAINTS_ROUTE_BENCHMARK=1 ./gradlew :solve-auto:<jvmTest\|jsNodeTest> --tests 'io.github.gciatto.ktconstraints.solve.auto.RouteBenchmarkSpec' -i` | Every bundled route of the target, plus `kotlin/direct`, over seeded instances; rows start with `ROUTE,` and give each route's rank under the default policy. `_SCALES` (default `1 2 3`), `_SEEDS` (3) and `_TIMEOUT` (ms, 10000) size it. For Native, run `:solve-auto:linkReleaseTestLinuxX64`, then `solve-auto/build/bin/linuxX64/releaseTest/test.kexe` with `KT_CONSTRAINTS_Z3_LIBRARY` pointing at `solve-z3/build/z3-native/linuxX64/libz3.so` |
 | `./gradlew :solve-kotlin:jvmFamilyBenchmark` | `kotlin/direct` over seeded instances: median, minimum, maximum and timeouts (`BENCHMARK_SCALES`, `BENCHMARK_SEEDS`, `BENCHMARK_FAMILIES`) |
 
 `jvmBenchmark` prints CSV, and writes it to the file named by `BENCHMARK_CSV` when that is set. `BENCHMARK_SCALE`

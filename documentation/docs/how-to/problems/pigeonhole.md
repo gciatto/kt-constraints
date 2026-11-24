@@ -6,11 +6,11 @@ three distinct hole indices cannot be chosen from the two values zero and one.
 ## Model
 
 These examples run in a suspending caller and use `ConstraintScope`, the Kotlin DSL, and
-`solveAuto` from `:solve-portfolio`, which picks a bundled solver for your platform. See
+`solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See
 [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/Pigeonhole.kt:model"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Pigeonhole.kt:model"
 ```
 
 ## Modelling choices
@@ -21,7 +21,7 @@ holes. Keeping the domain `0..1` is essential: allowing a third hole changes the
 ## Solve
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/Pigeonhole.kt:solve"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Pigeonhole.kt:solve"
 ```
 
 ## Expected output
@@ -44,7 +44,7 @@ the three pairwise separation rules as temporary assumptions. The following exec
 also rechecks the core and verifies that omitting any pairwise rule permits a solution:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/Pigeonhole.kt:session"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Pigeonhole.kt:session"
 ```
 
 The printed output is:

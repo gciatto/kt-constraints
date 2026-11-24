@@ -4,18 +4,18 @@ Select each item at most once, keep total weight within capacity, and maximize t
 
 ## 1. Build the model
 
-Use `:dsl` for the operators. The examples solve with `solveAuto` from `:solve-portfolio`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
+Use `:dsl` for the operators. The examples solve with `solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
 Imports used by the example and its test:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/Knapsack.kt:imports"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Knapsack.kt:imports"
 ```
 
 Use a `0..1` integer decision for each item and two weighted sums.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/Knapsack.kt:model"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Knapsack.kt:model"
 ```
 
 A decision of 1 includes an item and 0 excludes it. Multiplication by a constant and `sum` suffice; no packing global is needed for this single-capacity selection problem. Boolean variables with `toInt()` are an alternative when the selection also participates in logical constraints.
@@ -27,7 +27,7 @@ Maximization is part of the model. Check `OPTIMAL` before presenting the value a
 See [Optimize](../optimize.md) for objective semantics and [Set limits and cancel](../limits-and-cancellation.md) for bounded execution.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/Knapsack.kt:solve"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Knapsack.kt:solve"
 ```
 
 Expected output:

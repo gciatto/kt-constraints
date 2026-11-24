@@ -6,11 +6,11 @@ are given in the model below. City indices run from zero to three.
 ## Model
 
 These examples run in a suspending caller and use `ConstraintScope`, the Kotlin DSL, and
-`solveAuto` from `:solve-portfolio`, which picks a bundled solver for your platform. See
+`solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See
 [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/TravelingSalesman.kt:model"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/TravelingSalesman.kt:model"
 ```
 
 ## Modelling choices
@@ -26,7 +26,7 @@ The successor domains keep every index inside its row.
 ## Solve
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/TravelingSalesman.kt:solve"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/TravelingSalesman.kt:solve"
 ```
 
 ## Expected output

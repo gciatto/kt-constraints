@@ -4,18 +4,18 @@ Assign each worker exactly one task and each task to exactly one worker, minimiz
 
 ## 1. Build the model
 
-Use `:dsl` for the operators. The examples solve with `solveAuto` from `:solve-portfolio`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
+Use `:dsl` for the operators. The examples solve with `solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
 Imports used by the example and its test:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/Assignment.kt:imports"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Assignment.kt:imports"
 ```
 
 Store the assigned task index in one variable per worker. Select its cost with `element` and enforce distinct tasks with `allDifferent`.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/Assignment.kt:model"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Assignment.kt:model"
 ```
 
 `element` uses a zero-based index: each task domain must stay within its cost row. With three workers and three possible distinct task values, every task is used once. The `IntLiteral` entries turn the fixed costs into symbolic operands; `costs[worker][task[worker]]` cannot index a Kotlin collection because the task is not yet a concrete integer.
@@ -27,7 +27,7 @@ Minimize the sum of the selected costs and require `OPTIMAL`. The resulting task
 See [Optimize](../optimize.md) for handling a result that has an assignment without a proof of optimality.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/Assignment.kt:solve"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Assignment.kt:solve"
 ```
 
 Expected output:

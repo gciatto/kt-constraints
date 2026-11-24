@@ -21,7 +21,7 @@ This compiled example reports availability separately from whole-model support a
 executes an available, supported route:
 
 ```kotlin
---8<-- "solve-portfolio/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/SolverTasksSpec.kt:minizinc"
+--8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:minizinc"
 ```
 
 For application diagnostics, read `availability.reason` when unavailable and

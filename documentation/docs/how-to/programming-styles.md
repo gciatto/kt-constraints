@@ -10,7 +10,7 @@ operators from `io.github.gciatto.ktconstraints.dsl`; use symbolic `eq` for a co
 Kotlin `==` tests object equality.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/ModelStylesSpec.kt:receiver"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStylesSpec.kt:receiver"
 ```
 
 Use `ConstraintScope.empty()` and `build()` when you need to retain variable references for
@@ -18,7 +18,7 @@ reading assignments, or assemble the model across several functions. You can con
 expression nodes explicitly without operator imports:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/ModelStylesSpec.kt:factories"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStylesSpec.kt:factories"
 ```
 
 Here `IntEquality`, `IntSum` and `IntLiteral` come from the core expression packages; both

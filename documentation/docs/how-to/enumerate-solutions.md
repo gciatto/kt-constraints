@@ -17,7 +17,7 @@ Java and TypeScript enumerate an unconstrained variable over `0..2`, producing t
 === "Kotlin"
 
     ```kotlin
-    --8<-- "solve-portfolio/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/SolverTasksSpec.kt:enumerate"
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:enumerate"
     ```
 
 === "Java"

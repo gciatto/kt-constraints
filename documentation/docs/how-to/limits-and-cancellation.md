@@ -10,7 +10,7 @@ some routes require a finite budget or restrict limits.
 A zero budget must not produce a feasibility claim:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/ModelStylesSpec.kt:limits"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStylesSpec.kt:limits"
 ```
 
 For Java, pass `new SolveOptions(1_000L, null)` to `solve` or `solveAsync`;
@@ -30,7 +30,7 @@ expect `UNKNOWN`. See [results and statuses](../reference/results-and-statuses.m
     Keep the solver and stream in `use` blocks. This JVM example stops after its first event:
 
     ```kotlin
-    --8<-- "solve-portfolio/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/SolverTasksSpec.kt:cancel"
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:cancel"
     ```
 
 === "Java"

@@ -16,7 +16,7 @@ Kotlin and TypeScript also check a temporary assumption and inspect its unsat co
 === "Kotlin"
 
     ```kotlin
-    --8<-- "solve-portfolio/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/SolverTasksSpec.kt:session"
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:session"
     ```
 
 === "Java"

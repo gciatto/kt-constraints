@@ -9,13 +9,13 @@ Use this common builder. Each variable's domain is `0 until size`; each list ind
 Distinct rows prevent horizontal attacks, and the representation prevents vertical attacks.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/NQueens.kt:board"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:board"
 ```
 
 The following helpers use these imports:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/NQueens.kt:imports"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:imports"
 ```
 
 ## 2. Choose a diagonal encoding
@@ -23,13 +23,13 @@ The following helpers use these imports:
 Use two `allDifferent` constraints to keep diagonal constraints as global nodes until the backend lowers them:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/NQueens.kt:diagonal-globals"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:diagonal-globals"
 ```
 
 Alternatively, add two inequalities for every pair of columns:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/NQueens.kt:pairwise"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:pairwise"
 ```
 
 Call either helper on the scope returned by `queensBoard`. The encodings describe the same legal boards;
@@ -45,7 +45,7 @@ For a board of size greater than one, require the first column's queen to have a
 column's queen:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/NQueens.kt:symmetry"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:symmetry"
 ```
 
 Reflection across the horizontal axis reverses this inequality. Since rows are distinct, exactly one member
@@ -58,7 +58,7 @@ Select a backend that explicitly supports `ENUMERATION`, then consume its soluti
 completion event. Keep the backend runtime, solver and stream open until consumption finishes:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/NQueens.kt:enumerate"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:enumerate"
 ```
 
 This helper returns all boards for the requested variant. Call `enumerateQueens(4)` for the global encoding,

@@ -22,7 +22,7 @@ The Kotlin example uses Choco to narrow `y`, and checks that a fork is independe
 === "Kotlin"
 
     ```kotlin
-    --8<-- "solve-portfolio/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/SolverTasksSpec.kt:store"
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:store"
     ```
 
 === "Java"

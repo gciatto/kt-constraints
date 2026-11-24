@@ -6,7 +6,7 @@ plugins {
 val documentedModules =
     listOf(
         "core", "model", "dsl", "solve", "solve-spi", "solve-kotlin", "solve-z3", "solve-choco", "solve-cpsat",
-        "solve-mip", "solve-minizinc", "solve-portfolio", "interop-java", "interop-js",
+        "solve-mip", "solve-minizinc", "solve-auto", "interop-java", "interop-js",
     )
 
 dependencies {

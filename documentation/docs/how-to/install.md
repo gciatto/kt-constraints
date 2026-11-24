@@ -23,7 +23,7 @@ from `GITHUB_ACTOR` (your GitHub username) and `GITHUB_TOKEN`, or user-level Gra
 For Kotlin, add these dependencies to the source set that uses the API:
 
 - `implementation("io.github.gciatto:kt-constraints-dsl:<version>")`
-- `implementation("io.github.gciatto:kt-constraints-solve-portfolio:<version>")`
+- `implementation("io.github.gciatto:kt-constraints-solve-auto:<version>")`
 
 Gradle selects JVM, JS or Native variants from module metadata. The portfolio supplies
 `solveAuto` and platform-specific default backends. To use only an explicit backend, add its

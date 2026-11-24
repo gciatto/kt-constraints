@@ -4,18 +4,18 @@ Assign colours to vertices so that adjacent vertices have different colours, usi
 
 ## 1. Build the model
 
-Use `:dsl` for the operators. The examples solve with `solveAuto` from `:solve-portfolio`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
+Use `:dsl` for the operators. The examples solve with `solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
 Imports used by the example and its test:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/GraphColoring.kt:imports"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/GraphColoring.kt:imports"
 ```
 
 Give every vertex a colour index, post one symbolic inequality per edge, and minimize the number of distinct indices.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/GraphColoring.kt:model"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/GraphColoring.kt:model"
 ```
 
 `nValue(colors)` counts distinct values even when colour labels have gaps; it is a DSL expression built from Boolean comparisons and sums. Do not put all vertices in one `allDifferent`: that would forbid nonadjacent vertices from sharing a colour. For a known clique, `allDifferent` over just that clique expresses the needed inequalities.
@@ -27,7 +27,7 @@ Require `OPTIMAL` before reporting the chromatic number. The triangle requires a
 See [Optimize](../optimize.md) for limits and incumbent handling.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/problems/GraphColoring.kt:solve"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/GraphColoring.kt:solve"
 ```
 
 Expected output:

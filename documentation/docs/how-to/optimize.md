@@ -14,7 +14,7 @@ how to consume `solveAsync` through `CompletionStage`.
 === "Kotlin"
 
     ```kotlin
-    --8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/ModelStylesSpec.kt:optimize"
+    --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStylesSpec.kt:optimize"
     ```
 
 === "Java"
@@ -53,7 +53,7 @@ non-negative weights. Each false preference contributes its weight to the intege
 This replaces the objective and does not assert the preferences as hard constraints.
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/howto/ModelStylesSpec.kt:soft"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStylesSpec.kt:soft"
 ```
 
 Here choosing `x = 1` violates only the preference of weight 1, so the optimum penalty is 1.

@@ -75,7 +75,7 @@ val publishedModules =
         "solve-cpsat",
         "solve-mip",
         "solve-minizinc",
-        "solve-portfolio",
+        "solve-auto",
         "interop-java",
         "interop-js",
     )

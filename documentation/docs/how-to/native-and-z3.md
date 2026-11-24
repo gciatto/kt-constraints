@@ -3,7 +3,7 @@
 ## 1. Add the Native dependencies
 
 In your Kotlin Multiplatform project, add `kt-constraints-dsl` and
-`kt-constraints-solve-portfolio` to `commonMain`, or use `kt-constraints-solve-z3` for
+`kt-constraints-solve-auto` to `commonMain`, or use `kt-constraints-solve-z3` for
 explicit backend creation. Gradle selects the Native klibs; do not link against the C
 facade to call Kotlin APIs. See [installation](install.md).
 
@@ -51,7 +51,7 @@ automatic selection can return `UNKNOWN` with diagnostic messages when no route 
 In this repository, run the Native tests with the same environment:
 
 ```sh
-./gradlew :solve-z3:linuxX64Test :solve-portfolio:linuxX64Test
+./gradlew :solve-z3:linuxX64Test :solve-auto:linuxX64Test
 ```
 
 Use `macosArm64Test` or `mingwX64Test` on the corresponding host. The JVM's `z3-turnkey`

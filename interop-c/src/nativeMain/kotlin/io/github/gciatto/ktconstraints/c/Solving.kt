@@ -2,7 +2,7 @@ package io.github.gciatto.ktconstraints.c
 
 import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.portfolio.solveAuto
+import io.github.gciatto.ktconstraints.solve.auto.solveAuto
 import kotlinx.coroutines.runBlocking
 import org.gciatto.kt.math.BigInteger
 import io.github.gciatto.ktconstraints.dsl.allDifferent as dslAllDifferent

@@ -25,7 +25,7 @@ In your `dependencies` block, add:
 
 ```kotlin
 implementation("io.github.gciatto:kt-constraints-dsl:<version>")
-implementation("io.github.gciatto:kt-constraints-solve-portfolio:<version>")
+implementation("io.github.gciatto:kt-constraints-solve-auto:<version>")
 ```
 
 The DSL supplies modelling operators. The portfolio supplies `solveAuto` and the platform's default routes.
@@ -37,19 +37,19 @@ For Gradle property credentials instead of environment variables, see [Install](
 Create `SendMoreMoney.kt` under `src/main/kotlin`. Add these imports:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/SendMoreMoney.kt:imports"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:imports"
 ```
 
 Open a suspending function:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/SendMoreMoney.kt:entry"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:entry"
 ```
 
 Inside it, create the scope and eight digit variables:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/SendMoreMoney.kt:variables"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:variables"
 ```
 
 A `ConstraintScope` collects your declarations and constraints. Keep these variable objects: you will use them
@@ -60,7 +60,7 @@ to read the result. The two leading letters have domain `1..9`; the others may b
 Continue inside the function:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/SendMoreMoney.kt:model"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:model"
 ```
 
 `allDifferent` prevents any two letters from sharing a digit. `+` and `*` construct symbolic expressions;
@@ -72,7 +72,7 @@ Continue inside the function:
 Append:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/SendMoreMoney.kt:solve"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:solve"
 ```
 
 `solveAuto` is suspending. It ranks compatible, available routes and tries them in order. The descriptor tells
@@ -88,7 +88,7 @@ if the value does not fit. See [Results and statuses](../reference/results-and-s
 Require D to be 6 and solve a new snapshot:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/SendMoreMoney.kt:twist"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:twist"
 ```
 
 The new result is `INFEASIBLE`: no assignment satisfies the puzzle with that extra constraint. The earlier
@@ -96,7 +96,7 @@ The new result is `INFEASIBLE`: no assignment satisfies the puzzle with that ext
 them, then close the function:
 
 ```kotlin
---8<-- "solve-portfolio/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/portfolio/examples/tutorials/SendMoreMoney.kt:end"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:end"
 ```
 
 Add `suspend fun main() { sendMoreMoney() }` to the same file and run its main function from your IDE. You should

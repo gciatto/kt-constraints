@@ -22,7 +22,7 @@ import io.github.gciatto.ktconstraints.dsl.gt
 import io.github.gciatto.ktconstraints.dsl.plus
 import io.github.gciatto.ktconstraints.dsl.times
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.solve.portfolio.solveAuto
+import io.github.gciatto.ktconstraints.solve.auto.solveAuto
 
 suspend fun main() {
     val scope = ConstraintScope.empty()
@@ -213,7 +213,7 @@ repositories {
 }
 dependencies {
     implementation("io.github.gciatto:kt-constraints-dsl:<version>")
-    implementation("io.github.gciatto:kt-constraints-solve-portfolio:<version>") // solveAuto + the default solvers
+    implementation("io.github.gciatto:kt-constraints-solve-auto:<version>") // solveAuto + the default solvers
 }
 ```
 
@@ -238,7 +238,7 @@ FlatZinc interchange, Gurobi, and propagating constraint stores beyond Choco.
 | `:solve`, `:solve-spi` | Solver, session, store and result APIs; the backend contract, capability checks and registry |
 | `:solve-z3`, `:solve-cpsat`, `:solve-choco`, `:solve-mip`, `:solve-minizinc` | Solver adapters |
 | `:solve-kotlin` | Pure-Kotlin solver (experimental, unpublished) |
-| `:solve-portfolio` | `solveAuto`, default solvers per platform, fallback and race portfolios |
+| `:solve-auto` | `solveAuto`, default solvers per platform, fallback and race portfolios |
 | `:interop-java`, `:interop-js`, `:interop-c` | Java blocking/`CompletableFuture` API; ES module with TypeScript declarations; C shared library |
 | `:test-core`, `:test-solve` | Shared contract suites that every backend must pass |
 
