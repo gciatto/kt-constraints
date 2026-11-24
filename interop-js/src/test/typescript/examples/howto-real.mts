@@ -5,7 +5,7 @@ export const example: Example = {
     name: "how-to-real",
     async run(log) {
         const backend = await loadZ3();
-        const solver = backend.create();
+        const solver = backend.createSolver();
         try {
             // --8<-- [start:real]
             const builder = new ModelBuilder();

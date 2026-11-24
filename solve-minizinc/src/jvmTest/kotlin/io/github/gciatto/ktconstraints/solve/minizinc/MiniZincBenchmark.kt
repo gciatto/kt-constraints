@@ -32,7 +32,7 @@ object MiniZincBenchmark {
                     }
                 lateinit var compiled: MiniZincModel
                 val translationNanos = measureNanoTime { compiled = MiniZincCompiler(engine).compile(model) }
-                val setupNanos = measureNanoTime { MiniZincBackend(engine, executable).create().close() }
+                val setupNanos = measureNanoTime { MiniZincBackend(engine, executable).createSolver().close() }
                 val process = MiniZincProcess(executable, compiled.source, null, {}, {}, engine.solverArguments())
                 try {
                     val spawnNanos = measureNanoTime { process.start() }

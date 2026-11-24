@@ -18,5 +18,5 @@ internal class FakeBackend(
         options: SolveOptions,
     ): SupportReport = supportReport
 
-    override fun create(): ConstraintSolver = error("Registry selection must not create solvers")
+    override fun createSolver(): ConstraintSolver = error("Registry selection must not create solvers")
 }

@@ -13,7 +13,7 @@ class ModelStylesSpec :
         test("receiver DSL and explicit factories build equivalent constraints") {
             val model = receiverModel()
             val explicitAnswer = solveWithFactories()
-            AutoBackend.load().use { auto -> auto.create().use { it.solve(model) } }.status shouldBe SolveStatus.FEASIBLE
+            AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(model) } }.status shouldBe SolveStatus.FEASIBLE
             explicitAnswer shouldBe BigInteger.of(3)
         }
         test("maximize an integer objective") {

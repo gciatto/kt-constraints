@@ -12,7 +12,7 @@ object Z3StoreBenchmark {
         runBlocking {
             val queens = System.getenv("STORE_BENCHMARK_QUEENS")?.toInt() ?: DEFAULT_QUEENS
             println("z3/direct satisfiability store, $queens-queens")
-            println(benchmarkStore(queens, { SatisfiabilityStore.of(Z3Backend().create()) }, { Z3Backend().create() }))
+            println(benchmarkStore(queens, { SatisfiabilityStore.of(Z3Backend().createSolver()) }, { Z3Backend().createSolver() }))
         }
 
     private const val DEFAULT_QUEENS = 8

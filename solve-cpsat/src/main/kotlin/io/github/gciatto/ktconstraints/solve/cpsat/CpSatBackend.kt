@@ -52,7 +52,7 @@ class CpSatBackend
             options: SolveOptions,
         ): SupportReport = CpSatSupport.report(model)
 
-        override fun create(): ConstraintSolver {
+        override fun createSolver(): ConstraintSolver {
             val probe = availability()
             if (!probe.available) throw BackendUnavailableException("${descriptor.id}: ${probe.reason}")
             return CpSatSolver(descriptor, workers, seed)

@@ -23,7 +23,7 @@ export const jobShop = {
         // --8<-- [end:model]
         // --8<-- [start:solve]
         const backend = await loadZ3();
-        const solver = backend.create();
+        const solver = backend.createSolver();
         try {
             const outcome = await solver.solve(builder.build());
             const solution = outcome.solution;
@@ -31,19 +31,19 @@ export const jobShop = {
                 throw new Error(`Schedule: ${outcome.status}`);
             }
             const starts = [a0, a1, b0, b1].map(variable => {
-                const value = solution.valueOf(variable);
+                const value = solution.intValueOf(variable);
                 if (value == null) throw new Error("Missing start time");
                 return value;
             });
             log(`A: machine 0 at ${starts[0]}, machine 1 at ${starts[1]}`);
             log(`B: machine 1 at ${starts[2]}, machine 0 at ${starts[3]}`);
-            log(`Finish: ${solution.valueOf(finish)}`);
+            log(`Finish: ${solution.intValueOf(finish)}`);
             // --8<-- [end:solve]
             const [sa0, sa1, sb0, sb1] = starts;
             const disjoint = (a: bigint, da: bigint, b: bigint, db: bigint): boolean => a + da <= b || b + db <= a;
             if (sa0 + 3n > sa1 || sb0 + 2n > sb1 ||
                 !disjoint(sa0, 3n, sb1, 1n) || !disjoint(sa1, 2n, sb0, 2n) ||
-                sa1 + 2n > 5n || sb1 + 1n > 5n || solution.valueOf(finish) !== 5n || solution.objective !== 5n) {
+                sa1 + 2n > 5n || sb1 + 1n > 5n || solution.intValueOf(finish) !== 5n || solution.objective !== 5n) {
                 throw new Error("Invalid or suboptimal schedule");
             }
         // --8<-- [start:cleanup]

@@ -5,7 +5,7 @@ export const example: Example = {
     name: "how-to-cancel",
     async run(log) {
         const backend = await loadZ3();
-        const solver = backend.create();
+        const solver = backend.createSolver();
         try {
             // --8<-- [start:cancel]
             const builder = new ModelBuilder();

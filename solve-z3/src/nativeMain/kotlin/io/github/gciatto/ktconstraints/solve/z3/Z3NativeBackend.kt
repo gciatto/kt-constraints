@@ -49,7 +49,7 @@ class Z3NativeBackend(
         options: SolveOptions,
     ): SupportReport = Z3Support.report(model)
 
-    override fun create(): IncrementalConstraintSolver {
+    override fun createSolver(): IncrementalConstraintSolver {
         val probe = availability()
         if (!probe.available) throw BackendUnavailableException("${descriptor.id}: ${probe.reason}")
         return Z3Solver(descriptor) { NativeZ3Owner() }

@@ -32,7 +32,7 @@ export const sudoku = {
         // --8<-- [end:model]
         // --8<-- [start:solve]
         const backend = await loadZ3();
-        const solver = backend.create();
+        const solver = backend.createSolver();
         try {
             const outcome = await solver.solve(builder.build());
             const solution = outcome.solution;
@@ -40,7 +40,7 @@ export const sudoku = {
                 throw new Error(`Sudoku: ${outcome.status}`);
             }
             const grid = cells.map(row => row.map(cell => {
-                const value = solution.valueOf(cell);
+                const value = solution.intValueOf(cell);
                 if (value == null) throw new Error("Missing cell");
                 return value;
             }));

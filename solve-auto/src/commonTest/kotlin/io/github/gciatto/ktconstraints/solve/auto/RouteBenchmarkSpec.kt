@@ -5,6 +5,7 @@ import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.spi.Platform
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkCatalogue
 import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkInstance
 import io.kotest.core.spec.style.FunSpec
@@ -92,7 +93,7 @@ private suspend fun measure(
     val started = TimeSource.Monotonic.markNow()
     val result =
         try {
-            backend.create().use { it.solve(instance.model, options) }
+            backend.withSolver { it.solve(instance.model, options) }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (

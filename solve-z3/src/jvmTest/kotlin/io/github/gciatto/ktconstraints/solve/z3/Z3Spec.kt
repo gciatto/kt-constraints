@@ -48,13 +48,13 @@ import kotlin.time.TimeSource
 /** Direct Z3 JVM route: shared contracts, exact arithmetic, oracle differentials and resource release. */
 class Z3Spec :
     FunSpec({
-        include(solverContract { Z3Backend().create() })
-        include(incrementalContract { Z3Backend().create() })
-        include(storeContract(propagates = false) { SatisfiabilityStore.of(Z3Backend().create()) })
-        include(z3OptimizationContract { Z3Backend().create() })
-        include(z3RealContract { Z3Backend().create() })
-        include(z3BitVecContract { Z3Backend().create() })
-        include(differentialContract("z3") { Z3Backend().create() })
+        include(solverContract { Z3Backend().createSolver() })
+        include(incrementalContract { Z3Backend().createSolver() })
+        include(storeContract(propagates = false) { SatisfiabilityStore.of(Z3Backend().createSolver()) })
+        include(z3OptimizationContract { Z3Backend().createSolver() })
+        include(z3RealContract { Z3Backend().createSolver() })
+        include(z3BitVecContract { Z3Backend().createSolver() })
+        include(differentialContract("z3") { Z3Backend().createSolver() })
 
         test("z3/runtime-is-available-and-identifies-the-direct-route") {
             val backend = Z3Backend()
@@ -77,7 +77,7 @@ class Z3Spec :
             ConstraintScope.empty {
                 val x = intVar("x", IntDomain.of(-huge, huge))
                 add(IntEquality(LinearSum(listOf(x), listOf(BigInteger.TWO), BigInteger.ONE), IntLiteral(huge + huge + BigInteger.ONE)))
-                Z3Backend().create().use { solver ->
+                Z3Backend().createSolver().use { solver ->
                     val result = solver.solve(buildModel())
                     result.status shouldBe SolveStatus.FEASIBLE
                     result.assignment?.valueOf(x) shouldBe huge
@@ -143,13 +143,13 @@ class Z3Spec :
             ConstraintScope.empty {
                 val outputs = case.build(this)
                 val model = buildModel()
-                answers(Z3Backend().create(), model, outputs) shouldBe answers(FiniteOracle(), model, outputs)
+                answers(Z3Backend().createSolver(), model, outputs) shouldBe answers(FiniteOracle(), model, outputs)
             }
         }
 
         test("z3/owned-deadline-stops-a-hard-check") {
             val started = TimeSource.Monotonic.markNow()
-            Z3Backend().create().use { solver ->
+            Z3Backend().createSolver().use { solver ->
                 val result = solver.solve(pigeonhole(), SolveOptions(timeoutMillis = 200))
                 result.status shouldBe SolveStatus.UNKNOWN
                 result.terminationReason shouldBe TerminationReason.TIMEOUT
@@ -159,7 +159,7 @@ class Z3Spec :
 
         test("z3/close-interrupts-an-active-check") {
             val started = TimeSource.Monotonic.markNow()
-            val solver = Z3Backend().create()
+            val solver = Z3Backend().createSolver()
             val stream = solver.solutions(pigeonhole())
             coroutineScope {
                 val read = async { stream.next() }
@@ -171,7 +171,7 @@ class Z3Spec :
         }
 
         test("z3/session-deadline-is-unknown-not-unsatisfiable") {
-            Z3Backend().create().use { solver ->
+            Z3Backend().createSolver().use { solver ->
                 solver.openSession(pigeonhole()).use { session ->
                     val result = session.check(timeoutMillis = 200)
                     result.status shouldBe CheckStatus.UNKNOWN
@@ -183,7 +183,7 @@ class Z3Spec :
 
         test("z3/session-close-interrupts-an-active-check") {
             val started = TimeSource.Monotonic.markNow()
-            val solver = Z3Backend().create()
+            val solver = Z3Backend().createSolver()
             val session = solver.openSession(pigeonhole())
             coroutineScope {
                 val check = async { session.check() }
@@ -197,7 +197,7 @@ class Z3Spec :
         }
 
         test("z3/session-stays-usable-after-a-cancelled-check") {
-            Z3Backend().create().use { solver ->
+            Z3Backend().createSolver().use { solver ->
                 solver.openSession(pigeonhole()).use { session ->
                     withTimeoutOrNull(300) { session.check() } shouldBe null
                     session.check(listOf(BoolLiteral(false))).status shouldBe CheckStatus.UNSATISFIABLE
@@ -209,7 +209,7 @@ class Z3Spec :
         test("z3/repeated-frames-stay-consistent") {
             ConstraintScope.empty {
                 val x = intVar("x", 0..1_000)
-                Z3Backend().create().use { solver ->
+                Z3Backend().createSolver().use { solver ->
                     solver.openSession(buildModel()).use { session ->
                         repeat(200) { round ->
                             val checkpoint = session.push()

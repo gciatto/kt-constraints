@@ -23,7 +23,7 @@ internal fun ConstraintScope.pigeonhole(): List<IntVar> {
 // --8<-- [start:solve]
 internal suspend fun solvePigeonhole(): SolveResult {
     val model = ConstraintModel.of { pigeonhole() }
-    val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(model) } }
+    val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(model) } }
     println(result.status)
     return result
 }
@@ -43,7 +43,7 @@ internal suspend fun pigeonholeCore() =
         // Sessions need a solver with incremental assertions: pick one among the platform's defaults.
         AutoBackend.load().use { auto ->
             val backend = auto.registry.select(model, requiredCapabilities = setOf(SolverCapability.INCREMENTAL_ASSERTIONS))
-            backend.create().use { solver ->
+            backend.createSolver().use { solver ->
                 (solver as IncrementalConstraintSolver).openSession(model).use { session ->
                     val conflict = session.check(assumptions = separate)
                     println(conflict.status)

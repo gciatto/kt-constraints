@@ -6,6 +6,7 @@ import io.github.gciatto.ktconstraints.core.integer.relation.IntLessOrEqual
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests
@@ -27,9 +28,9 @@ class MipOptionsSpec :
 
         withTests(nameFn = { "mip-options/$it" }, listOf("scip", "highs")) { engine ->
             val backend = if (engine == "scip") OrToolsMipBackend.scip() else OrToolsMipBackend.highs(60_000)
-            val exact = backend.create().use { it.solve(knapsack(), SolveOptions() + MipOptions(threads = 2)) }
+            val exact = backend.withSolver { it.solve(knapsack(), SolveOptions() + MipOptions(threads = 2)) }
             exact.status shouldBe SolveStatus.OPTIMAL
-            val loose = backend.create().use { it.solve(knapsack(), SolveOptions() + MipOptions(relativeGap = 0.5)) }
+            val loose = backend.withSolver { it.solve(knapsack(), SolveOptions() + MipOptions(relativeGap = 0.5)) }
             loose.status shouldBe SolveStatus.FEASIBLE
             loose.assignment shouldNotBe null
         }

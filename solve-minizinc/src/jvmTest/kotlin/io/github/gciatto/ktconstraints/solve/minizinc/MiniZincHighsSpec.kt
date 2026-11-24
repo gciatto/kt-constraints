@@ -13,13 +13,13 @@ class MiniZincHighsSpec :
         if (executable == null || "highs" !in engines) {
             test("requires-explicitly-requested-highs-runtime").config(enabled = false) {}
         } else {
-            include(solverContract(enumeration = false) { MiniZincBackend(MiniZincEngine.HIGHS, executable).create() })
+            include(solverContract(enumeration = false) { MiniZincBackend(MiniZincEngine.HIGHS, executable).createSolver() })
             include(
                 differentialContract(
                     "highs/minizinc",
                     enumeration = false,
                     DifferentialCase.catalogue().filter { it.name != DifferentialCase.NONLINEAR_PRODUCTS },
-                ) { MiniZincBackend(MiniZincEngine.HIGHS, executable).create() },
+                ) { MiniZincBackend(MiniZincEngine.HIGHS, executable).createSolver() },
             )
         }
     })

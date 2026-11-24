@@ -14,6 +14,7 @@ import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
 import io.github.gciatto.ktconstraints.solve.spi.ranking.RankingPolicy
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.assertions.throwables.shouldThrow
@@ -64,18 +65,18 @@ class AutoBackendSpec :
             model: ConstraintModel,
             options: SolveOptions = SolveOptions.DEFAULT,
         ) = AutoBackend(this, AutoStrategy.Fallback, RankingPolicy.REGISTRATION_ORDER).use { auto ->
-            auto.create().use { it.solve(model, options) }
+            auto.withSolver { it.solve(model, options) }
         }
 
         suspend fun List<SolverBackend>.race(
             model: ConstraintModel,
             parallelism: Int,
         ) = AutoBackend(this, AutoStrategy.Race(parallelism), RankingPolicy.REGISTRATION_ORDER).use { auto ->
-            auto.create().use { it.solve(model) }
+            auto.withSolver { it.solve(model) }
         }
 
-        include(solverContract { AutoBackend(listOf(KotlinBackend())).create() })
-        include(differentialContract("auto/kotlin") { AutoBackend(listOf(KotlinBackend())).create() })
+        include(solverContract { AutoBackend(listOf(KotlinBackend())).createSolver() })
+        include(differentialContract("auto/kotlin") { AutoBackend(listOf(KotlinBackend())).createSolver() })
 
         test("auto/descriptor-names-the-strategy-and-batch-capabilities") {
             val log = AutoLog()
@@ -93,7 +94,7 @@ class AutoBackendSpec :
             auto.availability().available shouldBe false
             auto.availability().reason!! shouldContain "missing is missing"
             auto.support(satisfaction).unsupported.single() shouldContain "missing/direct rejected"
-            shouldThrow<UnsupportedModelException> { auto.create().use { it.solve(satisfaction) } }
+            shouldThrow<UnsupportedModelException> { auto.withSolver { it.solve(satisfaction) } }
             AutoBackend(emptyList()).availability().reason shouldBe "No route is registered"
         }
 

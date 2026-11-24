@@ -53,7 +53,7 @@ async function rejects(pending: Promise<unknown>): Promise<boolean> {
 export async function runChecks(backend: Backend, profile: Profile, log: (line: string) => void): Promise<void> {
     const capabilities: string[] = Array.from(backend.capabilities);
     const step = async (name: string, body: (solver: Solver) => Promise<void>): Promise<void> => {
-        const solver = backend.create();
+        const solver = backend.createSolver();
         try {
             await body(solver);
             log(`${backend.id}: ${name}`);
@@ -73,8 +73,8 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
         const outcome: Outcome = await solver.solve(builder.build());
         check(outcome.status === "FEASIBLE", `satisfaction status ${outcome.status}`);
         check(outcome.route === backend.id, `route ${outcome.route}`);
-        const vx: bigint | null | undefined = outcome.solution?.valueOf(x);
-        const vy = outcome.solution?.valueOf(y);
+        const vx: bigint | null | undefined = outcome.solution?.intValueOf(x);
+        const vy = outcome.solution?.intValueOf(y);
         check(vx != null && vy != null && vx + vy === 10n && vx > vy, `solution ${vx}, ${vy}`);
     });
 
@@ -88,7 +88,7 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
         builder.add(abs(x.minus(constant(8n))).eq(constant(4n)));
         const outcome = await solver.solve(builder.build());
         check(outcome.status === "FEASIBLE", `min-max status ${outcome.status}`);
-        check(outcome.solution?.valueOf(x) === 4n && outcome.solution?.valueOf(y) === 4n, "min-max solution");
+        check(outcome.solution?.intValueOf(x) === 4n && outcome.solution?.intValueOf(y) === 4n, "min-max solution");
     });
 
     // Common globals: a circuit fixed by its first successor, two disjunctive tasks, counting and ordering.
@@ -104,9 +104,9 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
         builder.add(lexLess([starts[0]], [starts[1]]));
         const outcome = await solver.solve(builder.build());
         check(outcome.status === "FEASIBLE", `common-globals status ${outcome.status}`);
-        const values = next.map(n => outcome.solution?.valueOf(n));
+        const values = next.map(n => outcome.solution?.intValueOf(n));
         check(values.join(",") === "2,0,1", `circuit ${values}`);
-        const [a, b] = starts.map(s => outcome.solution?.valueOf(s) ?? -1n);
+        const [a, b] = starts.map(s => outcome.solution?.intValueOf(s) ?? -1n);
         check(b - a >= 2n, `disjunctive ${a}, ${b}`);
     });
 
@@ -124,8 +124,8 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
         const outcome = await solver.solve(builder.build(), 60_000);
         check(outcome.status === "OPTIMAL", `sequencing status ${outcome.status}`);
         check(outcome.objective === 1n, `sequencing objective ${outcome.objective}`);
-        check(outcome.solution?.valueOf(word[0]) === 1n && outcome.solution?.valueOf(word[1]) === 0n, "sequencing word");
-        check(outcome.solution?.valueOf(next[1]) === 0n, "subcircuit");
+        check(outcome.solution?.intValueOf(word[0]) === 1n && outcome.solution?.intValueOf(word[1]) === 0n, "sequencing word");
+        check(outcome.solution?.intValueOf(next[1]) === 0n, "subcircuit");
     });
 
     // Optimization: maximize 3x - y subject to x + y <= 12 over 0..10; optimum 30.
@@ -151,7 +151,7 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
             const found: string[] = [];
             let completion: Outcome | null | undefined = null;
             for await (const event of solver.solutions(builder.build())) {
-                if (event.solution != null) found.push(`${event.solution.valueOf(x)}<${event.solution.valueOf(y)}`);
+                if (event.solution != null) found.push(`${event.solution.intValueOf(x)}<${event.solution.intValueOf(y)}`);
                 else completion = event.outcome;
             }
             check(found.sort().join(",") === "0<1,0<2,1<2", `solutions ${found}`);
@@ -182,7 +182,7 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
         builder.add(x.minus(constant(huge)).eq(constant(1n)));
         if (profile.unboundedIntegers) {
             const outcome = await solver.solve(builder.build());
-            check(outcome.solution?.valueOf(x) === huge + 1n, `value ${outcome.solution?.valueOf(x)}`);
+            check(outcome.solution?.intValueOf(x) === huge + 1n, `value ${outcome.solution?.intValueOf(x)}`);
         } else {
             check(await rejects(solver.solve(builder.build())), "out-of-range integers must be rejected");
         }
@@ -201,7 +201,7 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
             return;
         }
         const outcome = await solver.solve(builder.build());
-        check(outcome.status === "OPTIMAL" && outcome.solution?.valueOf(n) === 7n, `real optimization ${outcome.status}`);
+        check(outcome.status === "OPTIMAL" && outcome.solution?.intValueOf(n) === 7n, `real optimization ${outcome.status}`);
         const text: string | null | undefined = outcome.solution?.realValueOf(r);
         const [numerator, denominator = "1"] = (text ?? "").split("/");
         const p = BigInt(numerator), q = BigInt(denominator);
@@ -228,7 +228,7 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
                 }
                 check(stale, "a restored checkpoint must be stale");
                 const restored = await session.check();
-                const value = restored.solution?.valueOf(x);
+                const value = restored.solution?.intValueOf(x);
                 check(restored.status === "SATISFIABLE" && value != null && value >= 3n, `restored ${value}`);
                 const small = x.le(constant(1n));
                 const large = x.ge(constant(5n));
@@ -241,7 +241,7 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
             }
         });
         // Constraint store: post, mark, entail, undo, fail, explain with the caller's expressions, fork.
-        const store: Store = backend.openStore();
+        const store: Store = backend.createStore();
         try {
             const x = store.intVar("x", 0n, 9n);
             const y = store.intVar("y", 0n, 9n);
@@ -272,7 +272,7 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
     } else {
         let refused = false;
         try {
-            backend.openStore().close();
+            backend.createStore().close();
         } catch {
             refused = true;
         }

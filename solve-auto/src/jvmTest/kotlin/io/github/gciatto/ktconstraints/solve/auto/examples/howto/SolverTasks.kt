@@ -52,7 +52,7 @@ internal suspend fun selectEnumerationRoute(): Triple<BackendAvailability, Suppo
     val backend = selection.best.backend
     val availability = backend.availability()
     val support = backend.support(model)
-    val result = backend.create().use { it.solve(model) }
+    val result = backend.createSolver().use { it.solve(model) }
     return Triple(availability, support, result)
 }
 // --8<-- [end:selection]
@@ -73,7 +73,7 @@ internal suspend fun enumerateValues(
     x: IntVar,
 ): Pair<List<BigInteger>, Pair<SolveResult?, SolutionEvent?>> =
     AutoBackend.load().use { auto ->
-        auto.create().use { solver -> solver.solutions(model).use { it.valuesOf(x) } }
+        auto.createSolver().use { solver -> solver.solutions(model).use { it.valuesOf(x) } }
     }
 
 /** Reads the stream to completion, collecting the values of [x]. */
@@ -95,7 +95,7 @@ internal suspend fun SolutionStream.valuesOf(x: IntVar): Pair<List<BigInteger>, 
 internal suspend fun cancelEnumeration(): Pair<SolutionEvent?, TerminationReason?> {
     val model = ConstraintModel.of { intVar("x", 0..100) }
     val (first, termination) =
-        Z3Backend().create().use { solver ->
+        Z3Backend().createSolver().use { solver ->
             solver.solutions(model, SolveOptions(timeoutMillis = 1_000, solutionLimit = 2)).use { stream ->
                 val first = stream.next()
                 stream.cancel()
@@ -112,7 +112,7 @@ internal suspend fun checkTemporaryAssertions(): Triple<CheckResult, Pair<CheckR
         ConstraintScope.empty {
             val x = intVar("x", 0..3)
             add(x ge 1)
-            Z3Backend().create().use { solver ->
+            Z3Backend().createSolver().use { solver ->
                 solver.openSession(buildModel()).use { session ->
                     val checkpoint = session.push()
                     session.add(x eq 0)
@@ -157,7 +157,7 @@ internal suspend fun restoreStoreDomains(): Pair<List<IntDomain>, Entailment> {
 // --8<-- [start:uncertain-post]
 internal suspend fun undoUnknownPost(): Triple<Propagation, EntailmentResult, EntailmentResult> {
     val (post, active, restored) =
-        SatisfiabilityStore.of(Z3Backend().create()).use { store ->
+        SatisfiabilityStore.of(Z3Backend().createSolver()).use { store ->
             val x = store.intVar("x", IntDomain.of(0..1))
             val mark = store.mark()
             val post = store.constrain(x eq 1, timeoutMillis = 0)
@@ -178,7 +178,7 @@ internal suspend fun readExactRational(): Rational? {
         ConstraintScope.empty {
             val r = realVar("r")
             add(r eq Rational.parse("0.1"))
-            val result = Z3Backend().create().use { it.solve(buildModel()) }
+            val result = Z3Backend().createSolver().use { it.solve(buildModel()) }
             requireNotNull(result.assignment).valueOf(r)
         }
     return value
@@ -194,7 +194,7 @@ internal suspend fun wrapBitVector(): BigInteger? {
             val zero = BitVecLiteral(BigInteger.ZERO, 8)
             val sum = BitVecBinary(BitVecOperator.ADD, x, one)
             add(BitVecComparison(BitVecRelation.EQUAL, sum, zero))
-            val result = Z3Backend().create().use { it.solve(buildModel()) }
+            val result = Z3Backend().createSolver().use { it.solve(buildModel()) }
             requireNotNull(result.assignment).valueOf(x)
         }
     return value
@@ -209,7 +209,7 @@ internal suspend fun probeMiniZinc(): Triple<BackendAvailability, SupportReport,
     val support = backend.support(model)
     val result =
         if (availability.available && support.isSupported) {
-            backend.create().use { solver -> solver.solve(model) }
+            backend.createSolver().use { solver -> solver.solve(model) }
         } else {
             null
         }

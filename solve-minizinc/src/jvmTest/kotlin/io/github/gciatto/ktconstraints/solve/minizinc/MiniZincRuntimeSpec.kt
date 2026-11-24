@@ -12,6 +12,6 @@ class MiniZincRuntimeSpec :
             val backend = MiniZincGecodeBackend("/nonexistent/kt-constraints/minizinc")
             backend.availability().available shouldBe false
             backend.availability().reason.isNullOrBlank() shouldBe false
-            shouldThrow<BackendUnavailableException> { backend.create() }
+            shouldThrow<BackendUnavailableException> { backend.createSolver() }
         }
     })

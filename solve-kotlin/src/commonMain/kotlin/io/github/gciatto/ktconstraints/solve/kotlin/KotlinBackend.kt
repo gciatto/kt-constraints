@@ -40,5 +40,5 @@ class KotlinBackend(
         options: SolveOptions,
     ): SupportReport = KotlinSupport.report(model)
 
-    override fun create(): IncrementalConstraintSolver = KotlinSolver(descriptor, configuration)
+    override fun createSolver(): IncrementalConstraintSolver = KotlinSolver(descriptor, configuration)
 }

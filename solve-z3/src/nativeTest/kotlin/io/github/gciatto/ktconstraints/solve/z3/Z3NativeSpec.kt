@@ -20,6 +20,7 @@ import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
 import io.github.gciatto.ktconstraints.solve.spi.store.SatisfiabilityStore
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
@@ -47,18 +48,18 @@ class Z3NativeSpec :
             val availability = backend.availability()
             availability.available shouldBe false
             availability.reason.shouldNotBeNull()
-            shouldThrow<BackendUnavailableException> { backend.create() }
+            shouldThrow<BackendUnavailableException> { backend.createSolver() }
         }
 
         // Gradle provisions the pinned library for the host's native test task; other runs only check unavailability.
         if (!getenv("KT_CONSTRAINTS_Z3_LIBRARY")?.toKString().isNullOrEmpty()) {
 
-            include(solverContract { Z3NativeBackend().create() })
-            include(incrementalContract { Z3NativeBackend().create() })
-            include(storeContract(propagates = false) { SatisfiabilityStore.of(Z3NativeBackend().create()) })
-            include(z3OptimizationContract { Z3NativeBackend().create() })
-            include(z3RealContract { Z3NativeBackend().create() })
-            include(z3BitVecContract { Z3NativeBackend().create() })
+            include(solverContract { Z3NativeBackend().createSolver() })
+            include(incrementalContract { Z3NativeBackend().createSolver() })
+            include(storeContract(propagates = false) { SatisfiabilityStore.of(Z3NativeBackend().createSolver()) })
+            include(z3OptimizationContract { Z3NativeBackend().createSolver() })
+            include(z3RealContract { Z3NativeBackend().createSolver() })
+            include(z3BitVecContract { Z3NativeBackend().createSolver() })
 
             test("z3-native/route-identifies-the-c-binding") {
                 val backend = Z3NativeBackend()
@@ -73,7 +74,7 @@ class Z3NativeSpec :
                         SolverCapability.BITVECTORS,
                     ),
                 ) shouldBe true
-                backend.create().use { it.solve(ConstraintModel.empty()).descriptor shouldBe backend.descriptor }
+                backend.withSolver { it.solve(ConstraintModel.empty()).descriptor shouldBe backend.descriptor }
             }
 
             test("z3-native/integers-beyond-64-bits-are-exact") {
@@ -83,7 +84,7 @@ class Z3NativeSpec :
                     add(
                         IntEquality(LinearSum(listOf(x), listOf(BigInteger.TWO), BigInteger.ONE), IntLiteral(huge + huge + BigInteger.ONE)),
                     )
-                    Z3NativeBackend().create().use { solver ->
+                    Z3NativeBackend().createSolver().use { solver ->
                         val result = solver.solve(buildModel())
                         result.status shouldBe SolveStatus.FEASIBLE
                         result.assignment?.valueOf(x) shouldBe huge
@@ -97,12 +98,12 @@ class Z3NativeSpec :
                     val value = intVar("v", -2..3)
                     add(IntEquality(Element(index, listOf(IntLiteral(-2), value, IntLiteral(3))), value))
                     val model = buildModel()
-                    answers(Z3NativeBackend().create(), model, index, value) shouldBe answers(FiniteOracle(), model, index, value)
+                    answers(Z3NativeBackend().createSolver(), model, index, value) shouldBe answers(FiniteOracle(), model, index, value)
                 }
             }
 
             test("z3-native/owned-deadline-stops-a-hard-check") {
-                Z3NativeBackend().create().use { solver ->
+                Z3NativeBackend().createSolver().use { solver ->
                     val result = solver.solve(pigeonhole(), SolveOptions(timeoutMillis = 200))
                     result.status shouldBe SolveStatus.UNKNOWN
                     result.terminationReason shouldBe TerminationReason.TIMEOUT
@@ -110,7 +111,7 @@ class Z3NativeSpec :
             }
 
             test("z3-native/session-stays-usable-after-a-cancelled-check") {
-                Z3NativeBackend().create().use { solver ->
+                Z3NativeBackend().createSolver().use { solver ->
                     solver.openSession(pigeonhole()).use { session ->
                         withTimeoutOrNull(300) { session.check() } shouldBe null
                         session.check(listOf(BoolLiteral(false))).status shouldBe CheckStatus.UNSATISFIABLE
@@ -119,7 +120,7 @@ class Z3NativeSpec :
             }
 
             test("z3-native/session-close-interrupts-an-active-check") {
-                val solver = Z3NativeBackend().create()
+                val solver = Z3NativeBackend().createSolver()
                 val session = solver.openSession(pigeonhole())
                 coroutineScope {
                     val check = async { session.check() }

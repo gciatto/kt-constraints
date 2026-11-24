@@ -2,6 +2,7 @@ package io.github.gciatto.ktconstraints.solve.mip
 
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.longs.shouldBeLessThan
@@ -22,7 +23,7 @@ class HighsSpec :
         }
 
         test("highs/or-tools/backend-limit-is-a-resource-limit") {
-            OrToolsMipBackend.highs(300).create().use { solver ->
+            OrToolsMipBackend.highs(300).withSolver { solver ->
                 val started = TimeSource.Monotonic.markNow()
                 val result = solver.solve(marketSplit())
                 started.elapsedNow().inWholeMilliseconds shouldBeLessThan 10_000L
@@ -32,7 +33,7 @@ class HighsSpec :
         }
 
         test("highs/or-tools/close-returns-at-once-and-the-solve-ends-at-its-limit") {
-            OrToolsMipBackend.highs(2_000).create().use { solver ->
+            OrToolsMipBackend.highs(2_000).withSolver { solver ->
                 val stream = solver.solutions(marketSplit())
                 coroutineScope {
                     val reading = async { runCatching { stream.next() } }

@@ -33,7 +33,7 @@ internal fun ConstraintScope.sudoku(givens: List<List<Int>>): List<List<IntVar>>
 internal suspend fun solveSudoku(givens: List<List<Int>>): List<List<Int>> =
     ConstraintScope.empty {
         val cells = sudoku(givens)
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
+        val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
         check(result.status == SolveStatus.FEASIBLE) { result.toString() }
         val assignment = checkNotNull(result.assignment)
         val grid = cells.map { row -> row.map { checkNotNull(assignment.intValueOf(it)) } }

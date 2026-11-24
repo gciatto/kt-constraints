@@ -22,8 +22,11 @@ class Solution internal constructor(
     /** Exact objective value of this incumbent, or null for satisfaction. */
     val objective: JsBigInt? = objective?.toBigInt()
 
-    /** Exact value of an integer variable, or null when it is not projected; other expressions are rejected. */
-    fun valueOf(variable: IntExpression): JsBigInt? {
+    /**
+     * Exact value of an integer variable, or null when it is not projected; other expressions are rejected.
+     * Not named `valueOf`, which would shadow `Object.prototype.valueOf` and break coercion.
+     */
+    fun intValueOf(variable: IntExpression): JsBigInt? {
         val declared = variable.expr as? IntVar ?: throw IllegalArgumentException("Not an integer variable: ${variable.expr}")
         return assignment.valueOf(declared)?.toBigInt()
     }

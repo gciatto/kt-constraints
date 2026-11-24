@@ -37,5 +37,9 @@ internal class ScriptedBackend(
         options: SolveOptions,
     ) = SupportReport()
 
-    override fun create(): ConstraintSolver = ScriptedSolver(descriptor, delayMillis, log, script).also { log.created += descriptor.engine }
+    override fun createSolver(): ConstraintSolver =
+        ScriptedSolver(descriptor, delayMillis, log, script).also {
+            log.created +=
+                descriptor.engine
+        }
 }

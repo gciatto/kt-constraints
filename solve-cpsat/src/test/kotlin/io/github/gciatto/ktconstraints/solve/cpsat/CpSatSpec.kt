@@ -21,6 +21,7 @@ import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.oracle.enumerate
@@ -36,7 +37,7 @@ import org.gciatto.kt.math.BigInteger
 /** Direct CP-SAT JVM route: shared contract, int64 guards, reification differentials, search lifecycle. */
 class CpSatSpec :
     FunSpec({
-        include(solverContract { CpSatBackend().create() })
+        include(solverContract { CpSatBackend().createSolver() })
 
         test("cp-sat/runtime-is-available-and-identifies-the-direct-route") {
             val backend = CpSatBackend()
@@ -77,7 +78,7 @@ class CpSatSpec :
         ) { (_, build) ->
             val model = ConstraintModel.of(build)
             CpSatBackend().support(model).isSupported shouldBe false
-            CpSatBackend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
+            CpSatBackend().withSolver { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
         }
 
         test("cp-sat/reals-are-rejected-before-execution") {
@@ -87,7 +88,7 @@ class CpSatSpec :
                     add(RealEquality(r, RealLiteral(Rational.of(1, 2))))
                 }
             CpSatBackend().support(model).isSupported shouldBe false
-            CpSatBackend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
+            CpSatBackend().withSolver { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
         }
 
         test("cp-sat/bit-vectors-are-rejected-before-execution") {
@@ -110,7 +111,7 @@ class CpSatSpec :
             report.losslessDecompositions.size shouldBe 2
         }
 
-        include(differentialContract("cp-sat") { CpSatBackend().create() })
+        include(differentialContract("cp-sat") { CpSatBackend().createSolver() })
 
         test("cp-sat/wide-objectives-are-exact-and-optimal") {
             val big = BigInteger.TWO.pow(40)
@@ -120,7 +121,7 @@ class CpSatSpec :
                 add(IntLessThan(x, IntSum(IntProduct(hidden, IntLiteral(big)), IntLiteral(-7))))
                 maximize(LinearSum(listOf(x, hidden), listOf(BigInteger.of(3), BigInteger.ONE), BigInteger.ONE))
                 project(x)
-                CpSatBackend().create().use { solver ->
+                CpSatBackend().withSolver { solver ->
                     val result = solver.solve(buildModel())
                     result.status shouldBe SolveStatus.OPTIMAL
                     val best = big * BigInteger.of(3) - BigInteger.of(8)
@@ -139,7 +140,7 @@ class CpSatSpec :
                     add(AllDifferent(xs))
                     minimize(LinearSum(xs, xs.indices.map { BigInteger.of(it.toLong() + 1) }))
                 }
-            val (found, result) = CpSatBackend().create().use { enumerate(it, model, objectives = true) }
+            val (found, result) = CpSatBackend().withSolver { enumerate(it, model, objectives = true) }
             result.status shouldBe SolveStatus.OPTIMAL
             result.objectiveValue shouldBe BigInteger.of(35)
             found.map { -(it.single() as BigInteger).toLong() }.shouldBeStrictlyIncreasing()
@@ -153,7 +154,7 @@ class CpSatSpec :
                     add(IntEquality(IntProduct(x, y), IntLiteral(-6)))
                     minimize(IntSum(x, y))
                 }
-            CpSatBackend(workers = 2, seed = 7).create().use { solver ->
+            CpSatBackend(workers = 2, seed = 7).withSolver { solver ->
                 val result = solver.solve(model)
                 result.status shouldBe SolveStatus.OPTIMAL
                 result.objectiveValue shouldBe BigInteger.of(-1)
@@ -166,7 +167,7 @@ class CpSatSpec :
                 ConstraintModel.of {
                     intVar("x", 0..2)
                 }
-            CpSatBackend().create().use { solver ->
+            CpSatBackend().withSolver { solver ->
                 val (found, result) = enumerate(solver, model, SolveOptions(solutionLimit = 2))
                 found.size shouldBe 2
                 result.status shouldBe SolveStatus.FEASIBLE
@@ -179,7 +180,7 @@ class CpSatSpec :
                 ConstraintModel.of {
                     repeat(9) { intVar("x$it", 0..9) }
                 }
-            CpSatBackend().create().use { solver ->
+            CpSatBackend().withSolver { solver ->
                 val (found, result) = enumerate(solver, model, SolveOptions(timeoutMillis = 300))
                 (found.size > 0) shouldBe true
                 result.status shouldBe SolveStatus.FEASIBLE
@@ -190,7 +191,7 @@ class CpSatSpec :
         test("cp-sat/closing-a-stream-stops-its-search-thread") {
             ConstraintScope.empty {
                 repeat(9) { intVar("x$it", 0..9) }
-                val solver = CpSatBackend().create()
+                val solver = CpSatBackend().createSolver()
                 val stream = solver.solutions(buildModel())
                 repeat(3) { (stream.next() is SolutionFound) shouldBe true }
                 stream.close()

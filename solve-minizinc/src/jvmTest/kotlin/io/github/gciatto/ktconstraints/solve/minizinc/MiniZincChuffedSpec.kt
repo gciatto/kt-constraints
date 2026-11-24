@@ -12,7 +12,7 @@ class MiniZincChuffedSpec :
         if (executable == null || "chuffed" !in engines) {
             test("requires-explicitly-requested-chuffed-runtime").config(enabled = false) {}
         } else {
-            include(solverContract { MiniZincBackend(MiniZincEngine.CHUFFED, executable).create() })
-            include(differentialContract("chuffed/minizinc") { MiniZincBackend(MiniZincEngine.CHUFFED, executable).create() })
+            include(solverContract { MiniZincBackend(MiniZincEngine.CHUFFED, executable).createSolver() })
+            include(differentialContract("chuffed/minizinc") { MiniZincBackend(MiniZincEngine.CHUFFED, executable).createSolver() })
         }
     })

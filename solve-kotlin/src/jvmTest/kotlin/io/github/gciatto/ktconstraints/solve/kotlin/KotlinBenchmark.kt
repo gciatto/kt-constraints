@@ -51,7 +51,7 @@ object KotlinBenchmark {
         case: KotlinBenchmarkCase,
         elapsed: MutableMap<String, Long>,
     ) {
-        KotlinBackend().create().use { solver ->
+        KotlinBackend().createSolver().use { solver ->
             timed(elapsed, "session_open") { solver.openSession(case.model) }.use { session ->
                 val baseline = timed(elapsed, "session_initial_check") { session.check(timeoutMillis = TIMEOUT_MILLIS) }
                 check(baseline.status == CheckStatus.SATISFIABLE) { "Initial session failed: ${case.name}, $baseline" }

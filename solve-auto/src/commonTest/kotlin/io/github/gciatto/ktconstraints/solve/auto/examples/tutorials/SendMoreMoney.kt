@@ -37,7 +37,7 @@ internal suspend fun solveSendMoreMoney(): Pair<List<Int>, SolveStatus> =
     ConstraintScope.empty {
         val letters = sendMoreMoney()
         val model = buildModel()
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(model) } }
+        val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(model) } }
         println("${result.status} by ${result.descriptor.id}")
         check(result.status == SolveStatus.FEASIBLE) { result.toString() }
         val assignment = checkNotNull(result.assignment)
@@ -46,7 +46,7 @@ internal suspend fun solveSendMoreMoney(): Pair<List<Int>, SolveStatus> =
 
         // --8<-- [start:twist]
         add(letters[3] eq 6)
-        val impossible = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
+        val impossible = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
         println(impossible.status) // INFEASIBLE
         // --8<-- [end:twist]
         digits to impossible.status

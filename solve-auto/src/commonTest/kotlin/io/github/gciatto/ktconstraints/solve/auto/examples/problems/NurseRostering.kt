@@ -41,7 +41,7 @@ internal fun ConstraintScope.nurseRostering(): List<List<IntVar>> {
 internal suspend fun solveNurseRostering(): Pair<SolveResult, List<List<BigInteger?>>> =
     ConstraintScope.empty {
         val work = nurseRostering()
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
+        val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
         println("${result.status}: penalty = ${result.objectiveValue}")
         val assignment = requireNotNull(result.assignment)
         val roster = work.map { shifts -> shifts.map { assignment.valueOf(it) } }

@@ -7,7 +7,7 @@ export const example: Example = {
         const backend = await loadZ3();
         try {
             // --8<-- [start:store]
-            const store = backend.openStore();
+            const store = backend.createStore();
             try {
                 const x = store.intVar("x", 0n, 3n);
                 const before = store.mark();

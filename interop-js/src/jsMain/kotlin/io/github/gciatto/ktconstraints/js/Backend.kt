@@ -2,9 +2,9 @@ package io.github.gciatto.ktconstraints.js
 
 import io.github.gciatto.ktconstraints.js.solve.Solver
 import io.github.gciatto.ktconstraints.js.store.Store
-import io.github.gciatto.ktconstraints.solve.incremental.IncrementalConstraintSolver
 import io.github.gciatto.ktconstraints.solve.minizinc.MiniZincJsBackend
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
+import io.github.gciatto.ktconstraints.solve.spi.createIncrementalSolver
 import io.github.gciatto.ktconstraints.solve.spi.store.SatisfiabilityStore
 import io.github.gciatto.ktconstraints.solve.z3.Z3JsBackend
 import kotlinx.coroutines.CoroutineScope
@@ -29,16 +29,10 @@ class Backend internal constructor(
             .toTypedArray()
 
     /** Creates a fresh solver. */
-    fun create(): Solver = Solver(backend.create())
+    fun createSolver(): Solver = Solver(backend.createSolver())
 
-    /** Opens a constraint store over a fresh solver; routes without incremental assertions refuse. */
-    fun openStore(): Store {
-        val solver = backend.create()
-        val incremental =
-            solver as? IncrementalConstraintSolver
-                ?: throw UnsupportedOperationException("$id does not support constraint stores").also { solver.close() }
-        return Store(SatisfiabilityStore.of(incremental))
-    }
+    /** Creates a constraint store over a fresh solver; routes without incremental assertions refuse. */
+    fun createStore(): Store = Store(SatisfiabilityStore.of(backend.createIncrementalSolver()))
 
     /** Closes every created solver and releases the runtime; idempotent. */
     fun close() = runtime.close()

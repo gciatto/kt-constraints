@@ -25,8 +25,7 @@ class AutoBackend(
     val strategy: AutoStrategy = AutoStrategy.Fallback,
     private val policy: RankingPolicy = RankingPolicy.DEFAULT,
     private val platform: Platform = Platform.current(),
-) : SolverBackend,
-    AutoCloseable {
+) : SolverBackend {
     private val backends: List<SolverBackend> = backends.toList()
 
     /** The routes this backend chooses among, in tie-breaking order. */
@@ -60,9 +59,9 @@ class AutoBackend(
         options: SolveOptions,
     ): SupportReport = portfolio.support(model, options)
 
-    override fun create(): ConstraintSolver = AutoSolver(descriptor, portfolio, strategy)
+    override fun createSolver(): ConstraintSolver = AutoSolver(descriptor, portfolio, strategy)
 
-    override fun close() = backends.filterIsInstance<AutoCloseable>().forEach { it.close() }
+    override fun close() = backends.forEach { it.close() }
 
     /** Factories for the routes bundled with this module. */
     companion object {

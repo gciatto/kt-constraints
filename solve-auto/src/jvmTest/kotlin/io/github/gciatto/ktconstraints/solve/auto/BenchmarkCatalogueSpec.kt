@@ -2,6 +2,7 @@ package io.github.gciatto.ktconstraints.solve.auto
 
 import io.github.gciatto.ktconstraints.solve.cpsat.CpSatBackend
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.solve.z3.Z3Backend
 import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkCatalogue
 import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkInstance
@@ -21,7 +22,7 @@ class BenchmarkCatalogueSpec :
             val routes: List<SolverBackend> = listOf(CpSatBackend(), Z3Backend()).filter { it.support(instance.model).isSupported }
             routes.isNotEmpty() shouldBe true
             for (route in routes) {
-                route.create().use { solver ->
+                route.withSolver { solver ->
                     val result = solver.solve(instance.model)
                     result.status shouldBe instance.expectedStatus
                     result.objectiveValue shouldBe instance.expectedObjective

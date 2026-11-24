@@ -20,7 +20,7 @@ import kotlin.js.jsTypeOf
 class KotlinFacadeSpec :
     FunSpec({
         test("portable facade resolves a JavaScript Promise with an exact bigint") {
-            val solver = Solver(KotlinBackend().create()).asDynamic()
+            val solver = Solver(KotlinBackend().createSolver()).asDynamic()
             try {
                 val builder = ModelBuilder().asDynamic()
                 val x = builder.intVar("x", jsInteger("1180591620717411303424"), jsInteger("1180591620717411303426"))
@@ -30,7 +30,7 @@ class KotlinFacadeSpec :
                 val outcome = awaited(pending)
                 outcome.status as String shouldBe "FEASIBLE"
                 outcome.route as String shouldBe "kotlin/direct"
-                val value = outcome.solution.valueOf(x)
+                val value = outcome.solution.intValueOf(x)
                 jsTypeOf(value) shouldBe "bigint"
                 value.toString() shouldBe "1180591620717411303425"
             } finally {
@@ -39,7 +39,7 @@ class KotlinFacadeSpec :
         }
 
         test("portable facade returns exact rational strings") {
-            val solver = Solver(KotlinBackend().create()).asDynamic()
+            val solver = Solver(KotlinBackend().createSolver()).asDynamic()
             try {
                 val builder = ModelBuilder().asDynamic()
                 val r = builder.realVar("r")
@@ -53,7 +53,7 @@ class KotlinFacadeSpec :
         }
 
         test("portable facade implements the JavaScript async iterator protocol") {
-            val solver = Solver(KotlinBackend().create()).asDynamic()
+            val solver = Solver(KotlinBackend().createSolver()).asDynamic()
             try {
                 val builder = ModelBuilder().asDynamic()
                 val x = builder.intVar("x", jsInteger("0"), jsInteger("2"))
@@ -66,7 +66,7 @@ class KotlinFacadeSpec :
                     item.done as Boolean shouldBe false
                     val event = item.value
                     if (event.solution != null) {
-                        answers += event.solution.valueOf(x).toString()
+                        answers += event.solution.intValueOf(x).toString()
                     } else {
                         event.outcome.status as String shouldBe "FEASIBLE"
                         event.outcome.termination as String shouldBe "COMPLETED"
@@ -82,7 +82,7 @@ class KotlinFacadeSpec :
         }
 
         test("returning from a JavaScript async iterator releases only that search") {
-            val solver = Solver(KotlinBackend().create()).asDynamic()
+            val solver = Solver(KotlinBackend().createSolver()).asDynamic()
             try {
                 val builder = ModelBuilder().asDynamic()
                 builder.intVar("x", jsInteger("0"), jsInteger("5"))
@@ -98,7 +98,7 @@ class KotlinFacadeSpec :
         }
 
         test("portable facade preserves session frames assumption identity and close") {
-            val solver = Solver(KotlinBackend().create()).asDynamic()
+            val solver = Solver(KotlinBackend().createSolver()).asDynamic()
             try {
                 val builder = ModelBuilder().asDynamic()
                 val x = builder.intVar("x", jsInteger("0"), jsInteger("2"))
@@ -121,7 +121,7 @@ class KotlinFacadeSpec :
 
                     val restored = awaited(session.check(arrayOf(two), null, null))
                     restored.status as String shouldBe "SATISFIABLE"
-                    restored.solution.valueOf(x).toString() shouldBe "2"
+                    restored.solution.intValueOf(x).toString() shouldBe "2"
                     awaited(session.check(emptyArray<BoolExpression>(), null, null)).status as String shouldBe "SATISFIABLE"
                     solver.close()
                     shouldThrow<IllegalStateException> { session.push() }
@@ -135,7 +135,7 @@ class KotlinFacadeSpec :
         }
 
         test("an already aborted JavaScript signal rejects the Promise without timers") {
-            val solver = Solver(KotlinBackend().create()).asDynamic()
+            val solver = Solver(KotlinBackend().createSolver()).asDynamic()
             try {
                 val controller = js("new AbortController()")
                 controller.abort()

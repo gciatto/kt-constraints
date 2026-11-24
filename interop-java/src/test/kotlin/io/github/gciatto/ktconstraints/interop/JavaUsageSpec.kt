@@ -35,5 +35,5 @@ class JavaUsageSpec :
         test("java/z3/direct/incremental-session") { JavaUsage.sessions(Z3Backend()) }
         test("java/choco/direct/sessions-are-refused") { JavaUsage.sessionsUnsupported(ChocoBackend()) }
         test("java/choco/direct/propagating-store") { JavaUsage.store(ChocoStore()) }
-        test("java/z3/direct/satisfiability-store") { JavaUsage.store(SatisfiabilityStore.of(Z3Backend().create())) }
+        test("java/z3/direct/satisfiability-store") { JavaUsage.store(SatisfiabilityStore.of(Z3Backend().createSolver())) }
     })

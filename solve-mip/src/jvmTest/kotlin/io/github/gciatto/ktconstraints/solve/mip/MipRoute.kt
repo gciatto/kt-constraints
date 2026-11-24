@@ -13,6 +13,7 @@ import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.DifferentialCase
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
@@ -27,7 +28,7 @@ fun mipRoute(
     id: String,
     backend: () -> OrToolsMipBackend,
 ) = funSpec {
-    include(solverContract(enumeration = false) { backend().create() })
+    include(solverContract(enumeration = false) { backend().createSolver() })
 
     test("$id/runtime-is-available-and-does-not-enumerate") {
         val instance = backend()
@@ -48,7 +49,7 @@ fun mipRoute(
                 intVar("x", 0..2_000_000)
             }
         backend().support(model).isSupported shouldBe false
-        backend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
+        backend().withSolver { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
     }
 
     include(
@@ -60,7 +61,7 @@ fun mipRoute(
                     DifferentialCase.NONLINEAR_PRODUCTS
             },
         ) {
-            backend().create()
+            backend().createSolver()
         },
     )
 
@@ -71,7 +72,7 @@ fun mipRoute(
             add(IntLessThan(x, IntSum(IntProduct(IntLiteral(100_000), hidden), IntLiteral(-7))))
             maximize(LinearSum(listOf(x, hidden), listOf(BigInteger.of(3), BigInteger.ONE), BigInteger.ONE))
             project(x)
-            backend().create().use { solver ->
+            backend().withSolver { solver ->
                 val result = solver.solve(buildModel())
                 result.status shouldBe SolveStatus.OPTIMAL
                 result.assignment?.valueOf(x) shouldBe BigInteger.of(299_992)
@@ -83,7 +84,7 @@ fun mipRoute(
     }
 
     test("$id/deadline-during-a-hard-search-is-not-infeasibility") {
-        backend().create().use { solver ->
+        backend().withSolver { solver ->
             val result = solver.solve(marketSplit(), SolveOptions(timeoutMillis = 300))
             result.status shouldBe SolveStatus.UNKNOWN
             result.terminationReason shouldBe TerminationReason.TIMEOUT

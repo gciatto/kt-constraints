@@ -9,6 +9,7 @@ import io.github.gciatto.ktconstraints.core.real.RealLiteral
 import io.github.gciatto.ktconstraints.core.real.relation.RealLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
@@ -41,7 +42,7 @@ class AutoBackendJvmSpec :
         }
 
         test("defaults/auto-backend-proves-an-optimum") {
-            val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(linear) } }
+            val result = AutoBackend.load().use { auto -> auto.withSolver { it.solve(linear) } }
             result.status shouldBe SolveStatus.OPTIMAL
             result.objectiveValue shouldBe BigInteger.of(19)
         }

@@ -4,6 +4,7 @@ import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
 import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkCatalogue
 import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkInstance
 import kotlinx.coroutines.runBlocking
@@ -38,7 +39,7 @@ object AutoBenchmark {
                     val extras = EXTRA_ROUTES.filter { it.support(instance.model, options).isSupported }
                     for (backend in selection.candidates.map { it.backend } + extras) {
                         val support = millis { backend.support(instance.model, options) }
-                        backend.create().use { solver ->
+                        backend.withSolver { solver ->
                             lateinit var cold: SolveResult
                             val coldMillis = millis { cold = solver.solve(instance.model, options) }
                             val warmMillis = millis { solver.solve(instance.model, options) }
@@ -56,7 +57,7 @@ object AutoBenchmark {
                         }
                     }
                     lateinit var auto: SolveResult
-                    val autoMillis = millis { auto = loaded.create().use { it.solve(instance.model, options) } }
+                    val autoMillis = millis { auto = loaded.withSolver { it.solve(instance.model, options) } }
                     rows +=
                         row(
                             instance,

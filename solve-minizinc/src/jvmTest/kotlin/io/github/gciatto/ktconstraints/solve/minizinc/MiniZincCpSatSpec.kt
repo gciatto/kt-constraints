@@ -12,7 +12,7 @@ class MiniZincCpSatSpec :
         if (executable == null || "cp-sat" !in engines) {
             test("requires-explicitly-requested-cp-sat-runtime").config(enabled = false) {}
         } else {
-            include(solverContract { MiniZincBackend(MiniZincEngine.CP_SAT, executable).create() })
-            include(differentialContract("cp-sat/minizinc") { MiniZincBackend(MiniZincEngine.CP_SAT, executable).create() })
+            include(solverContract { MiniZincBackend(MiniZincEngine.CP_SAT, executable).createSolver() })
+            include(differentialContract("cp-sat/minizinc") { MiniZincBackend(MiniZincEngine.CP_SAT, executable).createSolver() })
         }
     })

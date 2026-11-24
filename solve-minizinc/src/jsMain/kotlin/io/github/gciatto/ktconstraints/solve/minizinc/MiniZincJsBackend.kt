@@ -39,8 +39,7 @@ class MiniZincJsBackend private constructor(
     internal val configurationId: String,
     route: String,
     private val settlesPool: Boolean,
-) : SolverBackend,
-    AutoCloseable {
+) : SolverBackend {
     override val descriptor: SolverDescriptor =
         SolverDescriptor(engine.engineId, route, engine.descriptor.capabilities)
     private val streams = mutableSetOf<MiniZincJsStream>()
@@ -70,7 +69,7 @@ class MiniZincJsBackend private constructor(
         options: SolveOptions,
     ): SupportReport = MiniZincCompiler(engine).support(model, options)
 
-    override fun create(): ConstraintSolver {
+    override fun createSolver(): ConstraintSolver {
         requireOpen()
         return MiniZincJsSolver(this)
     }

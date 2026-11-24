@@ -7,6 +7,7 @@ import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
@@ -16,9 +17,9 @@ import org.gciatto.kt.math.BigInteger
 
 class KotlinBackendSpec :
     FunSpec({
-        include(solverContract { KotlinBackend().create() })
-        include(differentialContract("kotlin") { KotlinBackend().create() })
-        include(incrementalContract { KotlinBackend().create() })
+        include(solverContract { KotlinBackend().createSolver() })
+        include(differentialContract("kotlin") { KotlinBackend().createSolver() })
+        include(incrementalContract { KotlinBackend().createSolver() })
 
         test("route is available without an external runtime") {
             val backend = KotlinBackend()
@@ -31,7 +32,7 @@ class KotlinBackendSpec :
             ConstraintScope.empty {
                 val x = intVar("x", IntDomain.of(base, base + 2))
                 add(IntEquality(IntProduct(x, x), IntLiteral((base + 1) * (base + 1))))
-                KotlinBackend().create().use { solver ->
+                KotlinBackend().withSolver { solver ->
                     val result = solver.solve(buildModel())
                     result.status shouldBe SolveStatus.FEASIBLE
                     result.assignment?.valueOf(x) shouldBe base + 1
@@ -46,7 +47,7 @@ class KotlinBackendSpec :
                     val y = intVar("y", -3..4)
                     minimize(IntProduct(x, y))
                 }
-            KotlinBackend().create().use { solver ->
+            KotlinBackend().withSolver { solver ->
                 solver.solve(model).objectiveValue shouldBe BigInteger.of(-28)
             }
         }

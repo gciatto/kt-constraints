@@ -5,6 +5,7 @@ import io.github.gciatto.ktconstraints.core.integer.arithmetic.LinearSum
 import io.github.gciatto.ktconstraints.core.integer.relation.IntLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolveOptions
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.oracle.FiniteOracle
 import io.github.gciatto.ktconstraints.test.solve.oracle.enumerate
 import io.kotest.core.spec.style.FunSpec
@@ -22,14 +23,14 @@ class ChocoOptionsSpec :
                 add(IntLessThan(xs[0], xs[2]))
                 val satisfaction = buildModel()
                 val options = SolveOptions() + ChocoOptions(search)
-                val (found, _) = ChocoBackend().create().use { enumerate(it, satisfaction, options) }
+                val (found, _) = ChocoBackend().withSolver { enumerate(it, satisfaction, options) }
                 val (expected, _) = FiniteOracle().use { enumerate(it, satisfaction) }
                 found.toSet() shouldBe expected.toSet()
                 found.size shouldBe expected.size
 
                 maximize(LinearSum(xs, listOf(1, 2, 3).map { BigInteger.of(it) }))
                 val optimization = buildModel()
-                ChocoBackend().create().use { it.solve(optimization, options) }.objectiveValue shouldBe
+                ChocoBackend().withSolver { it.solve(optimization, options) }.objectiveValue shouldBe
                     FiniteOracle().use { it.solve(optimization) }.objectiveValue
             }
         }

@@ -17,6 +17,7 @@ import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.store.SatisfiabilityStore
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
@@ -45,12 +46,12 @@ class Z3JsSpec :
             val loaded = { backend ?: throw IllegalStateException("z3-solver did not load: $loadFailure", loadFailure) }
             afterSpec { backend?.close() }
 
-            include(solverContract { loaded().create() })
-            include(incrementalContract { loaded().create() })
-            include(storeContract(propagates = false) { SatisfiabilityStore.of(loaded().create()) })
-            include(z3OptimizationContract { loaded().create() })
-            include(z3RealContract { loaded().create() })
-            include(z3BitVecContract { loaded().create() })
+            include(solverContract { loaded().createSolver() })
+            include(incrementalContract { loaded().createSolver() })
+            include(storeContract(propagates = false) { SatisfiabilityStore.of(loaded().createSolver()) })
+            include(z3OptimizationContract { loaded().createSolver() })
+            include(z3RealContract { loaded().createSolver() })
+            include(z3BitVecContract { loaded().createSolver() })
 
             test("z3-js/route-identifies-the-wasm-binding") {
                 val selected = loaded()
@@ -58,7 +59,7 @@ class Z3JsSpec :
                 selected.descriptor.capabilities.containsAll(setOf(SolverCapability.REAL_ARITHMETIC, SolverCapability.BITVECTORS)) shouldBe
                     true
                 selected.availability().available shouldBe true
-                selected.create().use { it.solve(ConstraintModel.empty()).descriptor shouldBe selected.descriptor }
+                selected.withSolver { it.solve(ConstraintModel.empty()).descriptor shouldBe selected.descriptor }
             }
 
             test("z3-js/integers-beyond-64-bits-are-exact") {
@@ -68,7 +69,7 @@ class Z3JsSpec :
                     add(
                         IntEquality(LinearSum(listOf(x), listOf(BigInteger.TWO), BigInteger.ONE), IntLiteral(huge + huge + BigInteger.ONE)),
                     )
-                    loaded().create().use { solver ->
+                    loaded().createSolver().use { solver ->
                         val result = solver.solve(buildModel())
                         result.status shouldBe SolveStatus.FEASIBLE
                         result.assignment?.valueOf(x) shouldBe huge
@@ -82,12 +83,12 @@ class Z3JsSpec :
                     val value = intVar("v", -2..3)
                     add(IntEquality(Element(index, listOf(IntLiteral(-2), value, IntLiteral(3))), value))
                     val model = buildModel()
-                    answers(loaded().create(), model, index, value) shouldBe answers(FiniteOracle(), model, index, value)
+                    answers(loaded().createSolver(), model, index, value) shouldBe answers(FiniteOracle(), model, index, value)
                 }
             }
 
             test("z3-js/owned-deadline-stops-a-hard-check") {
-                loaded().create().use { solver ->
+                loaded().createSolver().use { solver ->
                     val result = solver.solve(pigeonhole(), SolveOptions(timeoutMillis = 200))
                     result.status shouldBe SolveStatus.UNKNOWN
                     result.terminationReason shouldBe TerminationReason.TIMEOUT
@@ -95,7 +96,7 @@ class Z3JsSpec :
             }
 
             test("z3-js/session-stays-usable-after-a-cancelled-check") {
-                loaded().create().use { solver ->
+                loaded().createSolver().use { solver ->
                     solver.openSession(pigeonhole()).use { session ->
                         withTimeoutOrNull(300) { session.check() } shouldBe null
                         session.check(listOf(BoolLiteral(false))).status shouldBe CheckStatus.UNSATISFIABLE
@@ -104,7 +105,7 @@ class Z3JsSpec :
             }
 
             test("z3-js/session-close-interrupts-an-active-check") {
-                val solver = loaded().create()
+                val solver = loaded().createSolver()
                 val session = solver.openSession(pigeonhole())
                 coroutineScope {
                     val check = async { session.check() }

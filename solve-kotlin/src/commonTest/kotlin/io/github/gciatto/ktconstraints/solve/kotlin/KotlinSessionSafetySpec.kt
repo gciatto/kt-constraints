@@ -11,6 +11,7 @@ import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.kotest.core.spec.style.FunSpec
@@ -23,7 +24,7 @@ class KotlinSessionSafetySpec :
             ConstraintScope.empty {
                 val x = intVar("x", -1..1)
                 val partial = IntEquality(Element(x, listOf(IntLiteral(5))), IntLiteral(5))
-                KotlinBackend().create().use { solver ->
+                KotlinBackend().createSolver().use { solver ->
                     solver.openSession(buildModel()).use { session ->
                         session.check(listOf(partial)).assignment?.valueOf(x) shouldBe BigInteger.ZERO
                         session.check(listOf(IntEquality(x, IntLiteral(-1)))).status shouldBe CheckStatus.SATISFIABLE
@@ -36,7 +37,7 @@ class KotlinSessionSafetySpec :
         test("a zero-timeout check leaves the session reusable") {
             ConstraintScope.empty {
                 val x = intVar("x", 0..1)
-                KotlinBackend().create().use { solver ->
+                KotlinBackend().createSolver().use { solver ->
                     solver.openSession(buildModel()).use { session ->
                         session.check(timeoutMillis = 0).terminationReason shouldBe TerminationReason.TIMEOUT
                         session.check(listOf(IntEquality(x, IntLiteral(1)))).assignment?.valueOf(x) shouldBe BigInteger.ONE
@@ -49,7 +50,7 @@ class KotlinSessionSafetySpec :
             ConstraintScope.empty {
                 val index = intVar("index", -1..3)
                 maximize(Element(index, listOf(IntLiteral(4), IntLiteral(2))))
-                KotlinBackend().create().use { solver ->
+                KotlinBackend().withSolver { solver ->
                     val result = solver.solve(buildModel())
                     result.status shouldBe SolveStatus.OPTIMAL
                     result.objectiveValue shouldBe BigInteger.of(4)
@@ -65,7 +66,7 @@ class KotlinSessionSafetySpec :
                     realVar("real")
                     project()
                 }
-            KotlinBackend().create().use { solver ->
+            KotlinBackend().withSolver { solver ->
                 solver.solutions(model).use { stream ->
                     (stream.next() is SolutionFound) shouldBe true
                     (stream.next() is SolveCompleted) shouldBe true
@@ -79,7 +80,7 @@ class KotlinSessionSafetySpec :
                 ConstraintModel.of {
                     intVar("x", 0..10)
                 }
-            KotlinBackend(KotlinConfiguration(workLimit = 0)).create().use { solver ->
+            KotlinBackend(KotlinConfiguration(workLimit = 0)).withSolver { solver ->
                 val result = solver.solve(model)
                 result.status shouldBe SolveStatus.UNKNOWN
                 result.terminationReason shouldBe TerminationReason.RESOURCE_LIMIT
@@ -91,7 +92,7 @@ class KotlinSessionSafetySpec :
                 ConstraintModel.of {
                     realVar("r")
                 }
-            KotlinBackend().create().use { solver ->
+            KotlinBackend().withSolver { solver ->
                 solver.solutions(model, SolveOptions(solutionLimit = 2)).use { stream ->
                     (stream.next() is SolutionFound) shouldBe true
                     (stream.next() is SolutionFound) shouldBe true

@@ -17,6 +17,7 @@ import io.github.gciatto.ktconstraints.solve.spi.registry.Candidate
 import io.github.gciatto.ktconstraints.solve.spi.registry.Selection
 import io.github.gciatto.ktconstraints.solve.spi.registry.SolverRegistry
 import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -143,7 +144,7 @@ internal class Portfolio(
         options: SolveOptions,
     ): Attempt =
         try {
-            Attempt.Answer(backend.create().use { it.solve(model, options) })
+            Attempt.Answer(backend.withSolver { it.solve(model, options) })
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (

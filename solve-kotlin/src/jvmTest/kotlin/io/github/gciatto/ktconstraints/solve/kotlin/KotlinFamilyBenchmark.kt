@@ -57,7 +57,7 @@ object KotlinFamilyBenchmark {
 
     /** Milliseconds and deterministic work units of one cold solve, after checking the known answer. */
     private suspend fun measure(instance: BenchmarkInstance): Pair<Long, Long> {
-        val solver = KotlinBackend().create()
+        val solver = KotlinBackend().createSolver()
         try {
             val started = System.nanoTime()
             val result = solver.solve(instance.model, SolveOptions(timeoutMillis = TIMEOUT_MILLIS))

@@ -45,7 +45,7 @@ class OrToolsMipBackend private constructor(
         options: SolveOptions,
     ): SupportReport = MipLowering.report(model)
 
-    override fun create(): ConstraintSolver {
+    override fun createSolver(): ConstraintSolver {
         val probe = availability()
         if (!probe.available) throw BackendUnavailableException("${descriptor.id}: ${probe.reason}")
         return OrToolsMipSolver(descriptor, engine, solveLimitMillis)

@@ -16,6 +16,7 @@ import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.minizinc.runtime.MiniZincStream
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
@@ -37,10 +38,10 @@ class MiniZincIntegrationSpec :
         if (executable == null) {
             test("integration/requires-MINIZINC_EXECUTABLE").config(enabled = false) {}
         } else {
-            include(solverContract { MiniZincGecodeBackend(executable).create() })
+            include(solverContract { MiniZincGecodeBackend(executable).createSolver() })
             include(
                 differentialContract("integration/gecode") {
-                    MiniZincGecodeBackend(executable).create()
+                    MiniZincGecodeBackend(executable).createSolver()
                 },
             )
             test("integration/tuning-options-keep-the-answers") {
@@ -50,7 +51,7 @@ class MiniZincIntegrationSpec :
                     add(AllDifferent(listOf(x, y)))
                     maximize(LinearSum(listOf(x, y), listOf(BigInteger.TWO, BigInteger.ONE)))
                     val tuned = SolveOptions() + MiniZincOptions(randomSeed = 5, threads = 2, freeSearch = true)
-                    val result = MiniZincGecodeBackend(executable).create().use { it.solve(buildModel(), tuned) }
+                    val result = MiniZincGecodeBackend(executable).withSolver { it.solve(buildModel(), tuned) }
                     result.objectiveValue shouldBe BigInteger.of(8)
                 }
             }
@@ -66,7 +67,7 @@ class MiniZincIntegrationSpec :
                     add(BoolCardinality(listOf(flag), 1, CardinalityRelation.EXACTLY))
                     val model = buildModel()
 
-                    answers(MiniZincGecodeBackend(executable).create(), model, x, y, flag) shouldBe
+                    answers(MiniZincGecodeBackend(executable).createSolver(), model, x, y, flag) shouldBe
                         answers(FiniteOracle(), model, x, y, flag)
                 }
             }
@@ -75,7 +76,7 @@ class MiniZincIntegrationSpec :
                     ConstraintModel.of {
                         intVar("x", 0..1_000_000)
                     }
-                MiniZincGecodeBackend(executable).create().use { solver ->
+                MiniZincGecodeBackend(executable).withSolver { solver ->
                     val stream = solver.solutions(model) as MiniZincStream
                     (stream.next() is SolutionFound) shouldBe true
                     val directory = requireNotNull(stream.workDirectory)
@@ -93,7 +94,7 @@ class MiniZincIntegrationSpec :
                     ConstraintModel.of {
                         intVar("x", 0..1_000_000_000)
                     }
-                MiniZincGecodeBackend(executable).create().use { solver ->
+                MiniZincGecodeBackend(executable).withSolver { solver ->
                     solver.solve(model, SolveOptions(timeoutMillis = 20)).terminationReason shouldBe TerminationReason.TIMEOUT
                 }
             }
@@ -102,7 +103,7 @@ class MiniZincIntegrationSpec :
                     ConstraintModel.of {
                         intVar("x", 0..1_000_000)
                     }
-                MiniZincGecodeBackend(executable).create().use { solver ->
+                MiniZincGecodeBackend(executable).withSolver { solver ->
                     val stream = solver.solutions(model, SolveOptions(timeoutMillis = 60_000))
                     stream.next()
                     val timers = Thread.getAllStackTraces().keys.filter { it.name == "kt-constraints-minizinc-deadline" && it.isAlive }

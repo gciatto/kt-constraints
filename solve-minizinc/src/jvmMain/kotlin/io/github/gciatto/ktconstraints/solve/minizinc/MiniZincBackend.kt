@@ -26,7 +26,7 @@ class MiniZincBackend(
         options: SolveOptions,
     ): SupportReport = compiler.support(model, options)
 
-    override fun create(): ConstraintSolver {
+    override fun createSolver(): ConstraintSolver {
         val probe = availability()
         if (!probe.available) throw BackendUnavailableException("${descriptor.id}: ${probe.reason}")
         return MiniZincSolver(executable, engine)

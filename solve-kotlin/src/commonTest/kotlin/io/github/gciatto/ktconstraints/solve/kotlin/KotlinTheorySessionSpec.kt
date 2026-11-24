@@ -22,7 +22,7 @@ class KotlinTheorySessionSpec :
                 val x = intVar("x", 0..2)
                 val r = realVar("r")
                 add(RealEquality(r, IntToReal(x)))
-                KotlinBackend().create().use { solver ->
+                KotlinBackend().createSolver().use { solver ->
                     solver.openSession(buildModel()).use { session ->
                         val frame = session.push()
                         session.add(RealLessThan(RealLiteral(Rational.ZERO), r))
@@ -46,7 +46,7 @@ class KotlinTheorySessionSpec :
                 val small = RealLessThan(r, RealLiteral(Rational.ZERO))
                 val large = RealLessThan(RealLiteral(Rational.ONE), r)
                 val assumptions: List<BoolExpr> = listOf(small, large)
-                KotlinBackend().create().use { solver ->
+                KotlinBackend().createSolver().use { solver ->
                     solver.openSession(buildModel()).use { session ->
                         val conflict = session.check(assumptions)
                         conflict.status shouldBe CheckStatus.UNSATISFIABLE
@@ -67,7 +67,7 @@ class KotlinTheorySessionSpec :
                 ConstraintScope.empty {
                     val y = intVar("x", 0..2)
                     add(IntEquality(y, IntLiteral(2)))
-                    KotlinBackend().create().use { solver ->
+                    KotlinBackend().createSolver().use { solver ->
                         solver.openSession(this@first.buildModel()).use { left ->
                             solver.openSession(buildModel()).use { right ->
                                 left.check().assignment?.valueOf(x) shouldBe BigInteger.ZERO

@@ -34,7 +34,7 @@ internal suspend fun solveKnapsack(
 ): Pair<SolveResult, List<Int>> =
     ConstraintScope.empty {
         val take = knapsack(weights, values, capacity)
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
+        val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
         check(result.status == SolveStatus.OPTIMAL)
         val assignment = requireNotNull(result.assignment)
         val selected = take.indices.filter { assignment.intValueOf(take[it]) == 1 }

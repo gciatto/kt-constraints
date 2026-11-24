@@ -23,7 +23,7 @@ internal fun ConstraintScope.graphColoring(edges: List<Pair<Int, Int>>): List<In
 internal suspend fun solveGraphColoring(edges: List<Pair<Int, Int>>): Pair<SolveResult, List<Int>> =
     ConstraintScope.empty {
         val colors = graphColoring(edges)
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
+        val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
         check(result.status == SolveStatus.OPTIMAL)
         val assignment = requireNotNull(result.assignment)
         val coloring = colors.map { requireNotNull(assignment.intValueOf(it)) }

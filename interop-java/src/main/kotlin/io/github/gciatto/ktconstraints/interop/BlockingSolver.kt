@@ -70,7 +70,7 @@ class BlockingSolver private constructor(
     companion object {
         /** Creates a fresh solver from [backend], failing explicitly if it is unavailable. */
         @JvmStatic
-        fun of(backend: SolverBackend): BlockingSolver = of(backend.create())
+        fun of(backend: SolverBackend): BlockingSolver = of(backend.createSolver())
 
         /** Takes ownership of [solver]. */
         @JvmStatic

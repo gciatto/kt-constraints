@@ -4,6 +4,7 @@ import io.github.gciatto.ktconstraints.core.domain.IntDomain
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests
@@ -16,7 +17,7 @@ class MiniZincCatalogueSpec :
         withTests(nameFn = { "catalogue/missing-executable/$it" }, MiniZincEngine.entries) { engine ->
             val backend = MiniZincBackend(engine, "/nonexistent/kt-constraints/minizinc")
             backend.availability().available shouldBe false
-            shouldThrow<BackendUnavailableException> { backend.create() }
+            shouldThrow<BackendUnavailableException> { backend.createSolver() }
         }
         test("catalogue/configuration-presence-does-not-prove-runtime-availability")
             .config(enabled = !System.getProperty("os.name").startsWith("Windows")) {
@@ -31,7 +32,7 @@ class MiniZincCatalogueSpec :
                     script.toFile().setExecutable(true) shouldBe true
                     val backend = MiniZincBackend(MiniZincEngine.CHUFFED, script.toString())
                     backend.availability().available shouldBe false
-                    shouldThrow<BackendUnavailableException> { backend.create() }
+                    shouldThrow<BackendUnavailableException> { backend.createSolver() }
                     MiniZincBackend(MiniZincEngine.GECODE, script.toString()).availability().available shouldBe false
                 } finally {
                     directory.toFile().deleteRecursively() shouldBe true
@@ -46,7 +47,7 @@ class MiniZincCatalogueSpec :
                         ConstraintScope.empty {
                             val x = intVar("x", IntDomain.of(value, value))
                             maximize(x)
-                            MiniZincBackend(engine, requireNotNull(executable)).create().use { solver ->
+                            MiniZincBackend(engine, requireNotNull(executable)).withSolver { solver ->
                                 val result = solver.solve(buildModel())
                                 result.descriptor shouldBe engine.descriptor
                                 result.status shouldBe SolveStatus.OPTIMAL

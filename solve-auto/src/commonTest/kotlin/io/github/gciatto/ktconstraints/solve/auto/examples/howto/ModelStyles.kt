@@ -38,7 +38,7 @@ internal suspend fun solveWithFactories(): BigInteger {
             val y = intVar("y", 0..3)
             add(IntEquality(IntSum(x, y), IntLiteral(3)))
             val explicit = buildModel()
-            val answer = AutoBackend.load().use { auto -> auto.create().use { it.solve(explicit) } }
+            val answer = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(explicit) } }
             val values = requireNotNull(answer.assignment)
             requireNotNull(values.valueOf(x)) + requireNotNull(values.valueOf(y))
         }
@@ -54,7 +54,7 @@ internal suspend fun maximizeInteger(): Pair<SolveResult, BigInteger?> {
             val y = intVar("y", 0..3)
             add(x + y eq 3)
             maximize(x)
-            val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
+            val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
             println("${result.status}: ${result.objectiveValue}")
             result to result.assignment?.valueOf(x)
         }
@@ -68,7 +68,7 @@ internal suspend fun minimizePreferences(): Pair<SolveResult, BigInteger?> {
         ConstraintScope.empty {
             val x = intVar("x", 0..1)
             minimizeViolations((x eq 1) to 3L, (x eq 0) to 1L)
-            val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
+            val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
             println("${result.status}: ${result.objectiveValue}")
             result to result.assignment?.valueOf(x)
         }
@@ -79,7 +79,7 @@ internal suspend fun minimizePreferences(): Pair<SolveResult, BigInteger?> {
 // --8<-- [start:limits]
 internal suspend fun solveWithZeroBudget(): SolveResult {
     val model = ConstraintModel.of { intVar("x", 0..3) }
-    val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(model, SolveOptions(timeoutMillis = 0)) } }
+    val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(model, SolveOptions(timeoutMillis = 0)) } }
     return result
 }
 // --8<-- [end:limits]
@@ -96,6 +96,6 @@ internal suspend fun solveShifts(symbols: List<Int>): SolveStatus =
             }
         add(regular(rule, shifts))
         shifts.zip(symbols).forEach { (shift, symbol) -> add(shift eq symbol) }
-        AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }.status
+        AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }.status
     }
 // --8<-- [end:regular]

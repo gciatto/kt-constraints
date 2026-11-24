@@ -23,8 +23,7 @@ import kotlin.js.Promise
  */
 class Z3JsBackend private constructor(
     private val api: dynamic,
-) : SolverBackend,
-    AutoCloseable {
+) : SolverBackend {
     private val solvers = mutableListOf<IncrementalConstraintSolver>()
     private var closed = false
 
@@ -38,7 +37,7 @@ class Z3JsBackend private constructor(
         options: SolveOptions,
     ): SupportReport = Z3Support.report(model)
 
-    override fun create(): IncrementalConstraintSolver {
+    override fun createSolver(): IncrementalConstraintSolver {
         if (closed) throw BackendUnavailableException("${descriptor.id}: z3-solver module is closed")
         return Z3Solver(descriptor) { JsZ3Owner(api) }.also { solvers += it }
     }

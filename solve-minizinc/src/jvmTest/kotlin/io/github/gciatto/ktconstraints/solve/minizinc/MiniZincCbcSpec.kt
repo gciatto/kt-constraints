@@ -13,13 +13,13 @@ class MiniZincCbcSpec :
         if (executable == null || "cbc" !in engines) {
             test("requires-explicitly-requested-cbc-runtime").config(enabled = false) {}
         } else {
-            include(solverContract(enumeration = false) { MiniZincBackend(MiniZincEngine.CBC, executable).create() })
+            include(solverContract(enumeration = false) { MiniZincBackend(MiniZincEngine.CBC, executable).createSolver() })
             include(
                 differentialContract(
                     "cbc/minizinc",
                     enumeration = false,
                     DifferentialCase.catalogue().filter { it.name != DifferentialCase.NONLINEAR_PRODUCTS },
-                ) { MiniZincBackend(MiniZincEngine.CBC, executable).create() },
+                ) { MiniZincBackend(MiniZincEngine.CBC, executable).createSolver() },
             )
         }
     })

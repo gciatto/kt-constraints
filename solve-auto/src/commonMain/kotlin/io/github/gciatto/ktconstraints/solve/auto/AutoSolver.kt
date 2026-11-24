@@ -32,7 +32,7 @@ internal class AutoSolver(
         options: SolveOptions,
     ): SolutionStream {
         check(!closed) { "Solver is closed" }
-        val solver = portfolio.enumerator(model, options).create()
+        val solver = portfolio.enumerator(model, options).createSolver()
         val stream = runCatching { OwningStream(solver.solutions(model, options), solver) }.onFailure { solver.close() }.getOrThrow()
         streams += stream
         return stream

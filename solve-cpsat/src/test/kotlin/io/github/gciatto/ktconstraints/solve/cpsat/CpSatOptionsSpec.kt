@@ -10,6 +10,7 @@ import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.assignment.Assignment
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.oracle.enumerate
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
@@ -28,8 +29,8 @@ class CpSatOptionsSpec :
                 val model = buildModel()
                 val hints = Assignment.of(integers = mapOf(xs[0] to BigInteger.ZERO, xs[1] to BigInteger.ZERO))
                 val tuned = SolveOptions() + CpSatOptions(workers = 2, randomSeed = 7, hints = hints)
-                val plain = CpSatBackend().create().use { it.solve(model) }
-                val result = CpSatBackend().create().use { it.solve(model, tuned) }
+                val plain = CpSatBackend().withSolver { it.solve(model) }
+                val result = CpSatBackend().withSolver { it.solve(model, tuned) }
                 result.status shouldBe SolveStatus.OPTIMAL
                 result.objectiveValue shouldBe plain.objectiveValue
             }
@@ -41,7 +42,7 @@ class CpSatOptionsSpec :
                     val xs = List(3) { intVar("x$it", 0..2) }
                     add(AllDifferent(xs))
                 }
-            val (found, result) = CpSatBackend().create().use { enumerate(it, model, SolveOptions() + CpSatOptions(workers = 4)) }
+            val (found, result) = CpSatBackend().withSolver { enumerate(it, model, SolveOptions() + CpSatOptions(workers = 4)) }
             found.toSet().size shouldBe 6
             result.status shouldBe SolveStatus.FEASIBLE
         }

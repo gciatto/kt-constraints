@@ -11,7 +11,7 @@ object ChocoStoreBenchmark {
         runBlocking {
             val queens = System.getenv("STORE_BENCHMARK_QUEENS")?.toInt() ?: DEFAULT_QUEENS
             println("choco/direct store, $queens-queens")
-            println(benchmarkStore(queens, { ChocoStore() }, { ChocoBackend().create() }))
+            println(benchmarkStore(queens, { ChocoStore() }, { ChocoBackend().createSolver() }))
         }
 
     private const val DEFAULT_QUEENS = 8

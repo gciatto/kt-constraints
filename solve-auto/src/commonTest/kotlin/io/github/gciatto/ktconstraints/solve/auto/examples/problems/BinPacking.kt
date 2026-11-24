@@ -44,7 +44,7 @@ internal suspend fun solveBinPacking(
 ): Triple<SolveResult, List<Int>, List<Int>> =
     ConstraintScope.empty {
         val (bins, loads) = binPacking(sizes, capacity, useDecomposition)
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
+        val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
         check(result.status == SolveStatus.OPTIMAL)
         val assignment = requireNotNull(result.assignment)
         val binOf = bins.map { requireNotNull(assignment.intValueOf(it)) }

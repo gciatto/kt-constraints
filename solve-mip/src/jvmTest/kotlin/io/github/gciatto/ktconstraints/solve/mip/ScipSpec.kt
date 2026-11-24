@@ -3,6 +3,7 @@ package io.github.gciatto.ktconstraints.solve.mip
 import io.github.gciatto.ktconstraints.solve.mip.ortools.OrToolsMipStream
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.longs.shouldBeLessThan
 import io.kotest.matchers.shouldBe
@@ -17,7 +18,7 @@ class ScipSpec :
         include(mipRoute("scip/or-tools") { OrToolsMipBackend.scip() })
 
         test("scip/or-tools/close-interrupts-an-in-flight-solve") {
-            OrToolsMipBackend.scip().create().use { solver ->
+            OrToolsMipBackend.scip().withSolver { solver ->
                 val stream = solver.solutions(marketSplit())
                 val started = TimeSource.Monotonic.markNow()
                 coroutineScope {

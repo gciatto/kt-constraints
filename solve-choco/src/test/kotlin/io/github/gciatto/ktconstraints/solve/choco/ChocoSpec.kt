@@ -25,6 +25,7 @@ import io.github.gciatto.ktconstraints.solve.choco.translation.ChocoTranslation
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
@@ -45,7 +46,7 @@ import kotlin.time.TimeSource
 /** Direct Choco JVM route: shared contract, 32-bit guards, reification differentials, search lifecycle. */
 class ChocoSpec :
     FunSpec({
-        include(solverContract { ChocoBackend().create() })
+        include(solverContract { ChocoBackend().createSolver() })
         include(storeContract(propagates = true) { ChocoStore() })
 
         test("choco/runtime-is-available-and-identifies-the-direct-route") {
@@ -87,7 +88,7 @@ class ChocoSpec :
         ) { (_, build) ->
             val model = ConstraintModel.of(build)
             ChocoBackend().support(model).isSupported shouldBe false
-            ChocoBackend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
+            ChocoBackend().withSolver { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
         }
 
         test("choco/reals-and-bit-vectors-are-rejected-before-execution") {
@@ -97,7 +98,7 @@ class ChocoSpec :
                     add(RealEquality(r, RealLiteral(Rational.of(1, 2))))
                 }
             ChocoBackend().support(scopeModel).isSupported shouldBe false
-            ChocoBackend().create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(scopeModel) } }
+            ChocoBackend().withSolver { solver -> shouldThrow<UnsupportedModelException> { solver.solve(scopeModel) } }
             val model =
                 ConstraintModel.of {
                     bitVecVar("v", 8)
@@ -117,7 +118,7 @@ class ChocoSpec :
             report.losslessDecompositions shouldBe emptyList()
         }
 
-        include(differentialContract("choco") { ChocoBackend().create() })
+        include(differentialContract("choco") { ChocoBackend().createSolver() })
 
         test("choco/objectives-near-the-limit-are-exact-and-optimal") {
             val million = BigInteger.of(1_000_000)
@@ -127,7 +128,7 @@ class ChocoSpec :
                 add(IntLessThan(x, IntSum(IntProduct(hidden, IntLiteral(million)), IntLiteral(-7))))
                 maximize(LinearSum(listOf(x, hidden), listOf(BigInteger.of(3), BigInteger.ONE), BigInteger.ONE))
                 project(x)
-                ChocoBackend().create().use { solver ->
+                ChocoBackend().withSolver { solver ->
                     val result = solver.solve(buildModel())
                     result.status shouldBe SolveStatus.OPTIMAL
                     result.assignment?.valueOf(x) shouldBe BigInteger.of(2_999_992)
@@ -156,7 +157,7 @@ class ChocoSpec :
                     add(AllDifferent(xs))
                     minimize(LinearSum(xs, xs.indices.map { BigInteger.of(it.toLong() + 1) }))
                 }
-            val (found, result) = ChocoBackend().create().use { enumerate(it, model, objectives = true) }
+            val (found, result) = ChocoBackend().withSolver { enumerate(it, model, objectives = true) }
             result.status shouldBe SolveStatus.OPTIMAL
             result.objectiveValue shouldBe BigInteger.of(35)
             found.map { -(it.single() as BigInteger).toLong() }.shouldBeStrictlyIncreasing()
@@ -167,7 +168,7 @@ class ChocoSpec :
                 ConstraintModel.of {
                     intVar("x", 0..2)
                 }
-            ChocoBackend().create().use { solver ->
+            ChocoBackend().withSolver { solver ->
                 val (found, result) = enumerate(solver, model, SolveOptions(solutionLimit = 2))
                 found.size shouldBe 2
                 result.status shouldBe SolveStatus.FEASIBLE
@@ -180,7 +181,7 @@ class ChocoSpec :
                 ConstraintModel.of {
                     repeat(9) { intVar("x$it", 0..9) }
                 }
-            ChocoBackend().create().use { solver ->
+            ChocoBackend().withSolver { solver ->
                 val (found, result) = enumerate(solver, model, SolveOptions(timeoutMillis = 300))
                 (found.size > 0) shouldBe true
                 result.status shouldBe SolveStatus.FEASIBLE
@@ -189,7 +190,7 @@ class ChocoSpec :
         }
 
         test("choco/deadline-during-a-hard-refutation-is-not-infeasibility") {
-            ChocoBackend().create().use { solver ->
+            ChocoBackend().withSolver { solver ->
                 val result = solver.solve(pigeonholes(), SolveOptions(timeoutMillis = 300))
                 result.status shouldBe SolveStatus.UNKNOWN
                 result.terminationReason shouldBe TerminationReason.TIMEOUT
@@ -197,7 +198,7 @@ class ChocoSpec :
         }
 
         test("choco/coroutine-cancellation-stops-an-in-flight-search") {
-            ChocoBackend().create().use { solver ->
+            ChocoBackend().withSolver { solver ->
                 val started = TimeSource.Monotonic.markNow()
                 withTimeoutOrNull(300) { solver.solve(pigeonholes()) } shouldBe null
                 started.elapsedNow().inWholeMilliseconds.toInt() shouldBeLessThan 5_000
@@ -210,7 +211,7 @@ class ChocoSpec :
                 ConstraintScope.empty {
                     val y = intVar("y", 5..6)
                     add(IntLessOrEqual(IntLiteral(6), y))
-                    ChocoBackend().create().use { solver ->
+                    ChocoBackend().withSolver { solver ->
                         val left = solver.solutions(this@first.buildModel())
                         val right = solver.solutions(buildModel())
                         val values = mutableListOf<BigInteger?>()

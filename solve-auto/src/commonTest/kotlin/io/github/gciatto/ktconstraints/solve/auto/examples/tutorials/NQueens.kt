@@ -54,7 +54,7 @@ internal suspend fun solveFourQueens(): List<Int> =
     ConstraintScope.empty {
         val rows = queensBoard(4)
         diagonalGlobals(rows)
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
+        val result = AutoBackend.load().use { auto -> auto.createSolver().use { it.solve(buildModel()) } }
         println("${result.status} by ${result.descriptor.id}")
         check(result.status == SolveStatus.FEASIBLE) { result.toString() }
         val assignment = checkNotNull(result.assignment)
@@ -75,7 +75,7 @@ internal suspend fun enumerateQueens(
         val model = buildModel()
         val boards = mutableListOf<List<Int>>()
         AutoBackend.load().use { auto ->
-            auto.create().use { solver ->
+            auto.createSolver().use { solver ->
                 solver.solutions(model).use { stream ->
                     while (true) {
                         when (val event = stream.next()) {

@@ -46,7 +46,7 @@ class KotlinPlatformBenchmarkSpec :
 
 /** Milliseconds of one solve on a fresh solver, after checking the known answer; unproven results count as -1. */
 private suspend fun measure(instance: BenchmarkInstance): Long {
-    val solver = KotlinBackend().create()
+    val solver = KotlinBackend().createSolver()
     try {
         val started = TimeSource.Monotonic.markNow()
         val result = solver.solve(instance.model, SolveOptions(timeoutMillis = 60_000))

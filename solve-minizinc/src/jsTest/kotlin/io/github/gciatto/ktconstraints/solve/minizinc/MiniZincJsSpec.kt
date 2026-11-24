@@ -4,6 +4,7 @@ import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
+import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.assertions.nondeterministic.eventually
@@ -49,11 +50,11 @@ class MiniZincJsSpec :
             beforeSpec { backend = runCatching { load() }.onFailure { loadFailure = it }.getOrNull() }
             val loaded = { backend ?: throw IllegalStateException("MiniZinc JS runtime did not load: $loadFailure", loadFailure) }
             afterSpec { backend?.close() }
-            include(solverContract { loaded().create() })
+            include(solverContract { loaded().createSolver() })
             test("js/route-identifies-the-actual-transport") {
                 val selected = loaded()
                 selected.descriptor.id shouldBe if (browser) "chuffed/minizinc-wasm" else "gecode/minizinc-js-cli"
-                selected.create().use { solver ->
+                selected.withSolver { solver ->
                     solver.solve(ConstraintModel.empty()).descriptor shouldBe selected.descriptor
                 }
             }
@@ -62,7 +63,7 @@ class MiniZincJsSpec :
                     ConstraintModel.of {
                         intVar("x", 0..1_000_000)
                     }
-                loaded().create().use { solver ->
+                loaded().withSolver { solver ->
                     val stream = solver.solutions(model)
                     (stream.next() is SolutionFound) shouldBe true
                     stream.close()
@@ -78,7 +79,7 @@ class MiniZincJsSpec :
             }
             test("js/backend-close-cancels-streams-and-allows-a-new-runtime-owner") {
                 val selected = loaded()
-                val solver = selected.create()
+                val solver = selected.createSolver()
                 val model =
                     ConstraintModel.of {
                         intVar("x", 0..1_000_000)
@@ -106,7 +107,7 @@ class MiniZincJsSpec :
                         ConstraintModel.of {
                             intVar("x", 0..1_000_000)
                         }
-                    val stream = selected.create().solutions(model)
+                    val stream = selected.createSolver().solutions(model)
                     (stream.next() is SolutionFound) shouldBe true
                     selected.close()
                     restore()
@@ -128,7 +129,7 @@ class MiniZincJsSpec :
                         ConstraintModel.of {
                             intVar("x", 0..1_000_000)
                         }
-                    val stream = selected.create().solutions(model)
+                    val stream = selected.createSolver().solutions(model)
                     coroutineScope {
                         // Starting a run spawns a replacement pool worker that loads asynchronously.
                         val first = async { runCatching { stream.next() } }
@@ -153,7 +154,7 @@ class MiniZincJsSpec :
                     ConstraintModel.of {
                         intVar("x", 0..1_000_000)
                     }
-                loaded().create().use { solver ->
+                loaded().withSolver { solver ->
                     solver.solve(model, SolveOptions(timeoutMillis = 10)).terminationReason shouldBe TerminationReason.TIMEOUT
                 }
             }

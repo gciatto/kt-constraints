@@ -22,7 +22,7 @@ class KotlinSessionSnapshotSpec :
                     ConstraintScope.empty {
                         val x = intVar("x", 0..1)
                         val assumptions = mutableListOf<BoolExpr>(IntEquality(x, IntLiteral(0)))
-                        KotlinBackend().create().use { solver ->
+                        KotlinBackend().createSolver().use { solver ->
                             solver.openSession(buildModel()).use { session ->
                                 // The single dispatcher lane keeps the yielded continuation queued until await below.
                                 val pending = async(start = CoroutineStart.UNDISPATCHED) { session.check(assumptions) }

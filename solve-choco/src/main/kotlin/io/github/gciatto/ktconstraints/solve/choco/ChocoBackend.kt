@@ -33,7 +33,7 @@ class ChocoBackend : SolverBackend {
         options: SolveOptions,
     ): SupportReport = ChocoSupport.report(model)
 
-    override fun create(): ConstraintSolver {
+    override fun createSolver(): ConstraintSolver {
         val probe = availability()
         if (!probe.available) throw BackendUnavailableException("${descriptor.id}: ${probe.reason}")
         return ChocoSolver(descriptor)

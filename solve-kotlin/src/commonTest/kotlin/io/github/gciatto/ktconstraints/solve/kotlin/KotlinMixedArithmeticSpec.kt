@@ -35,7 +35,7 @@ class KotlinMixedArithmeticSpec :
                     add(RealLessThan(RealLiteral(Rational.of(1, 3)), r))
                     add(RealLessThan(r, RealLiteral(Rational.of(1, 2))))
                 }
-            KotlinBackend().create().use { solver ->
+            KotlinBackend().createSolver().use { solver ->
                 val result = solver.solve(model)
                 result.status shouldBe SolveStatus.FEASIBLE
                 model.constraints.all { GroundEvaluator.evaluate(it, requireNotNull(result.assignment)) } shouldBe true
@@ -49,7 +49,7 @@ class KotlinMixedArithmeticSpec :
                     add(RealLessThan(r, RealLiteral(Rational.ONE)))
                     add(RealLessOrEqual(RealLiteral(Rational.ONE), r))
                 }
-            KotlinBackend().create().use { it.solve(model).status shouldBe SolveStatus.INFEASIBLE }
+            KotlinBackend().createSolver().use { it.solve(model).status shouldBe SolveStatus.INFEASIBLE }
         }
 
         test("integer products embedded into reals preserve integrality") {
@@ -60,7 +60,7 @@ class KotlinMixedArithmeticSpec :
                     add(RealEquality(r, IntToReal(IntProduct(x, x))))
                     add(RealEquality(r, RealLiteral(Rational.of(1, 2))))
                 }
-            KotlinBackend().create().use { it.solve(model).status shouldBe SolveStatus.INFEASIBLE }
+            KotlinBackend().createSolver().use { it.solve(model).status shouldBe SolveStatus.INFEASIBLE }
         }
 
         test("negative real equalities can choose either open half-space") {
@@ -68,7 +68,7 @@ class KotlinMixedArithmeticSpec :
                 val r = realVar("r")
                 add(BoolNot(RealEquality(r, RealLiteral(Rational.ZERO))))
                 add(RealLessOrEqual(r, RealLiteral(Rational.ZERO)))
-                KotlinBackend().create().use { solver ->
+                KotlinBackend().createSolver().use { solver ->
                     val result = solver.solve(buildModel())
                     (requireNotNull(result.assignment?.valueOf(r)) < Rational.ZERO) shouldBe true
                 }
@@ -89,7 +89,7 @@ class KotlinMixedArithmeticSpec :
                             GroundEvaluator.evaluate(
                                 BitVecBinary(operator, BitVecLiteral(BigInteger.of(left), 3), BitVecLiteral(BigInteger.of(right), 3)),
                             )
-                        KotlinBackend().create().use { solver ->
+                        KotlinBackend().createSolver().use { solver ->
                             solver.solve(buildModel()).assignment?.valueOf(result) shouldBe expected
                         }
                     }
@@ -100,7 +100,7 @@ class KotlinMixedArithmeticSpec :
         test("signed bit-vector conversion is preserved across an incremental pop") {
             ConstraintScope.empty {
                 val bits = bitVecVar("bits", 5)
-                KotlinBackend().create().use { solver ->
+                KotlinBackend().createSolver().use { solver ->
                     solver.openSession(buildModel()).use { session ->
                         val frame = session.push()
                         session.add(IntEquality(BitVecToInt(bits, true), IntLiteral(-1)))

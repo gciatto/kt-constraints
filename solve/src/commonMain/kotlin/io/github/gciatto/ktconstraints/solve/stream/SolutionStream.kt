@@ -16,3 +16,17 @@ interface SolutionStream : AutoCloseable {
     /** Cancels unfinished execution and releases resources. */
     override fun close()
 }
+
+/**
+ * Reads the stream to its end, passing each solution or incumbent to [onSolution], and returns the terminal result.
+ * The stream stays open; close it, typically with `use`.
+ */
+suspend inline fun SolutionStream.forEachSolution(onSolution: (SolutionFound) -> Unit): SolveResult {
+    while (true) {
+        when (val event = next()) {
+            is SolutionFound -> onSolution(event)
+            is SolveCompleted -> return event.result
+            null -> return checkNotNull(terminalResult) { "Stream ended without a result" }
+        }
+    }
+}
