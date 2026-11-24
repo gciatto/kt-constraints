@@ -1,3 +1,75 @@
+## [3.0.0](https://github.com/gciatto/kt-constraints/compare/2.0.0...3.0.0) (2026-11-24)
+
+### ⚠ BREAKING CHANGES
+
+* Z3.loadBackend() is renamed Z3.load(), and Java's
+AutoBackends.load(...) is renamed AutoBackends.loadAutoBackend(...).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01X2xs6ExEnwgHgap41DajQW
+* **core:** BoolExpr.toInt() and IntExpr.toReal() are renamed
+asIntExpr() and asRealExpr(); in TypeScript, toInt() and toReal() are
+renamed asIntExpression() and asRealExpression().
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01X2xs6ExEnwgHgap41DajQW
+* **solve-blocking:** the Blocking* classes move from
+io.github.gciatto.ktconstraints.interop to
+io.github.gciatto.ktconstraints.solve.blocking.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01X2xs6ExEnwgHgap41DajQW
+* **core:** the operator extensions in io.github.gciatto.ktconstraints.dsl
+(eq, neq, lt, le, gt, ge, plus, minus, times, unaryMinus, and, or, implies,
+not, toInt, toReal) are now members of the core expression interfaces; drop
+their explicit imports. Java's Expressions.plus/eq/... statics are removed
+in favour of instance methods.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01X2xs6ExEnwgHgap41DajQW
+* **interop-java:** JavaNumbers.integer(java.math.BigInteger) and
+JavaNumbers.toJava(BigInteger) are removed; use kt-math's
+JvmUtils.toKotlin and JvmUtils.toJava.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01X2xs6ExEnwgHgap41DajQW
+* **solve:** SolverBackend.create() is renamed createSolver(); in
+TypeScript, Backend.create(), Backend.openStore() and Solution.valueOf()
+are renamed createSolver(), createStore() and intValueOf().
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01X2xs6ExEnwgHgap41DajQW
+* **model:** ConstraintScope.build() is renamed buildModel().
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01X2xs6ExEnwgHgap41DajQW
+
+### Features
+
+* add a common backend loader interface and a blocking loader on Native ([6db9883](https://github.com/gciatto/kt-constraints/commit/6db9883ac5e39d7ef8b0b9d1be5ba3c56093e689))
+* **core:** make expression operators members so Java can chain them ([76e9559](https://github.com/gciatto/kt-constraints/commit/76e95591e53dd14e75b1bef00d63612f702e41a6))
+* **core:** name expression conversions asIntExpr/asRealExpr and add negate() ([85e67f3](https://github.com/gciatto/kt-constraints/commit/85e67f3ae03384b4d8f118f52998f79a08a2d152))
+* **model:** name the model snapshot buildModel and add scope and model factories ([9092a19](https://github.com/gciatto/kt-constraints/commit/9092a195bd480c654b46fc23ecc1cdd09553224f))
+* **solve-auto:** open incremental sessions on AutoBackend and add scoped helpers ([07236e3](https://github.com/gciatto/kt-constraints/commit/07236e33bd0a79bcdd9393639829480530f8317e))
+* **solve-auto:** register the pure-Kotlin solver as every platform's last resort ([94005da](https://github.com/gciatto/kt-constraints/commit/94005dad4380cae49515af2a25bca4af23a7bcaa))
+* **solve-blocking:** move the blocking API into a Kotlin module for JVM and Native ([2de287a](https://github.com/gciatto/kt-constraints/commit/2de287a6de9ec276ec473a7def41bf1180711a16))
+* **solve-kotlin:** publish the pure-Kotlin solver and load it from TypeScript ([3dc8c94](https://github.com/gciatto/kt-constraints/commit/3dc8c9463c6a5dc2b2f59dbacbe0fbb5df1f9103))
+* **solve-z3:** load the platform's Z3 route from common code ([3fcb1f2](https://github.com/gciatto/kt-constraints/commit/3fcb1f2a428d58ecfd5d407fe80c4e397e06e395))
+* **solve:** name backend factories createSolver and add scoped solver helpers ([4d653dd](https://github.com/gciatto/kt-constraints/commit/4d653dd94b089d10dc20d6ddad0623a4d8704df5))
+
+### Documentation
+
+* bring the READMEs in line with the 2.0 API ([018740e](https://github.com/gciatto/kt-constraints/commit/018740e1d3f61c9d5f650d435dfa6806ab361285))
+* rewrite the examples around named results and document the new factories ([d804053](https://github.com/gciatto/kt-constraints/commit/d804053fa6334077fdfd3cad98ba6a77fa8654dd))
+
+### General maintenance
+
+* merge the 2.0.0 release back into develop ([2eb7b72](https://github.com/gciatto/kt-constraints/commit/2eb7b72acefebca0194734d92c8125badbf4b3a9))
+
+### Refactoring
+
+* **interop-java:** convert big integers with kt-math instead of strings ([0f9f0ef](https://github.com/gciatto/kt-constraints/commit/0f9f0ef7d242a7d737d0c29075c2df66163be730))
+
 ## [2.0.0](https://github.com/gciatto/kt-constraints/compare/1.0.1...2.0.0) (2026-11-24)
 
 ### ⚠ BREAKING CHANGES
