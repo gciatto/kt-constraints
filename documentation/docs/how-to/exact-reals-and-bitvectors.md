@@ -6,10 +6,15 @@ Use `Rational.parse` for decimal or fraction text, `JavaNumbers.rational(BigDeci
 Java, and `real("...")` from TypeScript. Avoid converting through `Double`, `double` or
 JavaScript `number`. Select a route supporting exact real arithmetic, such as Z3.
 
+The Kotlin examples are complete helper functions. Call a `suspend` helper from a coroutine or another
+suspending function. The shown imports also cover later Kotlin helpers on this page.
+
 === "Kotlin"
 
     ```kotlin
-    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:real"
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:imports"
+
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:real"
     ```
 
 === "Java"
@@ -24,7 +29,7 @@ JavaScript `number`. Select a route supporting exact real arithmetic, such as Z3
     --8<-- "interop-js/src/test/typescript/examples/howto-real.mts:real"
     ```
 
-The Kotlin assertion uses Kotest. Java's `check` helper throws on failure.
+Java's `check` helper throws on failure.
 TypeScript imports `ModelBuilder`, `real` and `loadZ3` from the
 [installed package](install.md), and runs the snippet inside a solver lifetime with both
 solver and backend closed in `finally`. TypeScript real values return as exact rational text.
@@ -42,7 +47,7 @@ same-width operands. This JVM example uses explicit core nodes with Z3 to solve
 `x + 1 = 0` modulo 256:
 
 ```kotlin
---8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:bits"
+--8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:bits"
 ```
 
 Import `BitVecLiteral` from `core.bitvector` and the operation types from

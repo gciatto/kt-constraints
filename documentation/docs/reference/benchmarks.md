@@ -3,14 +3,47 @@
 Benchmarks are manual and never part of `check`. They record raw observations: there are no regression
 thresholds until several reproducible baselines exist.
 
-| Command | What it measures |
-|---|---|
-| `./gradlew :solve-auto:jvmBenchmark` | Catalogue families on every eligible bundled JVM route, plus `kotlin/direct` and `auto` |
-| `./gradlew :solve-choco:storeBenchmark`, `./gradlew :solve-z3:jvmStoreBenchmark` | CLP-style constraint-store operations |
-| `MINIZINC_EXECUTABLE=... ./gradlew :solve-minizinc:jvmBenchmark` | MiniZinc phases |
-| `KT_CONSTRAINTS_PLATFORM_BENCHMARK=1 ./gradlew :solve-kotlin:<jvmTest\|jsNodeTest> -i` | The same catalogue on each target; rows start with `BENCH,` (Kotlin/JS prints them only with `-i`). For Native, run `:solve-kotlin:linkReleaseTestLinuxX64` and then `solve-kotlin/build/bin/linuxX64/releaseTest/test.kexe` with the variable set: the default Native test binary is an unoptimised debug build, about 10x slower |
-| `KT_CONSTRAINTS_ROUTE_BENCHMARK=1 ./gradlew :solve-auto:<jvmTest\|jsNodeTest> --tests 'io.github.gciatto.ktconstraints.solve.auto.RouteBenchmarkSpec' -i` | Every bundled route of the target, plus `kotlin/direct`, over seeded instances; rows start with `ROUTE,` and give each route's rank under the default policy. `_SCALES` (default `1 2 3`), `_SEEDS` (3) and `_TIMEOUT` (ms, 10000) size it. For Native, run `:solve-auto:linkReleaseTestLinuxX64`, then `solve-auto/build/bin/linuxX64/releaseTest/test.kexe` with `KT_CONSTRAINTS_Z3_LIBRARY` pointing at `solve-z3/build/z3-native/linuxX64/libz3.so` |
-| `./gradlew :solve-kotlin:jvmFamilyBenchmark` | `kotlin/direct` over seeded instances: median, minimum, maximum and timeouts (`BENCHMARK_SCALES`, `BENCHMARK_SEEDS`, `BENCHMARK_FAMILIES`) |
+## Run measurements
+
+JVM: the route catalogue, store operations, MiniZinc phases and pure-Kotlin families have separate tasks.
+
+```sh
+./gradlew :solve-auto:jvmBenchmark
+./gradlew :solve-choco:storeBenchmark :solve-z3:jvmStoreBenchmark
+MINIZINC_EXECUTABLE=/path/to/minizinc ./gradlew :solve-minizinc:jvmBenchmark
+./gradlew :solve-kotlin:jvmFamilyBenchmark
+KT_CONSTRAINTS_PLATFORM_BENCHMARK=1 ./gradlew :solve-kotlin:jvmTest -i
+KT_CONSTRAINTS_ROUTE_BENCHMARK=1 ./gradlew :solve-auto:jvmTest --tests 'io.github.gciatto.ktconstraints.solve.auto.RouteBenchmarkSpec' -i
+```
+
+Node: `-i` makes Kotlin/JS print the measurement rows.
+
+```sh
+KT_CONSTRAINTS_PLATFORM_BENCHMARK=1 ./gradlew :solve-kotlin:jsNodeTest -i
+KT_CONSTRAINTS_ROUTE_BENCHMARK=1 ./gradlew :solve-auto:jsNodeTest -i
+```
+
+Native on Linux x64: build release test executables first, then run them with the benchmark
+environment. Default debug test binaries are unoptimized; use release binaries for comparisons.
+
+```sh
+./gradlew :solve-kotlin:linkReleaseTestLinuxX64 :solve-auto:linkReleaseTestLinuxX64
+KT_CONSTRAINTS_PLATFORM_BENCHMARK=1 solve-kotlin/build/bin/linuxX64/releaseTest/test.kexe
+KT_CONSTRAINTS_ROUTE_BENCHMARK=1 KT_CONSTRAINTS_Z3_LIBRARY=solve-z3/build/z3-native/linuxX64/libz3.so solve-auto/build/bin/linuxX64/releaseTest/test.kexe
+```
+
+Provision the Z3 shared library before the Native route run; the path above is the repository’s
+provisioned test-library location. Platform rows start with `BENCH,`; route rows start with
+`ROUTE,` and include each route’s default-policy rank. Route benchmarks include bundled routes
+and explicitly registered `kotlin/direct`.
+
+| Route benchmark variable | Default | Meaning |
+|---|---|---|
+| `KT_CONSTRAINTS_ROUTE_BENCHMARK_SCALES` | `1 2 3` | Instance scales |
+| `KT_CONSTRAINTS_ROUTE_BENCHMARK_SEEDS` | `3` | Seeds per scale |
+| `KT_CONSTRAINTS_ROUTE_BENCHMARK_TIMEOUT` | `10000` | Milliseconds per solve |
+
+The family benchmark uses `BENCHMARK_SCALES`, `BENCHMARK_SEEDS` and `BENCHMARK_FAMILIES`.
 
 `jvmBenchmark` prints CSV, and writes it to the file named by `BENCHMARK_CSV` when that is set. `BENCHMARK_SCALE`
 (default 1) grows sizes. Each family's known answer comes from a closed form, dynamic programming or
@@ -21,7 +54,7 @@ The columns are:
 - `cold_ms`: the first solve on a fresh solver (after `backend.create()`);
 - `warm_ms`: a second solve on the same solver.
 
-For `auto` rows, `cold_ms` covers ranking plus a fallback portfolio run, and the route after `auto:` is the one
+For `auto` rows, `cold_ms` covers ranking plus a run of the fallback automatic backend, and the route after `auto:` is the one
 that answered. Comparing `auto` with the chosen route's `cold_ms` shows the selection overhead: about 10-15 ms here.
 
 Randomly generated families (knapsack, assignment, integer program, single-machine scheduling) take a seed; seed 0

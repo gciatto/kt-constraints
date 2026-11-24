@@ -71,34 +71,24 @@ For this model, the default ranking prefers these routes when their runtimes are
 | JS under Node | `z3/wasm` | `z3-solver` npm dependency |
 | Kotlin/Native | `z3/native` | Separately installed Z3 shared library |
 
-On JVM, the portfolio also registers Choco, Z3, SCIP and HiGHS. JVM and Node can register MiniZinc routes when
-`MINIZINC_EXECUTABLE` is set. `solveAuto` may fall back if a candidate fails or returns `UNKNOWN`, so read the
+On JVM, `AutoBackend.load()` also registers Choco, Z3, SCIP and HiGHS. JVM and Node can register MiniZinc routes when
+`MINIZINC_EXECUTABLE` is set. `AutoBackend` may fall back if a candidate fails or returns `UNKNOWN`, so read the
 printed `result.descriptor.id` to find the actual answering route. The pure-Kotlin backend is not part of this
-default registry. See [Automatic solver selection](../explanation/automatic-solver-selection.md).
+default registry. See [Automatic solver selection](../explanation/backends/selection.md).
 
 ## 5. Run the same test on each target
 
-Apply the `io.kotest` plugin (6.2.7) and `com.google.devtools.ksp` plugin (2.3.14). In
-`commonTest.dependencies`, add `io.kotest:kotest-framework-engine:6.2.7` and
-`io.kotest:kotest-assertions-core:6.2.7`; in `jvmTest.dependencies`, add
-`io.kotest:kotest-runner-junit5:6.2.7`. Configure JVM test tasks with
-`tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach { useJUnitPlatform() }`.
-These are the versions used by this repository. Add these imports to a common test file:
-
-```kotlin
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.collections.shouldContain
-```
-
-Copy this test class into `src/commonTest/kotlin/NQueensSpec.kt`, in the same package as your helpers:
+Use this suspending verification helper in the same package as your model helpers. It uses
+standard Kotlin `check`, so it can also run from your application’s coroutine entry point.
+The repository invokes it from the common test suite on each target.
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueensSpec.kt:platform-test"
 ```
 
-Kotest's test body is suspending, so it can call `solveFourQueens()` directly. Run `./gradlew jvmTest`,
-`./gradlew jsNodeTest`, then `./gradlew linuxX64Test` in your project. Node is provisioned by Kotlin's Gradle
-plugin; Native needs the host toolchain and the Z3 library described above.
+In a Kotlin Multiplatform project with a suspending test body, call `verifiedFourQueens()`
+from that body and run the JVM, JS/Node and available Native test targets. Node is provisioned
+by Kotlin’s Gradle plugin; Native needs the host toolchain and the Z3 library described above.
 
 To run the checked-in examples from this repository's root instead:
 

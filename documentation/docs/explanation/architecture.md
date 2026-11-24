@@ -11,13 +11,13 @@ flowchart TD
     Solve[":solve"] --> Model
     SPI[":solve-spi"] --> Solve
     Adapters["Solver adapters"] --> SPI
-    Portfolio[":solve-auto"] --> SPI
-    Portfolio --> Adapters
+    Auto[":solve-auto"] --> SPI
+    Auto --> Adapters
     Facades["Java, TypeScript and C facades"] --> Solve
     Facades --> Adapters
 ```
 
-The diagram shows the main dependency direction rather than every Gradle edge. Portfolio dependencies on bundled adapters vary by platform; facade dependencies also vary with the operations they expose.
+The diagram shows the main dependency direction rather than every Gradle edge. `:solve-auto` dependencies on bundled adapters vary by platform; facade dependencies also vary with the operations they expose.
 
 | Layer | Responsibility |
 |---|---|
@@ -27,7 +27,7 @@ The diagram shows the main dependency direction rather than every Gradle edge. P
 | `:solve` | Solver, stream, incremental-session and store interfaces; assignments, options, descriptors and result contracts |
 | `:solve-spi` | Backend and compiler contracts, support reports, availability, registry, feature extraction, ranking and shared lifecycle machinery |
 | Solver adapters | Translation into an engine representation, execution, decoding and validation |
-| `:solve-auto` | Platform defaults, automatic solving, sequential fallback and bounded races |
+| `:solve-auto` | `AutoBackend`: platform defaults, automatic solving, sequential fallback and bounded races |
 | `:interop-java`, `:interop-js`, `:interop-c` | Language-specific call patterns and boundary representations |
 | `:test-core`, `:test-solve` | Reusable representation and solver contracts, differential checks and a small finite test oracle |
 

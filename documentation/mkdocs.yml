@@ -17,15 +17,9 @@ nav:
       - how-to/index.md
       - Install: how-to/install.md
       - Choose a programming style: how-to/programming-styles.md
-      - Choose a solver: how-to/choose-a-solver.md
-      - Set limits and cancel: how-to/limits-and-cancellation.md
-      - Enumerate solutions: how-to/enumerate-solutions.md
       - Optimize: how-to/optimize.md
-      - Use incremental sessions: how-to/incremental-sessions.md
-      - Use constraint stores: how-to/constraint-stores.md
-      - Use exact reals and bit-vectors: how-to/exact-reals-and-bitvectors.md
-      - Use MiniZinc: how-to/use-minizinc.md
-      - Run on Kotlin/Native with Z3: how-to/native-and-z3.md
+      - Enumerate solutions: how-to/enumerate-solutions.md
+      - Set limits and cancel: how-to/limits-and-cancellation.md
       - Classic problems:
           - how-to/problems/index.md
           - N-Queens: how-to/problems/n-queens.md
@@ -38,32 +32,49 @@ nav:
           - Traveling salesman: how-to/problems/traveling-salesman.md
           - Nurse rostering: how-to/problems/nurse-rostering.md
           - Pigeonhole: how-to/problems/pigeonhole.md
+      - Choose a solver: how-to/choose-a-solver.md
+      - Use MiniZinc: how-to/use-minizinc.md
+      - Run on Kotlin/Native with Z3: how-to/native-and-z3.md
+      - Use incremental sessions: how-to/incremental-sessions.md
+      - Use constraint stores: how-to/constraint-stores.md
+      - Use exact reals and bit-vectors: how-to/exact-reals-and-bitvectors.md
       - Contributing:
           - Add a backend: how-to/contributing/add-a-backend.md
           - Run tests and benchmarks: how-to/contributing/run-tests-and-benchmarks.md
           - Release: how-to/contributing/release.md
   - Reference:
       - reference/index.md
-      - API (KDoc): reference/api.md
-      - Modules and artifacts: reference/modules-and-artifacts.md
+      - Results and statuses: reference/results-and-statuses.md
       - Modelling language: reference/modelling-language.md
       - Solvers and routes: reference/solvers-and-routes.md
       - Platform availability: reference/platform-availability.md
-      - Results and statuses: reference/results-and-statuses.md
       - Configuration: reference/configuration.md
+      - Modules and artifacts: reference/modules-and-artifacts.md
+      - Kotlin solver API: reference/solver-api.md
       - Java API: reference/java-api.md
       - TypeScript API: reference/typescript-api.md
       - C API: reference/c-api.md
+      - Backend SPI: reference/spi.md
       - Benchmarks: reference/benchmarks.md
       - CI pipeline: reference/ci-pipeline.md
+      - API (KDoc): reference/api.md
   - Explanation:
       - explanation/index.md
+      - Global constraints: explanation/global-constraints.md
+      - Engines and routes: explanation/engines-and-routes.md
+      - Backends:
+          - explanation/backends/index.md
+          - Z3: explanation/backends/z3.md
+          - CP-SAT: explanation/backends/cp-sat.md
+          - Choco: explanation/backends/choco.md
+          - OR-Tools MIP: explanation/backends/or-tools-mip.md
+          - MiniZinc: explanation/backends/minizinc.md
+          - Pure Kotlin: explanation/backends/kotlin.md
+          - AutoBackend: explanation/backends/auto.md
+          - Automatic selection: explanation/backends/selection.md
+      - Solving modes: explanation/solving-modes.md
       - Principles: explanation/principles.md
       - Architecture: explanation/architecture.md
-      - Engines and routes: explanation/engines-and-routes.md
-      - Solving modes: explanation/solving-modes.md
-      - Global constraints: explanation/global-constraints.md
-      - Automatic solver selection: explanation/automatic-solver-selection.md
       - The pure-Kotlin solver: explanation/pure-kotlin-solver.md
       - History and status: explanation/history-and-status.md
 theme:

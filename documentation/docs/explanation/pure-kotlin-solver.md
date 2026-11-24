@@ -12,7 +12,7 @@ This page explains the implementation and the consequences of its choices. For o
 
 The descriptor advertises satisfaction, optimization, enumeration, incremental assertions, backtracking, assumptions, integer arithmetic, real arithmetic, bit-vectors, global constraints and unsat cores. These are capability categories, not promises to accept every possible expression of those kinds. Support inspection walks variables, constraints, the objective and decompositions, reporting unsupported expression classes and the decompositions it will use. Unsupported nodes are rejected even inside an inactive Boolean branch. A structurally supported model can still exceed compilation or search limits.
 
-The route can participate in a caller-supplied `SolverRegistry` and [`Portfolio`][portfolio] through this same SPI. The platform `DefaultBackends` implementations currently omit it, so adding `:solve-kotlin` does not make `solveAuto` select it. The portfolio benchmark adds it explicitly for comparison. See [automatic solver selection](automatic-solver-selection.md) for ranking, fallback and racing.
+The route can participate in a caller-supplied `SolverRegistry` or [`AutoBackend`][auto-backend] through this same SPI. The platform bundles currently omit it, so adding `:solve-kotlin` does not make `AutoBackend` select it. The automatic-selection benchmark adds it explicitly for comparison. See [automatic solver selection](backends/selection.md) for ranking, fallback and racing.
 
 Portable source and a delivered language facade are separate concerns. Kotlin/JVM, Kotlin/JS and Kotlin/Native can use the common implementation. Java boundary tests construct the backend and pass it through the blocking/async facade. JavaScript facade tests wrap it as a test dependency; that does not provide a published TypeScript loader for this route. The C facade uses Z3, rather than this engine. There is no Kotlin/Wasm target implied by using Kotlin/JS, and common code alone is not evidence of a packaged browser route. Consult [platform availability](../reference/platform-availability.md) for platform evidence.
 
@@ -36,6 +36,13 @@ This is not a solver for unrestricted integer variables, general nonlinear real 
 Exactness has a practical limit: arbitrary-precision values can demand circuits wider than the configured maximum. That produces a resource-limit outcome, not a truncated value.
 
 ## From model to witness
+
+A SAT (Boolean satisfiability) solver searches for truth values satisfying a formula. A **literal**
+is a Boolean variable or its negation; a **clause** is an OR of literals. The engine combines clauses
+with arithmetic checks. **Conflict-driven clause learning (CDCL)** remembers reasons a candidate
+failed so that later search avoids the same conflict. A **reified rational linear atom** is a
+Boolean value standing for a rational arithmetic comparison. A **theory clause** rules out a
+Boolean candidate whose arithmetic comparisons cannot hold together.
 
 Each stream or session owns an isolated [`KotlinEngine`][engine]. The immutable `ConstraintModel` never stores mutable solver state. Within an engine, one SAT database and one translator survive successive checks.
 
@@ -78,7 +85,7 @@ Root assertions and an active batch objective post their definedness permanently
 
 For an inequality of the form `sum(a_i * x_i) + c <= 0`, presolve computes each term's minimum contribution. If even the minimum total is positive, the assertion is contradictory. Otherwise it derives a necessary bound for each variable from the minimum contribution of the other terms. Negative coefficients use mathematical floor and ceiling division, preserving integer semantics for negative quotients. Equality runs the inequality in both directions; strict integer order is shifted by one.
 
-Restrictions intersect the current interval domain. They retain holes and use interval operations rather than enumerating huge ranges. `AllDifferent` removes fixed values from unfixed variable operands, detects duplicate fixed values, and can refute the whole scope when the union of candidate values is smaller than the number of operands. This is a whole-scope pigeonhole check, not filtering every Hall subset.
+Restrictions intersect the current interval domain. They retain holes and use interval operations rather than enumerating huge ranges. `AllDifferent` removes fixed values from unfixed variable operands, detects duplicate fixed values, and can refute the whole scope when the union of candidate values is smaller than the number of operands. This is a whole-scope pigeonhole check. It does not filter every **Hall subset**: a group of variables whose combined domains contain exactly as many values as variables, reserving those values for that group. Fewer values than variables proves inconsistency.
 
 Presolve repeats until no domains change, a conflict is found, or its internal default of 64 passes is reached. Reaching the pass cap only leaves propagation incomplete. The original assertions are still compiled, so a missed presolve consequence is left for search.
 
@@ -127,7 +134,7 @@ The native path uses checked machine-range coefficients. Currently the total's b
 
 [`SatLinear`][sat-linear] maintains the sum of processed true literals for each native constraint. If a literal's weight exceeds the remaining slack, it must become false. A negative slack is a conflict. Sums roll back with the SAT trail. When conflict analysis needs a propagation reason, it constructs a clause from enough earlier true literals, considering the largest weights first. These explanations let native arithmetic consequences participate in the same learning mechanism as ordinary clauses.
 
-This propagation concerns finite Boolean-weighted constraints. It is distinct from the rational real feasibility algorithm below, and provides no LP relaxation or objective bound from continuous optimization.
+This propagation concerns finite Boolean-weighted constraints. It is distinct from the rational real feasibility algorithm below, and provides no **LP relaxation** (linear programming with integer restrictions relaxed to allow fractional values) or objective bound from continuous optimization.
 
 ## How global constraints are lowered
 
@@ -166,9 +173,15 @@ These nested walks can expand substantially during lowering and evaluation. The 
 
 ## The SAT search engine
 
-[`Circuit`][circuit] turns Boolean operations into fully reified Tseitin-style clauses. Negation changes a literal's sign. AND and XOR gates simplify constants, repeated operands and complements; commutative gate keys allow reuse. OR is built through negated AND, and conditional selection through Boolean gates. Full reification is what allows arithmetic and global predicates to be negated or nested without losing the reverse implication.
+[`Circuit`][circuit] turns Boolean operations into fully reified **Tseitin-style clauses**: auxiliary Boolean variables represent gates, and clauses enforce each gate’s relationship to its inputs. Negation changes a literal's sign. AND and XOR gates simplify constants, repeated operands and complements; commutative gate keys allow reuse. OR is built through negated AND, and conditional selection through Boolean gates. Full reification is what allows arithmetic and global predicates to be negated or nested without losing the reverse implication.
 
-[`SatSolver`][sat-solver] uses conflict-driven clause learning (CDCL), rather than enumerating all integer tuples. Its core structures and policies are:
+[`SatSolver`][sat-solver] uses conflict-driven clause learning (CDCL), rather than enumerating all integer tuples. Before the details: **watched literals** let propagation revisit only clauses affected by a change;
+a **blocker** cheaply records a literal that already satisfies a clause. A saved **phase** is the last
+truth value tried for a variable. The **first unique implication point (UIP)** identifies a shared
+cause of a conflict, allowing search to jump back past irrelevant decisions. A **Luby schedule**
+varies restart intervals so search can revisit decisions while retaining learned clauses.
+**Literal block distance** counts the decision levels represented in a learned clause, helping
+the engine choose which clauses to retain. Its core structures and policies are:
 
 1. **Propagation.** [`SatPropagation`][propagation] uses two watched literals per non-unit clause. A true blocker literal can establish clause satisfaction without loading the clause. It processes the assignment trail, combines clause propagation with `SatLinear` propagation, and pauses at safe boundaries for cooperative checks.
 2. **Decisions.** [`SatState`][sat-state] stores assignments, decision levels, reasons, trail positions, saved phases and variable activities in primitive arrays. [`SatOrder`][sat-order] is a max-heap for activity-based branching. Conflict participants get activity bumps, with decay implemented by increasing the bump increment. Saved phases guide the next polarity. Floating-point activity scores affect search order only; they never approximate model arithmetic.
@@ -264,7 +277,7 @@ The implementation has several complementary layers of evidence. None replaces t
 |---|---|
 | Shared solver behavior | [`KotlinBackendSpec`][backend-spec] includes `solverContract`, `incrementalContract` and `differentialContract` from `:test-solve`, without excluding the finite nonlinear case. |
 | Independent finite oracle | The shared [differential catalogue][differential-cases] compares statuses, exact solution sets or objective values against exhaustive `FiniteOracle` solving. Cases include reification, structural globals, holes, products, hidden outputs and optimization. Encoding-specific specs add oracle comparisons. |
-| SAT kernel | [`SatSolverSpec`][sat-spec] covers every subset of a two-variable clause catalogue, seeded small CNFs against truth tables, assumptions, learned-clause reuse and pigeonhole conflicts. [`SatLinearSpec`][sat-linear-spec] counts models against exhaustive truth tables for weighted constraints mixed with clauses. |
+| SAT kernel | [`SatSolverSpec`][sat-spec] covers every subset of a two-variable clause catalogue, seeded small formulas in **conjunctive normal form (CNF)**—an AND of clauses, each an OR of literals—against truth tables, assumptions, learned-clause reuse and pigeonhole conflicts. [`SatLinearSpec`][sat-linear-spec] counts models against exhaustive truth tables for weighted constraints mixed with clauses. |
 | Arithmetic circuits | [`BinaryArithmeticSpec`][binary-spec] checks signed arithmetic, holes, huge origins, width limits and exact results outside machine range. It also assumes an incorrect encoded result and requires UNSAT. [`BitVectorCircuitSpec`][bv-spec] exhaustively exercises symbolic three-bit operators and comparisons, plus oversized shifts and conversions. |
 | Real theory | [`LinearFeasibilitySpec`][real-spec] checks reconstructed rational witnesses, strict boundary contradictions, unbounded directions, proportional rows, generated feasible systems and interruption. Integer embedding and discrete-real predicate specs check exact signed weights and denominator clearing. |
 | Presolve and restoration | [`IntegerPresolverSpec`][presolve-spec] independently enumerates small affine witnesses to ensure narrowing preserves them. Domain-store tests exercise holes, detached snapshots and stale/foreign checkpoints. |
@@ -282,10 +295,10 @@ The implementation favors a compact common engine and exact representations. Its
 - Binary products use nested shift-and-add work. Reified pairwise distinctness and large allowed tables can create many gates or clauses. Structural graph walks, dense automaton tables and scheduling decompositions add further size costs.
 - Optimization proves bounds by repeated feasibility checks. Without LP relaxation or specialized scheduling/global propagation, finding a good incumbent can be much easier than proving that none is better.
 - Fourier–Motzkin elimination can expand exponentially. It is rerun for each complete candidate, and coarse mixed-theory conflict clauses can allow substantial repeated search.
-- Referential compilation/support buckets can require quadratic scanning. Other core, presolve and evaluation traversals can revisit shared expression occurrences; explicit compiler frames do not make every DAG operation linear or every traversal immune to deep/shared-expression costs.
+- Referential compilation/support buckets can require quadratic scanning. Other core, presolve and evaluation traversals can revisit shared expression occurrences; explicit compiler frames do not make every operation on a **directed acyclic graph (DAG)** of shared expressions linear or every traversal immune to deep/shared-expression costs.
 - Sessions retain definitions and learned consequences after pop. This helps reuse, but a long-lived session is not guaranteed to recover the memory used by removed assertions.
 
-The repository's measurement tools separate different questions. [`KotlinBenchmark`][phase-benchmark] records model construction, engine setup, combined presolve/compilation, first check/decode/validation, output projection and session restoration phases. [`KotlinFamilyBenchmark`][family-benchmark] measures seeded catalogue instances on fresh solvers after warm-up. [`KotlinPlatformBenchmarkSpec`][platform-benchmark] runs an opt-in catalogue on each target, while the portfolio benchmark compares explicitly selected routes. The module configures a release Native test binary for measurement; ordinary debug-test timings should not be treated as release-runtime performance.
+The repository's measurement tools separate different questions. [`KotlinBenchmark`][phase-benchmark] records model construction, engine setup, combined presolve/compilation, first check/decode/validation, output projection and session restoration phases. [`KotlinFamilyBenchmark`][family-benchmark] measures seeded catalogue instances on fresh solvers after warm-up. [`KotlinPlatformBenchmarkSpec`][platform-benchmark] runs an opt-in catalogue on each target, while the automatic-selection benchmark compares explicitly selected routes. The module configures a release Native test binary for measurement; ordinary debug-test timings should not be treated as release-runtime performance.
 
 Those harnesses verify known answers alongside measurements, but no universal runtime or relative speed follows from their existence. Instance family, seed, proof requirements, runtime warm-up and Native optimization mode affect results. See [benchmarks](../reference/benchmarks.md) for measurement evidence and [running tests and benchmarks](../how-to/contributing/run-tests-and-benchmarks.md) for the workflow.
 
@@ -295,7 +308,7 @@ Use this route when a portable implementation with no external solver installati
 [backend]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/KotlinBackend.kt
 [support]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/KotlinSupport.kt
 [solver]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/runtime/KotlinSolver.kt
-[portfolio]: https://github.com/gciatto/kt-constraints/blob/develop/solve-auto/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/auto/Portfolio.kt
+[auto-backend]: https://github.com/gciatto/kt-constraints/blob/develop/solve-auto/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/auto/AutoBackend.kt
 [engine]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/runtime/KotlinEngine.kt
 [translation]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/compiler/KotlinTranslation.kt
 [compiled-term]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/compiler/CompiledTerm.kt

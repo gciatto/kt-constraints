@@ -4,9 +4,9 @@ Assign each worker exactly one task and each task to exactly one worker, minimiz
 
 ## 1. Build the model
 
-Use `:dsl` for the operators. The examples solve with `solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
+Use `:dsl` for the operators. The examples solve with `AutoBackend` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
-Imports used by the example and its test:
+Imports used by the example:
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Assignment.kt:imports"
@@ -28,6 +28,12 @@ See [Optimize](../optimize.md) for handling a result that has an assignment with
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Assignment.kt:solve"
+```
+
+Call the helper from a suspending caller with the sample data:
+
+```kotlin
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/AssignmentSpec.kt:example"
 ```
 
 Expected output:

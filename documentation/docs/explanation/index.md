@@ -1,14 +1,22 @@
 # Explanation
 
-Kt-Constraints separates the meaning of a constraint problem from the machinery that solves it. These pages explain the design choices behind that separation and the trade-offs they create.
+Contents in navigation order. Follow the [suggested reading order](../index.md#suggested-reading-order) for a learning path.
 
-- [Principles](principles.md): immutable models, variable identity, exact semantics and evidence for answers.
-- [Architecture](architecture.md): module boundaries, dependency direction and the path from expressions to results.
-- [Engines and routes](engines-and-routes.md): why reaching the same engine through different adapters matters.
-- [Solving modes](solving-modes.md): batch search, incremental checks and reversible stores, including ownership by an external logic engine.
-- [Global constraints](global-constraints.md): preserving structure, native translations and exact decompositions.
-- [Automatic solver selection](automatic-solver-selection.md): eligibility, ranking, fallback, races and benchmark evidence.
-- [The pure-Kotlin solver](pure-kotlin-solver.md): the experimental engine's design and limitations.
-- [History and status](history-and-status.md): how the project grew and which parts remain incomplete.
-
-For a working introduction, start with [your first model in Kotlin](../tutorials/kotlin-first-model.md). For a specific task, use the [how-to guides](../how-to/index.md). The [reference](../reference/index.md) and [API documentation](/kt-constraints/api/index.html) describe the available declarations.
+| Page | Contents |
+|---|---|
+| [Global constraints](global-constraints.md) | Preserved model structure and exact decompositions |
+| [Engines and routes](engines-and-routes.md) | Search engines and the integration paths that reach them |
+| [Backends](backends/index.md) | Route comparison and problem fit |
+| [Z3](backends/z3.md) | SMT routes, exact arithmetic and incremental checks |
+| [CP-SAT](backends/cp-sat.md) | Direct finite-domain solving and checked integer limits |
+| [Choco](backends/choco.md) | JVM finite-domain solving and a separate propagating store |
+| [OR-Tools MIP](backends/or-tools-mip.md) | Bounded affine optimization and numerical evidence |
+| [MiniZinc](backends/minizinc.md) | Engine configurations, compilation and execution transports |
+| [Pure Kotlin](backends/kotlin.md) | Experimental portable backend and its limits |
+| [AutoBackend](backends/auto.md) | Automatic batch execution and enumeration ownership |
+| [Automatic selection](backends/selection.md) | Loading, eligibility, explained scores and execution strategies |
+| [Solving modes](solving-modes.md) | Batch search, retained assertions and reversible stores |
+| [Principles](principles.md) | Immutable meaning, identity and exact semantics |
+| [Architecture](architecture.md) | Module boundaries and execution flow |
+| [The pure-Kotlin solver](pure-kotlin-solver.md) | SAT encodings, exact arithmetic, sessions and validation |
+| [History and status](history-and-status.md) | Implemented features and remaining limits |

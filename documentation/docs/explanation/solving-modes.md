@@ -43,9 +43,11 @@ Entailment deliberately has four values. `ENTAILED` means every solution satisfi
 
 Residual projection exposes current integer domains and relevant posted constraints. It is sound but not an exact elimination of hidden variables: current implementations return `Residual.exact = false`, and constraints may still mention other variables. Forking replays state into an independent store, retaining the variables but no marks. Explanations name inconsistent posted constraints and are not guaranteed minimal. See [use constraint stores](../how-to/constraint-stores.md).
 
-## How a logic engine can own a store
+**Labeling** assigns remaining variables through application-controlled search.
 
-A logic runtime can keep terms, unification, suspended goals and choice points while delegating constraints to a store. A constrained logic variable is associated with a store-owned variable. Binding it posts an equality; unifying two constrained variables posts equality between them.
+## Advanced: how a logic engine can own a store
+
+A logic runtime can keep terms (structured values), unification (making terms agree), suspended goals (work waiting for more information) and choice points (saved alternatives) while delegating constraints to a store. A constrained logic variable is associated with a store-owned variable. Binding it posts an equality; unifying two constrained variables posts equality between them.
 
 Each logic choice point saves a store mark. Backtracking calls `undoTo`; pruning alternatives without backtracking discards the corresponding saved marks without undoing the current constraints. The runtime turns `Propagation.changed` into wakeups for goals suspended on those variables and can bind variables whose domains become singletons.
 

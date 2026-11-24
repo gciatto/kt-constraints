@@ -7,10 +7,12 @@ two, and nurse 1's has weight one.
 ## Model
 
 These examples run in a suspending caller and use `ConstraintScope`, the Kotlin DSL, and
-`solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See
+`AutoBackend` from `:solve-auto`, which picks a bundled solver for your platform. See
 [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
 ```kotlin
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/NurseRostering.kt:imports"
+
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/NurseRostering.kt:model"
 ```
 
@@ -20,7 +22,7 @@ These examples run in a suspending caller and use `ConstraintScope`, the Kotlin 
 `count(IntLiteral(1), ...)` enforces daily coverage and each nurse's workload bound.
 Adjacent indicators sum to at most one, enforcing a rest day after every working day.
 
-Coverage, workload and rest are hard constraints added with `scope.add`.
+Coverage, workload and rest are hard constraints added with `add`.
 `minimizeViolations` makes the two requests soft: it minimizes the sum of the weights of
 false request expressions. The requests are not added as hard constraints, since satisfying
 both would leave day zero uncovered. Weights must be non-negative. Calling this helper
@@ -51,3 +53,6 @@ request must be violated to provide coverage; this roster attains the smaller pe
 
 See [optimization](../optimize.md), [the modelling reference](../../reference/modelling-language.md),
 and [global constraints](../../explanation/global-constraints.md).
+
+For a worked `regular` shift rule connecting sequence variables to states, symbols and accepting
+states, see [the modelling reference](../../reference/modelling-language.md#worked-shift-sequence-rule).

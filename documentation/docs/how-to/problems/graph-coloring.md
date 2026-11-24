@@ -4,9 +4,9 @@ Assign colours to vertices so that adjacent vertices have different colours, usi
 
 ## 1. Build the model
 
-Use `:dsl` for the operators. The examples solve with `solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
+Use `:dsl` for the operators. The examples solve with `AutoBackend` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
-Imports used by the example and its test:
+Imports used by the example:
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/GraphColoring.kt:imports"
@@ -18,7 +18,7 @@ Give every vertex a colour index, post one symbolic inequality per edge, and min
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/GraphColoring.kt:model"
 ```
 
-`nValue(colors)` counts distinct values even when colour labels have gaps; it is a DSL expression built from Boolean comparisons and sums. Do not put all vertices in one `allDifferent`: that would forbid nonadjacent vertices from sharing a colour. For a known clique, `allDifferent` over just that clique expresses the needed inequalities.
+`nValue(colors)` counts distinct values even when colour labels have gaps; it is a DSL expression built from Boolean comparisons and sums. Do not put all vertices in one `allDifferent`: that would forbid nonadjacent vertices from sharing a colour. For a known **clique**—a group of vertices all adjacent to one another— `allDifferent` over just that clique expresses the needed inequalities.
 
 ## 2. Solve and read the result
 
@@ -28,6 +28,12 @@ See [Optimize](../optimize.md) for limits and incumbent handling.
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/GraphColoring.kt:solve"
+```
+
+Call the helper from a suspending caller with the sample data:
+
+```kotlin
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/GraphColoringSpec.kt:example"
 ```
 
 Expected output:

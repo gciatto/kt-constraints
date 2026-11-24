@@ -1,17 +1,20 @@
 # Reference
 
-These pages describe the current public surface and its limits. For declarations and overloads, use the [Kotlin API reference](/kt-constraints/api/index.html).
+Contents in navigation order. Follow the [suggested reading order](../index.md#suggested-reading-order) for a learning path.
 
-| Reference | Contents |
+| Page | Contents |
 |---|---|
-| [Modules and artifacts](modules-and-artifacts.md) | Gradle modules, targets and publication names |
+| [Results and statuses](results-and-statuses.md) | Mathematical evidence and execution termination |
 | [Modelling language](modelling-language.md) | Sorts, expressions, globals and objectives |
-| [Solvers and routes](solvers-and-routes.md) | Route IDs, capabilities and numeric limits |
-| [Platform availability](platform-availability.md) | Platform coverage and test evidence |
-| [Results and statuses](results-and-statuses.md) | Answers, termination, bounds and evidence |
+| [Solvers and routes](solvers-and-routes.md) | Routes, capabilities and numeric limits |
+| [Platform availability](platform-availability.md) | Implementation platforms and runtime test evidence |
 | [Configuration](configuration.md) | Options, environment and build properties |
-| [Java API](java-api.md), [TypeScript API](typescript-api.md), [C API](c-api.md) | Facade surfaces and ownership rules |
+| [Modules and artifacts](modules-and-artifacts.md) | Gradle modules and publication names |
+| [Kotlin solver API](solver-api.md) | Kotlin solver, stream, assignment, session and store contracts |
+| [Java API](java-api.md) | Java facade and resource ownership |
+| [TypeScript API](typescript-api.md) | TypeScript facade and resource ownership |
+| [C API](c-api.md) | C facade and handle ownership |
+| [Backend SPI](spi.md) | Backend implementation, availability, support, registry and ranking contracts |
 | [Benchmarks](benchmarks.md) | Measurements, methodology and selection evidence |
 | [CI pipeline](ci-pipeline.md) | Workflow triggers, checks and publication gates |
-
-For a first working model, start with the [Kotlin tutorial](../tutorials/kotlin-first-model.md). For design context, see [Architecture](../explanation/architecture.md).
+| [API (KDoc)](api.md) | Generated declaration reference |

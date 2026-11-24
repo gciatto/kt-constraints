@@ -11,10 +11,12 @@ one operation at a time. Time starts at zero.
 ## Model
 
 These examples run in a suspending caller and use `ConstraintScope`, the Kotlin DSL, and
-`solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See
+`AutoBackend` from `:solve-auto`, which picks a bundled solver for your platform. See
 [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
 ```kotlin
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/JobShop.kt:imports"
+
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/JobShop.kt:model"
 ```
 
@@ -27,7 +29,7 @@ The DSL has no separate one-dimensional `noOverlap` function; use `disjunctive` 
 `noOverlap2D` concerns rectangles instead.
 
 The makespan is the maximum of the two final completion times. Start domains `0..3` contain
-an optimal schedule for this instance; choose a justified horizon when changing the data.
+an optimal schedule for this instance; choose a justified **horizon**, an upper bound on the scheduling times, when changing the data.
 
 ## Solve
 

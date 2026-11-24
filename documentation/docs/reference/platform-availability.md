@@ -1,7 +1,6 @@
 # Backend availability by platform
 
-Each ✅ below records real-engine test coverage described by the repository validation record or the CI jobs below. Requested runtime suites fail when their engine is missing or misbehaves. Every job is in `.github/workflows/test-extensively.yml`. A blank cell means the route is untested
-there: it may work, but nothing proves it. A route marked — cannot exist on that platform.
+Each ✅ below records real-engine test coverage described by the repository validation record or the CI jobs below. Requested runtime suites fail when their engine is missing or misbehaves. Every job is in `.github/workflows/test-extensively.yml`. — means no implementation for this platform; a blank cell means runtime coverage has not been established.
 
 | Route (`engine/route`)        | JVM Linux | JVM macOS arm64 | JVM Windows | Node | Chromium | Native Linux x64 | Native macOS arm64 | Native Windows x64 |
 |-------------------------------|:---------:|:---------------:|:-----------:|:----:|:--------:|:----------------:|:------------------:|:------------------:|
@@ -12,16 +11,16 @@ there: it may work, but nothing proves it. A route marked — cannot exist on th
 | `highs/or-tools`              | ✅        | ✅              | ✅          | —    | —        | —                | —                  | —                  |
 | `z3/wasm`                     | —         | —               | —           | ✅   | ✅       | —                | —                  | —                  |
 | `z3/native`                   | —         | —               | —           | —    | —        | ✅               | ✅                 | ✅                 |
-| `gecode/minizinc`             | ✅        |                 |             | —    | —        |                  |                    |                    |
-| `chuffed/minizinc`            | ✅        |                 |             | —    | —        |                  |                    |                    |
-| `cp-sat/minizinc`             | ✅        |                 |             | —    | —        |                  |                    |                    |
-| `highs/minizinc`              | ✅        |                 |             | —    | —        |                  |                    |                    |
-| `cbc/minizinc`                | ✅        |                 |             | —    | —        |                  |                    |                    |
+| `gecode/minizinc`             | ✅        |                 |             | —    | —        | — | — | — |
+| `chuffed/minizinc`            | ✅        |                 |             | —    | —        | — | — | — |
+| `cp-sat/minizinc`             | ✅        |                 |             | —    | —        | — | — | — |
+| `highs/minizinc`              | ✅        |                 |             | —    | —        | — | — | — |
+| `cbc/minizinc`                | ✅        |                 |             | —    | —        | — | — | — |
 | `gecode/minizinc-js-cli`      | —         | —               | —           | ✅   | —        | —                | —                  | —                  |
-| `chuffed/minizinc-wasm`       | —         | —               | —           |      | ✅       | —                | —                  | —                  |
+| `chuffed/minizinc-wasm`       | —         | —               | —           | — | ✅       | —                | —                  | —                  |
 | `kotlin/direct`              | ✅        |                 |             | ✅   |          | ✅               |                    |                    |
 
-Native MiniZinc cells are blank because command execution from Kotlin/Native is not implemented. The Node cell of `chuffed/minizinc-wasm` is blank because that route runs MiniZinc's browser build.
+Native MiniZinc cells are marked — because command execution from Kotlin/Native is not implemented. The Node cell of `chuffed/minizinc-wasm` is marked — because that route runs MiniZinc's browser build.
 
 `kotlin/direct` has an implementation in `commonMain` and unconditional shared conformance tests, executed locally on
 JVM Linux, Node and Linux x64 Native; the other cells await CI evidence from the jobs that now include the module. The production implementation is portable; that alone does not prove the remaining platform cells.
@@ -35,7 +34,7 @@ JVM Linux, Node and Linux x64 Native; the other cells await CI evidence from the
 | JavaScript facade tests, `kotlin/direct` | —         | —             | —           | ✅   |          |
 | TypeScript (`:interop-js`), `z3/wasm`    | —         | —               | —           | ✅   | ✅       |
 | TypeScript, `gecode/minizinc-js-cli`     | —         | —               | —           | ✅   | —        |
-| TypeScript, `chuffed/minizinc-wasm`      | —         | —               | —           |      | ✅       |
+| TypeScript, `chuffed/minizinc-wasm`      | —         | —               | —           | — | ✅       |
 | Java `BlockingStore` (Choco, Z3)         | ✅        | ✅              | ✅          | —    | —        |
 | TypeScript `Store`, `z3/wasm`            | —         | —               | —           | ✅   | ✅       |
 

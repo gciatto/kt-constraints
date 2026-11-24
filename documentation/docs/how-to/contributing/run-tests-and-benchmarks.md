@@ -12,7 +12,7 @@ Run `./gradlew ktlintFormat` first. Once it finishes, run `./gradlew ktlintCheck
 |---|---|
 | JVM and JS quick loop | `./gradlew jvmTest jsTest --parallel --continue` |
 | Complete host-supported checks | `./gradlew check --parallel --continue` |
-| Portfolio examples on JVM/Node | `./gradlew :solve-auto:jvmTest :solve-auto:jsNodeTest --continue` |
+| Examples on JVM/Node | `./gradlew :solve-auto:jvmTest :solve-auto:jsNodeTest --continue` |
 | Shared Native examples on Linux | `./gradlew :solve-auto:linuxX64Test` |
 | Java boundary | `./gradlew :interop-java:test` |
 | Packaged TypeScript boundary on Node | `./gradlew :interop-js:typescriptUsageTest` |
@@ -61,7 +61,7 @@ Benchmark tasks are manual, outside routine `check`. Use the same host, versions
 | Pure-Kotlin cross-platform catalogue | `KT_CONSTRAINTS_PLATFORM_BENCHMARK=1 ./gradlew :solve-kotlin:jsNodeTest -i` |
 | Cross-platform route catalogue | `KT_CONSTRAINTS_ROUTE_BENCHMARK=1 ./gradlew :solve-auto:jsNodeTest -i` |
 
-Use `jvmTest` in place of `jsNodeTest` for the JVM catalogue. The JS runner needs `-i` to show measurement rows. `BENCHMARK_SCALE` and `BENCHMARK_CSV` control the JVM portfolio catalogue. The route catalogue accepts `KT_CONSTRAINTS_ROUTE_BENCHMARK_SCALES`, `KT_CONSTRAINTS_ROUTE_BENCHMARK_SEEDS` and `KT_CONSTRAINTS_ROUTE_BENCHMARK_TIMEOUT`.
+Use `jvmTest` in place of `jsNodeTest` for the JVM catalogue. The JS runner needs `-i` to show measurement rows. `BENCHMARK_SCALE` and `BENCHMARK_CSV` control the JVM `:solve-auto` catalogue. The route catalogue accepts `KT_CONSTRAINTS_ROUTE_BENCHMARK_SCALES`, `KT_CONSTRAINTS_ROUTE_BENCHMARK_SEEDS` and `KT_CONSTRAINTS_ROUTE_BENCHMARK_TIMEOUT`.
 
 For Native timing, first run `./gradlew :solve-auto:linkReleaseTestLinuxX64`. Then run `solve-auto/build/bin/linuxX64/releaseTest/test.kexe` with `KT_CONSTRAINTS_ROUTE_BENCHMARK=1` and `KT_CONSTRAINTS_Z3_LIBRARY` pointing to the absolute path of `solve-z3/build/z3-native/linuxX64/libz3.so`. This library must already have been extracted by the Native Z3 setup. Use the corresponding release task/binary in `solve-kotlin` with `KT_CONSTRAINTS_PLATFORM_BENCHMARK=1` for that catalogue. Avoid comparing debug Native timing against release JVM/JS timing.
 

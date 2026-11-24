@@ -4,9 +4,9 @@ Place every item in one bin without exceeding its capacity, and minimize the num
 
 ## 1. Build the model
 
-Use `:dsl` for the operators. The examples solve with `solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
+Use `:dsl` for the operators. The examples solve with `AutoBackend` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
-Imports used by the example and its test:
+Imports used by the example:
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:imports"
@@ -18,25 +18,9 @@ Create a bin index per item and a load variable per candidate bin. The load doma
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:model"
 ```
 
-Preserve the global when posting it:
-
-```kotlin
---8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:global"
-```
-
-To post its exact variable-free decomposition instead, replace that assertion with:
-
-```kotlin
---8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:decomposition"
-```
-
-The decomposition bounds each item’s bin index and sets each load to a weighted sum of `(binOfItem eq bin).toInt()`. Both forms are tested. The global keeps the packing structure available for backend lowering; the pure-Kotlin engine used here decomposes it.
-
-Minimize occupied bins, counting distinct assigned indices rather than the greatest index:
-
-```kotlin
---8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:objective"
-```
+The builder preserves the global by default. Pass `useDecomposition = true` to post its exact variable-free
+decomposition instead. Both forms are tested. `nValue(bins)` minimizes distinct occupied bins, including
+bins that hold only zero-sized items.
 
 ## 2. Solve and read the result
 
@@ -46,6 +30,13 @@ See [Optimize](../optimize.md) for optimality checks.
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:solve"
+```
+
+Call `binPackingExample()` from a suspending caller to use the global with the sample data.
+Its `useDecomposition` parameter defaults to `false`; pass `true` for the decomposition:
+
+```kotlin
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/BinPacking.kt:example"
 ```
 
 Expected output:

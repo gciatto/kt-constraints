@@ -19,10 +19,15 @@ Declare variables through the store, post constraints with `constrain`, and take
 before a branch. Undo to that mark when the branch fails or finishes.
 The Kotlin example uses Choco to narrow `y`, and checks that a fork is independent.
 
+The Kotlin examples are complete helper functions. Call a `suspend` helper from a coroutine or another
+suspending function. The shown imports also cover later Kotlin helpers on this page.
+
 === "Kotlin"
 
     ```kotlin
-    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:store"
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:imports"
+
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:store"
     ```
 
 === "Java"
@@ -37,7 +42,7 @@ The Kotlin example uses Choco to narrow `y`, and checks that a fork is independe
     --8<-- "interop-js/src/test/typescript/examples/howto-store.mts:store"
     ```
 
-Kotlin imports `ChocoStore`, `IntDomain` and the DSL operators; its assertions use Kotest.
+Kotlin imports `ChocoStore`, `IntDomain` and the DSL operators.
 Java's `check` helper throws on failure. The TypeScript snippet runs inside a backend
 loaded with `loadZ3`, closed in the enclosing `finally` block. It uses `constant` from the
 [installed package](install.md). The TypeScript example tests entailment and rollback;
@@ -61,6 +66,18 @@ for both witnesses. A satisfiability store can prove `UNDETERMINED`. Do not trea
 `UNDETERMINED` as a timeout or as permission to assume the expression.
 On failure, `explain()` returns inconsistent posted constraints, not necessarily a minimal
 explanation. A failed store vacuously entails every expression; handle failure first.
+
+
+In `SatisfiabilityStore`, `constrain` posts and records the constraint before checking it. An
+`UNKNOWN` result leaves that constraint active; retrying does not undo it. Take a mark before
+a tentative post, inspect its status, and use `undoTo(mark)` to remove it if you abandon the branch.
+
+```kotlin
+--8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:uncertain-post"
+```
+
+The zero budget deliberately returns `UNKNOWN`. The example checks that the constraint is
+active before undo, then checks the restored state.
 
 ## 4. Keep rollback ownership explicit
 

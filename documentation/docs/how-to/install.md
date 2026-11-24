@@ -25,8 +25,11 @@ For Kotlin, add these dependencies to the source set that uses the API:
 - `implementation("io.github.gciatto:kt-constraints-dsl:<version>")`
 - `implementation("io.github.gciatto:kt-constraints-solve-auto:<version>")`
 
-Gradle selects JVM, JS or Native variants from module metadata. The portfolio supplies
-`solveAuto` and platform-specific default backends. To use only an explicit backend, add its
+A **backend** creates solvers; a **route** identifies how a particular engine is reached.
+`AutoBackend` chooses among the routes bundled for your platform; see [engines and routes](../explanation/engines-and-routes.md).
+
+Gradle selects JVM, JS or Native variants from module metadata. `:solve-auto` supplies
+`AutoBackend` and platform-specific default routes. To use only an explicit backend, add its
 artifact instead, such as `kt-constraints-solve-z3` or the JVM-only `kt-constraints-solve-choco`.
 
 Java projects add `kt-constraints-interop-java` and their backend artifact. See the

@@ -1,6 +1,11 @@
 # Results and statuses
 
+An **incumbent** is a feasible answer found so far; see [optimization](../how-to/optimize.md).
+**Projection** selects which variable values appear in the answer; see [modelling language](modelling-language.md).
+
 Batch `SolveResult` and incremental `CheckResult` separate mathematical status from the reason execution stopped. A timeout or engine failure is never evidence of infeasibility.
+
+An **objective** is the expression to minimize or maximize.
 
 ## SolveResult
 
@@ -14,7 +19,8 @@ Batch `SolveResult` and incremental `CheckResult` separate mathematical status f
 | `bestBound` | `BigInteger?` | Exact proven objective bound when supplied; may be absent |
 | `metadata` | `SolveMetadata` | Immutable messages and backend-defined statistics |
 
-`Assignment.valueOf(variable)` returns the typed value or null when absent from the projection. Integers and bit-vector values use `BigInteger`; real values use `Rational`. `intValueOf` and `longValueOf` throw on overflow rather than truncate. Variable identity, rather than its name, selects the entry.
+`Assignment.valueOf(variable)` returns the typed value or null when absent from the projection. Integers and bit-vector values use `BigInteger`; a **bit-vector** is a fixed-width sequence of bits.
+Real values use `Rational`, an exact fraction of two integers. `intValueOf` and `longValueOf` throw on overflow rather than truncate. Pass the original variable object to select its entry: another variable with the same name has a different identity.
 
 | SolveStatus | Interpretation |
 |---|---|
@@ -42,6 +48,9 @@ Only `FEASIBLE` and `UNKNOWN` may have a termination other than `COMPLETED`. A l
 
 Coroutine cancellation may propagate as cancellation rather than return a result. Java future cancellation and TypeScript `AbortSignal` cancellation also cancel pending operations. Consult [Limits and cancellation](../how-to/limits-and-cancellation.md) for the calling API.
 
+Managed batch satisfaction stops at the first witness and constructs a result without the stream’s
+completion diagnostics or statistics. Consume `solutions` through `SolveCompleted` to obtain those.
+
 `SolveMetadata.messages` retains diagnostics. `statistics` maps backend-defined names to strings retaining raw JSON lexemes; it is not a portable typed statistics schema.
 
 ## Streams
@@ -51,6 +60,10 @@ Coroutine cancellation may propagate as cancellation rather than return a result
 Satisfaction enumeration is distinct by output projection. Optimization streams report improving incumbents. Exhaustive satisfaction enumeration requires the route's `ENUMERATION` capability. See [Enumerate solutions](../how-to/enumerate-solutions.md).
 
 ## Incremental CheckResult
+
+Advanced reference: a **session** retains assertions between checks; **assumptions** are assertions used only
+for one check. Read [solving modes](../explanation/solving-modes.md) and
+[use incremental sessions](../how-to/incremental-sessions.md) before using this API.
 
 | Field | Meaning |
 |---|---|
@@ -65,11 +78,18 @@ Satisfiable and unsatisfiable checks require `COMPLETED`. A core need not be min
 
 ## Store evidence
 
-Stores return `Propagation` with `StoreStatus` (`SATISFIABLE`, `CONSISTENT`, `FAILED`, `UNKNOWN`) and changed variables. Entailment returns `EntailmentResult` with `Entailment` (`ENTAILED`, `DISENTAILED`, `UNKNOWN`) and `Evidence`:
+Advanced reference: a **store** retains reversible constraints; **propagation** removes impossible domain values,
+and **entailment** asks whether the constraints force an expression to hold. Read
+[solving modes](../explanation/solving-modes.md) and [use constraint stores](../how-to/constraint-stores.md).
+
+Stores return `Propagation` with `StoreStatus` (`SATISFIABLE`, `CONSISTENT`, `FAILED`, `UNKNOWN`) and changed variables. Entailment returns `EntailmentResult` with `Entailment` (`ENTAILED`, `DISENTAILED`, `UNDETERMINED`, `UNKNOWN`) and `Evidence`:
 
 | Evidence | Meaning |
 |---|---|
 | `SATISFIABILITY` | Complete satisfiability checks establish definite answers |
 | `PROPAGATION` | Native propagation establishes sound definite answers; weak propagation may leave `UNKNOWN` |
 
-`SATISFIABLE` records a proof of satisfiability; `CONSISTENT` records a propagation fixpoint without a satisfiability proof. Unknown entailment does not establish either the expression or its negation. A failed store is known inconsistent. See [Constraint stores](../how-to/constraint-stores.md).
+`SATISFIABLE` records a proof of satisfiability; `CONSISTENT` records a propagation fixpoint—a state where the propagators cannot remove further values—without a satisfiability proof. `UNDETERMINED` proves that some store solutions satisfy the expression and some do not. `UNKNOWN` means the engine could not decide; it does not establish either the expression or its negation. A failed store is known inconsistent. See [Constraint stores](../how-to/constraint-stores.md).
+
+
+For `Assignment.of`, `empty`, projection and every typed accessor, see [Assignments](solver-api.md#assignments). For `SolutionEvent`, stream cancellation, sessions and store members, see [Kotlin solver API](solver-api.md). Exhaustive declarations are in the [generated API](/kt-constraints/api/index.html).

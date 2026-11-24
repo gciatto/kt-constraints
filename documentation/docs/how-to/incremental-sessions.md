@@ -13,10 +13,15 @@ Take a checkpoint with `push()`, add trial assertions, and restore with `popTo(c
 This example temporarily contradicts `x >= 1`, then restores the original assertions.
 Kotlin and TypeScript also check a temporary assumption and inspect its unsat core.
 
+The Kotlin examples are complete helper functions. Call a `suspend` helper from a coroutine or another
+suspending function. The shown imports also cover later Kotlin helpers on this page.
+
 === "Kotlin"
 
     ```kotlin
-    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:session"
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:imports"
+
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:session"
     ```
 
 === "Java"
@@ -31,7 +36,7 @@ Kotlin and TypeScript also check a temporary assumption and inspect its unsat co
     --8<-- "interop-js/src/test/typescript/examples/howto-session.mts:session"
     ```
 
-The Kotlin version uses `Z3Backend` and Kotest assertions; Java's `check` helper throws on
+The Kotlin version uses `Z3Backend` and standard `check`; Java's `check` helper throws on
 a wrong result. TypeScript imports `ModelBuilder`, `constant` and `loadZ3` from the
 [installed package](install.md), and runs the snippet inside a created solver's lifetime.
 Close the outer solver and loaded JS backend as well as the session.

@@ -6,10 +6,12 @@ three distinct hole indices cannot be chosen from the two values zero and one.
 ## Model
 
 These examples run in a suspending caller and use `ConstraintScope`, the Kotlin DSL, and
-`solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See
+`AutoBackend` from `:solve-auto`, which picks a bundled solver for your platform. See
 [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
 ```kotlin
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Pigeonhole.kt:imports"
+
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Pigeonhole.kt:model"
 ```
 
@@ -36,12 +38,17 @@ See [results and statuses](../../reference/results-and-statuses.md).
 
 ## Explain the conflict with an incremental session
 
-Use a backend supporting incremental checks, assumptions and unsat cores, such as Z3. `solveAuto` only
-solves in batch, so ask the platform's default registry for a backend with `INCREMENTAL_ASSERTIONS`.
+!!! note "Before this section"
+
+    Read [Use incremental sessions](../incremental-sessions.md). An **unsat core** is a sufficient
+    subset of temporary assumptions that makes the root assertions inconsistent.
+
+Use a backend supporting incremental checks, assumptions and unsat cores, such as Z3. `AutoBackend` delegates batch solving and enumeration; use its `registry` to select a route with
+`INCREMENTAL_ASSERTIONS` for sessions.
 
 Start a new, satisfiable root model containing only the variables and their domains. Express
-the three pairwise separation rules as temporary assumptions. The following executable test
-also rechecks the core and verifies that omitting any pairwise rule permits a solution:
+the three pairwise separation rules as temporary assumptions. The following application helper
+also rechecks the core and checks each subset formed by omitting one pairwise rule:
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Pigeonhole.kt:session"

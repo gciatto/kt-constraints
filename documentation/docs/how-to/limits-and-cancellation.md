@@ -10,13 +10,16 @@ some routes require a finite budget or restrict limits.
 A zero budget must not produce a feasibility claim:
 
 ```kotlin
---8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStylesSpec.kt:limits"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStyles.kt:imports"
+
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStyles.kt:limits"
 ```
 
 For Java, pass `new SolveOptions(1_000L, null)` to `solve` or `solveAsync`;
 see the [tested asynchronous optimization example](optimize.md).
 For TypeScript, the positional arguments are `solve(model, timeoutMillis?, solutionLimit?, signal?)`.
-Session checks accept a per-check timeout, rather than batch `SolveOptions`.
+A **session** retains assertions between checks; its checks accept a per-check timeout, rather
+than batch `SolveOptions`. See [incremental sessions](incremental-sessions.md).
 
 Read both the result status and termination reason. A timeout with an incumbent may be
 `FEASIBLE` with `TIMEOUT`; it is not an optimality proof. Without a witness or proof,
@@ -24,13 +27,18 @@ expect `UNKNOWN`. See [results and statuses](../reference/results-and-statuses.m
 
 ## Cancel work owned by your application
 
+The Kotlin examples are complete helper functions. Call a `suspend` helper from a coroutine or another
+suspending function. The shown imports also cover later Kotlin helpers on this page.
+
 === "Kotlin"
 
     Cancel the coroutine running `solve` or `check`, or explicitly cancel an open stream.
     Keep the solver and stream in `use` blocks. This JVM example stops after its first event:
 
     ```kotlin
-    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:cancel"
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:imports"
+
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:cancel"
     ```
 
 === "Java"
@@ -41,7 +49,7 @@ expect `UNKNOWN`. See [results and statuses](../reference/results-and-statuses.m
     --8<-- "interop-java/src/test/java/io/github/gciatto/ktconstraints/interop/examples/howto/SolverTasks.java:cancel"
     ```
 
-    This example cancels a pigeonhole refutation immediately. Its `check` helper throws
+    This example immediately cancels a search proving that 13 objects cannot occupy 12 distinct positions. Its `check` helper throws
     on a wrong result.
     Closing `BlockingSolver` cancels its pending futures and closes the solver.
     For blocking calls, interrupt the calling thread. Close `BlockingSolutionStream`
@@ -63,6 +71,12 @@ expect `UNKNOWN`. See [results and statuses](../reference/results-and-statuses.m
 A Java future wait timeout does not itself cancel that future: use the solver's time
 budget or cancel explicitly. TypeScript `Promise.race` likewise does not stop its losing
 search. When stopping a stream early, close it rather than simply abandoning it.
+
+Closing an automatic solver closes its open enumeration streams. To stop an automatic batch
+`solve` already in progress, cancel its coroutine: `close()` does not cancel that call.
+
+OR-Tools cannot interrupt its HiGHS integration. Closing returns promptly, but the native call
+may continue until its mandatory backend time limit. See [OR-Tools MIP](../explanation/backends/or-tools-mip.md).
 
 See [enumeration](enumerate-solutions.md) for completion events and
 [configuration](../reference/configuration.md) for backend-specific tuning.

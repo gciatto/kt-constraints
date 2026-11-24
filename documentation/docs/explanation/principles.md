@@ -40,6 +40,6 @@ An engine and its execution route are separate identities. CP-SAT reached direct
 
 Capabilities are separate too. Batch search, incremental assertion frames and domain propagation have different contracts. A push/pop interface does not establish that a backend can narrow domains or report propagation changes. The [solving modes](solving-modes.md) therefore use distinct APIs.
 
-Search status and termination reason answer different questions. A feasible assignment can survive a timeout, but a timeout cannot establish optimality or infeasibility. Streams distinguish solution events from their final completion event. Portfolios preserve the answering route's evidence rather than deriving a proof from several failed attempts.
+Search status and termination reason answer different questions. A feasible assignment can survive a timeout, but a timeout cannot establish optimality or infeasibility. Streams distinguish solution events from their final completion event. Automatic backends preserve the answering route's evidence rather than deriving a proof from several failed attempts.
 
 Backend declarations are checked through shared contracts in `:test-solve`, including assignment validity, execution lifecycle and capability-specific behavior. Availability and whole-model support are checked separately: an installed solver can still be unsuitable for a particular model.

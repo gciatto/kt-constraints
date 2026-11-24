@@ -1,5 +1,7 @@
 // Browser entry, served cross-origin isolated: Z3 Wasm and MiniZinc's Chuffed Wasm from the page's own origin.
+// --8<-- [start:imports]
 import { loadMiniZincBrowser, loadZ3 } from "kt-constraints-interop-js";
+// --8<-- [end:imports]
 import { check, runChecks } from "./checks.mjs";
 
 const report = (globalThis as { report?: (line: string) => void }).report ?? console.log;
@@ -12,9 +14,11 @@ try {
     } finally {
         z3.close();
     }
+    // --8<-- [start:minizinc-browser]
     // The worker loads its assets from a blob, so the URLs must be absolute.
     const asset = (name: string): string => new URL(name, location.href).href;
     const miniZinc = await loadMiniZincBrowser(asset("minizinc-worker.js"), asset("minizinc.wasm"), asset("minizinc.data"));
+    // --8<-- [end:minizinc-browser]
     check(miniZinc.id === "chuffed/minizinc-wasm", `route ${miniZinc.id}`);
     try {
         await runChecks(miniZinc, { unboundedIntegers: false, reals: false, hardAbort: false }, report);

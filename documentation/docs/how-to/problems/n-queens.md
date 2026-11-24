@@ -9,6 +9,8 @@ Use this common builder. Each variable's domain is `0 until size`; each list ind
 Distinct rows prevent horizontal attacks, and the representation prevents vertical attacks.
 
 ```kotlin
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:imports"
+
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:board"
 ```
 
@@ -32,7 +34,7 @@ Alternatively, add two inequalities for every pair of columns:
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:pairwise"
 ```
 
-Call either helper on the scope returned by `queensBoard`. The encodings describe the same legal boards;
+Inside `with(ConstraintScope.empty())`, call `queensBoard` and pass its returned rows to either helper. The encodings describe the same legal boards;
 the pairwise version adds N(N−1) diagonal inequalities. It still uses a global `allDifferent` for rows.
 The global version exposes the diagonal structure to the backend. Actual propagation and performance depend
 on the route; see [Global constraints](../../explanation/global-constraints.md).
@@ -54,8 +56,8 @@ full rotation/reflection class. Leave it out when counting all boards.
 
 ## 4. Enumerate and count complete solutions
 
-Select a backend that explicitly supports `ENUMERATION`, then consume its solution stream through the
-completion event. Keep the backend runtime, solver and stream open until consumption finishes:
+`AutoBackend` delegates enumeration to the best eligible route supporting `ENUMERATION`. Consume its solution
+stream through the completion event. Keep the backend runtime, solver and stream open until consumption finishes:
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/NQueens.kt:enumerate"

@@ -1,6 +1,6 @@
 # Tutorials
 
-Choose a language and follow one complete example. Each tutorial builds a model, runs a solver and checks the
+Contents below follow navigation order. Choose a language and follow one complete example. Each tutorial builds a model, runs a solver and checks the
 answer. You need basic familiarity with the language you choose; no solver experience is assumed.
 
 | Tutorial | Who it is for | Prerequisites | What you build |

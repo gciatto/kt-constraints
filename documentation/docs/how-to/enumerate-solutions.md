@@ -1,23 +1,31 @@
 # Enumerate solutions
 
-## 1. Use a route with enumeration support
+## 1. Use a solver with enumeration support
 
-Require `SolverCapability.ENUMERATION` when [selecting a Kotlin backend](choose-a-solver.md),
-or inspect the TypeScript backend's `capabilities`. A stream API alone does not promise
-exhaustive enumeration: optimization streams report improving incumbents, and MIP routes
-may return a satisfaction witness without enumerating every assignment.
+`AutoBackend.load().create()` can enumerate directly: `solutions(model)` delegates to the best
+eligible route declaring `SolverCapability.ENUMERATION`. The complete Kotlin example below
+includes model construction and resource cleanup. To choose a specific route instead, require
+that capability when [selecting a backend](choose-a-solver.md); TypeScript callers inspect
+the backend’s `capabilities`. A stream API alone does not promise exhaustive enumeration.
+Optimization streams can report improving incumbents; mixed-integer programming (MIP) routes
+may return only one witness or incumbent after solving.
 
 ## 2. Consume solution events and the completion event
 
 Use a satisfaction model with finite output domains when you need a finite list.
-These examples use Z3. The Kotlin version projects onto `x`, so the two full assignments
+Java and TypeScript use Z3; Kotlin uses `AutoBackend`. The Kotlin version projects onto `x`, so the two full assignments
 with `x = 0` produce one output; its results are `0` and `1`.
 Java and TypeScript enumerate an unconstrained variable over `0..2`, producing three outputs.
+
+The Kotlin examples are complete helper functions. Call a `suspend` helper from a coroutine or another
+suspending function. The shown imports also cover later Kotlin helpers on this page.
 
 === "Kotlin"
 
     ```kotlin
-    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:enumerate"
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:imports"
+
+    --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:enumerate"
     ```
 
 === "Java"
@@ -33,7 +41,7 @@ Java and TypeScript enumerate an unconstrained variable over `0..2`, producing t
     ```
 
 Kotlin imports the stream event types from `io.github.gciatto.ktconstraints.solve.stream`.
-The Kotlin assertions use Kotest. TypeScript imports `ModelBuilder` and `loadZ3` from the
+TypeScript imports `ModelBuilder` and `loadZ3` from the
 [installed package](install.md); its example runs inside a solver lifetime enclosed by
 `try/finally`, which closes both solver and backend.
 

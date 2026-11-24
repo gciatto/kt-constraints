@@ -1,7 +1,10 @@
 # Your first model in Kotlin
 
+A **route** is an engine plus its integration path; `descriptor.id` names the route that answered.
+See [engines and routes](../explanation/engines-and-routes.md) for the distinction.
+
 Solve the alphametic **SEND + MORE = MONEY**. Each letter stands for a different decimal digit; S and M cannot
-be zero. You will build a model, ask the platform's default portfolio to solve it, then add a constraint that
+be zero. You will build a model, ask the platform's automatic backend to solve it, then add a constraint that
 makes the puzzle impossible.
 
 ## 1. Prepare a Kotlin project
@@ -28,7 +31,7 @@ implementation("io.github.gciatto:kt-constraints-dsl:<version>")
 implementation("io.github.gciatto:kt-constraints-solve-auto:<version>")
 ```
 
-The DSL supplies modelling operators. The portfolio supplies `solveAuto` and the platform's default routes.
+The DSL supplies modelling operators. The `:solve-auto` module supplies `AutoBackend` and the platform's default routes.
 On JVM, the direct solvers bring their runtime dependencies; this example needs no MiniZinc installation.
 For Gradle property credentials instead of environment variables, see [Install](../how-to/install.md).
 
@@ -40,68 +43,39 @@ Create `SendMoreMoney.kt` under `src/main/kotlin`. Add these imports:
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:imports"
 ```
 
-Open a suspending function:
-
-```kotlin
---8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:entry"
-```
-
-Inside it, create the scope and eight digit variables:
-
-```kotlin
---8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:variables"
-```
-
-A `ConstraintScope` collects your declarations and constraints. Keep these variable objects: you will use them
-to read the result. The two leading letters have domain `1..9`; the others may be zero.
-
-## 3. Write the equation
-
-Continue inside the function:
+Define a model-building extension on `ConstraintScope` that returns the letters:
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:model"
 ```
 
-`allDifferent` prevents any two letters from sharing a digit. `+` and `*` construct symbolic expressions;
-`eq` constructs a symbolic equality. Kotlin's `==` compares objects and does not add a model constraint.
-`build()` captures an immutable model ready to solve.
+The scope collects declarations and constraints. Leading letters have domain `1..9`; the others may be zero.
+`allDifferent` prevents letters from sharing a digit. `+` and `*` construct symbolic expressions, and `eq`
+constructs symbolic equality. Kotlin's `==` compares objects and does not add a constraint.
 
-## 4. Solve and read the answer
+## 3. Solve and try an extra constraint
 
-Append:
+Use the extension inside `with(ConstraintScope.empty())` so the variable references remain available when
+reading assignments. `build()` captures an immutable model. Load `AutoBackend`, create its solver, and close
+both with `use`:
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:solve"
 ```
 
-`solveAuto` is suspending. It ranks compatible, available routes and tries them in order. The descriptor tells
-you which route answered. The status check makes an unexpected `UNKNOWN` or `INFEASIBLE` visible before you
-read the assignment.
+The suspending `solve` ranks compatible, available routes and tries them in order. The result descriptor
+identifies the answering route. Check the status before reading an assignment.
 
-The digits are `[9, 5, 6, 7, 1, 0, 8, 2]`: **9567 + 1085 = 10652**. `intValueOf` is safe here because every
-domain is a decimal digit. For larger integers, `valueOf` returns the exact integer; bounded conversions throw
+The digits are `[9, 5, 6, 7, 1, 0, 8, 2]`: **9567 + 1085 = 10652**. `intValueOf` is safe because the domains
+contain decimal digits. For larger integers, `valueOf` returns the exact integer; bounded conversions throw
 if the value does not fit. See [Results and statuses](../reference/results-and-statuses.md).
 
-## 5. Add a twist
+The helper then adds `D eq 6` to the same scope and solves a new snapshot. The result is `INFEASIBLE`; the
+earlier snapshot and result still describe the original puzzle. It returns the digits and final status so
+`SendMoreMoneySpec` can assert both outcomes.
 
-Require D to be 6 and solve a new snapshot:
-
-```kotlin
---8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:twist"
-```
-
-The new result is `INFEASIBLE`: no assignment satisfies the puzzle with that extra constraint. The earlier
-`model` and result still describe the original puzzle. Return the digits and final status so a test can check
-them, then close the function:
-
-```kotlin
---8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/tutorials/SendMoreMoney.kt:end"
-```
-
-Add `suspend fun main() { sendMoreMoney() }` to the same file and run its main function from your IDE. You should
-see the feasible solution first and `INFEASIBLE` last. The checked-in `SendMoreMoneySpec` runs this same path
-and asserts both outcomes.
+Add `suspend fun main() { solveSendMoreMoney() }` to the same file and run it from your IDE. The output shows
+the feasible solution followed by `INFEASIBLE`.
 
 ## Where next
 

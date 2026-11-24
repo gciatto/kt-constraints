@@ -1,5 +1,9 @@
 # Modelling language
 
+An **expression** is a symbolic operation or value; its **sort** is its value type, such as Boolean
+or integer. **Linear** expressions combine variables with constant weights; **affine** expressions
+may also add a constant. **AST** means abstract syntax tree: the expression tree stored by the model.
+
 `:core` supplies solver-independent immutable expressions, `:model` supplies snapshots and `ConstraintScope`, and `:dsl` supplies the operators below in `io.github.gciatto.ktconstraints.dsl`. A construct's presence here does not imply support by every [solver route](solvers-and-routes.md).
 
 ## Sorts, variables and constants
@@ -116,7 +120,7 @@ Shift amounts are unsigned bit-vectors. Bit-vector arithmetic wraps; ordinary in
 
 Scheduling intervals are half-open: an end may equal another start. Parallel lists must have matching lengths as required by each constructor. Globals remain abstract nodes until lowering; see [Global constraints](../explanation/global-constraints.md).
 
-`Automaton(initial, accepting, transitions)` uses non-negative integer states and exact integer symbols. Missing transitions reject; duplicate state/symbol transitions are invalid. The DSL `automaton(initial, accepting) { ... }` provides `transition(from, symbol, to)`.
+`Automaton(initial, accepting, transitions)` uses non-negative integer states and exact integer symbols. Missing transitions reject; duplicate state/symbol transitions are invalid. The DSL `automaton(initial, accepting) { ... }` provides `transition(from, on, to)`.
 
 ## Models, metadata and objectives
 
@@ -135,3 +139,67 @@ Scheduling intervals are half-open: an end may equal another start. Parallel lis
 Names must be non-blank and unique within a scope. Variable IDs encode identity; foreign variables are rejected in assertions, objectives and projections. Projection rejects duplicates. Soft constraints remain preferences unless also asserted with `add`. Built models are unaffected by later builder edits. Their `variables`, `entries`, `constraints` and `outputVariables` retain declaration, assertion and projection order. `ConstraintEntry` holds its expression and metadata. `SourceLocation(file, line = 1, column = 1)` uses a non-blank source identifier and positive, one-based positions; it does not access the filesystem.
 
 See [Optimize](../how-to/optimize.md) and the [API reference](/kt-constraints/api/index.html) for overloads and declarations.
+
+## Expression interfaces and identity
+
+An **expression** is an immutable calculation or condition. Its **sort** identifies the kind of value it produces. `Expr.sort`, `children` and `variables` expose the value kind, ordered immediate operands and free variables in first-occurrence order. Extension nodes must expose their operands through `children` so traversal and ownership checks see them.
+
+| Interface | Value kind and important members |
+|---|---|
+| `BoolExpr` | Boolean expression; `sort` is `Sort.Bool` |
+| `IntExpr` | Mathematical integer expression; `sort` is `Sort.Integer` |
+| `RealExpr` | Exact real expression; `sort` is `Sort.Real`; built-in arithmetic is linear and ground values remain rational |
+| `BitVecExpr` | Fixed-width expression; positive `width` determines `Sort.BitVector(width)` |
+| `Variable` | Expression with semantic `id` and display `name`; its free-variable set contains itself |
+| `VariableId` | Identity tied to an owner plus declaration `index`; the same index from another owner is a different identity |
+| `Domain` | Allowed value space; `isFinite` reports finiteness |
+
+`VariableFactory.empty()` creates an independent identity owner. Its `boolVar`, `intVar(name, domain)`, `realVar` and `bitVecVar` create fresh variables for tools such as incremental sessions. For ordinary models, use `ConstraintScope` so declarations, assertions and projections are validated together. Factory-created variables do not automatically belong to a model scope.
+
+`ConstraintModel.objective` is null for satisfaction or an `Objective.Minimize`/`Objective.Maximize` carrying `expression`. Its `variables`, `entries`, `constraints` and `outputVariables` are detached lists. `ConstraintEntry.expression`, `name`, `annotations` and `source` preserve assertion metadata; annotation keys are sorted. `ConstraintScope.add`, objective setters, `satisfy` and `project` return the builder for chaining.
+
+## Numeric and global helper details
+
+| API | Members and semantics |
+|---|---|
+| `IntDomain` | `intervals`, nullable `min`/`max`, `isEmpty`, exact `cardinality`, `isFinite = true`, membership via `contains`, `union` and `intersect` |
+| `IntInterval(min, max)` | Non-empty inclusive interval; rejects reversed bounds |
+| `Rational` | Normalized `numerator` and positive `denominator`, `isInteger`, exact `plus`, `minus`, `times`, `unaryMinus` and comparison; `ZERO` and `ONE` constants. Text output is an integer or `p/q`; parsing rejects exponent notation |
+| DSL `unaryMinus` | Kotlin `-expression` builds `IntNegation` or `RealNegation`; it does not solve or mutate the operand |
+| `BitVecOperator` | Operation selector for `BitVecBinary`: arithmetic, bitwise and shift values listed above |
+| `BitVecRelation` | Relation selector for `BitVecComparison`: equality and signed/unsigned ordering listed above |
+| `CardinalityRelation` | `AT_MOST`, `EXACTLY`, `AT_LEAST` compare `BoolCardinality`'s number of true operands with its `count` |
+| `Transition(from, symbol, to)` | An automaton edge: read exact integer `symbol` in source state `from`, then enter state `to` |
+| `AutomatonBuilder` | Receiver of `automaton(initial, accepting) { ... }`; `transition(from, on, to)` accepts a `Long` or `BigInteger` symbol |
+| `Automaton` | Immutable `initial`, `accepting` and `transitions`; `states` is the largest mentioned state plus one; `next(state, symbol)` returns the next state or null for a missing edge |
+| `DecomposableConstraint.decomposition` | Equivalent Boolean formula over the same operands, without introducing variables |
+| `DecomposableConstraint.decompose(auxiliaries)` | Top-level equivalent formula that may introduce hidden variables from a `VariableFactory`; those variables mean “there exist values”. Do not substitute this form under arbitrary Boolean negation |
+
+### Worked shift-sequence rule
+
+An **automaton** reads symbols one at a time and follows transitions between states. Here symbol
+`0` means rest and `1` means work. State `0` means the previous day was rest (or no day has been
+read); state `1` means it was work. Both states are **accepting states**, where a sequence may end.
+There is no transition from state `1` on symbol `1`, so consecutive working days are rejected.
+`regular` connects this rule to the integer sequence variables.
+
+The Kotlin examples are complete helper functions. Call a `suspend` helper from a coroutine or another
+suspending function. The shown imports also cover later Kotlin helpers on this page.
+
+```kotlin
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStyles.kt:imports"
+
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStyles.kt:regular"
+```
+
+The tested `1, 0, 1` sequence is feasible; `1, 1, 0` is infeasible. The `automaton` receiver is an
+`AutomatonBuilder`; `transition(from, on, to)` declares one deterministic step. Missing transitions
+reject the sequence. See [nurse rostering](../how-to/problems/nurse-rostering.md) for coverage and preferences.
+
+## Evaluation and traversal
+
+A **valuation** binds variables to concrete values. `Valuation.valueOf` overloads return Boolean, exact integer, rational or unsigned bit-vector values, with null for absent bindings; the real and bit-vector overloads default to null. `Assignment` implements this interface for solver answers; see [Kotlin solver API](solver-api.md#assignments).
+
+`GroundEvaluator.evaluate(expression)` calculates built-in constant expressions without search. The overload with a `Valuation` evaluates expressions with variables and requires every referenced binding; integer bindings must lie in their domains and bit-vector bindings must fit their widths. It returns `Boolean`, `BigInteger` or `Rational` according to the expression interface. It rejects unknown extension nodes and missing/invalid bindings. An out-of-range `Element` index throws `UndefinedExpressionException`, an `IllegalArgumentException` subtype: no value is defined for that input.
+
+The extension `Expr.fold(combine)` visits operands before their parent and supplies the ordered child results to `combine`. It visits shared subtrees once per occurrence, using an explicit stack rather than recursive calls. Use it for structural analyses or translations; it does not search for assignments.

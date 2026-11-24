@@ -1,5 +1,9 @@
 # Solvers and routes
 
+Check three independent things: **capabilities** describe the kinds of operations a route offers;
+**availability** checks whether its runtime can run here; **support** checks whether it can represent
+the entire model and requested options. See [Kotlin solver API](solver-api.md).
+
 `SolverDescriptor.id` is `engine/route`. Its capabilities describe an adapter's operations, independently of runtime availability and whole-model support. `SolverBackend.availability()` probes the runtime; `support(model, options)` returns unsupported constructs and required lossless decompositions. A compatible model must pass all three checks.
 
 ## Batch and incremental routes
@@ -24,11 +28,26 @@ In this table, **base** means `SATISFACTION`, `OPTIMIZATION`, `INTEGER_ARITHMETI
 | `chuffed/minizinc-wasm` | `MiniZincJsBackend.loadBrowser(...)`, Chuffed browser runtime | Browser | Base + `ENUMERATION` |
 | `kotlin/direct` | `KotlinBackend`, pure-Kotlin engine, experimental and unpublished | Common code: JVM, JS, Native | Base + SMT + `ENUMERATION` |
 
-`ENUMERATION` denotes exhaustive projected satisfaction enumeration. A route without it can still expose a stream containing a witness or improving optimization incumbents. Stream presence alone does not imply exhaustive enumeration.
+`ENUMERATION` denotes projected satisfaction enumeration: finite projected domains can be exhausted, while real-valued outputs may produce an endless stream of distinct rational witnesses. A route without it can still expose a stream containing a witness or improving optimization incumbents. Stream presence alone does not imply exhaustive enumeration.
 
 No batch descriptor advertises `DOMAIN_PROPAGATION` or `ENTAILMENT`. Those belong to the separate store interface. `ChocoStore` uses the same `choco/direct` ID with a store-specific descriptor. It advertises `INCREMENTAL_ASSERTIONS`, `BACKTRACKING`, `DOMAIN_PROPAGATION`, `ENTAILMENT`, `INTEGER_ARITHMETIC` and `GLOBAL_CONSTRAINTS`, with `PROPAGATION` evidence. `SatisfiabilityStore` wraps an incremental solver and answers entailment by satisfiability checks; it reports `SATISFIABILITY` evidence and does not narrow domains by propagation.
 
-When a portfolio has no answer, it returns `UNKNOWN` with synthetic descriptor `portfolio/fallback` or `portfolio/race` (empty capability set). Successful portfolio results retain the answering backend's descriptor; these synthetic IDs are not selectable backend registrations.
+`AutoBackend` has the descriptor `auto/fallback` or `auto/race`, advertising the batch capabilities that at least one of its routes declares. When no route is eligible, its solver throws `UnsupportedModelException`. When eligible attempts produce no answer, it returns `UNKNOWN` with that descriptor. Successful results retain the answering route's descriptor.
+
+## Concrete backend entry points
+
+All backend classes implement `availability`, `support`, `create`, `isAvailable` and `descriptor` through the [backend contract](solver-api.md#backends-capabilities-and-availability).
+
+| Entry point | Additional public surface |
+|---|---|
+| `Z3Backend()`, `Z3NativeBackend(libraryPath)` | `create()` returns `IncrementalConstraintSolver`; companion `DESCRIPTOR` identifies the route before creating a solver |
+| `Z3JsBackend.load()` | Suspending loader; `create()` returns `IncrementalConstraintSolver`. `DESCRIPTOR` identifies `z3/wasm`; idempotent `close()` closes created solvers and terminates runtime workers |
+| `CpSatBackend(workers, seed)` | Readable `workers` and `seed` defaults; companion `DESCRIPTOR` identifies `cp-sat/direct` |
+| `ChocoBackend()` | Companion `DESCRIPTOR` identifies batch `choco/direct` |
+| `ChocoStore()` | Companion `DESCRIPTOR` identifies its separate store capabilities under `choco/direct`; operations follow the [store contract](solver-api.md#constraint-stores) |
+| `OrToolsMipBackend.scip()`, `.highs(solveLimitMillis)` | `SCIP` and `HIGHS` companion descriptors; `solveLimitMillis` is null for interruptible SCIP and the required positive engine limit for HiGHS |
+
+The route settings are listed in [Configuration](configuration.md). A descriptor constant is metadata, not a runtime availability probe.
 
 ## Checked numeric subsets
 
@@ -67,3 +86,22 @@ The JVM default registry contains CP-SAT, Choco, Z3, SCIP and HiGHS (60,000 ms b
 HiGHS through OR-Tools cannot be interrupted by OR-Tools: its constructor requires a positive per-solve limit. Closing returns promptly, but an abandoned engine call may run until that limit. MiniZinc JS permits one owning backend at a time; close it before loading another.
 
 `:solve-highs` and `:solve-flatzinc` are reserved modules, not implemented routes. Native MiniZinc execution is not implemented. See [Platform availability](platform-availability.md), [Configuration](configuration.md), [Choose a solver](../how-to/choose-a-solver.md) and [Engines and routes](../explanation/engines-and-routes.md).
+
+
+## MiniZinc compilation API
+
+`MiniZincCompiler(engine = MiniZincEngine.GECODE)` translates a model to deterministic MiniZinc source without starting a process. Use `support(model, options)` to inspect rejections, or `compile(model, options)` to obtain a `MiniZincModel`; unsupported inputs throw `UnsupportedModelException`. The engine argument selects the checked numeric subset as well as the target configuration.
+
+| `MiniZincModel` member | Meaning |
+|---|---|
+| `model` | Original `ConstraintModel`, retained for full-assignment validation |
+| `source` | Executable MiniZinc text |
+| `engine` | Engine contract used during compilation |
+| `sourceVariables` | Stable `v0`, `v1`, … identifiers mapped to source variables in declaration order |
+| `close()` | No operation: this immutable representation owns neither processes nor temporary files |
+
+`MiniZincEngine` exposes `engineId`, `configurationId`, `maximumInteger`, `isMip` and `descriptor`. `isMip` identifies affine, non-enumerating mixed integer programming routes (HiGHS and CBC). The configuration and bounds tables above list each enum value.
+
+On the JVM, `MiniZincBackend(engine, executable)` probes that explicit configuration and creates its solver. `MiniZincGecodeBackend(executable = "minizinc")` is a compatibility entry point delegating to the Gecode configuration; it never substitutes another engine. `MiniZincJsBackend.engine` identifies the checked subset selected by `loadNode` or `loadBrowser`; its `close()` cancels active streams and releases its runtime after they exit. See [Configuration](configuration.md) for `MiniZincOptions` and [Use MiniZinc](../how-to/use-minizinc.md) for execution.
+
+The common [Kotlin solver API](solver-api.md) explains lifecycle, descriptors, support reports and automatic selection. Backend implementers can consult [Backend SPI](spi.md) and the [generated API](/kt-constraints/api/index.html).

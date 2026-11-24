@@ -36,7 +36,7 @@ Constraint stores extended the library beyond fixed-model search. `Satisfiabilit
 
 ## Selection and a richer modelling language
 
-Feature extraction and explained weighted ranking made route preference inspectable. Platform bundles, `solveAuto`, sequential fallback and bounded races built on the same eligibility checks. Portfolios retained a backend's own proof status and reported failed attempts as diagnostics.
+Feature extraction and explained weighted ranking made route preference inspectable. Platform bundles, `AutoBackend`, sequential fallback and bounded races built on the same eligibility checks. Portfolios retained a backend's own proof status and reported failed attempts as diagnostics.
 
 Structural globals expanded to routing, automata, scheduling and packing. Native forms and exact decompositions supported the same abstract nodes across routes. The distinction between variable-free nested formulas and top-level auxiliary-variable encodings preserved meaning under Boolean connectives. Typed backend options added route-specific tuning without putting solver settings into the model itself.
 
@@ -68,7 +68,7 @@ Release configuration adopted GitHub Packages for Maven and npm artifacts and re
 | Constraint stores | Implemented, restricted | Choco native propagation on JVM and a generic satisfiability store over incremental solvers; sound non-exact residuals and non-minimal explanations |
 | Java and TypeScript facades | Implemented | Real language-boundary tests; facade surfaces differ from the full Kotlin API |
 | C facade | Implemented, restricted | Shared library for desktop targets; integer/Boolean modelling and batch solving through the Native defaults |
-| Automatic selection and portfolios | Implemented | Explicit platform bundles, eligibility checks, explained heuristics, fallback and races; no automatic inclusion of Kotlin or browser MiniZinc |
+| Automatic selection (`AutoBackend`) | Implemented | Explicit platform bundles, eligibility checks, explained heuristics, fallback and races; no automatic inclusion of Kotlin or browser MiniZinc |
 | Benchmark-informed ranking | Partial | Recorded measurements and an experimental evidence interface; no timing dataset in the default policy |
 | Pure-Kotlin route | Experimental | Source implementation and shared-contract coverage; unpublished and opt-in |
 | Platform reach | Partial | JVM, Kotlin/JS and desktop Native integrations; iOS compilation does not provision Z3; Kotlin/Wasm targets await dependencies and binding work |
@@ -78,4 +78,4 @@ Release configuration adopted GitHub Packages for Maven and npm artifacts and re
 | Broader theories and optimization | Planned | Arrays, strings, sets, uninterpreted symbols, quantifiers, richer bit-vector operations and real objectives are outside the current model API |
 | External logic-engine adapters | Planned outside this repository | Store primitives exist; no bundled logic runtime or 2p-Kt adapter |
 
-For current route constraints, consult [solvers and routes](../reference/solvers-and-routes.md) and [platform availability](../reference/platform-availability.md). The [benchmark reference](../reference/benchmarks.md) describes recorded performance evidence; [automatic selection](automatic-solver-selection.md) distinguishes those observations from the shipped policy.
+For current route constraints, consult [solvers and routes](../reference/solvers-and-routes.md) and [platform availability](../reference/platform-availability.md). The [benchmark reference](../reference/benchmarks.md) describes recorded performance evidence; [automatic selection](backends/selection.md) distinguishes those observations from the shipped policy.

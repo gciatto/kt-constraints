@@ -4,25 +4,31 @@ Fill each blank so that every row, column and box contains each digit once. Use 
 
 ## 1. Build the model
 
-Use `:dsl` for the operators. The examples solve with `solveAuto` from `:solve-auto`, which picks a bundled solver for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
+Use `:dsl` for the operators. The examples solve with `AutoBackend` from `:solve-auto`, a backend that picks among the solvers bundled for your platform. See [Install](../install.md) for the dependencies and [Choose a solver](../choose-a-solver.md) to pick one yourself.
 
-Imports used by the example and its test:
+Imports used by the example:
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Sudoku.kt:imports"
 ```
 
-Create one variable per cell, constrain the three families of groups with `allDifferent`, and post each nonzero given.
+Write the model as an extension of `ConstraintScope`: create one variable per cell, constrain the three families of groups with `allDifferent`, post each nonzero given, and return the cells so the caller can read the solution.
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Sudoku.kt:model"
+```
+
+The givens list the grid row by row:
+
+```kotlin
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/SudokuSpec.kt:givens"
 ```
 
 Domains `1..4` and four distinct cells force each group to be a permutation of the digits. Keep `allDifferent` as a global node so the selected backend can lower it; pairwise inequalities express the same rule but lose that explicit structure.
 
 ## 2. Solve and read the result
 
-This is a satisfaction problem: leave the objective unset. The example checks `FEASIBLE` and prints the grid; it does not enumerate completions or prove uniqueness.
+This is a satisfaction problem: leave the objective unset. The example builds the model in a fresh scope, solves it with the automatic backend, checks `FEASIBLE` and prints the grid; it does not enumerate completions or prove uniqueness.
 
 ```kotlin
 --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/problems/Sudoku.kt:solve"

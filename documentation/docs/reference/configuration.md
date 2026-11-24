@@ -22,6 +22,7 @@ Execution preferences are separate from model constraints. A route may reject a 
 | `MipOptions` | `threads: Int? = null` (positive when set); `relativeGap: Double? = null` (non-negative when set). A positive gap prevents reporting `OPTIMAL` |
 | `OrToolsMipBackend.scip()` | Interruptible OR-Tools SCIP route |
 | `OrToolsMipBackend.highs(solveLimitMillis)` | Required positive backend limit; OR-Tools cannot interrupt this engine call |
+| `MiniZincOptions` | `randomSeed: Long? = null`, `threads: Int? = null` (positive when set), `freeSearch: Boolean = false`; applied by JVM routes; JS routes do not apply this tuning yet |
 | `MiniZincBackend(engine, executable = "minizinc")` | Explicit engine configuration and executable path/name |
 | `MiniZincJsBackend.loadNode(executable = "minizinc")` | Installed Gecode CLI |
 | `MiniZincJsBackend.loadBrowser(workerURL, wasmURL, dataURL)` | Explicit absolute URLs of MiniZinc browser assets; Chuffed |
@@ -32,12 +33,16 @@ Execution preferences are separate from model constraints. A route may reject a 
 
 `KotlinConfiguration` defaults: `maxBitWidth = 16_384`, `maxVariables = 1_000_000`, `maxClauses = 4_000_000`, `workLimit = null`. Size limits must be positive; a work limit may be zero. Work spans compilation and arithmetic checks as well as search. These are not a total-memory guarantee.
 
+`MiniZincOptions.arguments(engine)` returns driver flags: seed `-r` (omitted for CBC), threads `-p`, and free search `-f`, which lets the engine ignore search annotations. Defaults produce no tuning flags.
+
+`BackendOptions` is the common tuning marker. Each route reads its own implementation and ignores unrelated tuning, so one `SolveOptions` can tune several automatic candidates. For resource ownership and solver calls, see [Kotlin solver API](solver-api.md).
+
 ## Runtime environment
 
 | Variable | Read by | Meaning |
 |---|---|---|
 | `KT_CONSTRAINTS_Z3_LIBRARY` | Native Z3 loader | Non-empty path to the Z3 shared library. Otherwise use `libz3.so` on Linux, `libz3.dll` on Windows, `libz3.dylib` on other configured desktop systems, through the platform loader path |
-| `MINIZINC_EXECUTABLE` | JVM/Node portfolio default loaders and runtime tests | Explicitly enables default MiniZinc registration and identifies the executable; constructing a backend directly uses its constructor argument |
+| `MINIZINC_EXECUTABLE` | JVM/Node `AutoBackend.load()` and runtime tests | Explicitly enables default MiniZinc registration and identifies the executable; constructing a backend directly uses its constructor argument |
 | `MINIZINC_ENGINES` | JVM integration suites | Comma-separated requested engines: `gecode,chuffed,cp-sat,highs,cbc`; requested engines must run successfully |
 | `MINIZINC_BROWSER_TEST` | MiniZinc browser test task | Presence enables real browser tests |
 | `Z3_BROWSER_TEST` | Z3 browser test task | Presence enables real browser tests |
@@ -50,13 +55,13 @@ Native Z3 loads one library per process; changing paths after loading is rejecte
 
 | Variable(s) | Scope |
 |---|---|
-| `BENCHMARK_SCALE`, `BENCHMARK_CSV` | Portfolio JVM catalogue scale (default 1) and optional CSV output file |
+| `BENCHMARK_SCALE`, `BENCHMARK_CSV` | `:solve-auto` JVM catalogue scale (default 1) and optional CSV output file |
 | `BENCHMARK_SCALES`, `BENCHMARK_SEEDS`, `BENCHMARK_FAMILIES` | Pure-Kotlin JVM family runner; defaults are scales `4 6`, 5 seeds, all families |
 | `MINIZINC_BENCHMARK_ENGINE` | MiniZinc phase runner, default `gecode` |
 | `STORE_BENCHMARK_QUEENS` | Store benchmark size |
 | `KT_CONSTRAINTS_PLATFORM_BENCHMARK` | Opt in to the pure-Kotlin cross-platform catalogue |
 | `KT_CONSTRAINTS_PLATFORM_BENCHMARK_SCALES`, `KT_CONSTRAINTS_PLATFORM_BENCHMARK_SEEDS` | Pure-Kotlin platform scales (default `4 6`) and seed count (default 3) |
-| `KT_CONSTRAINTS_ROUTE_BENCHMARK` | Opt in to the portfolio cross-platform route catalogue |
+| `KT_CONSTRAINTS_ROUTE_BENCHMARK` | Opt in to the `:solve-auto` cross-platform route catalogue |
 | `KT_CONSTRAINTS_ROUTE_BENCHMARK_SCALES` | Scales, default `1 2 3` |
 | `KT_CONSTRAINTS_ROUTE_BENCHMARK_SEEDS` | Seed count, default 3 |
 | `KT_CONSTRAINTS_ROUTE_BENCHMARK_TIMEOUT` | Milliseconds, default 10000 |

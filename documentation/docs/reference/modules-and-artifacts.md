@@ -16,7 +16,7 @@ All modules below are included by `settings.gradle.kts`. Publication eligibility
 | `:solve-cpsat` | Direct OR-Tools CP-SAT adapter | JVM | Yes | `io.github.gciatto:kt-constraints-solve-cpsat` |
 | `:solve-mip` | MIP lowering; SCIP and HiGHS through OR-Tools | Portable IR; JVM execution | Yes | `io.github.gciatto:kt-constraints-solve-mip` |
 | `:solve-minizinc` | MiniZinc compiler/decoder and runtime adapters | Portable IR; JVM and JS execution | Yes | `io.github.gciatto:kt-constraints-solve-minizinc` |
-| `:solve-auto` | Automatic selection, fallback/race portfolios and default registries | Portable | Yes | `io.github.gciatto:kt-constraints-solve-auto` |
+| `:solve-auto` | `AutoBackend`: automatic selection over the default routes, fallback/race strategies | Portable | Yes | `io.github.gciatto:kt-constraints-solve-auto` |
 | `:solve-kotlin` | Experimental pure-Kotlin solver and incremental sessions | Portable | No | — |
 | `:solve-flatzinc` | Reserved module; no backend implementation | Portable declarations only | No | — |
 | `:solve-highs` | Reserved direct HiGHS adapter; implemented route is in solve-mip | Portable declarations only | No | — |

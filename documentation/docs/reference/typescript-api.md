@@ -76,3 +76,19 @@ Value accessors require variables, not compound expressions. Outcome wrappers do
 `Store` offers `id`, `isFailed`, `intVar`, `boolVar`, `realVar`, `constrain`, `mark`, `undoTo`, `entails`, `explain`, `domain`, `fork` and `close`. Posting, entailment and explanation return promises and accept timeout/signal arguments. `StorePropagation` has `status` and changed integer expressions; `EntailmentAnswer` has `value` and `evidence` strings. `domain(variable)` returns inclusive `[min, max]` intervals as arrays of `bigint` pairs. Z3 stores use satisfiability checks, so declared domains are not narrowed by propagation. Forks close separately. Store residual projection is not exported.
 
 The actual package boundary is checked by `tsc --strict`, Node consumers in `interop-js/src/test/typescript/node.mts`, and Chromium consumers in `browser.mts`. See [Sudoku from TypeScript](../tutorials/typescript-sudoku.md) and [Scheduling in the browser](../tutorials/browser-scheduling.md).
+
+
+## Opaque tokens and value wrappers
+
+| Export | How to use it |
+|---|---|
+| `Checkpoint` | Token returned by `Session.push()` and accepted by that session's `popTo`; it has no public constructor or inspectable state |
+| `Mark` | Token returned by `Store.mark()` and accepted by that store's `undoTo`; rolling back invalidates it and newer marks. It has no public constructor or inspectable state |
+| `StorePropagation.status`, `changed` | Store status string and array of integer variable wrappers whose domains shrank; Z3 stores do not propagate, so the array is empty |
+| `EntailmentAnswer.value` | `ENTAILED`, `DISENTAILED`, `UNDETERMINED` or `UNKNOWN`; `UNDETERMINED` is a proved mixture of satisfying and non-satisfying solutions |
+| `EntailmentAnswer.evidence` | `SATISFIABILITY` or `PROPAGATION`; the exported Z3 store uses `SATISFIABILITY` |
+| `SolutionEvent.solution`, `outcome` | Nullable fields distinguishing solution events from the single terminal outcome |
+
+Construct models through `ModelBuilder.build()` and obtain `Backend`, `Solver`, `Session`, `Store`, `Outcome`, `CheckOutcome` and `Solution` from their loaders or operations; their wrapper constructors are internal. `Model` itself exposes no public inspection members. Model builders remain mutable, while each built snapshot is independent of later edits.
+
+The facade's `AbortSignal` type describes the standard DOM/Node cancellation object: `aborted` and `addEventListener` for the `abort` event. Supply an `AbortController.signal` to supported promise operations. This type is a bridge to the host signal, not a separate cancellation service. Reference declarations are available in the generated package `.d.mts` file; Kotlin declarations are in the [generated API](/kt-constraints/api/index.html).

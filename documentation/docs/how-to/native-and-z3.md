@@ -29,14 +29,15 @@ Z3 is loaded at run time rather than linked into the executable.
 ## 3. Run your common model
 
 Use the [tested common optimization example](optimize.md). Its Kotlin code calls
-`solveAuto`, whose Native default registry contains `Z3NativeBackend`, route `z3/native`.
+`AutoBackend.load()`, whose Native registry contains `Z3NativeBackend`, route `z3/native`.
 Inspect `result.descriptor.id` to identify the answering route. Keep the call in a suspend
 context; use your application's coroutine entry point.
 
 For explicit route control, construct `Z3NativeBackend` from
 `io.github.gciatto.ktconstraints.solve.z3` in a Native source set. Check `availability()`
 and `support(model, options)` before creating the solver, and keep the solver in `use`.
-The API then supports batch solving, enumeration and
+Optional follow-up operations: an incremental session keeps assertions between satisfiability checks;
+a store lets your application post constraints and undo branches. The API supports batch solving, enumeration and
 [incremental sessions](incremental-sessions.md). Use
 `SatisfiabilityStore.of(backend.create())` for satisfiability-based
 [stores](constraint-stores.md); these do not propagate narrower domains.
@@ -46,7 +47,8 @@ The API then supports batch solving, enumeration and
 Read `availability.reason`: it includes library-loading or startup-probe failures.
 Check the absolute path, architecture and dependent libraries. A successful load must also
 pass the startup check. An unavailable route is not evidence that the model is infeasible;
-automatic selection can return `UNKNOWN` with diagnostic messages when no route answers.
+automatic selection throws `UnsupportedModelException` when no route is eligible. If eligible
+attempts produce no answer, it returns `UNKNOWN` with diagnostic messages.
 
 In this repository, run the Native tests with the same environment:
 

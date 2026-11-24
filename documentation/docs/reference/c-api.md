@@ -50,3 +50,6 @@ Every non-null string returned from Kotlin must be released with `DisposeString`
 Native Z3 loads at runtime from `KT_CONSTRAINTS_Z3_LIBRARY` or the loader path. The library filename defaults to `libz3.so`, `libz3.dylib` or `libz3.dll`, depending on the host. Only one Z3 library can be loaded per process. See [Configuration](configuration.md).
 
 The compiled C boundary check is `interop-c/src/nativeUsageTest/c/usage.c`; `:interop-c:nativeUsageTest` builds it with `cc -Wall -Werror` and runs it. CI executes the C consumer on Linux and macOS; Windows release asset generation is configured separately. See [Assignment from C](../tutorials/c-assignment.md) and [Platform availability](platform-availability.md).
+
+
+For exhaustive Kotlin facade declarations, see the [generated API](/kt-constraints/api/index.html); use the generated `libktconstraints_api.h` from the matching build for C signatures and ABI names.

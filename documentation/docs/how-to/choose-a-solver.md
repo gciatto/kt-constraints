@@ -17,9 +17,9 @@ numeric ranges and individual operations can still make the model unsupported.
 
 ## 2. Check availability and support
 
-For automatic batch selection, call `solveAuto(model)` from
-`io.github.gciatto.ktconstraints.solve.auto`. It loads the platform's default routes,
-ranks eligible ones and tries them under a shared time budget. Inspect the result's
+For automatic batch selection, use `AutoBackend` from `io.github.gciatto.ktconstraints.solve.auto`
+like any other backend: `AutoBackend.load()` registers the platform's default routes, and its
+solvers rank eligible ones and try them under a shared time budget. Inspect the result's
 `descriptor.id` and `metadata.messages` to see who answered and why routes were skipped.
 On JS, asynchronous runtime initialization happens before ranking and can throw; handle
 loading failures as well as returned result statuses.
@@ -27,8 +27,13 @@ loading failures as well as returned result statuses.
 To control the candidate set or require a capability, use an explicit registry. This JVM
 example requires enumeration before selecting a backend:
 
+The Kotlin examples are complete helper functions. Call a `suspend` helper from a coroutine or another
+suspending function. The shown imports also cover later Kotlin helpers on this page.
+
 ```kotlin
---8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasksSpec.kt:selection"
+--8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:imports"
+
+--8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:selection"
 ```
 
 `selection.rejections` gives reasons for rejected routes. `selection.best` fails if no
@@ -43,11 +48,12 @@ runtime or support failures; the facade does not expose the Kotlin registry.
 
 ## 3. Decide whether to try multiple routes
 
-Use `Portfolio(registry).fallback(...)` to try ranked candidates sequentially. It moves
-on after `UNKNOWN` or failure, but returns an available feasible result. Use
-`Portfolio(registry).race(...)` to run several candidates concurrently, subject to
-`parallelism`; a proof stops the others. A race can retain a feasible optimization
-incumbent without calling it optimal.
+Build an `AutoBackend` over the routes you want and use it like any other backend.
+`AutoBackend(listOf(...))`, or `AutoBackend.load()` for the routes bundled with your platform,
+defaults to `AutoStrategy.Fallback`: it tries ranked candidates sequentially, moving on after
+`UNKNOWN` or failure, but returns an available feasible result. With `AutoStrategy.Race(parallelism)`
+it runs several candidates concurrently; a proof stops the others. A race can retain a feasible
+optimization incumbent without calling it optimal. Pass a `RankingPolicy` to change the order.
 
-See [automatic selection](../explanation/automatic-solver-selection.md) for ranking and
+See [automatic selection](../explanation/backends/selection.md) for ranking and
 evidence rules. Neither a missing runtime nor exhausted fallback attempts proves infeasibility.

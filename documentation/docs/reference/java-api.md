@@ -50,3 +50,8 @@ Stores are single-consumer: do not overlap operations, including pending futures
 Results use the ordinary Kotlin getter names (`getStatus`, `getAssignment`, `getObjectiveValue`, `getBestBound`, `getTerminationReason`). See [Results and statuses](results-and-statuses.md).
 
 The boundary checks live in `interop-java/src/test/java/io/github/gciatto/ktconstraints/interop/JavaUsage.java` and its Kotest caller. For a guided example, see [Knapsack from Java](../tutorials/java-knapsack.md); for declarations, see the [API reference](/kt-constraints/api/index.html).
+
+
+`BlockingSolutionStream.hasNext()` can block while the engine searches; it retains a lookahead event for `next()`. `next()` throws `NoSuchElementException` after the terminal event has been consumed. Thread interruption cancels the read. The iterator has one consumer.
+
+The facade reuses Kotlin `SolveOptions`, `Assignment`, `CheckResult`, `Checkpoint`, `StoreMark`, `Propagation`, `EntailmentResult` and `Residual`; their members and ownership rules are listed in [Kotlin solver API](solver-api.md). There is no separate Java status or assignment class. `JavaNumbers` methods are static, and the blocking wrapper factories are the entry points rather than public wrapper constructors.

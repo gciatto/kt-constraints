@@ -9,16 +9,21 @@ Use `ConstraintModel.of { }` when the model fits a receiver block. Import the re
 operators from `io.github.gciatto.ktconstraints.dsl`; use symbolic `eq` for a constraint.
 Kotlin `==` tests object equality.
 
+The Kotlin examples are complete helper functions. Call a `suspend` helper from a coroutine or another
+suspending function. The shown imports also cover later Kotlin helpers on this page.
+
 ```kotlin
---8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStylesSpec.kt:receiver"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStyles.kt:imports"
+
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStyles.kt:receiver"
 ```
 
-Use `ConstraintScope.empty()` and `build()` when you need to retain variable references for
+Use `with(ConstraintScope.empty()) { ... }` and `build()` when you need to retain variable references for
 reading assignments, or assemble the model across several functions. You can construct
-expression nodes explicitly without operator imports:
+expression nodes explicitly:
 
 ```kotlin
---8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStylesSpec.kt:factories"
+--8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/ModelStyles.kt:factories"
 ```
 
 Here `IntEquality`, `IntSum` and `IntLiteral` come from the core expression packages; both
@@ -40,9 +45,13 @@ builder changes.
 
 ## Choose how the solver runs
 
+A **session** keeps assertions between checks and can remove tentative assertions on rollback. A **store**
+lets the application choose branches and restore earlier states. **Entailment** asks whether current
+constraints force an expression to hold. See [solving modes](../explanation/solving-modes.md).
+
 | Task | Kotlin | Java | TypeScript |
 | --- | --- | --- | --- |
-| One satisfaction or optimization result | Suspending `solve`, or `solveAuto` | Blocking `solve`, or `solveAsync` returning `CompletableFuture` (also a `CompletionStage`) | `solve` returning `Promise<Outcome>` |
+| One satisfaction or optimization result | Suspending `solve` on a backend solver, including `AutoBackend` | Blocking `solve`, or `solveAsync` returning `CompletableFuture` (also a `CompletionStage`) | `solve` returning `Promise<Outcome>` |
 | Stream solutions | `SolutionStream.next()` suspends | Closeable `BlockingSolutionStream` iterator | `for await` over `solver.solutions(...)` |
 | Repeated checks with reversible assertions | `IncrementalSession` | `BlockingSession`, with blocking and future methods | Session with Promise-based `check` |
 | Application-owned branching and entailment | `ConstraintStore` | `BlockingStore`, with blocking and future methods | Store with Promise-based posts and entailment |

@@ -52,7 +52,7 @@ Make explicitly requested runtime tests fail if their engine is missing. Verify 
 
 ## 5. Register deliberately and document availability
 
-Registration is explicit: use `SolverRegistry.of(backends)` or add a proven route to the appropriate platform's `DefaultBackends.load()`. There is no classpath discovery. Duplicate route IDs are rejected. Registry ranking filters capabilities, availability and whole-model support without creating a solver; ties preserve registration order.
+Registration is explicit: use `SolverRegistry.of(backends)` or `AutoBackend(backends)`, or add a proven route to the platform defaults of `AutoBackend.load()` (`DefaultBackends` in `:solve-auto`). There is no classpath discovery. Duplicate route IDs are rejected. Registry ranking filters capabilities, availability and whole-model support without creating a solver; ties preserve registration order.
 
 Keep any loaded JS/native runtime owner alive for the selected solver lifetime. Do not register test fakes or claim a route is usable solely because its module compiles. Add real-engine CI coverage and update availability documentation to match it. A backend implementation, a registry entry and a publication are distinct changes.
 
