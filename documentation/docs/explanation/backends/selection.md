@@ -14,7 +14,7 @@ This walkthrough follows `SolverRegistry.rank`, `ModelFeatures`, `Heuristics`, `
 | JS | `z3/wasm`, asynchronously loaded | On Node, Gecode `gecode/minizinc-js-cli` when `MINIZINC_EXECUTABLE` is set |
 | Native | `z3/native` | None |
 
-The default HiGHS instance has a mandatory 60,000 ms backend limit because OR-Tools cannot interrupt it. Browser Chuffed through MiniZinc requires explicit loading. The experimental Kotlin engine is absent from every default registry. Installing its module does not add it to selection; supply a backend list explicitly to include it.
+The default HiGHS instance has a mandatory 60,000 ms backend limit because OR-Tools cannot interrupt it. Browser Chuffed through MiniZinc requires explicit loading. The pure-Kotlin engine is absent from every default registry. Installing its module does not add it to selection; supply a backend list explicitly to include it.
 
 Loading happens before a solve. A JS runtime initialization failure can throw before the portfolio exists; fallback does not recover from a failure of `AutoBackend.load()` itself. Availability and support are checked later for each model. Closing `AutoBackend` closes its closeable registered backends and their runtimes.
 

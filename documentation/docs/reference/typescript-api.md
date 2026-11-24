@@ -35,6 +35,7 @@ Collections are arrays; integer sizes, symbols and capacities use `bigint`. Stat
 
 | Loader | Returned promise resolves to |
 |---|---|
+| `loadKotlin()` | `Backend` for the pure-Kotlin `kotlin/direct` route in Node or browsers; needs no external runtime |
 | `loadZ3()` | `Backend` for `z3/wasm` in Node or browsers |
 | `loadMiniZincNode(executable?)` | `Backend` for installed Gecode, `gecode/minizinc-js-cli`; default executable `minizinc` |
 | `loadMiniZincBrowser(workerURL, wasmURL, dataURL)` | `Backend` for Chuffed, `chuffed/minizinc-wasm`; asset URLs must be absolute |

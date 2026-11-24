@@ -79,7 +79,7 @@ Every ✅ means that CI runs the real engine there and fails if it is missing or
 | Choco (`choco/direct`) | ✅ | | | | Classic CP with reified globals; a propagating constraint store |
 | SCIP, HiGHS via OR-Tools (`scip/or-tools`, `highs/or-tools`) | ✅ | | | | Linear integer models |
 | MiniZinc: Gecode, Chuffed, CP-SAT, HiGHS, CBC (`*/minizinc`) | ✅ | ✅ Gecode | ✅ Chuffed | | Any solver with a MiniZinc configuration |
-| Pure Kotlin (`kotlin/direct`), experimental | ✅ | ✅ | | ✅ | Zero dependencies: CDCL SAT, exact finite circuits, rational linear feasibility |
+| Pure Kotlin (`kotlin/direct`) | ✅ | ✅ | ✅ | ✅ | Zero dependencies: CDCL SAT, exact finite circuits, rational linear feasibility |
 
 The JVM solvers are tested on Linux, macOS and Windows, and Z3 Native on Linux, macOS and Windows. The JVM solvers
 need no separate installation, because their native libraries come with their Maven dependencies. The MiniZinc
@@ -110,7 +110,7 @@ known optimum or proof.
   family it supports.
 - **Native:** the pure-Kotlin solver beats or ties Z3's C API everywhere. Z3 remains the route for models it
   rejects, such as unbounded integer domains.
-- The pure-Kotlin solver is still experimental and unpublished, so `AutoBackend.load()` does not include it yet.
+- `AutoBackend.load()` does not register the pure-Kotlin solver yet: pass `KotlinBackend()` explicitly to use it.
 - **MiniZinc routes** add a fixed 240–290 ms on the JVM (process start and flattening) and about 130 ms through
   Node's CLI. They pay off on models that need a specific engine, or a decomposition that MiniZinc does better.
 
@@ -228,8 +228,7 @@ npm install @gciatto/kt-constraints-interop-js
 [Installation](https://gciatto.github.io/kt-constraints/how-to/install/) covers Maven, the C library, building from source, and the runtime each solver
 needs. Publishing on Maven Central and npmjs is planned.
 
-**Good to know:** the pure-Kotlin engine passes the shared solver contracts but is experimental, so it is not
-published yet. Also not available yet: MiniZinc execution from Kotlin/Native, a direct HiGHS C API adapter,
+**Good to know:** not available yet: MiniZinc execution from Kotlin/Native, a direct HiGHS C API adapter,
 FlatZinc interchange, Gurobi, and propagating constraint stores beyond Choco.
 
 ## Modules
@@ -239,7 +238,7 @@ FlatZinc interchange, Gurobi, and propagating constraint stores beyond Choco.
 | `:core`, `:model`, `:dsl` | Expressions, domains, global constraints, immutable models, Kotlin operators and the Java `Expressions` facade |
 | `:solve`, `:solve-spi` | Solver, session, store and result APIs; the backend contract, capability checks and registry |
 | `:solve-z3`, `:solve-cpsat`, `:solve-choco`, `:solve-mip`, `:solve-minizinc` | Solver adapters |
-| `:solve-kotlin` | Pure-Kotlin solver (experimental, unpublished) |
+| `:solve-kotlin` | Pure-Kotlin solver, on every platform |
 | `:solve-auto` | `AutoBackend`: default solvers per platform, fallback and race strategies |
 | `:interop-java`, `:interop-js`, `:interop-c` | Java blocking/`CompletableFuture` API; ES module with TypeScript declarations; C shared library |
 | `:test-core`, `:test-solve` | Shared contract suites that every backend must pass |

@@ -34,7 +34,7 @@ artifact instead, such as `kt-constraints-solve-z3` or the JVM-only `kt-constrai
 
 Java projects add `kt-constraints-interop-java` and their backend artifact. See the
 [artifact reference](../reference/modules-and-artifacts.md) for the full list.
-The experimental pure-Kotlin backend is available in source builds but is not published.
+The pure-Kotlin backend, `kt-constraints-solve-kotlin`, runs on every platform without an external runtime; add it explicitly, since `AutoBackend.load()` does not register it.
 
 ### Maven: JVM
 

@@ -17,7 +17,7 @@ All modules below are included by `settings.gradle.kts`. Publication eligibility
 | `:solve-mip` | MIP lowering; SCIP and HiGHS through OR-Tools | Portable IR; JVM execution | Yes | `io.github.gciatto:kt-constraints-solve-mip` |
 | `:solve-minizinc` | MiniZinc compiler/decoder and runtime adapters | Portable IR; JVM and JS execution | Yes | `io.github.gciatto:kt-constraints-solve-minizinc` |
 | `:solve-auto` | `AutoBackend`: automatic selection over the default routes, fallback/race strategies | Portable | Yes | `io.github.gciatto:kt-constraints-solve-auto` |
-| `:solve-kotlin` | Experimental pure-Kotlin solver and incremental sessions | Portable | No | — |
+| `:solve-kotlin` | Pure-Kotlin solver and incremental sessions | Portable | Yes | `io.github.gciatto:kt-constraints-solve-kotlin` |
 | `:solve-flatzinc` | Reserved module; no backend implementation | Portable declarations only | No | — |
 | `:solve-highs` | Reserved direct HiGHS adapter; implemented route is in solve-mip | Portable declarations only | No | — |
 | `:interop-java` | Blocking, future and iterator wrappers; Java number conversions | JVM | Yes | `io.github.gciatto:kt-constraints-interop-java` |

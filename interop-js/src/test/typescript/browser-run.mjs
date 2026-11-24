@@ -33,7 +33,7 @@ try {
     });
     page.on("pageerror", error => console.log(`page error: ${error.message}`));
     await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
-    outcome = await Promise.race([finished, new Promise(resolve => setTimeout(() => resolve("timed out"), 300_000))]);
+    outcome = await Promise.race([finished, new Promise(resolve => setTimeout(() => resolve("timed out"), 840_000))]);
 } finally {
     await browser.close();
     server.close();

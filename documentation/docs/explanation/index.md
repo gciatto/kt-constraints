@@ -12,7 +12,7 @@ Contents in navigation order. Follow the [suggested reading order](../index.md#s
 | [Choco](backends/choco.md) | JVM finite-domain solving and a separate propagating store |
 | [OR-Tools MIP](backends/or-tools-mip.md) | Bounded affine optimization and numerical evidence |
 | [MiniZinc](backends/minizinc.md) | Engine configurations, compilation and execution transports |
-| [Pure Kotlin](backends/kotlin.md) | Experimental portable backend and its limits |
+| [Pure Kotlin](backends/kotlin.md) | Portable backend and its limits |
 | [AutoBackend](backends/auto.md) | Automatic batch execution and enumeration ownership |
 | [Automatic selection](backends/selection.md) | Loading, eligibility, explained scores and execution strategies |
 | [Solving modes](solving-modes.md) | Batch search, retained assertions and reversible stores |

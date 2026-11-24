@@ -9,13 +9,11 @@ kotlin {
                 api(project(":solve"))
                 api(project(":solve-spi"))
                 implementation(project(":dsl"))
+                implementation(project(":solve-kotlin"))
                 implementation(project(":solve-minizinc"))
                 implementation(project(":solve-z3"))
                 implementation(libs.kotlinx.coroutines.core)
             }
-        }
-        jsTest {
-            dependencies { implementation(project(":solve-kotlin")) }
         }
     }
 }
@@ -112,7 +110,7 @@ tasks.register<Exec>("typescriptBrowserUsageTest") {
     onlyIf("Browser runtime verification is explicitly enabled") {
         providers.environmentVariable("INTEROP_BROWSER_TEST").isPresent
     }
-    timeout.set(Duration.ofMinutes(10))
+    timeout.set(Duration.ofMinutes(15))
     workingDir(typescriptUsage)
     commandLine("node", "browser-run.mjs", "site")
 }

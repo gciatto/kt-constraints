@@ -18,7 +18,7 @@ The [route reference](../../reference/solvers-and-routes.md) is the canonical ta
 | [SCIP / HiGHS through OR-Tools](or-tools-mip.md) | Bounded affine integer optimization | JVM |
 | [MiniZinc CLI configurations](minizinc.md) | Global constraints with engine-specific flattening | JVM; Gecode on Node |
 | [MiniZinc Chuffed Wasm](minizinc.md) | Bounded integer models in a browser worker | Browser |
-| [Pure Kotlin](kotlin.md) | Experimental portable solving without an external runtime | JVM, JS, Native; unpublished |
+| [Pure Kotlin](kotlin.md) | Portable solving without an external runtime | JVM, JS (Node and browsers), Native |
 | [AutoBackend](auto.md) | Delegate batch solving and enumeration to eligible registered routes | JVM, Node, browser, Native |
 
 SMT (satisfiability modulo theories) combines logical solving with typed arithmetic. CP (constraint

@@ -2,11 +2,11 @@
 
 ## What it is
 
-This experimental engine combines a finite arithmetic compiler, Boolean satisfiability search and an exact rational linear feasibility checker in common Kotlin code. It needs no external solver runtime, but still depends on project modules, arbitrary-precision arithmetic and coroutines. See [the pure-Kotlin solver](../pure-kotlin-solver.md) for its implementation and limitations.
+This engine combines a finite arithmetic compiler, Boolean satisfiability search and an exact rational linear feasibility checker in common Kotlin code. It needs no external solver runtime, but still depends on project modules, arbitrary-precision arithmetic and coroutines. See [the pure-Kotlin solver](../pure-kotlin-solver.md) for its implementation and limitations.
 
 ## Routes and classes
 
-`KotlinBackend` provides `kotlin/direct` in `:solve-kotlin`. The module is unpublished and absent from every `AutoBackend.load()` registry. Register it explicitly from a source checkout when evaluating it.
+`KotlinBackend` provides `kotlin/direct` in the published `:solve-kotlin` module (`kt-constraints-solve-kotlin`), on every platform. TypeScript loads it with `loadKotlin()`. It is not in the `AutoBackend.load()` registries: construct `KotlinBackend()` directly, or pass it in the backend list of an `AutoBackend`.
 
 ## Platforms and runtime requirements
 

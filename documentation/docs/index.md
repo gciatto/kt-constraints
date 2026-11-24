@@ -3,7 +3,7 @@
 **Constraint programming, SMT and optimization for Kotlin Multiplatform, with Java, TypeScript and C facades.**
 
 Write a model once, with typed variables, arithmetic and global constraints, and solve it with Z3, OR-Tools CP-SAT,
-Choco, SCIP, HiGHS, configured MiniZinc engines, or an experimental pure-Kotlin engine available from source. Models run on the JVM, on Node, in
+Choco, SCIP, HiGHS, configured MiniZinc engines, or a pure-Kotlin engine that needs no external runtime. Models run on the JVM, on Node, in
 the browser, and natively. The model never depends on a solver: each backend translates it, and refuses what it
 cannot represent faithfully instead of approximating it.
 

@@ -2,6 +2,7 @@ package io.github.gciatto.ktconstraints.js
 
 import io.github.gciatto.ktconstraints.js.solve.Solver
 import io.github.gciatto.ktconstraints.js.store.Store
+import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
 import io.github.gciatto.ktconstraints.solve.minizinc.MiniZincJsBackend
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
 import io.github.gciatto.ktconstraints.solve.spi.createIncrementalSolver
@@ -37,6 +38,14 @@ class Backend internal constructor(
     /** Closes every created solver and releases the runtime; idempotent. */
     fun close() = runtime.close()
 }
+
+/** Loads the pure-Kotlin engine (`kotlin/direct`), which runs in Node and browsers without any external runtime. */
+@JsExport
+fun loadKotlin(): Promise<Backend> =
+    CoroutineScope(EmptyCoroutineContext).promise {
+        val backend = KotlinBackend()
+        Backend(backend, backend)
+    }
 
 /** Loads the official z3-solver Wasm module (Node, or browsers with cross-origin isolation) and checks it works. */
 @JsExport

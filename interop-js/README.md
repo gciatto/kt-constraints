@@ -11,6 +11,7 @@ on GitHub Packages as `@gciatto/kt-constraints-interop-js` (see [Installation](h
   `regular` with `new Automaton(initial, accepting).transition(from, symbol, to)`, `binPacking`, `noOverlap2D`,
   `nValue`, and `builder.minimizeViolations(constraints, weights)` for soft constraints. `build()` returns an immutable `Model`.
 - **Solving:** `await loadZ3()` starts the z3-solver Wasm route (Node, or cross-origin-isolated browsers).
+  `await loadKotlin()` loads the pure-Kotlin route, which needs no external runtime.
   `backend.createSolver()` gives a `Solver`:
   - `solve(model, timeoutMillis?, solutionLimit?, signal?)` returns a `Promise<Outcome>`; aborting the `AbortSignal`
     cancels the search and rejects the promise;

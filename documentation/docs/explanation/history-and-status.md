@@ -42,7 +42,7 @@ Structural globals expanded to routing, automata, scheduling and packing. Native
 
 ## A common Kotlin engine and broader measurements
 
-The experimental pure-Kotlin engine added a route implemented in common code, reusing the representation and solver contracts. It remains unpublished and absent from the default registries. Its design and current limitations are covered in [the pure-Kotlin solver](pure-kotlin-solver.md).
+The pure-Kotlin engine added a route implemented in common code, reusing the representation and solver contracts. It is published for every platform but absent from the default registries. Its design and current limitations are covered in [the pure-Kotlin solver](pure-kotlin-solver.md).
 
 Benchmarks grew from separate construction and translation observations into seeded problem families, cross-route comparisons and store-operation measurements. Measurements of the Kotlin route across JVM, Node and Native widened the comparison. The recorded runs exposed startup and flattening costs, differences between global decompositions and gaps in the default ranking policy. The experimental timing-evidence hook remains separate from the default heuristics.
 
@@ -50,7 +50,7 @@ Benchmarks grew from separate construction and translation observations into see
 
 A C shared-library facade exposed a smaller modelling and solving surface through Kotlin/Native handles, with exact integer results returned as strings. An actual C consumer exercises this boundary against the Native Z3 route.
 
-Release configuration adopted GitHub Packages for Maven and npm artifacts and release archives for the C library. Maven Central and npmjs remain separately gated distribution targets. Reserved backend modules and the experimental Kotlin engine are excluded from the published module set.
+Release configuration adopted GitHub Packages for Maven and npm artifacts and release archives for the C library. Maven Central and npmjs remain separately gated distribution targets. Reserved backend modules are excluded from the published module set.
 
 ## Current status
 
@@ -70,7 +70,7 @@ Release configuration adopted GitHub Packages for Maven and npm artifacts and re
 | C facade | Implemented, restricted | Shared library for desktop targets; integer/Boolean modelling and batch solving through the Native defaults |
 | Automatic selection (`AutoBackend`) | Implemented | Explicit platform bundles, eligibility checks, explained heuristics, fallback and races; no automatic inclusion of Kotlin or browser MiniZinc |
 | Benchmark-informed ranking | Partial | Recorded measurements and an experimental evidence interface; no timing dataset in the default policy |
-| Pure-Kotlin route | Experimental | Source implementation and shared-contract coverage; unpublished and opt-in |
+| Pure-Kotlin route | Implemented | Published for JVM, JS and Native with shared-contract coverage; opt-in, not in default registries |
 | Platform reach | Partial | JVM, Kotlin/JS and desktop Native integrations; iOS compilation does not provision Z3; Kotlin/Wasm targets await dependencies and binding work |
 | Distribution | Partial | Release configuration for GitHub Packages and C release archives; Maven Central and npmjs publication remain planned |
 | Portable model serialization | Planned | No versioned interchange format, identity remapping implementation or portable model fingerprint |

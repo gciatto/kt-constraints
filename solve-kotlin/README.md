@@ -2,14 +2,14 @@
 
 `:solve-kotlin` implements the `kotlin/direct` route in `commonMain`. Its current scope is the union of the
 **built-in modelling constructs already exposed by this repository**, with exact arithmetic and shared execution
-contracts. The implementation is experimental and remains unpublished pending profiling and full CI evidence.
+contracts. It runs on the JVM, JS (Node and browsers) and Kotlin/Native without any external solver runtime.
 See [validation](https://gciatto.github.io/kt-constraints/explanation/pure-kotlin-solver/#how-correctness-is-checked) for the actual verification status.
 
-## Use from a source checkout
+## Installation
 
 ```kotlin
 dependencies {
-    implementation(project(":solve-kotlin"))
+    implementation("io.github.gciatto:kt-constraints-solve-kotlin:<version>")
 }
 ```
 
@@ -41,8 +41,7 @@ temporary `check(assumptions, timeoutMillis)`. Sessions answer satisfiability qu
 by batch solving and optimisation streams.
 
 Java can construct `new KotlinBackend()` and pass it to `BlockingSolver.of(...)`. Kotlin/JS uses the common
-API. The existing exported JavaScript facade has test-only integration tests with this backend; a packaged
-TypeScript loader for `kotlin/direct` is a later publication step.
+API. TypeScript loads it with `loadKotlin()` from `kt-constraints-interop-js`.
 
 ## Implemented surface
 

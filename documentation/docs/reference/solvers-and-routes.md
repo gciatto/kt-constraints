@@ -26,7 +26,7 @@ In this table, **base** means `SATISFACTION`, `OPTIMIZATION`, `INTEGER_ARITHMETI
 | `cbc/minizinc` | `MiniZincBackend(CBC)`, CBC CLI configuration | JVM | Base |
 | `gecode/minizinc-js-cli` | `MiniZincJsBackend.loadNode(...)`, installed Gecode CLI | Node | Base + `ENUMERATION` |
 | `chuffed/minizinc-wasm` | `MiniZincJsBackend.loadBrowser(...)`, Chuffed browser runtime | Browser | Base + `ENUMERATION` |
-| `kotlin/direct` | `KotlinBackend`, pure-Kotlin engine, experimental and unpublished | Common code: JVM, JS, Native | Base + SMT + `ENUMERATION` |
+| `kotlin/direct` | `KotlinBackend` (TypeScript: `loadKotlin()`), pure-Kotlin engine | Common code: JVM, JS, Native | Base + SMT + `ENUMERATION` |
 
 `ENUMERATION` denotes projected satisfaction enumeration: finite projected domains can be exhausted, while real-valued outputs may produce an endless stream of distinct rational witnesses. A route without it can still expose a stream containing a witness or improving optimization incumbents. Stream presence alone does not imply exhaustive enumeration.
 
@@ -82,7 +82,7 @@ MiniZinc's configurations are selected explicitly; there is no substitution of t
 | `HIGHS` | `org.minizinc.mip.highs` |
 | `CBC` | `org.minizinc.mip.coin-bc` |
 
-The JVM default registry contains CP-SAT, Choco, Z3, SCIP and HiGHS (60,000 ms backend limit), plus all five MiniZinc routes when `MINIZINC_EXECUTABLE` is set. The JS default loader loads Z3 Wasm, plus Node Gecode when that variable is set. The Native default registry contains Z3 Native. The pure-Kotlin route is not automatically registered.
+The JVM default registry contains CP-SAT, Choco, Z3, SCIP and HiGHS (60,000 ms backend limit), plus all five MiniZinc routes when `MINIZINC_EXECUTABLE` is set. The JS default loader loads Z3 Wasm, plus Node Gecode when that variable is set. The Native default registry contains Z3 Native. The pure-Kotlin route is not automatically registered; construct `KotlinBackend()` or add it to an `AutoBackend` backend list.
 
 HiGHS through OR-Tools cannot be interrupted by OR-Tools: its constructor requires a positive per-solve limit. Closing returns promptly, but an abandoned engine call may run until that limit. MiniZinc JS permits one owning backend at a time; close it before loading another.
 

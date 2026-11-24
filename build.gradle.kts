@@ -70,6 +70,7 @@ val publishedModules =
         "dsl",
         "solve",
         "solve-spi",
+        "solve-kotlin",
         "solve-z3",
         "solve-choco",
         "solve-cpsat",

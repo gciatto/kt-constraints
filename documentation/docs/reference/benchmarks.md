@@ -61,7 +61,7 @@ Randomly generated families (knapsack, assignment, integer program, single-machi
 keeps the original instances, and `BenchmarkCatalogueSpec` confirms seed 1 too. Compare encodings over several seeds:
 a single instance's search path can swing by 2-3x between equivalent encodings.
 
-The unpublished `kotlin/direct` route is measured too, but never offered by `auto`; its observations and the
+The `kotlin/direct` route is measured too, but not registered by `AutoBackend.load()`; its observations and the
 optimisations they drove are in [the pure-Kotlin solver](../explanation/pure-kotlin-solver.md). Known answers come from closed forms or
 dynamic programming, never from enumerating permutations or grids, so large scales stay within memory.
 

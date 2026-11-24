@@ -1,9 +1,18 @@
-// Node entry: Z3 Wasm always; the MiniZinc CLI route too when MINIZINC_EXECUTABLE names an installed CLI.
-import { loadMiniZincNode, loadZ3 } from "kt-constraints-interop-js";
+// Node entry: pure Kotlin and Z3 Wasm always; the MiniZinc CLI route too when MINIZINC_EXECUTABLE names an installed CLI.
+import { loadKotlin, loadMiniZincNode, loadZ3 } from "kt-constraints-interop-js";
 import { check, runChecks } from "./checks.mjs";
 import { examples } from "./examples/index.mjs";
 
 const environment = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env ?? {};
+
+const kotlin = await loadKotlin();
+check(kotlin.id === "kotlin/direct", `route ${kotlin.id}`);
+try {
+    // Kotlin refutes the abort check's pigeonhole before the abort fires, so abortion is not observable there.
+    await runChecks(kotlin, { unboundedIntegers: true, reals: true, hardAbort: false }, console.log);
+} finally {
+    kotlin.close();
+}
 
 const z3 = await loadZ3();
 check(z3.id === "z3/wasm", `route ${z3.id}`);

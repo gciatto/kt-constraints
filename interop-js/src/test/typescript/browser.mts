@@ -1,6 +1,6 @@
-// Browser entry, served cross-origin isolated: Z3 Wasm and MiniZinc's Chuffed Wasm from the page's own origin.
+// Browser entry, served cross-origin isolated: pure Kotlin, Z3 Wasm and MiniZinc's Chuffed Wasm from the page's own origin.
 // --8<-- [start:imports]
-import { loadMiniZincBrowser, loadZ3 } from "kt-constraints-interop-js";
+import { loadKotlin, loadMiniZincBrowser, loadZ3 } from "kt-constraints-interop-js";
 // --8<-- [end:imports]
 import { check, runChecks } from "./checks.mjs";
 
@@ -24,6 +24,13 @@ try {
         await runChecks(miniZinc, { unboundedIntegers: false, reals: false, hardAbort: false }, report);
     } finally {
         miniZinc.close();
+    }
+    const kotlin = await loadKotlin();
+    check(kotlin.id === "kotlin/direct", `route ${kotlin.id}`);
+    try {
+        await runChecks(kotlin, { unboundedIntegers: true, reals: true, hardAbort: false }, report);
+    } finally {
+        kotlin.close();
     }
     report("TypeScript browser usage: all checks passed");
 } catch (failure) {

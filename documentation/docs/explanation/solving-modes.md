@@ -24,7 +24,7 @@ Batch is appropriate when the application can describe the whole problem before 
 
 A `check` answers satisfiability, optionally under assumptions that apply only to that call. An unsat core, when returned, is a sufficient subset of those assumptions, not a promise of a minimal explanation of all root assertions. Session checks are satisfiability queries; a model objective does not turn `check` into an optimization operation.
 
-Z3 exposes incremental sessions on its JVM, JavaScript and Native routes. The experimental pure-Kotlin route also implements the incremental interface. Neither interface promises domain-change reports. Retaining an assertion stack and narrowing variable domains are different capabilities.
+Z3 exposes incremental sessions on its JVM, JavaScript and Native routes. The pure-Kotlin route also implements the incremental interface. Neither interface promises domain-change reports. Retaining an assertion stack and narrowing variable domains are different capabilities.
 
 Incrementality suits repeated related questions: a configuration stays fixed while tentative choices change, or a verifier checks several assumptions against a shared base. See [use incremental sessions](../how-to/incremental-sessions.md).
 
