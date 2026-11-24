@@ -18,8 +18,9 @@ AutoBackend.load().use { auto -> auto.withSolver { it.solve(model) } }
   on only after `UNKNOWN` or a failure.
 - `AutoStrategy.Race(parallelism = 2)` (route `auto/race`) runs a bounded number of routes at once. The first proof
   wins and cancels the rest; otherwise the best incumbent is returned without claiming optimality.
-- `solutions(...)` streams from the best-ranked route that supports enumeration. Sessions and stores are not offered:
-  pick a concrete route, e.g. through `auto.registry.select(...)`.
+- `solutions(...)` streams from the best-ranked route that supports enumeration, and `openSession(model)` (through
+  `withIncrementalSolver` or `createIncrementalSolver()`) opens the session on the best-ranked route with incremental
+  assertions. Stores are not offered: pick a concrete route, e.g. through `auto.registry.select(...)`.
 
 Results name the answering route and list every skipped or failed one in `metadata.messages`. A model no route can
 take is rejected with `UnsupportedModelException`.

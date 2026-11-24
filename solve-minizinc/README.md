@@ -2,8 +2,7 @@
 
 Experimental JVM execution of Gecode, Chuffed, CP-SAT, HiGHS and CBC through MiniZinc.
 The checked compiler and JSON decoder are portable. The official JS runtime provides
-Node/Gecode CLI and browser/Chuffed Wasm execution. Native execution is not implemented,
-and backend publication remains disabled.
+Node/Gecode CLI and browser/Chuffed Wasm execution. Native execution is not implemented.
 
 ```kotlin
 val backend = MiniZincBackend(MiniZincEngine.CHUFFED, executable = "/path/to/minizinc")

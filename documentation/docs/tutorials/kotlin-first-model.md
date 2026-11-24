@@ -31,7 +31,7 @@ implementation("io.github.gciatto:kt-constraints-dsl:<version>")
 implementation("io.github.gciatto:kt-constraints-solve-auto:<version>")
 ```
 
-The DSL supplies modelling operators. The `:solve-auto` module supplies `AutoBackend` and the platform's default routes.
+The DSL supplies modelling helpers such as `allDifferent`; the operators are members of the expressions. The `:solve-auto` module supplies `AutoBackend` and the platform's default routes.
 On JVM, the direct solvers bring their runtime dependencies; this example needs no MiniZinc installation.
 For Gradle property credentials instead of environment variables, see [Install](../how-to/install.md).
 

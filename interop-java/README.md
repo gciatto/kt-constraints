@@ -15,8 +15,8 @@ and `BlockingStore` live in `io.github.gciatto.ktconstraints.solve.blocking`.
   `:solve-auto`) loads every route bundled for the JVM without suspending.
 - **Numbers** stay exact. Model integers are kt-math `org.gciatto.kt.math.BigInteger`s, but primitives work where
   they fit: `scope.intVar("x", 1, 10)`, `x.plus(3)`, and `assignment.longValueOf(x)` / `intValueOf(x)`,
-  which throw `ArithmeticException` rather than truncate. `JavaNumbers` converts `java.math.BigInteger` both ways and
-  `BigDecimal` to `Rational` exactly; `Rational.parse("0.1")` also reads decimals exactly. Real expressions offer the
+  which throw `ArithmeticException` rather than truncate. kt-math's `JvmUtils.toKotlin` / `JvmUtils.toJava` convert
+  `java.math.BigInteger` both ways, and `JavaNumbers.rational` converts `BigDecimal` to `Rational` exactly; `Rational.parse("0.1")` also reads decimals exactly. Real expressions offer the
   same methods (`plus`, `times(rational)`, `le`, ...), with `n.asRealExpr()` to embed integers. There are deliberately no `double` overloads: binary floating point would either
   turn `0.1` into a surprising fraction or need rounding.
 

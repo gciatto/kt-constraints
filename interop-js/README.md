@@ -6,7 +6,7 @@ on GitHub Packages as `@gciatto/kt-constraints-interop-js` (see [Installation](h
 
 - **Modelling:** `new ModelBuilder()`, `intVar(name, min, max)` with `bigint` bounds, `boolVar(name)`, method-based
   expressions (`x.plus(y).eq(constant(10n))`, `a.and(b)`, `p.implies(q)`), and `sum`, `allDifferent`, `element`,
-  `min`, `max`, `abs`, `atMost`, `atLeast`, `exactly`, `toInt`, `count`, `among`, `globalCardinality`, `increasing`,
+  `min`, `max`, `abs`, `atMost`, `atLeast`, `exactly`, `asIntExpression`, `count`, `among`, `globalCardinality`, `increasing`,
   `decreasing`, `lexLess`, `lexLessOrEqual`, `inverse`, `circuit`, `subCircuit`, `cumulative`, `disjunctive`,
   `regular` with `new Automaton(initial, accepting).transition(from, symbol, to)`, `binPacking`, `noOverlap2D`,
   `nValue`, and `builder.minimizeViolations(constraints, weights)` for soft constraints. `build()` returns an immutable `Model`.

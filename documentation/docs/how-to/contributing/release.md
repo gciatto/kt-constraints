@@ -4,7 +4,7 @@ Release publication is opt-in. The dispatcher publishes only after successful ve
 
 ## 1. Verify publication contents
 
-Review root `publishedModules` against [Modules and artifacts](../../reference/modules-and-artifacts.md). Exclude reserved modules, test utilities and the experimental unpublished solver. The C facade ships as release ZIPs rather than Maven publications.
+Review root `publishedModules` against [Modules and artifacts](../../reference/modules-and-artifacts.md). Exclude reserved modules and test utilities. The C facade ships as release ZIPs rather than Maven publications.
 
 Run these commands sequentially:
 
