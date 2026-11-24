@@ -73,6 +73,7 @@ theme:
     - navigation.sections
     - navigation.indexes
     - content.code.copy
+    - navigation.footer
     - content.tabs.link
   palette:
     - media: "(prefers-color-scheme: light)"
@@ -109,3 +110,5 @@ markdown_extensions:
       # Code samples are quoted from compiled, tested sources: --8<-- "path/from/repo/root:section"
       base_path: [".."]
       check_paths: true
+      # Sections quoted from inside functions or tests keep their source indentation otherwise.
+      dedent_subsections: true
