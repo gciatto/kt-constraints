@@ -8,6 +8,7 @@ import io.github.gciatto.ktconstraints.solve.incremental.IncrementalConstraintSo
 import io.github.gciatto.ktconstraints.solve.spi.BackendAvailability
 import io.github.gciatto.ktconstraints.solve.spi.Platform
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
+import io.github.gciatto.ktconstraints.solve.spi.SolverBackendLoader
 import io.github.gciatto.ktconstraints.solve.spi.ranking.RankingPolicy
 import io.github.gciatto.ktconstraints.solve.spi.registry.SolverRegistry
 import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
@@ -64,7 +65,7 @@ class AutoBackend(
     override fun close() = backends.forEach { it.close() }
 
     /** Factories for the routes bundled with this module. */
-    companion object {
+    companion object : SolverBackendLoader<AutoBackend> {
         /** Engine identifier of every automatic backend. */
         const val ENGINE: String = "auto"
 
@@ -90,8 +91,11 @@ class AutoBackend(
          * all the others by the platform's refinement of [policy]. Close the result to release loaded runtimes.
          */
         suspend fun load(
-            strategy: AutoStrategy = AutoStrategy.Fallback,
+            strategy: AutoStrategy,
             policy: RankingPolicy = RankingPolicy.DEFAULT,
         ): AutoBackend = AutoBackend(DefaultBackends.load(), strategy, DefaultBackends.policy(policy))
+
+        /** Loads the bundled routes with the [AutoStrategy.Fallback] strategy and the default ranking policy. */
+        override suspend fun load(): AutoBackend = load(AutoStrategy.Fallback)
     }
 }

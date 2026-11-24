@@ -1,4 +1,13 @@
 kotlin {
+    // `blockingMain` holds what JVM and Native share but JavaScript cannot run: blocking loaders.
+    applyDefaultHierarchyTemplate {
+        common {
+            group("blocking") {
+                withJvm()
+                group("native")
+            }
+        }
+    }
     sourceSets {
         commonMain {
             dependencies {

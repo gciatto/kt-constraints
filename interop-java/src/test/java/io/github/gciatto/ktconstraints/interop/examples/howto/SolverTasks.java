@@ -57,7 +57,7 @@ public final class SolverTasks {
         ConstraintScope scope = ConstraintScope.empty();
         IntVar x = scope.intVar("x", 0, 9);
         scope.add(x.times(3).eq(12));
-        try (AutoBackend backend = AutoBackends.load();
+        try (AutoBackend backend = AutoBackends.loadAutoBackend();
              BlockingSolver solver = BlockingSolver.of(backend)) {
             SolveResult result = solver.solve(scope.buildModel());
             check(Integer.valueOf(4).equals(result.getAssignment().intValueOf(x)), "x = 4");

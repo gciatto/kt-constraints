@@ -47,11 +47,11 @@ Z3Backend().createSolver().use { solver ->
   for one check. Capabilities: incremental assertions, backtracking, assumptions and unsat
   cores. Repeated checks are not domain propagation or entailment.
 
-From common code, `Z3.loadBackend()` loads whichever of these routes the running platform has; close the returned
+From common code, `Z3.load()` loads whichever of these routes the running platform has; close the returned
 backend to release its runtime:
 
 ```kotlin
-Z3.loadBackend().use { z3 -> z3.withSolver { solver -> solver.solve(model) } }
+Z3.load().use { z3 -> z3.withSolver { solver -> solver.solve(model) } }
 ```
 
 ```kotlin

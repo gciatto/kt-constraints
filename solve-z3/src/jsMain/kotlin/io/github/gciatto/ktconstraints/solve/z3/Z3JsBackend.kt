@@ -8,6 +8,7 @@ import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
 import io.github.gciatto.ktconstraints.solve.incremental.IncrementalConstraintSolver
 import io.github.gciatto.ktconstraints.solve.spi.BackendAvailability
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
+import io.github.gciatto.ktconstraints.solve.spi.SolverBackendLoader
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
 import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 import io.github.gciatto.ktconstraints.solve.z3.port.JsZ3Owner
@@ -64,7 +65,7 @@ class Z3JsBackend private constructor(
     }
 
     /** Asynchronous loading and route identity. */
-    companion object {
+    companion object : SolverBackendLoader<Z3JsBackend> {
         /** `z3/wasm`: batch solving plus incremental sessions with checkpoints, assumptions and unsat cores. */
         val DESCRIPTOR: SolverDescriptor =
             SolverDescriptor(
@@ -86,7 +87,7 @@ class Z3JsBackend private constructor(
             )
 
         /** Initializes a fresh z3-solver module and proves it with a real check before returning. */
-        suspend fun load(): Z3JsBackend {
+        override suspend fun load(): Z3JsBackend {
             val api: dynamic =
                 runCatching { z3SolverModule.init().unsafeCast<Promise<dynamic>>().await() }
                     .getOrElse { throw BackendUnavailableException("z3-solver cannot start: ${it.message}", it) }

@@ -49,7 +49,8 @@ A stream is single-pass. Close it if you stop reading early. Satisfaction enumer
 | `BlockingSolutionStream` | `Iterator<SolutionEvent>` and `AutoCloseable`, so `for (event in stream)` reads solutions and then one completion; `terminalResult`, `cancel` |
 | `BlockingSession` | `add`, `push`, `popTo`, blocking `check(assumptions, timeoutMillis)` |
 | `ConstraintStore.blocking()`, `BlockingStore.of(store)` | Take ownership of a store with blocking `constrain`, `entails` and `explain` |
-| `loadAutoBackend(strategy, policy)` | JVM only, in `:solve-auto`: blocking counterpart of `AutoBackend.load` |
+| `SolverBackendLoader<B>.load()` | Suspending factory of a backend whose runtime starts asynchronously; implemented by `AutoBackend.Companion`, `Z3` and `Z3JsBackend.Companion` |
+| `loadAutoBackend(strategy, policy)` | JVM and Native, in `:solve-auto`: blocking counterpart of `AutoBackend.load` (Java: `AutoBackends.loadAutoBackend()`) |
 
 On the JVM the wrappers also offer `solveAsync`, `checkAsync`, `constrainAsync` and `entailsAsync`, which return a `CompletableFuture`; closing the owner cancels pending futures, and interrupting a blocked thread cancels its search. Each wrapper is single-consumer, like the object it wraps. Inside coroutines prefer the suspending API, which does not hold a thread while the engine searches.
 

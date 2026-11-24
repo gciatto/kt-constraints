@@ -40,7 +40,7 @@ All backend classes implement `availability`, `support`, `createSolver`, `isAvai
 
 | Entry point | Additional public surface |
 |---|---|
-| `Z3.loadBackend()` | Suspending common entry point: returns `Z3Backend` on the JVM, `Z3NativeBackend` on Kotlin/Native and `Z3JsBackend` on JavaScript. Close the returned backend to release its runtime |
+| `Z3.load()` | Suspending common entry point: returns `Z3Backend` on the JVM, `Z3NativeBackend` on Kotlin/Native and `Z3JsBackend` on JavaScript. Close the returned backend to release its runtime |
 | `Z3Backend()`, `Z3NativeBackend(libraryPath)` | `createSolver()` returns `IncrementalConstraintSolver`; companion `DESCRIPTOR` identifies the route before creating a solver |
 | `Z3JsBackend.load()` | Suspending loader; `createSolver()` returns `IncrementalConstraintSolver`. `DESCRIPTOR` identifies `z3/wasm`; idempotent `close()` closes created solvers and terminates runtime workers |
 | `CpSatBackend(workers, seed)` | Readable `workers` and `seed` defaults; companion `DESCRIPTOR` identifies `cp-sat/direct` |

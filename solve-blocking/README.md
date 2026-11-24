@@ -17,7 +17,7 @@ Kotlin entry points are `SolverBackend.withBlockingSolver { }`, `ConstraintSolve
 `BlockingStore.of(store)`. A `BlockingSolver` never closes the backend it was created from: close it yourself.
 
 ```kotlin
-loadAutoBackend().use { backend -> // JVM; on Native, e.g. Z3NativeBackend()
+loadAutoBackend().use { backend -> // JVM and Native
     backend.withBlockingSolver { solver ->
         solver.solutions(model).use { stream ->
             for (event in stream) println(event)
@@ -27,7 +27,7 @@ loadAutoBackend().use { backend -> // JVM; on Native, e.g. Z3NativeBackend()
 ```
 
 ```java
-try (AutoBackend backend = AutoBackends.load();
+try (AutoBackend backend = AutoBackends.loadAutoBackend();
      BlockingSolver solver = BlockingSolver.of(backend);
      BlockingSolutionStream stream = solver.solutions(model)) {
     while (stream.hasNext()) System.out.println(stream.next());

@@ -35,10 +35,10 @@ context; use your application's coroutine entry point.
 
 For explicit route control, construct `Z3NativeBackend` from
 `io.github.gciatto.ktconstraints.solve.z3` in a Native source set, or call the suspending
-`Z3.loadBackend()` from common code: it returns `Z3NativeBackend` on Native, `Z3Backend` on the
+`Z3.load()` from common code: it returns `Z3NativeBackend` on Native, `Z3Backend` on the
 JVM and `Z3JsBackend` on JavaScript. Check `availability()` and `support(model, options)` before
 creating the solver, and keep both backend and solver in `use`, for example
-`Z3.loadBackend().use { z3 -> z3.withSolver { solver -> solver.solve(model) } }`.
+`Z3.load().use { z3 -> z3.withSolver { solver -> solver.solve(model) } }`.
 Optional follow-up operations: an incremental session keeps assertions between satisfiability checks;
 a store lets your application post constraints and undo branches. The API supports batch solving, enumeration and
 [incremental sessions](incremental-sessions.md). Use

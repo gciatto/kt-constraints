@@ -26,7 +26,7 @@ Arithmetic, comparison, Boolean and conversion operators are instance methods of
 | `BlockingSolutionStream` | `Iterator<SolutionEvent>` and `AutoCloseable`; `hasNext`, `next`, `getTerminalResult`, `cancel`, `close` |
 | `BlockingSession` | `getDescriptor`, `add`, `push`, `popTo`, `check(assumptions, timeoutMillis)`, `checkAsync(assumptions, timeoutMillis)`, `close` |
 
-Backends are `AutoCloseable`: open the backend in the same try-with-resources statement as the solver, before it, so that a backend owning a runtime (such as `AutoBackend`) is released after the solver. `AutoBackends.load()`, `load(strategy)` and `load(strategy, policy)` in `:solve-auto` load the routes bundled for the JVM on the calling thread; JVM backends such as `new Z3Backend()` or `new ChocoBackend()` are constructed directly.
+Backends are `AutoCloseable`: open the backend in the same try-with-resources statement as the solver, before it, so that a backend owning a runtime (such as `AutoBackend`) is released after the solver. `AutoBackends.loadAutoBackend()`, `loadAutoBackend(strategy)` and `loadAutoBackend(strategy, policy)` in `:solve-auto` load the routes bundled for the JVM on the calling thread; JVM backends such as `new Z3Backend()` or `new ChocoBackend()` are constructed directly.
 
 ```java
 --8<-- "interop-java/src/test/java/io/github/gciatto/ktconstraints/interop/examples/howto/SolverTasks.java:auto"

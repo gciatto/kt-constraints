@@ -11,7 +11,7 @@ and `BlockingStore` live in `io.github.gciatto.ktconstraints.solve.blocking`.
 - **Solving:** `BlockingSolver.of(backend)` owns one solver and offers `solve` (blocking), `solveAsync`
   (`CompletableFuture`; cancelling it cancels the search) and `solutions` (a closeable `Iterator` of solutions,
   then one `SolveCompleted`). Closing it cancels pending futures and open streams. It never closes the backend:
-  backends are `AutoCloseable`, so open them in the same try-with-resources statement. `AutoBackends.load()` (from
+  backends are `AutoCloseable`, so open them in the same try-with-resources statement. `AutoBackends.loadAutoBackend()` (from
   `:solve-auto`) loads every route bundled for the JVM without suspending.
 - **Numbers** stay exact. Model integers are kt-math `org.gciatto.kt.math.BigInteger`s, but primitives work where
   they fit: `scope.intVar("x", 1, 10)`, `x.plus(3)`, and `assignment.longValueOf(x)` / `intValueOf(x)`,
