@@ -86,11 +86,12 @@ class AutoBackend(
         /**
          * Loads the routes bundled for the current platform: on the JVM CP-SAT, Choco, Z3, SCIP and HiGHS; on JS
          * Z3 Wasm; on Native Z3 through its C API; plus MiniZinc's engines on the JVM and Node when
-         * `MINIZINC_EXECUTABLE` is set. Close the result to release asynchronously loaded runtimes.
+         * `MINIZINC_EXECUTABLE` is set. Every platform adds the pure-Kotlin route as its last resort, ranked after
+         * all the others by the platform's refinement of [policy]. Close the result to release loaded runtimes.
          */
         suspend fun load(
             strategy: AutoStrategy = AutoStrategy.Fallback,
             policy: RankingPolicy = RankingPolicy.DEFAULT,
-        ): AutoBackend = AutoBackend(DefaultBackends.load(), strategy, policy)
+        ): AutoBackend = AutoBackend(DefaultBackends.load(), strategy, DefaultBackends.policy(policy))
     }
 }

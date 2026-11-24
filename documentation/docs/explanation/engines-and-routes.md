@@ -28,7 +28,7 @@ SCIP and HiGHS run through OR-Tools in `:solve-mip`, as `scip/or-tools` and `hig
 
 MiniZinc is a compiler and runtime route to several engines. The JVM integration supports Gecode, Chuffed, CP-SAT, HiGHS and CBC configurations. JavaScript has a Gecode Node CLI route, `gecode/minizinc-js-cli`, and a Chuffed browser route, `chuffed/minizinc-wasm`. MiniZinc owns flattening and its solver-specific decompositions. Native command execution is not implemented.
 
-The `kotlin/direct` route is implemented in common Kotlin, so it runs on every platform from the published `:solve-kotlin` module. It is not bundled by automatic selection. See [the pure-Kotlin solver](pure-kotlin-solver.md).
+The `kotlin/direct` route is implemented in common Kotlin, so it runs on every platform from the published `:solve-kotlin` module. Automatic selection bundles it on every platform as the last resort. See [the pure-Kotlin solver](pure-kotlin-solver.md).
 
 ## Exact models and numerical engines
 

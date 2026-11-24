@@ -48,6 +48,15 @@ object Heuristics {
             }
         }
 
+    /**
+     * Scores the routes of [engines] -1 and gives others no opinion. Weighted heavily, it ranks those routes after
+     * every other eligible route, so they only answer models no other route can take.
+     */
+    fun lastResort(engines: Set<String>): RankingHeuristic =
+        heuristic("last-resort") { _, descriptor, _ ->
+            if (descriptor.engine in engines) Score(-1.0, "${descriptor.engine} is a last resort") else null
+        }
+
     /** Converts [evidence] into scores: one unit lost per thousandfold slowdown; no opinion without evidence. */
     @ExperimentalKtConstraintsApi
     fun evidence(evidence: PerformanceEvidence): RankingHeuristic =

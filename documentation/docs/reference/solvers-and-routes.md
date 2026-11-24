@@ -82,7 +82,7 @@ MiniZinc's configurations are selected explicitly; there is no substitution of t
 | `HIGHS` | `org.minizinc.mip.highs` |
 | `CBC` | `org.minizinc.mip.coin-bc` |
 
-The JVM default registry contains CP-SAT, Choco, Z3, SCIP and HiGHS (60,000 ms backend limit), plus all five MiniZinc routes when `MINIZINC_EXECUTABLE` is set. The JS default loader loads Z3 Wasm, plus Node Gecode when that variable is set. The Native default registry contains Z3 Native. The pure-Kotlin route is not automatically registered; construct `KotlinBackend()` or add it to an `AutoBackend` backend list.
+The JVM default registry contains CP-SAT, Choco, Z3, SCIP and HiGHS (60,000 ms backend limit), plus all five MiniZinc routes when `MINIZINC_EXECUTABLE` is set. The JS default loader loads Z3 Wasm, plus Node Gecode when that variable is set. The Native default registry contains Z3 Native. Every platform also registers `kotlin/direct` as the last resort, ranked after all the other eligible routes; on JS, a Z3 Wasm module that cannot start is left out instead of failing the load.
 
 HiGHS through OR-Tools cannot be interrupted by OR-Tools: its constructor requires a positive per-solve limit. Closing returns promptly, but an abandoned engine call may run until that limit. MiniZinc JS permits one owning backend at a time; close it before loading another.
 

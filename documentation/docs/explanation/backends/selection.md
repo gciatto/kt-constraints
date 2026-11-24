@@ -14,7 +14,7 @@ This walkthrough follows `SolverRegistry.rank`, `ModelFeatures`, `Heuristics`, `
 | JS | `z3/wasm`, asynchronously loaded | On Node, Gecode `gecode/minizinc-js-cli` when `MINIZINC_EXECUTABLE` is set |
 | Native | `z3/native` | None |
 
-The default HiGHS instance has a mandatory 60,000 ms backend limit because OR-Tools cannot interrupt it. Browser Chuffed through MiniZinc requires explicit loading. The pure-Kotlin engine is absent from every default registry. Installing its module does not add it to selection; supply a backend list explicitly to include it.
+The default HiGHS instance has a mandatory 60,000 ms backend limit because OR-Tools cannot interrupt it. Browser Chuffed through MiniZinc requires explicit loading. Every platform also registers the pure-Kotlin route and refines the ranking policy with the `last-resort` heuristic, weighted so that `kotlin/direct` ranks after every other eligible route. It answers only when no other route is available or eligible; on JS it also covers a Z3 Wasm module that cannot start.
 
 Loading happens before a solve. A JS runtime initialization failure can throw before the portfolio exists; fallback does not recover from a failure of `AutoBackend.load()` itself. Availability and support are checked later for each model. Closing `AutoBackend` closes its closeable registered backends and their runtimes.
 
@@ -70,6 +70,7 @@ For each candidate, total score is the sum of `weight × score.value` across heu
 | `capability-fit` | `-min(0.05 × unused, 0.25)`, where unused is the number of descriptor capabilities outside the model-derived required set |
 | `feature-affinity` | The table below, using engine ID and problem class |
 | `route-overhead` | `-0.5` if the route string contains `minizinc`; otherwise `0.0` |
+| `last-resort` | `-1.0` for the listed engines, no opinion otherwise; the default loaders add it for `kotlin` with weight 1,000, so it outweighs every other heuristic |
 
 This is a specialization preference, not evidence that extra capabilities make a solver slower.
 

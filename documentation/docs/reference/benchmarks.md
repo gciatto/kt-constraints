@@ -61,7 +61,7 @@ Randomly generated families (knapsack, assignment, integer program, single-machi
 keeps the original instances, and `BenchmarkCatalogueSpec` confirms seed 1 too. Compare encodings over several seeds:
 a single instance's search path can swing by 2-3x between equivalent encodings.
 
-The `kotlin/direct` route is measured too, but not registered by `AutoBackend.load()`; its observations and the
+The `kotlin/direct` route is measured too; `AutoBackend.load()` registers it only as the last resort; its observations and the
 optimisations they drove are in [the pure-Kotlin solver](../explanation/pure-kotlin-solver.md). Known answers come from closed forms or
 dynamic programming, never from enumerating permutations or grids, so large scales stay within memory.
 
@@ -165,11 +165,11 @@ Selection rules suggested by this recorded run (not additional default-registry 
 3. **JVM, `LINEAR_INTEGER`: no evidence for a change.** Every route answers these knapsack and integer-program
    instances within about 30 ms. The current MIP-first order is harmless, but these instances are too easy to justify
    it either; harder linear instances are needed.
-4. **Node and Native: Kotlin first for every model it supports, with Z3 as fallback.** `kotlin/direct` beats Z3 Wasm
+4. **Node and Native: Kotlin first for every model it supports, with Z3 as fallback** (the default loaders keep Kotlin as the last resort instead). `kotlin/direct` beats Z3 Wasm
    on every Node row by 3-100x, mostly through Wasm's fixed cost of about 40 ms and its search on `allDifferent`. On
    Native it beats or ties the Z3 C API everywhere; scheduling is within noise. Z3 remains the route for what Kotlin
    rejects.
-5. **Kotlin on the JVM, if it is ever registered:** rank it after CP-SAT and Choco but before Z3 and MIP on
+5. **Kotlin on the JVM, if it ever ranks above last resort:** rank it after CP-SAT and Choco but before Z3 and MIP on
    `CP_GLOBALS`. It is faster than Z3 on every JVM row.
 
 Gaps: the catalogue has no `SMT_REAL`, `NONLINEAR_INTEGER` or `PURE_BOOLEAN` family, and its bit-vector instance is

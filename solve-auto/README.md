@@ -9,7 +9,8 @@ AutoBackend.load().use { auto -> auto.withSolver { it.solve(model) } }
 - `AutoBackend.load()` registers the routes bundled for the current platform:
   - JVM: CP-SAT, Choco, Z3, SCIP and HiGHS, plus the MiniZinc engines when `MINIZINC_EXECUTABLE` is set;
   - JS: Z3 Wasm, plus MiniZinc's Node CLI route when `MINIZINC_EXECUTABLE` is set;
-  - Native: Z3.
+  - Native: Z3;
+  - every platform: pure Kotlin, as the last resort.
 - On the JVM, `loadAutoBackend()` (Java: `AutoBackends.load()`) does the same on the calling thread, for code
   that cannot suspend; pair it with [`:solve-blocking`](../solve-blocking/README.md).
 - `AutoBackend(listOf(...))` chooses among explicitly given routes instead.

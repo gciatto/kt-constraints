@@ -6,7 +6,7 @@ This engine combines a finite arithmetic compiler, Boolean satisfiability search
 
 ## Routes and classes
 
-`KotlinBackend` provides `kotlin/direct` in the published `:solve-kotlin` module (`kt-constraints-solve-kotlin`), on every platform. TypeScript loads it with `loadKotlin()`. It is not in the `AutoBackend.load()` registries: construct `KotlinBackend()` directly, or pass it in the backend list of an `AutoBackend`.
+`KotlinBackend` provides `kotlin/direct` in the published `:solve-kotlin` module (`kt-constraints-solve-kotlin`), on every platform. TypeScript loads it with `loadKotlin()`. It is registered by `AutoBackend.load()` on every platform as the last resort: it ranks after every other eligible route, so it answers only models the other routes reject or cannot run, such as when Z3 Native's library or Z3 Wasm is missing.
 
 ## Platforms and runtime requirements
 
