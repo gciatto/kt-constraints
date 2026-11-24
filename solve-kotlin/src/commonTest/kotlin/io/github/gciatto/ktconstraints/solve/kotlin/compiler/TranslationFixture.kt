@@ -15,7 +15,7 @@ internal class TranslationFixture {
     val translation = KotlinTranslation(circuit)
 
     suspend fun declare(scope: ConstraintScope) {
-        val model = scope.build()
+        val model = scope.buildModel()
         val domains = model.variables.filterIsInstance<IntVar>().associateWith { it.domain }
         translation.declare(model, domains, budget)
     }

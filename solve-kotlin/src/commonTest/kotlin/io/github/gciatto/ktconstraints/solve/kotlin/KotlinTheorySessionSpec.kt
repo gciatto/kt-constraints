@@ -18,12 +18,12 @@ import org.gciatto.kt.math.BigInteger
 class KotlinTheorySessionSpec :
     FunSpec({
         test("mixed-real conflicts do not leak a popped integer interval") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..2)
                 val r = realVar("r")
                 add(RealEquality(r, IntToReal(x)))
                 KotlinBackend().create().use { solver ->
-                    solver.openSession(build()).use { session ->
+                    solver.openSession(buildModel()).use { session ->
                         val frame = session.push()
                         session.add(RealLessThan(RealLiteral(Rational.ZERO), r))
                         session.add(RealLessThan(r, RealLiteral(Rational.ONE)))
@@ -41,13 +41,13 @@ class KotlinTheorySessionSpec :
         }
 
         test("real assumption cores remain sufficient after a later satisfiable check") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val r = realVar("r")
                 val small = RealLessThan(r, RealLiteral(Rational.ZERO))
                 val large = RealLessThan(RealLiteral(Rational.ONE), r)
                 val assumptions: List<BoolExpr> = listOf(small, large)
                 KotlinBackend().create().use { solver ->
-                    solver.openSession(build()).use { session ->
+                    solver.openSession(buildModel()).use { session ->
                         val conflict = session.check(assumptions)
                         conflict.status shouldBe CheckStatus.UNSATISFIABLE
                         val core = requireNotNull(conflict.unsatCore)
@@ -64,12 +64,12 @@ class KotlinTheorySessionSpec :
             with(ConstraintScope.empty()) first@{
                 val x = intVar("x", 0..2)
                 add(IntEquality(x, IntLiteral(0)))
-                with(ConstraintScope.empty()) {
+                ConstraintScope.empty {
                     val y = intVar("x", 0..2)
                     add(IntEquality(y, IntLiteral(2)))
                     KotlinBackend().create().use { solver ->
-                        solver.openSession(this@first.build()).use { left ->
-                            solver.openSession(build()).use { right ->
+                        solver.openSession(this@first.buildModel()).use { left ->
+                            solver.openSession(buildModel()).use { right ->
                                 left.check().assignment?.valueOf(x) shouldBe BigInteger.ZERO
                                 right.check().assignment?.valueOf(y) shouldBe BigInteger.TWO
                                 left.check().assignment?.valueOf(y) shouldBe null

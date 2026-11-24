@@ -64,12 +64,12 @@ class KotlinMixedArithmeticSpec :
         }
 
         test("negative real equalities can choose either open half-space") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val r = realVar("r")
                 add(BoolNot(RealEquality(r, RealLiteral(Rational.ZERO))))
                 add(RealLessOrEqual(r, RealLiteral(Rational.ZERO)))
                 KotlinBackend().create().use { solver ->
-                    val result = solver.solve(build())
+                    val result = solver.solve(buildModel())
                     (requireNotNull(result.assignment?.valueOf(r)) < Rational.ZERO) shouldBe true
                 }
             }
@@ -78,7 +78,7 @@ class KotlinMixedArithmeticSpec :
         withTests(nameFn = { "bit-vector operation $it matches exact ground semantics" }, BitVecOperator.entries.toList()) { operator ->
             for (left in 0..7) {
                 for (right in 0..7) {
-                    with(ConstraintScope.empty()) {
+                    ConstraintScope.empty {
                         val a = bitVecVar("a", 3)
                         val b = bitVecVar("b", 3)
                         val result = bitVecVar("result", 3)
@@ -90,7 +90,7 @@ class KotlinMixedArithmeticSpec :
                                 BitVecBinary(operator, BitVecLiteral(BigInteger.of(left), 3), BitVecLiteral(BigInteger.of(right), 3)),
                             )
                         KotlinBackend().create().use { solver ->
-                            solver.solve(build()).assignment?.valueOf(result) shouldBe expected
+                            solver.solve(buildModel()).assignment?.valueOf(result) shouldBe expected
                         }
                     }
                 }
@@ -98,10 +98,10 @@ class KotlinMixedArithmeticSpec :
         }
 
         test("signed bit-vector conversion is preserved across an incremental pop") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val bits = bitVecVar("bits", 5)
                 KotlinBackend().create().use { solver ->
-                    solver.openSession(build()).use { session ->
+                    solver.openSession(buildModel()).use { session ->
                         val frame = session.push()
                         session.add(IntEquality(BitVecToInt(bits, true), IntLiteral(-1)))
                         session.check().assignment?.valueOf(bits) shouldBe BigInteger.of(31)

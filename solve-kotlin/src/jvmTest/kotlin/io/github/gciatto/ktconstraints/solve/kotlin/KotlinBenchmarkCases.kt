@@ -21,7 +21,7 @@ import io.github.gciatto.ktconstraints.model.ConstraintScope
 /** Fixed, small models with known witnesses; these are smoke workloads, not a representative benchmark corpus. */
 internal object KotlinBenchmarkCases {
     fun sat(): KotlinBenchmarkCase {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val selected = List(24) { boolVar("selected$it") }
             add(BoolCardinality(selected, 12, CardinalityRelation.EXACTLY))
             repeat(12) { pair ->
@@ -29,12 +29,12 @@ internal object KotlinBenchmarkCases {
                 add(BoolImplies(selected[2 * pair], BoolNot(selected[2 * ((pair + 1) % 12)])))
             }
             project(*selected.take(6).toTypedArray())
-            return KotlinBenchmarkCase("sat", build(), selected.first(), BoolNot(selected.first()))
+            return KotlinBenchmarkCase("sat", buildModel(), selected.first(), BoolNot(selected.first()))
         }
     }
 
     fun scheduling(): KotlinBenchmarkCase {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val durations = listOf(2, 1, 3, 2, 1, 3, 2, 1)
             val starts = durations.indices.map { intVar("start$it", 0..24) }
             val ends = starts.indices.map { IntSum(starts[it], IntLiteral(durations[it])) }
@@ -49,7 +49,7 @@ internal object KotlinBenchmarkCases {
             project(*starts.take(4).toTypedArray())
             return KotlinBenchmarkCase(
                 "finite-scheduling",
-                build(),
+                buildModel(),
                 IntEquality(starts.first(), IntLiteral(0)),
                 IntEquality(starts.first(), IntLiteral(1)),
             )
@@ -57,7 +57,7 @@ internal object KotlinBenchmarkCases {
     }
 
     fun mixedReal(): KotlinBenchmarkCase {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val slots = List(4) { intVar("slot$it", 0..6) }
             val starts = List(4) { realVar("start$it") }
             val duration = RealLiteral(Rational.of(1, 2))
@@ -79,7 +79,7 @@ internal object KotlinBenchmarkCases {
             project(slots[0], starts[0], slots[1], starts[1])
             return KotlinBenchmarkCase(
                 "mixed-real-scheduling",
-                build(),
+                buildModel(),
                 IntEquality(slots.first(), IntLiteral(0)),
                 IntEquality(slots.first(), IntLiteral(1)),
             )

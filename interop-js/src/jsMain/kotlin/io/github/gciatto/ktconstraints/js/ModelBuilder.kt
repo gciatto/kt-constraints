@@ -63,5 +63,5 @@ class ModelBuilder {
     fun satisfy(): ModelBuilder = apply { scope.satisfy() }
 
     /** Snapshots the current model. */
-    fun build(): Model = Model(scope.build())
+    fun build(): Model = Model(scope.buildModel())
 }

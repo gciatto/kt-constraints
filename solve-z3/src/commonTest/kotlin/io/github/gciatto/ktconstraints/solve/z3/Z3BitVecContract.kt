@@ -25,20 +25,20 @@ import org.gciatto.kt.math.BigInteger
 fun z3BitVecContract(create: () -> IncrementalConstraintSolver): TestFactory =
     funSpec {
         test("z3-bitvec/addition-wraps-around") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = bitVecVar("x", 8)
                 add(BitVecComparison(BitVecRelation.EQUAL, BitVecBinary(BitVecOperator.ADD, x, BitVecLiteral(1, 8)), BitVecLiteral(0, 8)))
-                create().use { solver -> solver.solve(build()).assignment?.valueOf(x) shouldBe BigInteger.of(255) }
+                create().use { solver -> solver.solve(buildModel()).assignment?.valueOf(x) shouldBe BigInteger.of(255) }
             }
         }
 
         test("z3-bitvec/signed-and-unsigned-orders-are-distinct") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = bitVecVar("x", 8)
                 add(BitVecComparison(BitVecRelation.SIGNED_LESS_THAN, x, BitVecLiteral(0, 8)))
                 add(BitVecComparison(BitVecRelation.UNSIGNED_LESS_THAN, BitVecLiteral(200, 8), x))
                 create().use { solver ->
-                    val value = requireNotNull(solver.solve(build()).assignment?.valueOf(x))
+                    val value = requireNotNull(solver.solve(buildModel()).assignment?.valueOf(x))
                     (value > BigInteger.of(200) && value <= BigInteger.of(255)) shouldBe true
                 }
             }
@@ -60,7 +60,7 @@ fun z3BitVecContract(create: () -> IncrementalConstraintSolver): TestFactory =
         }
 
         test("z3-bitvec/wide-vectors-are-exact") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = bitVecVar("x", 100)
                 add(
                     BitVecComparison(
@@ -69,12 +69,14 @@ fun z3BitVecContract(create: () -> IncrementalConstraintSolver): TestFactory =
                         BitVecLiteral(0, 100),
                     ),
                 )
-                create().use { solver -> solver.solve(build()).assignment?.valueOf(x) shouldBe BigInteger.TWO.pow(100) - BigInteger.ONE }
+                create().use { solver ->
+                    solver.solve(buildModel()).assignment?.valueOf(x) shouldBe BigInteger.TWO.pow(100) - BigInteger.ONE
+                }
             }
         }
 
         test("z3-bitvec/shifts-and-signed-conversion") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = bitVecVar("x", 8)
                 val y = bitVecVar("y", 4)
                 add(
@@ -93,7 +95,7 @@ fun z3BitVecContract(create: () -> IncrementalConstraintSolver): TestFactory =
                 )
                 add(IntEquality(BitVecToInt(y, signed = true), IntLiteral(-3)))
                 create().use { solver ->
-                    val assignment = solver.solve(build()).assignment
+                    val assignment = solver.solve(buildModel()).assignment
                     assignment?.valueOf(x) shouldBe BigInteger.of(15)
                     assignment?.valueOf(y) shouldBe BigInteger.of(13)
                 }
@@ -101,12 +103,12 @@ fun z3BitVecContract(create: () -> IncrementalConstraintSolver): TestFactory =
         }
 
         test("z3-bitvec/enumeration-blocks-each-value") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = bitVecVar("x", 8)
                 add(BitVecComparison(BitVecRelation.UNSIGNED_LESS_THAN, x, BitVecLiteral(3, 8)))
                 create().use { solver ->
                     val values = mutableSetOf<BigInteger?>()
-                    solver.solutions(build()).use { stream ->
+                    solver.solutions(buildModel()).use { stream ->
                         var event = stream.next()
                         while (event is SolutionFound) {
                             values += event.assignment.valueOf(x)
@@ -120,12 +122,12 @@ fun z3BitVecContract(create: () -> IncrementalConstraintSolver): TestFactory =
         }
 
         test("z3-bitvec/sessions-check-bit-vector-assumptions") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = bitVecVar("x", 8)
                 add(BitVecComparison(BitVecRelation.UNSIGNED_LESS_THAN, x, BitVecLiteral(10, 8)))
                 val large = BitVecComparison(BitVecRelation.EQUAL, x, BitVecLiteral(200, 8))
                 create().use { solver ->
-                    solver.openSession(build()).use { session ->
+                    solver.openSession(buildModel()).use { session ->
                         val refuted = session.check(listOf(large))
                         refuted.status shouldBe CheckStatus.UNSATISFIABLE
                         refuted.unsatCore shouldBe listOf(large)

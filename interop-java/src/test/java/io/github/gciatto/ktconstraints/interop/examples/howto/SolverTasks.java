@@ -41,7 +41,7 @@ public final class SolverTasks {
         scope.add(Expressions.eq(Expressions.plus(x, y), 3));
         scope.maximize(x);
         try (BlockingSolver solver = BlockingSolver.of(new Z3Backend())) {
-            CompletionStage<SolveResult> pending = solver.solveAsync(scope.build(), new SolveOptions(1_000L, null));
+            CompletionStage<SolveResult> pending = solver.solveAsync(scope.buildModel(), new SolveOptions(1_000L, null));
             SolveResult result = pending.toCompletableFuture().get(10, TimeUnit.SECONDS);
             check(result.getStatus() == SolveStatus.OPTIMAL, "optimality");
             check(Integer.valueOf(3).equals(result.getAssignment().intValueOf(x)), "x = 3");
@@ -57,7 +57,7 @@ public final class SolverTasks {
         int count = 0;
         boolean completed = false;
         try (BlockingSolver solver = BlockingSolver.of(new Z3Backend());
-             BlockingSolutionStream stream = solver.solutions(scope.build(), new SolveOptions(1_000L, null))) {
+             BlockingSolutionStream stream = solver.solutions(scope.buildModel(), new SolveOptions(1_000L, null))) {
             while (stream.hasNext()) {
                 SolutionEvent event = stream.next();
                 if (event instanceof SolutionFound) {
@@ -81,7 +81,7 @@ public final class SolverTasks {
         IntVar x = scope.intVar("x", 0, 3);
         scope.add(Expressions.ge(x, 1));
         try (BlockingSolver solver = BlockingSolver.of(new Z3Backend());
-             BlockingSession session = solver.openSession(scope.build())) {
+             BlockingSession session = solver.openSession(scope.buildModel())) {
             Checkpoint before = session.push();
             session.add(Expressions.eq(x, 0));
             check(session.check().getStatus() == CheckStatus.UNSATISFIABLE, "contradiction");
@@ -112,7 +112,7 @@ public final class SolverTasks {
         RealVar r = scope.realVar("r");
         scope.add(Expressions.eq(r, JavaNumbers.rational(new BigDecimal("0.1"))));
         try (BlockingSolver solver = BlockingSolver.of(new Z3Backend())) {
-            SolveResult result = solver.solve(scope.build());
+            SolveResult result = solver.solve(scope.buildModel());
             check(Rational.of(1, 10).equals(result.getAssignment().valueOf(r)), "exact tenth");
         }
         // --8<-- [end:real]
@@ -133,7 +133,7 @@ public final class SolverTasks {
             }
         }
         try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
-            CompletableFuture<SolveResult> pending = solver.solveAsync(scope.build());
+            CompletableFuture<SolveResult> pending = solver.solveAsync(scope.buildModel());
             check(pending.cancel(true) && pending.isCancelled(), "cancelled");
         }
         // --8<-- [end:cancel]

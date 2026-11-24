@@ -31,9 +31,9 @@ internal fun ConstraintScope.sudoku(givens: List<List<Int>>): List<List<IntVar>>
 
 // --8<-- [start:solve]
 internal suspend fun solveSudoku(givens: List<List<Int>>): List<List<Int>> =
-    with(ConstraintScope.empty()) {
+    ConstraintScope.empty {
         val cells = sudoku(givens)
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(build()) } }
+        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
         check(result.status == SolveStatus.FEASIBLE) { result.toString() }
         val assignment = checkNotNull(result.assignment)
         val grid = cells.map { row -> row.map { checkNotNull(assignment.intValueOf(it)) } }

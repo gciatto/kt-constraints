@@ -95,12 +95,12 @@ class MipLoweringSpec :
         }
 
         test("mip-lowering/program-bounds-and-coefficients-are-exact") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", -4..9)
                 val b = boolVar("b")
                 add(IntLessOrEqual(LinearSum(listOf(x), listOf(BigInteger.of(3)), BigInteger.ONE), IntLiteral(10)))
                 minimize(IntSum(x, IntLiteral(7)))
-                val program = MipLowering.lower(build())
+                val program = MipLowering.lower(buildModel())
                 program.variables[program.integers.getValue(x)] shouldBe MipVariable(BigInteger.of(-4), BigInteger.of(9))
                 program.variables[program.booleans.getValue(b)] shouldBe MipVariable(BigInteger.ZERO, BigInteger.ONE)
                 program.rows shouldBe listOf(MipRow(mapOf(program.integers.getValue(x) to BigInteger.of(3)), null, BigInteger.of(9)))

@@ -41,24 +41,24 @@ class FiniteOracleSpec :
             }
         }
         test("oracle/sat-and-unsat-with-boolean-variables") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val flag = boolVar("flag")
                 add(flag)
                 FiniteOracle().use { solver ->
-                    solver.solve(build()).assignment?.valueOf(flag) shouldBe true
+                    solver.solve(buildModel()).assignment?.valueOf(flag) shouldBe true
                     add(BoolNot(flag))
-                    solver.solve(build()).status shouldBe SolveStatus.INFEASIBLE
+                    solver.solve(buildModel()).status shouldBe SolveStatus.INFEASIBLE
                 }
             }
         }
 
         test("oracle/exact-sparse-values-beyond-long-and-optimization") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val large = BigInteger.of("9223372036854775808")
                 val x = intVar("x", IntDomain.of(large, large + 2))
                 maximize(IntProduct(x, IntLiteral(2)))
                 FiniteOracle().use { solver ->
-                    val result = solver.solve(build())
+                    val result = solver.solve(buildModel())
                     result.status shouldBe SolveStatus.OPTIMAL
                     result.assignment?.valueOf(x) shouldBe large + 2
                     result.objectiveValue shouldBe (large + 2) * 2
@@ -68,12 +68,12 @@ class FiniteOracleSpec :
         }
 
         test("oracle/enumeration-deduplicates-projections-and-hides-auxiliary-variables") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", IntDomain.values(1, 3))
                 val hidden = boolVar("hidden")
                 project(x)
                 FiniteOracle().use { solver ->
-                    solver.solutions(build()).use { stream ->
+                    solver.solutions(buildModel()).use { stream ->
                         val values = mutableSetOf<BigInteger?>()
                         var solutions = 0
                         while (true) {
@@ -96,16 +96,16 @@ class FiniteOracleSpec :
         }
 
         test("oracle/limits-retain-an-incumbent-without-an-optimality-claim") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 1..3)
                 maximize(x)
                 FiniteOracle().use { solver ->
-                    val result = solver.solve(build(), SolveOptions(solutionLimit = 1))
+                    val result = solver.solve(buildModel(), SolveOptions(solutionLimit = 1))
                     result.status shouldBe SolveStatus.FEASIBLE
                     result.terminationReason shouldBe TerminationReason.RESOURCE_LIMIT
                     result.assignment?.valueOf(x) shouldBe BigInteger.ONE
                     result.bestBound shouldBe null
-                    val timeout = solver.solve(build(), SolveOptions(timeoutMillis = 0))
+                    val timeout = solver.solve(buildModel(), SolveOptions(timeoutMillis = 0))
                     timeout.status shouldBe SolveStatus.UNKNOWN
                     timeout.terminationReason shouldBe TerminationReason.TIMEOUT
                 }
@@ -118,12 +118,12 @@ class FiniteOracleSpec :
                     intVar("huge", IntDomain.of(Long.MIN_VALUE, Long.MAX_VALUE))
                     intVar("empty", IntDomain.empty())
                 }
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val index = intVar("index", -1..1)
                 add(IntEquality(Element(index, listOf(IntLiteral(7))), IntLiteral(7)))
                 FiniteOracle().use { solver ->
                     solver.solve(emptyScopeModel).status shouldBe SolveStatus.INFEASIBLE
-                    solver.solve(build()).assignment?.valueOf(index) shouldBe BigInteger.ZERO
+                    solver.solve(buildModel()).assignment?.valueOf(index) shouldBe BigInteger.ZERO
                 }
             }
         }
@@ -184,7 +184,7 @@ class FiniteOracleSpec :
                     (stream.next() is SolveCompleted) shouldBe true
                     stream.next() shouldBe null
                 }
-                solver.solve(ConstraintScope.empty().build()).status shouldBe SolveStatus.FEASIBLE
+                solver.solve(ConstraintModel.empty()).status shouldBe SolveStatus.FEASIBLE
             }
         }
     })

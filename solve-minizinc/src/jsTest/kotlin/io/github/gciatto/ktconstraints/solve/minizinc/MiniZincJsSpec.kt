@@ -1,7 +1,6 @@
 package io.github.gciatto.ktconstraints.solve.minizinc
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
@@ -55,7 +54,7 @@ class MiniZincJsSpec :
                 val selected = loaded()
                 selected.descriptor.id shouldBe if (browser) "chuffed/minizinc-wasm" else "gecode/minizinc-js-cli"
                 selected.create().use { solver ->
-                    solver.solve(ConstraintScope.empty().build()).descriptor shouldBe selected.descriptor
+                    solver.solve(ConstraintModel.empty()).descriptor shouldBe selected.descriptor
                 }
             }
             test("js/early-close-cancels-a-real-enumeration") {
@@ -90,7 +89,7 @@ class MiniZincJsSpec :
                 selected.close()
                 selected.availability().available shouldBe false
                 stream.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
-                shouldThrow<IllegalStateException> { solver.solutions(ConstraintScope.empty().build()) }
+                shouldThrow<IllegalStateException> { solver.solutions(ConstraintModel.empty()) }
                 solver.close()
                 backend = load()
                 loaded().availability().available shouldBe true

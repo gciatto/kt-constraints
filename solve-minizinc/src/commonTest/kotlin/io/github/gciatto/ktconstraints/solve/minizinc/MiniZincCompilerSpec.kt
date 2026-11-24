@@ -38,15 +38,15 @@ import org.gciatto.kt.math.BigInteger
 class MiniZincCompilerSpec :
     FunSpec({
         test("compiler/uses-deterministic-identifiers-and-retains-source-mapping") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x; constraint false;", IntDomain.values(1, 3))
                 val flag = boolVar("not a MiniZinc identifier")
                 add(IntEquality(x, IntLiteral(3)))
-                val compiled = MiniZincCompiler().compile(build())
+                val compiled = MiniZincCompiler().compile(buildModel())
                 compiled.source.contains("x; constraint false;") shouldBe false
                 compiled.source.contains("v0") shouldBe true
                 compiled.sourceVariables shouldBe mapOf("v0" to x, "v1" to flag)
-                compiled.source shouldBe MiniZincCompiler().compile(build()).source
+                compiled.source shouldBe MiniZincCompiler().compile(buildModel()).source
                 compiled.close()
             }
         }

@@ -19,27 +19,27 @@ class ManagedConstraintSolverSpec :
     FunSpec({
         test("solver/close-cancels-all-streams-once-and-rejects-new-work") {
             val solver = RecordingSolver()
-            val first = solver.solutions(ConstraintModel.of {})
-            val second = solver.solutions(ConstraintModel.of {})
+            val first = solver.solutions(ConstraintModel.empty())
+            val second = solver.solutions(ConstraintModel.empty())
             solver.close()
             solver.close()
             first.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
             second.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
             solver.created.map { it.releases } shouldBe listOf(1, 1)
-            shouldThrow<IllegalStateException> { solver.solutions(ConstraintModel.of {}) }
+            shouldThrow<IllegalStateException> { solver.solutions(ConstraintModel.empty()) }
         }
 
         test("solver/close-racing-with-stream-creation-does-not-leak") {
             lateinit var solver: RecordingSolver
             solver = RecordingSolver(onOpen = { solver.close() })
-            shouldThrow<IllegalStateException> { solver.solutions(ConstraintModel.of {}) }
+            shouldThrow<IllegalStateException> { solver.solutions(ConstraintModel.empty()) }
             solver.created.single().releases shouldBe 1
         }
 
         test("solver/release-failure-does-not-leak-the-other-streams") {
             val solver = RecordingSolver(releaseHook = { error("release failed") })
-            solver.solutions(ConstraintModel.of {})
-            solver.solutions(ConstraintModel.of {})
+            solver.solutions(ConstraintModel.empty())
+            solver.solutions(ConstraintModel.empty())
             shouldThrow<IllegalStateException> { solver.close() }
             solver.created.map { it.releases } shouldBe listOf(1, 1)
             solver.close()

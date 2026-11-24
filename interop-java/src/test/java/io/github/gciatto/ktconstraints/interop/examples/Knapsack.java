@@ -33,7 +33,7 @@ public final class Knapsack {
         }
         scope.add(Expressions.le(Expressions.sum(weightTerms), 5));
         scope.maximize(Expressions.sum(valueTerms));
-        ConstraintModel model = scope.build();
+        ConstraintModel model = scope.buildModel();
         // --8<-- [end:model]
         // --8<-- [start:solve]
         try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {

@@ -16,11 +16,11 @@ import org.gciatto.kt.math.BigInteger
 class ChocoOptionsSpec :
     FunSpec({
         withTests(nameFn = { "choco-options/search/$it" }, ChocoSearch.entries) { search ->
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val xs = List(3) { intVar("x$it", 0..3) }
                 add(AllDifferent(xs))
                 add(IntLessThan(xs[0], xs[2]))
-                val satisfaction = build()
+                val satisfaction = buildModel()
                 val options = SolveOptions() + ChocoOptions(search)
                 val (found, _) = ChocoBackend().create().use { enumerate(it, satisfaction, options) }
                 val (expected, _) = FiniteOracle().use { enumerate(it, satisfaction) }
@@ -28,7 +28,7 @@ class ChocoOptionsSpec :
                 found.size shouldBe expected.size
 
                 maximize(LinearSum(xs, listOf(1, 2, 3).map { BigInteger.of(it) }))
-                val optimization = build()
+                val optimization = buildModel()
                 ChocoBackend().create().use { it.solve(optimization, options) }.objectiveValue shouldBe
                     FiniteOracle().use { it.solve(optimization) }.objectiveValue
             }

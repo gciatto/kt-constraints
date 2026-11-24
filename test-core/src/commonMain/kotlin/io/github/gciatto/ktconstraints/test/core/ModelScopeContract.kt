@@ -27,12 +27,12 @@ fun modelScopeContract(create: () -> ConstraintScope) =
                 val expression = IntEquality(IntSum(x, IntLiteral(1)), IntLiteral(2))
                 first.add(expression)
                 shouldThrow<IllegalArgumentException> { second.add(expression) }
-                val snapshot = first.build()
+                val snapshot = first.buildModel()
                 first.add(IntEquality(x, IntLiteral(1)))
                 snapshot.constraints shouldBe listOf(expression)
                 second.add(IntEquality(IntSum(renamed, IntLiteral(1)), IntLiteral(2)))
                 second
-                    .build()
+                    .buildModel()
                     .constraints
                     .single()
                     .variables shouldBe setOf(renamed)

@@ -121,14 +121,14 @@ class ChocoSpec :
 
         test("choco/objectives-near-the-limit-are-exact-and-optimal") {
             val million = BigInteger.of(1_000_000)
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", -1_000_000..3_000_000)
                 val hidden = intVar("hidden", 0..3)
                 add(IntLessThan(x, IntSum(IntProduct(hidden, IntLiteral(million)), IntLiteral(-7))))
                 maximize(LinearSum(listOf(x, hidden), listOf(BigInteger.of(3), BigInteger.ONE), BigInteger.ONE))
                 project(x)
                 ChocoBackend().create().use { solver ->
-                    val result = solver.solve(build())
+                    val result = solver.solve(buildModel())
                     result.status shouldBe SolveStatus.OPTIMAL
                     result.assignment?.valueOf(x) shouldBe BigInteger.of(2_999_992)
                     result.objectiveValue shouldBe BigInteger.of(8_999_980)
@@ -207,12 +207,12 @@ class ChocoSpec :
         test("choco/interleaved-streams-are-isolated") {
             with(ConstraintScope.empty()) first@{
                 val x = intVar("x", 0..2)
-                with(ConstraintScope.empty()) {
+                ConstraintScope.empty {
                     val y = intVar("y", 5..6)
                     add(IntLessOrEqual(IntLiteral(6), y))
                     ChocoBackend().create().use { solver ->
-                        val left = solver.solutions(this@first.build())
-                        val right = solver.solutions(build())
+                        val left = solver.solutions(this@first.buildModel())
+                        val right = solver.solutions(buildModel())
                         val values = mutableListOf<BigInteger?>()
                         values += (left.next() as SolutionFound).assignment.valueOf(x)
                         (right.next() as SolutionFound).assignment.valueOf(y) shouldBe BigInteger.of(6)

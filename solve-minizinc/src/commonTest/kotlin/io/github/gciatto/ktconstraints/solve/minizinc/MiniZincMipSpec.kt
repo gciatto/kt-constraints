@@ -19,13 +19,13 @@ class MiniZincMipSpec :
     FunSpec({
         withTests(nameFn = { "mip/linear-support-and-capabilities/$it" }, listOf(MiniZincEngine.HIGHS, MiniZincEngine.CBC)) { engine ->
             (SolverCapability.ENUMERATION in engine.descriptor.capabilities) shouldBe false
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", -3..3)
                 add(IntEquality(IntProduct(IntLiteral(2), x), IntLiteral(2)))
                 val compiler = MiniZincCompiler(engine)
-                compiler.support(build()).isSupported shouldBe true
+                compiler.support(buildModel()).isSupported shouldBe true
                 maximize(IntProduct(x, x))
-                compiler.support(build()).isSupported shouldBe false
+                compiler.support(buildModel()).isSupported shouldBe false
             }
         }
         test("mip/satisfaction-needs-a-validated-witness-but-not-an-exhaustion-status") {
@@ -51,7 +51,7 @@ class MiniZincMipSpec :
             shouldThrow<BackendExecutionException> { decoder.finish(0, "") }
         }
         test("mip/does-not-treat-a-wire-satisfied-status-as-an-exhaustion-proof") {
-            val compiled = MiniZincCompiler().compile(ConstraintScope.empty().build())
+            val compiled = MiniZincCompiler().compile(ConstraintModel.empty())
             val decoder = MiniZincDecoder(compiled)
             decoder.accept("""{"type":"solution","output":{"default":"{}"}}""")
             decoder.accept("""{"type":"status","status":"SATISFIED"}""")

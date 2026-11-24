@@ -47,7 +47,7 @@ public final class JavaUsage {
         IntVar y = scope.intVar("y", IntDomain.of(BigInteger.of(1), BigInteger.of(10)));
         scope.add(Expressions.eq(Expressions.plus(x, y), 10));
         scope.add(Expressions.and(Expressions.gt(x, y), Expressions.allDifferent(x, y)));
-        ConstraintModel model = scope.build();
+        ConstraintModel model = scope.buildModel();
         try (BlockingSolver solver = BlockingSolver.of(backend)) {
             SolveResult result = solver.solve(model);
             check(result.getStatus() == SolveStatus.FEASIBLE, "satisfaction status " + result.getStatus());
@@ -64,7 +64,7 @@ public final class JavaUsage {
         IntVar y = scope.intVar("y", IntDomain.of(BigInteger.of(0), BigInteger.of(10)));
         scope.add(Expressions.le(Expressions.plus(x, y), 12));
         scope.maximize(Expressions.minus(Expressions.times(x, 3), y));
-        ConstraintModel model = scope.build();
+        ConstraintModel model = scope.buildModel();
         try (BlockingSolver solver = BlockingSolver.of(backend)) {
             CompletionStage<SolveResult> stage = solver.solveAsync(model, new SolveOptions(60_000L, null));
             SolveResult result = stage.toCompletableFuture().get(120, TimeUnit.SECONDS);
@@ -82,7 +82,7 @@ public final class JavaUsage {
         List<String> found = new ArrayList<>();
         SolveCompleted completion = null;
         try (BlockingSolver solver = BlockingSolver.of(backend);
-             BlockingSolutionStream events = solver.solutions(scope.build(), SolveOptions.DEFAULT)) {
+             BlockingSolutionStream events = solver.solutions(scope.buildModel(), SolveOptions.DEFAULT)) {
             while (events.hasNext()) {
                 SolutionEvent event = events.next();
                 if (event instanceof SolutionFound) {
@@ -106,7 +106,7 @@ public final class JavaUsage {
         IntVar x = scope.intVar("x", IntDomain.of(BigInteger.ZERO, value.times(BigInteger.of(2))));
         scope.add(Expressions.eq(Expressions.minus(x, value), 1));
         try (BlockingSolver solver = BlockingSolver.of(backend)) {
-            BigInteger result = solver.solve(scope.build()).getAssignment().valueOf(x);
+            BigInteger result = solver.solve(scope.buildModel()).getAssignment().valueOf(x);
             check(new java.math.BigInteger(result.toString()).equals(huge.add(java.math.BigInteger.ONE)), "value " + result);
         }
     }
@@ -126,7 +126,7 @@ public final class JavaUsage {
         }
         long start = System.nanoTime();
         try (BlockingSolver solver = BlockingSolver.of(backend)) {
-            CompletableFuture<SolveResult> future = solver.solveAsync(scope.build()).toCompletableFuture();
+            CompletableFuture<SolveResult> future = solver.solveAsync(scope.buildModel()).toCompletableFuture();
             Thread.sleep(200);
             check(!future.isDone(), "the refutation finished too early to test cancellation");
             check(future.cancel(true) && future.isCancelled(), "future not cancelled");
@@ -163,7 +163,7 @@ public final class JavaUsage {
         scope.add(Expressions.ge(r, Rational.parse("0.5")));
         scope.maximize(n);
         try (BlockingSolver solver = BlockingSolver.of(backend)) {
-            SolveResult result = solver.solve(scope.build());
+            SolveResult result = solver.solve(scope.buildModel());
             check(result.getStatus() == SolveStatus.OPTIMAL, "real optimization status " + result.getStatus());
             check(Integer.valueOf(7).equals(result.getAssignment().intValueOf(n)), "n " + result.getAssignment().valueOf(n));
             Rational value = result.getAssignment().valueOf(r);
@@ -177,7 +177,7 @@ public final class JavaUsage {
         IntVar x = scope.intVar("x", 0, 10);
         scope.add(Expressions.gt(x, 3));
         try (BlockingSolver solver = BlockingSolver.of(backend);
-             BlockingSession session = solver.openSession(scope.build())) {
+             BlockingSession session = solver.openSession(scope.buildModel())) {
             Checkpoint checkpoint = session.push();
             session.add(Expressions.lt(x, 2));
             check(session.check().getStatus() == CheckStatus.UNSATISFIABLE, "contradictory frame");
@@ -202,7 +202,7 @@ public final class JavaUsage {
         scope.intVar("x", 0, 1);
         try (BlockingSolver solver = BlockingSolver.of(backend)) {
             try {
-                solver.openSession(scope.build()).close();
+                solver.openSession(scope.buildModel()).close();
             } catch (UnsupportedOperationException expected) {
                 return;
             }

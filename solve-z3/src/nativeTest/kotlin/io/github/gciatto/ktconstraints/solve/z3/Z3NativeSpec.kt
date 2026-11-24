@@ -73,18 +73,18 @@ class Z3NativeSpec :
                         SolverCapability.BITVECTORS,
                     ),
                 ) shouldBe true
-                backend.create().use { it.solve(ConstraintScope.empty().build()).descriptor shouldBe backend.descriptor }
+                backend.create().use { it.solve(ConstraintModel.empty()).descriptor shouldBe backend.descriptor }
             }
 
             test("z3-native/integers-beyond-64-bits-are-exact") {
                 val huge = BigInteger.of("1000000000000000000000000000001")
-                with(ConstraintScope.empty()) {
+                ConstraintScope.empty {
                     val x = intVar("x", IntDomain.of(-huge, huge))
                     add(
                         IntEquality(LinearSum(listOf(x), listOf(BigInteger.TWO), BigInteger.ONE), IntLiteral(huge + huge + BigInteger.ONE)),
                     )
                     Z3NativeBackend().create().use { solver ->
-                        val result = solver.solve(build())
+                        val result = solver.solve(buildModel())
                         result.status shouldBe SolveStatus.FEASIBLE
                         result.assignment?.valueOf(x) shouldBe huge
                     }
@@ -92,11 +92,11 @@ class Z3NativeSpec :
             }
 
             test("z3-native/element-definedness-matches-the-oracle") {
-                with(ConstraintScope.empty()) {
+                ConstraintScope.empty {
                     val index = intVar("i", -1..4)
                     val value = intVar("v", -2..3)
                     add(IntEquality(Element(index, listOf(IntLiteral(-2), value, IntLiteral(3))), value))
-                    val model = build()
+                    val model = buildModel()
                     answers(Z3NativeBackend().create(), model, index, value) shouldBe answers(FiniteOracle(), model, index, value)
                 }
             }

@@ -14,13 +14,13 @@ import io.kotest.matchers.shouldBe
 class ModelMetadataSpec :
     FunSpec({
         test("constraints/names-and-annotations-are-frozen") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..10)
                 val expression = IntEquality(x, IntLiteral(2))
                 val annotations = mutableMapOf("tag" to "example")
                 val source = SourceLocation("example.kt", 12, 4)
                 add(expression, name = "fixed-x", annotations = annotations, source = source)
-                val model = build()
+                val model = buildModel()
                 annotations.clear()
                 runCatching { (model.entries.single().annotations as MutableMap).clear() }
                 model.constraints shouldBe listOf(expression)
@@ -33,20 +33,20 @@ class ModelMetadataSpec :
         }
 
         test("projection/defaults-to-all-and-detaches-explicit-order") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..10)
                 val y = intVar("y", 0..10)
-                build().outputVariables shouldBe listOf(x, y)
-                val model = project(y, x).build()
+                buildModel().outputVariables shouldBe listOf(x, y)
+                val model = project(y, x).buildModel()
                 project()
                 runCatching { (model.outputVariables as MutableList).clear() }
                 model.outputVariables shouldBe listOf(y, x)
-                build().outputVariables shouldBe emptyList()
+                buildModel().outputVariables shouldBe emptyList()
             }
         }
 
         test("projection/rejects-foreign-and-duplicate-identities") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = boolVar("x")
                 val foreign = ConstraintScope.empty().boolVar("x")
                 shouldThrow<IllegalArgumentException> { project(foreign) }
@@ -55,11 +55,11 @@ class ModelMetadataSpec :
         }
 
         test("objective/replacement-and-satisfaction-are-detached") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..10)
-                val before = minimize(x).build()
-                maximize(x).build().objective shouldBe Objective.Maximize(x)
-                satisfy().build().objective shouldBe null
+                val before = minimize(x).buildModel()
+                maximize(x).buildModel().objective shouldBe Objective.Maximize(x)
+                satisfy().buildModel().objective shouldBe null
                 before.objective shouldBe Objective.Minimize(x)
                 val foreign = ConstraintScope.empty().intVar("x", 0..10)
                 shouldThrow<IllegalArgumentException> { minimize(foreign) }
@@ -68,7 +68,7 @@ class ModelMetadataSpec :
         }
 
         test("sorts/reject-inconsistent-extension-nodes") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val invalidBoolean =
                     object : BoolExpr {
                         override val sort: Sort = Sort.Integer
@@ -82,7 +82,7 @@ class ModelMetadataSpec :
                 shouldThrow<IllegalArgumentException> { maximize(invalidInteger) }
                 this
                     .add(BoolLiteral(true))
-                    .build()
+                    .buildModel()
                     .constraints.size shouldBe 1
             }
         }

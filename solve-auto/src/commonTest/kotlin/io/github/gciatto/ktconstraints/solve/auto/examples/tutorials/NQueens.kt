@@ -51,10 +51,10 @@ internal fun ConstraintScope.breakRowReflection(rows: List<IntVar>) {
 
 // --8<-- [start:solve]
 internal suspend fun solveFourQueens(): List<Int> =
-    with(ConstraintScope.empty()) {
+    ConstraintScope.empty {
         val rows = queensBoard(4)
         diagonalGlobals(rows)
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(build()) } }
+        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
         println("${result.status} by ${result.descriptor.id}")
         check(result.status == SolveStatus.FEASIBLE) { result.toString() }
         val assignment = checkNotNull(result.assignment)
@@ -68,11 +68,11 @@ internal suspend fun enumerateQueens(
     pairwise: Boolean = false,
     symmetry: Boolean = false,
 ): List<List<Int>> =
-    with(ConstraintScope.empty()) {
+    ConstraintScope.empty {
         val rows = queensBoard(size)
         if (pairwise) pairwiseDiagonals(rows) else diagonalGlobals(rows)
         if (symmetry) breakRowReflection(rows)
-        val model = build()
+        val model = buildModel()
         val boards = mutableListOf<List<Int>>()
         AutoBackend.load().use { auto ->
             auto.create().use { solver ->

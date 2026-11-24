@@ -27,9 +27,9 @@ internal fun ConstraintScope.assignment(costs: List<List<Int>>): List<IntVar> {
 
 // --8<-- [start:solve]
 internal suspend fun solveAssignment(costs: List<List<Int>>): Pair<SolveResult, List<Int>> =
-    with(ConstraintScope.empty()) {
+    ConstraintScope.empty {
         val task = assignment(costs)
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(build()) } }
+        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
         check(result.status == SolveStatus.OPTIMAL)
         val assignment = requireNotNull(result.assignment)
         val tasks = task.map { requireNotNull(assignment.intValueOf(it)) }

@@ -20,7 +20,7 @@ class IntegerEmbeddingSpec :
     FunSpec({
         test("integer-to-real combines repeated complemented literals exactly") {
             val fixture = TranslationFixture()
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", -1..0)
                 fixture.declare(this)
                 val expression = IntToReal(IntProduct(x, IntLiteral(3)))
@@ -37,7 +37,7 @@ class IntegerEmbeddingSpec :
 
         test("integer-to-real preserves large exact origins and domain holes") {
             val fixture = TranslationFixture()
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val origin = -(BigInteger.ONE shl 200)
                 val domain = IntDomain.of(origin, origin + 1).union(IntDomain.of(origin + 3, origin + 3))
                 val x = intVar("x", domain)
@@ -54,7 +54,7 @@ class IntegerEmbeddingSpec :
 
         test("wide integer-to-real embedding observes the work budget and can be retried") {
             val fixture = TranslationFixture()
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val maximum = (BigInteger.ONE shl 1024) - BigInteger.ONE
                 val x = intVar("x", IntDomain.of(BigInteger.ZERO, maximum))
                 fixture.declare(this)

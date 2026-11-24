@@ -26,7 +26,7 @@ class DiscreteRealPredicateSpec :
     FunSpec({
         test("integer-only real bounds above Long are decided by SAT without theory enumeration") {
             val fixture = TranslationFixture()
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", IntDomain.of(BigInteger.ZERO, BigInteger.ONE shl 80))
                 fixture.declare(this)
                 val bound = (BigInteger.ONE shl 70) + 3
@@ -46,7 +46,7 @@ class DiscreteRealPredicateSpec :
 
         test("rational coefficients retain strictness equality and negation after denominator scaling") {
             val fixture = TranslationFixture()
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", -4..4)
                 val y = intVar("y", -3..3)
                 fixture.declare(this)
@@ -80,7 +80,7 @@ class DiscreteRealPredicateSpec :
 
         test("denominator scaling observes the work budget and can be retried") {
             val fixture = TranslationFixture()
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", IntDomain.of(BigInteger.ZERO, (BigInteger.ONE shl 128) - 1))
                 fixture.declare(this)
                 val left = IntToReal(x)
@@ -107,7 +107,7 @@ class DiscreteRealPredicateSpec :
 
         test("predicates with an actual real variable retain an exact real theory atom") {
             val fixture = TranslationFixture()
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..3)
                 val r = realVar("r")
                 fixture.declare(this)

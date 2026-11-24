@@ -27,10 +27,10 @@ fun incrementalContract(
     create: () -> IncrementalConstraintSolver,
 ) = funSpec {
     test("incremental-contract/repeated-checks-see-added-constraints") {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val x = intVar("x", 0..3)
             create().use { solver ->
-                solver.openSession(build()).use { session ->
+                solver.openSession(buildModel()).use { session ->
                     session.add(IntEquality(x, IntLiteral(1)))
                     val first = session.check()
                     first.status shouldBe CheckStatus.SATISFIABLE
@@ -46,11 +46,11 @@ fun incrementalContract(
     }
 
     test("incremental-contract/model-constraints-form-the-root-frame") {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val x = intVar("x", 0..3)
             add(IntLessThan(x, IntLiteral(1)))
             create().use { solver ->
-                solver.openSession(build()).use { session ->
+                solver.openSession(buildModel()).use { session ->
                     session.check().assignment?.valueOf(x) shouldBe BigInteger.ZERO
                     session.add(IntEquality(x, IntLiteral(2)))
                     session.check().status shouldBe CheckStatus.UNSATISFIABLE
@@ -60,11 +60,11 @@ fun incrementalContract(
     }
 
     test("incremental-contract/nested-frames-restore-earlier-assertions") {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val x = intVar("x", 0..3)
             val y = intVar("y", 0..3)
             create().use { solver ->
-                solver.openSession(build()).use { session ->
+                solver.openSession(buildModel()).use { session ->
                     session.add(IntLessThan(x, y))
                     val outer = session.push()
                     session.add(IntEquality(y, IntLiteral(0)))
@@ -84,11 +84,11 @@ fun incrementalContract(
     }
 
     test("incremental-contract/foreign-checkpoints-are-rejected") {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val x = intVar("x", 0..3)
             create().use { solver ->
-                solver.openSession(build()).use { first ->
-                    solver.openSession(build()).use { second ->
+                solver.openSession(buildModel()).use { first ->
+                    solver.openSession(buildModel()).use { second ->
                         val foreign = second.push()
                         first.push()
                         first.add(IntEquality(x, IntLiteral(5)))
@@ -102,12 +102,12 @@ fun incrementalContract(
     }
 
     test("incremental-contract/assumptions-hold-for-one-check") {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val x = intVar("x", 0..3)
             val one = IntEquality(x, IntLiteral(1))
             val two = IntEquality(x, IntLiteral(2))
             create().use { solver ->
-                solver.openSession(build()).use { session ->
+                solver.openSession(buildModel()).use { session ->
                     session.check(listOf(one)).assignment?.valueOf(x) shouldBe BigInteger.ONE
                     val conflict = session.check(listOf(one, two))
                     conflict.status shouldBe CheckStatus.UNSATISFIABLE
@@ -119,13 +119,13 @@ fun incrementalContract(
     }
 
     test("incremental-contract/unsat-core-is-a-subset-of-the-assumptions").config(enabled = unsatCores) {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val x = intVar("x", 0..3)
             val y = intVar("y", 0..3)
             val assumptions: List<BoolExpr> =
                 listOf(IntEquality(y, IntLiteral(0)), IntEquality(x, IntLiteral(1)), IntEquality(x, IntLiteral(2)))
             create().use { solver ->
-                solver.openSession(build()).use { session ->
+                solver.openSession(buildModel()).use { session ->
                     val core = requireNotNull(session.check(assumptions).unsatCore)
                     core.shouldNotBeEmpty()
                     assumptions.containsAll(core) shouldBe true
@@ -135,11 +135,11 @@ fun incrementalContract(
     }
 
     test("incremental-contract/assumed-element-index-must-be-defined") {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val index = intVar("i", -1..3)
             val assumption = IntEquality(Element(index, listOf(IntLiteral(4), IntLiteral(4))), IntLiteral(4))
             create().use { solver ->
-                solver.openSession(build()).use { session ->
+                solver.openSession(buildModel()).use { session ->
                     val result = session.check(listOf(assumption))
                     result.status shouldBe CheckStatus.SATISFIABLE
                     setOf(BigInteger.ZERO, BigInteger.ONE).contains(result.assignment?.valueOf(index)) shouldBe true
@@ -149,11 +149,11 @@ fun incrementalContract(
     }
 
     test("incremental-contract/declared-variables-join-the-session-with-their-domains") {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val x = intVar("x", 0..3)
             val y = VariableFactory.empty().intVar("y", IntDomain.values(2, 7))
             create().use { solver ->
-                solver.openSession(build()).use { session ->
+                solver.openSession(buildModel()).use { session ->
                     session.declare(y)
                     session.add(IntLessThan(x, y))
                     session.add(IntLessThan(IntLiteral(2), y))
@@ -168,11 +168,11 @@ fun incrementalContract(
     }
 
     test("incremental-contract/popping-a-frame-forgets-its-declarations") {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val x = intVar("x", 0..3)
             val y = VariableFactory.empty().intVar("y", IntDomain.of(0, 1))
             create().use { solver ->
-                solver.openSession(build()).use { session ->
+                solver.openSession(buildModel()).use { session ->
                     val checkpoint = session.push()
                     session.declare(y)
                     session.add(IntLessOrEqual(x, y))
@@ -193,7 +193,7 @@ fun incrementalContract(
             ConstraintModel.of {
                 intVar("x", 0..3)
             }
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val foreign = intVar("x", 0..3)
             create().use { solver ->
                 solver.openSession(model).use { session ->
@@ -208,7 +208,7 @@ fun incrementalContract(
 
     test("incremental-contract/zero-timeout-is-unknown") {
         create().use { solver ->
-            solver.openSession(ConstraintScope.empty().build()).use { session ->
+            solver.openSession(ConstraintModel.empty()).use { session ->
                 val result = session.check(timeoutMillis = 0)
                 result.status shouldBe CheckStatus.UNKNOWN
                 result.terminationReason shouldBe TerminationReason.TIMEOUT
@@ -218,11 +218,11 @@ fun incrementalContract(
 
     test("incremental-contract/closing-the-solver-closes-its-sessions") {
         val solver = create()
-        val session = solver.openSession(ConstraintScope.empty().build())
+        val session = solver.openSession(ConstraintModel.empty())
         solver.close()
         session.close()
         shouldThrow<IllegalStateException> { session.push() }
         shouldThrow<IllegalStateException> { session.check() }
-        shouldThrow<IllegalStateException> { solver.openSession(ConstraintScope.empty().build()) }
+        shouldThrow<IllegalStateException> { solver.openSession(ConstraintModel.empty()) }
     }
 }

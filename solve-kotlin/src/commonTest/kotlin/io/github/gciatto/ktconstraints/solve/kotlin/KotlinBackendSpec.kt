@@ -28,11 +28,11 @@ class KotlinBackendSpec :
 
         test("finite integers and intermediate products remain exact above Long") {
             val base = BigInteger.ONE shl 80
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", IntDomain.of(base, base + 2))
                 add(IntEquality(IntProduct(x, x), IntLiteral((base + 1) * (base + 1))))
                 KotlinBackend().create().use { solver ->
-                    val result = solver.solve(build())
+                    val result = solver.solve(buildModel())
                     result.status shouldBe SolveStatus.FEASIBLE
                     result.assignment?.valueOf(x) shouldBe base + 1
                 }

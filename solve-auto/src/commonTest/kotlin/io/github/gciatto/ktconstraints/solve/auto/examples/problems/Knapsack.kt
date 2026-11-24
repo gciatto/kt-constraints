@@ -32,9 +32,9 @@ internal suspend fun solveKnapsack(
     values: List<Int>,
     capacity: Int,
 ): Pair<SolveResult, List<Int>> =
-    with(ConstraintScope.empty()) {
+    ConstraintScope.empty {
         val take = knapsack(weights, values, capacity)
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(build()) } }
+        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
         check(result.status == SolveStatus.OPTIMAL)
         val assignment = requireNotNull(result.assignment)
         val selected = take.indices.filter { assignment.intValueOf(take[it]) == 1 }

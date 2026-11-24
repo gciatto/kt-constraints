@@ -188,10 +188,10 @@ fun storeContract(
             val xs = case.domains.mapIndexed { index, domain -> store.intVar("x$index", domain) }
             var status = StoreStatus.UNKNOWN
             for (constraint in case.constraints(xs)) status = store.constrain(constraint).status
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val ys = case.domains.mapIndexed { index, domain -> intVar("x$index", domain) }
                 case.constraints(ys).forEach { add(it) }
-                val solutions = FiniteOracle().use { oracle -> enumerate(oracle, build()).first }
+                val solutions = FiniteOracle().use { oracle -> enumerate(oracle, buildModel()).first }
                 when {
                     solutions.isEmpty() -> if (!propagates) status shouldBe StoreStatus.FAILED
                     else -> status shouldNotBe StoreStatus.FAILED

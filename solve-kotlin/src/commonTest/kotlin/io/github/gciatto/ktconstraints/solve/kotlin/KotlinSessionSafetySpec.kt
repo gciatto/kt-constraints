@@ -20,11 +20,11 @@ import org.gciatto.kt.math.BigInteger
 class KotlinSessionSafetySpec :
     FunSpec({
         test("an assumed undefined element cannot constrain the next check") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", -1..1)
                 val partial = IntEquality(Element(x, listOf(IntLiteral(5))), IntLiteral(5))
                 KotlinBackend().create().use { solver ->
-                    solver.openSession(build()).use { session ->
+                    solver.openSession(buildModel()).use { session ->
                         session.check(listOf(partial)).assignment?.valueOf(x) shouldBe BigInteger.ZERO
                         session.check(listOf(IntEquality(x, IntLiteral(-1)))).status shouldBe CheckStatus.SATISFIABLE
                         session.check(listOf(BoolOr(BoolLiteral(true), partial))).assignment?.valueOf(x) shouldBe BigInteger.ZERO
@@ -34,10 +34,10 @@ class KotlinSessionSafetySpec :
         }
 
         test("a zero-timeout check leaves the session reusable") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..1)
                 KotlinBackend().create().use { solver ->
-                    solver.openSession(build()).use { session ->
+                    solver.openSession(buildModel()).use { session ->
                         session.check(timeoutMillis = 0).terminationReason shouldBe TerminationReason.TIMEOUT
                         session.check(listOf(IntEquality(x, IntLiteral(1)))).assignment?.valueOf(x) shouldBe BigInteger.ONE
                     }
@@ -46,11 +46,11 @@ class KotlinSessionSafetySpec :
         }
 
         test("objective element definedness is asserted even without constraints") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val index = intVar("index", -1..3)
                 maximize(Element(index, listOf(IntLiteral(4), IntLiteral(2))))
                 KotlinBackend().create().use { solver ->
-                    val result = solver.solve(build())
+                    val result = solver.solve(buildModel())
                     result.status shouldBe SolveStatus.OPTIMAL
                     result.objectiveValue shouldBe BigInteger.of(4)
                     result.assignment?.valueOf(index) shouldBe BigInteger.ZERO

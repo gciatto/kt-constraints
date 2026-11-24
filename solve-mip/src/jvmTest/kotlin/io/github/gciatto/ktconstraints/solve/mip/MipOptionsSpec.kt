@@ -22,7 +22,7 @@ class MipOptionsSpec :
                 val weights = listOf(5, 4, 6, 3, 7, 2).map { BigInteger.of(it) }
                 add(IntLessOrEqual(LinearSum(xs, weights), IntLiteral(25)))
                 maximize(LinearSum(xs, listOf(9, 7, 10, 5, 12, 3).map { BigInteger.of(it) }))
-                build()
+                buildModel()
             }
 
         withTests(nameFn = { "mip-options/$it" }, listOf("scip", "highs")) { engine ->

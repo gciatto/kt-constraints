@@ -31,7 +31,7 @@ internal suspend fun solvePigeonhole(): SolveResult {
 
 // --8<-- [start:session]
 internal suspend fun pigeonholeCore() =
-    with(ConstraintScope.empty()) {
+    ConstraintScope.empty {
         val holes = List(3) { intVar("hole-for-pigeon-$it", 0..1) }
         val separate =
             listOf(
@@ -39,7 +39,7 @@ internal suspend fun pigeonholeCore() =
                 holes[0] neq holes[2],
                 holes[1] neq holes[2],
             )
-        val model = build()
+        val model = buildModel()
         // Sessions need a solver with incremental assertions: pick one among the platform's defaults.
         AutoBackend.load().use { auto ->
             val backend = auto.registry.select(model, requiredCapabilities = setOf(SolverCapability.INCREMENTAL_ASSERTIONS))

@@ -58,18 +58,18 @@ class Z3JsSpec :
                 selected.descriptor.capabilities.containsAll(setOf(SolverCapability.REAL_ARITHMETIC, SolverCapability.BITVECTORS)) shouldBe
                     true
                 selected.availability().available shouldBe true
-                selected.create().use { it.solve(ConstraintScope.empty().build()).descriptor shouldBe selected.descriptor }
+                selected.create().use { it.solve(ConstraintModel.empty()).descriptor shouldBe selected.descriptor }
             }
 
             test("z3-js/integers-beyond-64-bits-are-exact") {
                 val huge = BigInteger.of("1000000000000000000000000000001")
-                with(ConstraintScope.empty()) {
+                ConstraintScope.empty {
                     val x = intVar("x", IntDomain.of(-huge, huge))
                     add(
                         IntEquality(LinearSum(listOf(x), listOf(BigInteger.TWO), BigInteger.ONE), IntLiteral(huge + huge + BigInteger.ONE)),
                     )
                     loaded().create().use { solver ->
-                        val result = solver.solve(build())
+                        val result = solver.solve(buildModel())
                         result.status shouldBe SolveStatus.FEASIBLE
                         result.assignment?.valueOf(x) shouldBe huge
                     }
@@ -77,11 +77,11 @@ class Z3JsSpec :
             }
 
             test("z3-js/element-definedness-matches-the-oracle") {
-                with(ConstraintScope.empty()) {
+                ConstraintScope.empty {
                     val index = intVar("i", -1..4)
                     val value = intVar("v", -2..3)
                     add(IntEquality(Element(index, listOf(IntLiteral(-2), value, IntLiteral(3))), value))
-                    val model = build()
+                    val model = buildModel()
                     answers(loaded().create(), model, index, value) shouldBe answers(FiniteOracle(), model, index, value)
                 }
             }

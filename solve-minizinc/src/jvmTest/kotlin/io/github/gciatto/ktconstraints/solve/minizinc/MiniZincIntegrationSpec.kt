@@ -44,18 +44,18 @@ class MiniZincIntegrationSpec :
                 },
             )
             test("integration/tuning-options-keep-the-answers") {
-                with(ConstraintScope.empty()) {
+                ConstraintScope.empty {
                     val x = intVar("x", 0..3)
                     val y = intVar("y", 0..3)
                     add(AllDifferent(listOf(x, y)))
                     maximize(LinearSum(listOf(x, y), listOf(BigInteger.TWO, BigInteger.ONE)))
                     val tuned = SolveOptions() + MiniZincOptions(randomSeed = 5, threads = 2, freeSearch = true)
-                    val result = MiniZincGecodeBackend(executable).create().use { it.solve(build(), tuned) }
+                    val result = MiniZincGecodeBackend(executable).create().use { it.solve(buildModel(), tuned) }
                     result.objectiveValue shouldBe BigInteger.of(8)
                 }
             }
             test("integration/globals-match-the-independent-finite-oracle") {
-                with(ConstraintScope.empty()) {
+                ConstraintScope.empty {
                     val x = intVar("x", 0..2)
                     val y = intVar("y", 0..2)
                     val flag = boolVar("flag")
@@ -64,7 +64,7 @@ class MiniZincIntegrationSpec :
                     add(IntEquality(Element(y, listOf(IntLiteral(3), IntLiteral(3), IntLiteral(3))), IntLiteral(3)))
                     add(IntEquality(LinearSum(listOf(x, y), listOf(BigInteger.ONE, BigInteger.of(-1))), IntLiteral(-1)))
                     add(BoolCardinality(listOf(flag), 1, CardinalityRelation.EXACTLY))
-                    val model = build()
+                    val model = buildModel()
 
                     answers(MiniZincGecodeBackend(executable).create(), model, x, y, flag) shouldBe
                         answers(FiniteOracle(), model, x, y, flag)

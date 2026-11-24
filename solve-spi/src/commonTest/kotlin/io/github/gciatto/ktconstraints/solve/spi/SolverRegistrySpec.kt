@@ -27,7 +27,7 @@ class SolverRegistrySpec :
             val direct = FakeBackend(SolverDescriptor("example", "direct", setOf(SolverCapability.SATISFACTION)))
             val viaCompiler = FakeBackend(SolverDescriptor("example", "minizinc", setOf(SolverCapability.SATISFACTION)))
             val registry = SolverRegistry.of(unavailable, unsupported, direct, viaCompiler)
-            registry.select(ConstraintModel.of {}) shouldBe direct
+            registry.select(ConstraintModel.empty()) shouldBe direct
             registry.require("example/minizinc") shouldBe viaCompiler
         }
 
@@ -50,7 +50,7 @@ class SolverRegistrySpec :
             val backend = FakeBackend(SolverDescriptor("example", "direct", setOf(SolverCapability.SATISFACTION)))
             val error =
                 shouldThrow<NoCompatibleBackendException> {
-                    SolverRegistry.of(backend).select(ConstraintModel.of {}, requiredCapabilities = setOf(SolverCapability.ENUMERATION))
+                    SolverRegistry.of(backend).select(ConstraintModel.empty(), requiredCapabilities = setOf(SolverCapability.ENUMERATION))
                 }
             error.rejections.keys shouldBe setOf("example/direct")
             error.rejections
@@ -61,7 +61,7 @@ class SolverRegistrySpec :
 
         test("registry/empty-means-no-backends-including-test-fakes") {
             val registry = SolverRegistry.empty()
-            shouldThrow<NoCompatibleBackendException> { registry.select(ConstraintModel.of {}) }
+            shouldThrow<NoCompatibleBackendException> { registry.select(ConstraintModel.empty()) }
             shouldThrow<IllegalArgumentException> { registry.require("example/direct") }
         }
 
@@ -84,7 +84,7 @@ class SolverRegistrySpec :
                 )
             val error =
                 shouldThrow<NoCompatibleBackendException> {
-                    SolverRegistry.of(missing, unsupported).select(ConstraintModel.of {})
+                    SolverRegistry.of(missing, unsupported).select(ConstraintModel.empty())
                 }
             error.rejections.getValue("example/missing") shouldBe listOf("Executable not installed")
             error.rejections.getValue("example/direct") shouldBe listOf("Unsupported table constraint")

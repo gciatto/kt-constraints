@@ -59,12 +59,12 @@ internal suspend fun selectEnumerationRoute(): Triple<BackendAvailability, Suppo
 
 // --8<-- [start:enumerate]
 internal suspend fun enumerateProjectedOutputs(): Pair<List<BigInteger>, Pair<SolveResult?, SolutionEvent?>> =
-    with(ConstraintScope.empty()) {
+    ConstraintScope.empty {
         val x = intVar("x", 0..2)
         val y = intVar("y", 0..2)
         add(x lt y)
         project(x)
-        enumerateValues(build(), x)
+        enumerateValues(buildModel(), x)
     }
 
 /** Lists every value [x] takes in the solutions of [model], plus the stream's final state. */
@@ -109,11 +109,11 @@ internal suspend fun cancelEnumeration(): Pair<SolutionEvent?, TerminationReason
 // --8<-- [start:session]
 internal suspend fun checkTemporaryAssertions(): Triple<CheckResult, Pair<CheckResult, BoolExpr>, CheckResult> {
     val (posted, checkedWithAssumption, recovered) =
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val x = intVar("x", 0..3)
             add(x ge 1)
             Z3Backend().create().use { solver ->
-                solver.openSession(build()).use { session ->
+                solver.openSession(buildModel()).use { session ->
                     val checkpoint = session.push()
                     session.add(x eq 0)
                     val posted = session.check()
@@ -175,10 +175,10 @@ internal suspend fun undoUnknownPost(): Triple<Propagation, EntailmentResult, En
 // --8<-- [start:real]
 internal suspend fun readExactRational(): Rational? {
     val value =
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val r = realVar("r")
             add(r eq Rational.parse("0.1"))
-            val result = Z3Backend().create().use { it.solve(build()) }
+            val result = Z3Backend().create().use { it.solve(buildModel()) }
             requireNotNull(result.assignment).valueOf(r)
         }
     return value
@@ -188,13 +188,13 @@ internal suspend fun readExactRational(): Rational? {
 // --8<-- [start:bits]
 internal suspend fun wrapBitVector(): BigInteger? {
     val value =
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val x = bitVecVar("x", 8)
             val one = BitVecLiteral(BigInteger.ONE, 8)
             val zero = BitVecLiteral(BigInteger.ZERO, 8)
             val sum = BitVecBinary(BitVecOperator.ADD, x, one)
             add(BitVecComparison(BitVecRelation.EQUAL, sum, zero))
-            val result = Z3Backend().create().use { it.solve(build()) }
+            val result = Z3Backend().create().use { it.solve(buildModel()) }
             requireNotNull(result.assignment).valueOf(x)
         }
     return value

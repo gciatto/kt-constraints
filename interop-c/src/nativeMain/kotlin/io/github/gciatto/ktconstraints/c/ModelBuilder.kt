@@ -29,5 +29,5 @@ class ModelBuilder {
     fun maximize(objective: IntExpression): Boolean = runCatching { scope.maximize(objective.expr) }.isSuccess
 
     /** Snapshots the current model. */
-    fun build(): Model = Model(scope.build())
+    fun build(): Model = Model(scope.buildModel())
 }

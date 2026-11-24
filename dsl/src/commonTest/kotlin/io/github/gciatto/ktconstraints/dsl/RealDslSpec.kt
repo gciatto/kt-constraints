@@ -19,7 +19,7 @@ import io.kotest.matchers.shouldBe
 class RealDslSpec :
     FunSpec({
         test("real/arithmetic-builds-linear-nodes") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = realVar("x")
                 val y = realVar("y")
                 val half = Rational.of(1, 2)
@@ -37,7 +37,7 @@ class RealDslSpec :
             }
         }
         test("real/relations-build-equality-and-order-nodes") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = realVar("x")
                 val y = realVar("y")
                 val two = RealLiteral(Rational.of(2))
@@ -51,7 +51,7 @@ class RealDslSpec :
             }
         }
         test("real/integers-embed-explicitly") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val n = intVar("n", 0..3)
                 n.toReal() shouldBe IntToReal(n)
             }

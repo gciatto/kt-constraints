@@ -7,7 +7,7 @@ import io.github.gciatto.ktconstraints.core.bool.BoolVar
 import io.github.gciatto.ktconstraints.core.domain.IntDomain
 import io.github.gciatto.ktconstraints.core.integer.IntVar
 import io.github.gciatto.ktconstraints.core.real.RealVar
-import io.github.gciatto.ktconstraints.model.ConstraintScope
+import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.Evidence
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
@@ -34,7 +34,7 @@ class SatisfiabilityStore private constructor(
     private val shared: SharedSolver,
 ) : ConstraintStore {
     private val factory = VariableFactory.empty()
-    private val session: IncrementalSession = shared.acquire().openSession(ConstraintScope.empty().build())
+    private val session: IncrementalSession = shared.acquire().openSession(ConstraintModel.empty())
     private val frames = mutableListOf(StoreFrame(null, failedBefore = false))
     private val guard = StoreGuard()
 
@@ -128,7 +128,7 @@ class SatisfiabilityStore private constructor(
         guard.requireOpen()
         if (!isFailed) return null
         val posted = frames.flatMap { it.constraints }
-        return shared.solver.openSession(ConstraintScope.empty().build()).use { probe ->
+        return shared.solver.openSession(ConstraintModel.empty()).use { probe ->
             frames.flatMap { it.variables }.forEach { probe.declare(it) }
             val result = probe.check(posted, timeoutMillis)
             if (result.status == CheckStatus.UNSATISFIABLE) result.unsatCore ?: posted else posted

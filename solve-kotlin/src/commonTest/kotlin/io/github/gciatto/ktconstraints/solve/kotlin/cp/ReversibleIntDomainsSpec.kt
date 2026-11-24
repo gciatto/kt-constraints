@@ -11,7 +11,7 @@ import org.gciatto.kt.math.BigInteger
 class ReversibleIntDomainsSpec :
     FunSpec({
         test("domains/restriction-keeps-holes-and-detaches-snapshots") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", IntDomain.values(1, 4, 7, 10))
                 val store = ReversibleIntDomains(listOf(x))
                 val snapshot = store.snapshot()
@@ -29,7 +29,7 @@ class ReversibleIntDomainsSpec :
         }
 
         test("domains/large-endpoints-are-exact-and-never-enumerated") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val limit = BigInteger.TEN.pow(100)
                 val x = intVar("x", IntDomain.of(-limit, limit))
                 val store = ReversibleIntDomains(listOf(x))
@@ -42,7 +42,7 @@ class ReversibleIntDomainsSpec :
         }
 
         test("domains/nested-rollback-invalidates-restored-and-younger-checkpoints") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..10)
                 val store = ReversibleIntDomains(listOf(x))
                 val outer = store.push()
@@ -64,7 +64,7 @@ class ReversibleIntDomainsSpec :
         }
 
         test("domains/foreign-checkpoints-and-variables-do-not-change-the-store") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..3)
                 val store = ReversibleIntDomains(listOf(x))
                 val other = ReversibleIntDomains(listOf(x))
@@ -79,7 +79,7 @@ class ReversibleIntDomainsSpec :
         }
 
         test("domains/empty-restrictions-are-restorable") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..3)
                 val store = ReversibleIntDomains(listOf(x))
                 val mark = store.push()

@@ -26,9 +26,9 @@ internal fun ConstraintScope.travelingSalesman(distances: List<List<Int>>): List
 
 // --8<-- [start:solve]
 internal suspend fun solveTravelingSalesman(distances: List<List<Int>>): Pair<SolveResult, List<Int>> =
-    with(ConstraintScope.empty()) {
+    ConstraintScope.empty {
         val next = travelingSalesman(distances)
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(build()) } }
+        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
         println("${result.status}: length = ${result.objectiveValue}")
         val assignment = requireNotNull(result.assignment)
         println(next.map { assignment.valueOf(it) })

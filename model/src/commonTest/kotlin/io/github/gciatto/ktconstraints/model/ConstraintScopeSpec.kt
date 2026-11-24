@@ -24,10 +24,10 @@ class ConstraintScopeSpec :
             val x = scope.intVar("x", 0..10)
             val y = scope.intVar("y", 0..10)
             scope.add(IntEquality(IntSum(x, y), IntLiteral(10)))
-            val before = scope.build()
+            val before = scope.buildModel()
             scope.add(IntEquality(x, IntLiteral(2)))
             before.constraints.size shouldBe 1
-            scope.build().constraints.size shouldBe 2
+            scope.buildModel().constraints.size shouldBe 2
         }
 
         test("scope/machine-integer-bounds-declare-an-interval") {
@@ -40,7 +40,7 @@ class ConstraintScopeSpec :
             val x = scope.intVar("x", 0..1)
             val chain = (1 until 100_000).fold<Int, IntExpr>(x) { total, _ -> IntSum(total, x) }
             scope.add(IntEquality(chain, IntLiteral(0)))
-            scope.build().constraints.size shouldBe 1
+            scope.buildModel().constraints.size shouldBe 1
         }
 
         test("scope/variable-identities-are-distinct") {
@@ -69,7 +69,7 @@ class ConstraintScopeSpec :
             val scope = ConstraintScope.empty()
             val x = scope.realVar("x")
             scope.add(RealLessThan(x, RealLiteral(Rational.of(1, 2))))
-            scope.build().variables shouldBe listOf(x)
+            scope.buildModel().variables shouldBe listOf(x)
             val foreign = VariableFactory.empty().realVar("y")
             shouldThrow<IllegalArgumentException> { scope.add(RealLessThan(foreign, RealLiteral(Rational.ONE))) }
             shouldThrow<IllegalArgumentException> { scope.realVar("x") }
@@ -79,7 +79,7 @@ class ConstraintScopeSpec :
             val scope = ConstraintScope.empty()
             val b = scope.bitVecVar("b", 8)
             scope.add(BitVecComparison(BitVecRelation.UNSIGNED_LESS_THAN, b, BitVecLiteral(3, 8)))
-            scope.build().variables shouldBe listOf(b)
+            scope.buildModel().variables shouldBe listOf(b)
             val foreign = VariableFactory.empty().bitVecVar("c", 8)
             shouldThrow<IllegalArgumentException> { scope.add(BitVecComparison(BitVecRelation.EQUAL, foreign, b)) }
         }

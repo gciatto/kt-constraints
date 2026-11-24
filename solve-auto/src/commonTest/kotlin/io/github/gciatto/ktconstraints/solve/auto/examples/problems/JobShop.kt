@@ -30,9 +30,9 @@ internal fun ConstraintScope.jobShop(): List<IntVar> {
 
 // --8<-- [start:solve]
 internal suspend fun solveJobShop(): Pair<SolveResult, List<BigInteger?>> =
-    with(ConstraintScope.empty()) {
+    ConstraintScope.empty {
         val tasks = jobShop()
-        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(build()) } }
+        val result = AutoBackend.load().use { auto -> auto.create().use { it.solve(buildModel()) } }
         println("${result.status}: makespan = ${result.objectiveValue}")
         val assignment = requireNotNull(result.assignment)
         val starts = tasks.map { assignment.valueOf(it) }

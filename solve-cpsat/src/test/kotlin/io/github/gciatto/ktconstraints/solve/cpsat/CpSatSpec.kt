@@ -114,14 +114,14 @@ class CpSatSpec :
 
         test("cp-sat/wide-objectives-are-exact-and-optimal") {
             val big = BigInteger.TWO.pow(40)
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", IntDomain.of(-big, big * BigInteger.of(4)))
                 val hidden = intVar("hidden", 0..3)
                 add(IntLessThan(x, IntSum(IntProduct(hidden, IntLiteral(big)), IntLiteral(-7))))
                 maximize(LinearSum(listOf(x, hidden), listOf(BigInteger.of(3), BigInteger.ONE), BigInteger.ONE))
                 project(x)
                 CpSatBackend().create().use { solver ->
-                    val result = solver.solve(build())
+                    val result = solver.solve(buildModel())
                     result.status shouldBe SolveStatus.OPTIMAL
                     val best = big * BigInteger.of(3) - BigInteger.of(8)
                     result.assignment?.valueOf(x) shouldBe best
@@ -188,16 +188,16 @@ class CpSatSpec :
         }
 
         test("cp-sat/closing-a-stream-stops-its-search-thread") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 repeat(9) { intVar("x$it", 0..9) }
                 val solver = CpSatBackend().create()
-                val stream = solver.solutions(build())
+                val stream = solver.solutions(buildModel())
                 repeat(3) { (stream.next() is SolutionFound) shouldBe true }
                 stream.close()
                 stream.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
                 stream.terminalResult?.status shouldBe SolveStatus.FEASIBLE
                 searchThreads() shouldBe 0
-                val other = solver.solutions(build())
+                val other = solver.solutions(buildModel())
                 (other.next() is SolutionFound) shouldBe true
                 solver.close()
                 other.terminalResult shouldNotBe null

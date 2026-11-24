@@ -74,11 +74,11 @@ class Z3Spec :
 
         test("z3/integers-beyond-64-bits-are-exact") {
             val huge = BigInteger.of("1000000000000000000000000000001")
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", IntDomain.of(-huge, huge))
                 add(IntEquality(LinearSum(listOf(x), listOf(BigInteger.TWO), BigInteger.ONE), IntLiteral(huge + huge + BigInteger.ONE)))
                 Z3Backend().create().use { solver ->
-                    val result = solver.solve(build())
+                    val result = solver.solve(buildModel())
                     result.status shouldBe SolveStatus.FEASIBLE
                     result.assignment?.valueOf(x) shouldBe huge
                 }
@@ -140,9 +140,9 @@ class Z3Spec :
                 listOf(x, y)
             },
         ) { case ->
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val outputs = case.build(this)
-                val model = build()
+                val model = buildModel()
                 answers(Z3Backend().create(), model, outputs) shouldBe answers(FiniteOracle(), model, outputs)
             }
         }
@@ -207,10 +207,10 @@ class Z3Spec :
         }
 
         test("z3/repeated-frames-stay-consistent") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..1_000)
                 Z3Backend().create().use { solver ->
-                    solver.openSession(build()).use { session ->
+                    solver.openSession(buildModel()).use { session ->
                         repeat(200) { round ->
                             val checkpoint = session.push()
                             session.add(IntEquality(x, IntLiteral(round.toLong())))

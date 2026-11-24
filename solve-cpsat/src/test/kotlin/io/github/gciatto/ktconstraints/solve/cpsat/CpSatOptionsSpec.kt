@@ -20,12 +20,12 @@ import org.gciatto.kt.math.BigInteger
 class CpSatOptionsSpec :
     FunSpec({
         test("cp-sat-options/tuned-optimization-keeps-the-proven-optimum") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val xs = List(4) { intVar("x$it", 0..5) }
                 add(AllDifferent(xs))
                 add(IntLessOrEqual(IntSum(xs[0], xs[1]), IntLiteral(6)))
                 maximize(LinearSum(xs, listOf(3, 1, 2, 1).map { BigInteger.of(it) }))
-                val model = build()
+                val model = buildModel()
                 val hints = Assignment.of(integers = mapOf(xs[0] to BigInteger.ZERO, xs[1] to BigInteger.ZERO))
                 val tuned = SolveOptions() + CpSatOptions(workers = 2, randomSeed = 7, hints = hints)
                 val plain = CpSatBackend().create().use { it.solve(model) }

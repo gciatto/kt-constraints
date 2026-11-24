@@ -16,12 +16,12 @@ import org.gciatto.kt.math.BigInteger
 class MiniZincDecoderSpec :
     FunSpec({
         test("decoder/validates-full-solutions-before-projecting-and-deduplicating") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..2)
                 val hidden = boolVar("hidden")
                 add(IntEquality(x, IntLiteral(1)))
                 project(x)
-                val decoder = MiniZincDecoder(MiniZincCompiler().compile(build()))
+                val decoder = MiniZincDecoder(MiniZincCompiler().compile(buildModel()))
                 val first = requireNotNull(decoder.accept("""{"type":"solution","output":{"default":"{\"v0\":1,\"v1\":false}"}}"""))
                 first.assignment.valueOf(x) shouldBe BigInteger.ONE
                 first.assignment.valueOf(hidden) shouldBe null
@@ -45,7 +45,7 @@ class MiniZincDecoderSpec :
             }
         }
         test("decoder/requires-terminal-status-and-successful-exit") {
-            val compiled = MiniZincCompiler().compile(ConstraintScope.empty().build())
+            val compiled = MiniZincCompiler().compile(ConstraintModel.empty())
             shouldThrow<BackendExecutionException> { MiniZincDecoder(compiled).finish(0, "") }
             val decoder = MiniZincDecoder(compiled)
             decoder.accept("""{"type":"status","status":"UNSATISFIABLE"}""")
@@ -54,7 +54,7 @@ class MiniZincDecoderSpec :
             shouldThrow<BackendExecutionException> { MiniZincDecoder(compiled).accept("""{"type":"error","message":"bad model"}""") }
         }
         test("decoder/retains-warnings-and-statistics-after-the-status-message") {
-            val decoder = MiniZincDecoder(MiniZincCompiler().compile(ConstraintScope.empty().build()))
+            val decoder = MiniZincDecoder(MiniZincCompiler().compile(ConstraintModel.empty()))
             decoder.accept("""{"type":"warning","message":"model inconsistency"}""")
             decoder.accept("""{"type":"status","status":"UNSATISFIABLE"}""")
             decoder.accept("""{"type":"statistics","statistics":{"nodes":12,"solveTime":0.000125}}""")

@@ -18,7 +18,7 @@ import io.github.gciatto.ktconstraints.core.real.RealVar
 import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmStatic
 
-/** Stateful single-model builder; snapshots created by [build] are detached from later edits. */
+/** Stateful single-model builder; snapshots created by [buildModel] are detached from later edits. */
 class ConstraintScope private constructor() {
     private val factory = VariableFactory.empty()
     private val variables = linkedMapOf<String, Variable>()
@@ -103,7 +103,18 @@ class ConstraintScope private constructor() {
         }
 
     /** Produces a detached read-only snapshot of the current model. */
-    fun build(): ConstraintModel = ConstraintModel(variables.values, entries, objective, projection ?: variables.values)
+    fun buildModel(): ConstraintModel = ConstraintModel(variables.values, entries, objective, projection)
+
+    private fun seed(model: ConstraintModel) {
+        model.variables.forEach {
+            variables[it.name] = it
+            ids += it.id
+        }
+        entries += model.entries
+        model.entries.mapNotNullTo(names) { it.name }
+        objective = model.objective
+        projection = model.projection
+    }
 
     private fun requireWellSorted(expression: Expr) {
         expression.fold { node, _: List<Unit> ->
@@ -134,10 +145,36 @@ class ConstraintScope private constructor() {
         return variable
     }
 
-    /** Static constructor following the 2p-Kt Scope.empty() convention. */
+    /** Static constructors following the 2p-Kt Scope.empty() convention. */
     companion object {
         /** Creates a new empty builder. */
         @JvmStatic
         fun empty(): ConstraintScope = ConstraintScope()
+
+        /** Runs [block] on a new empty builder and returns its result. */
+        inline fun <R> empty(block: ConstraintScope.() -> R): R = empty().block()
+
+        /**
+         * Creates a builder holding the variables, constraints, objective and projection of [model].
+         * The variables keep their identity, so expressions built over them stay valid in the new builder.
+         */
+        @JvmStatic
+        fun of(model: ConstraintModel): ConstraintScope = ConstraintScope().apply { seed(model) }
+
+        /** Creates a builder holding a snapshot of [scope]; later edits to either builder stay separate. */
+        @JvmStatic
+        fun of(scope: ConstraintScope): ConstraintScope = of(scope.buildModel())
+
+        /** Runs [block] on a builder seeded from [model] and returns its result. */
+        inline fun <R> of(
+            model: ConstraintModel,
+            block: ConstraintScope.() -> R,
+        ): R = of(model).block()
+
+        /** Runs [block] on a builder seeded from a snapshot of [scope] and returns its result. */
+        inline fun <R> of(
+            scope: ConstraintScope,
+            block: ConstraintScope.() -> R,
+        ): R = of(scope).block()
     }
 }

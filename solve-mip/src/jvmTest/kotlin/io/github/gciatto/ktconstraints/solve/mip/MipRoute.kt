@@ -65,14 +65,14 @@ fun mipRoute(
     )
 
     test("$id/objectives-near-the-limit-are-exact-and-optimal") {
-        with(ConstraintScope.empty()) {
+        ConstraintScope.empty {
             val x = intVar("x", -100_000..300_000)
             val hidden = intVar("hidden", 0..3)
             add(IntLessThan(x, IntSum(IntProduct(IntLiteral(100_000), hidden), IntLiteral(-7))))
             maximize(LinearSum(listOf(x, hidden), listOf(BigInteger.of(3), BigInteger.ONE), BigInteger.ONE))
             project(x)
             backend().create().use { solver ->
-                val result = solver.solve(build())
+                val result = solver.solve(buildModel())
                 result.status shouldBe SolveStatus.OPTIMAL
                 result.assignment?.valueOf(x) shouldBe BigInteger.of(299_992)
                 result.objectiveValue shouldBe BigInteger.of(899_980)

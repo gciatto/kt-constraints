@@ -8,7 +8,7 @@ import io.github.gciatto.ktconstraints.core.bool.BoolVar
 import io.github.gciatto.ktconstraints.core.domain.IntDomain
 import io.github.gciatto.ktconstraints.core.integer.IntVar
 import io.github.gciatto.ktconstraints.core.real.RealVar
-import io.github.gciatto.ktconstraints.model.ConstraintScope
+import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.Evidence
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
@@ -37,7 +37,7 @@ import io.github.gciatto.ktconstraints.solve.store.StoreStatus
 @Suppress("TooManyFunctions") // One override per ConstraintStore operation, plus declaration and replay steps.
 class ChocoStore : ConstraintStore {
     private val factory = VariableFactory.empty()
-    private val translation = ChocoTranslation(ConstraintScope.empty().build())
+    private val translation = ChocoTranslation(ConstraintModel.empty())
     private val worlds = ChocoWorlds(translation.chocoModel)
     private val frames = mutableListOf(ChocoFrame(this, worlds.world, failedBefore = false))
     private val guard = StoreGuard()

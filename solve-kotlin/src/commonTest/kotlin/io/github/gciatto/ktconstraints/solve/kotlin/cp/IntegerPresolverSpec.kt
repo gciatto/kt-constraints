@@ -25,11 +25,11 @@ import org.gciatto.kt.math.BigInteger
 class IntegerPresolverSpec :
     FunSpec({
         test("presolve/equality-and-conjunction-reach-a-fixed-point") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..10)
                 val y = intVar("y", 0..10)
                 add(BoolAnd(IntEquality(IntSum(x, y), IntLiteral(10)), IntLessOrEqual(x, IntLiteral(3))))
-                val model = build()
+                val model = buildModel()
 
                 val result = IntegerPresolver().run(model)
 
@@ -44,13 +44,13 @@ class IntegerPresolverSpec :
         }
 
         test("presolve/negative-division-uses-mathematical-floor-and-ceiling") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", -10..10)
                 val y = intVar("y", -10..10)
                 add(IntLessOrEqual(IntProduct(IntLiteral(-3), x), IntLiteral(7)))
                 add(IntLessOrEqual(IntProduct(IntLiteral(3), y), IntLiteral(-7)))
 
-                val result = IntegerPresolver().run(build())
+                val result = IntegerPresolver().run(buildModel())
 
                 result.domains[x] shouldBe IntDomain.of(-2, 10)
                 result.domains[y] shouldBe IntDomain.of(-10, -3)
@@ -58,12 +58,12 @@ class IntegerPresolverSpec :
         }
 
         test("presolve/strict-order-and-sparse-domains-keep-the-exact-values") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", IntDomain.values(0, 3, 9))
                 add(IntLessThan(IntLiteral(0), x))
                 add(IntLessOrEqual(x, IntLiteral(6)))
 
-                IntegerPresolver().run(build()).domains[x] shouldBe IntDomain.values(3)
+                IntegerPresolver().run(buildModel()).domains[x] shouldBe IntDomain.values(3)
             }
         }
 
@@ -77,23 +77,23 @@ class IntegerPresolverSpec :
         }
 
         test("presolve/large-exact-coefficients-and-a-fixed-product-factor") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val factor = BigInteger.TEN.pow(80)
                 val x = intVar("x", -10..10)
                 val k = intVar("k", IntDomain.of(factor, factor))
                 add(IntLessOrEqual(IntProduct(k, x), IntLiteral(factor * 3 + 1)))
 
-                IntegerPresolver().run(build()).domains[x] shouldBe IntDomain.of(-10, 3)
+                IntegerPresolver().run(buildModel()).domains[x] shouldBe IntDomain.of(-10, 3)
             }
         }
 
         test("presolve/assigned-all-different-values-are-removed-without-enumeration") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..4)
                 val y = intVar("y", 1..1)
                 add(AllDifferent(listOf(x, y, IntLiteral(3))))
 
-                IntegerPresolver().run(build()).domains[x] shouldBe IntDomain.values(0, 2, 4)
+                IntegerPresolver().run(buildModel()).domains[x] shouldBe IntDomain.values(0, 2, 4)
             }
         }
 
@@ -127,13 +127,13 @@ class IntegerPresolverSpec :
         }
 
         test("presolve/does-not-assume-an-inactive-disjunct-or-a-nonlinear-product") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..10)
                 val y = intVar("y", 0..10)
                 add(BoolOr(IntEquality(x, IntLiteral(0)), IntEquality(x, IntLiteral(10))))
                 add(IntEquality(IntProduct(x, y), IntLiteral(0)))
 
-                val result = IntegerPresolver().run(build())
+                val result = IntegerPresolver().run(buildModel())
 
                 result.conflict shouldBe false
                 result.domains[x] shouldBe x.domain
@@ -170,10 +170,10 @@ class IntegerPresolverSpec :
         }
 
         test("presolve/checkpoints-allow-cancellation-without-model-mutation") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = intVar("x", 0..10)
                 add(IntEquality(x, IntLiteral(2)))
-                val model = build()
+                val model = buildModel()
                 var checks = 0
 
                 shouldThrow<IllegalStateException> {
@@ -190,12 +190,12 @@ class IntegerPresolverSpec :
             for (a in -3..3) {
                 for (b in -3..3) {
                     for (bound in -4..4) {
-                        with(ConstraintScope.empty()) {
+                        ConstraintScope.empty {
                             val x = intVar("x", -2..2)
                             val y = intVar("y", -2..2)
                             val sum = LinearSum(listOf(x, y), listOf(BigInteger.of(a), BigInteger.of(b)))
                             add(IntLessOrEqual(sum, IntLiteral(bound)))
-                            val result = IntegerPresolver().run(build())
+                            val result = IntegerPresolver().run(buildModel())
                             var witnesses = 0
                             for (vx in -2..2) {
                                 for (vy in -2..2) {

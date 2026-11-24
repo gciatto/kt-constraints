@@ -22,13 +22,13 @@ import org.gciatto.kt.math.BigInteger
 fun z3RealContract(create: () -> IncrementalConstraintSolver): TestFactory =
     funSpec {
         test("z3-real/fractional-solution-is-exact") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = realVar("x")
                 val y = realVar("y")
                 add(RealEquality(RealSum(x, y), RealLiteral(Rational.ONE)))
                 add(RealEquality(RealDifference(x, y), RealLiteral(Rational.of(1, 3))))
                 create().use { solver ->
-                    val result = solver.solve(build())
+                    val result = solver.solve(buildModel())
                     result.status shouldBe SolveStatus.FEASIBLE
                     result.assignment?.valueOf(x) shouldBe Rational.of(2, 3)
                     result.assignment?.valueOf(y) shouldBe Rational.of(1, 3)
@@ -37,13 +37,13 @@ fun z3RealContract(create: () -> IncrementalConstraintSolver): TestFactory =
         }
 
         test("z3-real/negative-and-integral-numerals-round-trip") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = realVar("x")
                 val y = realVar("y")
                 add(RealEquality(x, RealLiteral(Rational.of(-7, 3))))
                 add(RealEquality(y, RealScale(Rational.of(-3), x)))
                 create().use { solver ->
-                    val result = solver.solve(build())
+                    val result = solver.solve(buildModel())
                     result.assignment?.valueOf(x) shouldBe Rational.of(-7, 3)
                     result.assignment?.valueOf(y) shouldBe Rational.of(7)
                 }
@@ -66,32 +66,32 @@ fun z3RealContract(create: () -> IncrementalConstraintSolver): TestFactory =
                     val i = intVar("i", 0..10)
                     add(RealEquality(RealScale(Rational.of(2), IntToReal(i)), RealLiteral(Rational.of(3))))
                 }
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val j = intVar("j", 0..10)
                 add(RealEquality(RealScale(Rational.of(1, 2), IntToReal(j)), RealLiteral(Rational.of(3, 2))))
                 create().use { solver ->
                     solver.solve(oddModel).status shouldBe SolveStatus.INFEASIBLE
-                    solver.solve(build()).assignment?.valueOf(j) shouldBe BigInteger.of(3)
+                    solver.solve(buildModel()).assignment?.valueOf(j) shouldBe BigInteger.of(3)
                 }
             }
         }
 
         test("z3-real/huge-rationals-are-exact") {
             val huge = BigInteger.of("1000000000000000000000000000001")
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = realVar("x")
                 add(RealEquality(RealScale(Rational.of(3), x), RealLiteral(Rational.of(huge))))
-                create().use { solver -> solver.solve(build()).assignment?.valueOf(x) shouldBe Rational.of(huge, BigInteger.of(3)) }
+                create().use { solver -> solver.solve(buildModel()).assignment?.valueOf(x) shouldBe Rational.of(huge, BigInteger.of(3)) }
             }
         }
 
         test("z3-real/sessions-check-real-assumptions") {
-            with(ConstraintScope.empty()) {
+            ConstraintScope.empty {
                 val x = realVar("x")
                 add(RealLessThan(RealLiteral(Rational.ZERO), x))
                 val negative = RealLessThan(x, RealLiteral(Rational.ZERO))
                 create().use { solver ->
-                    solver.openSession(build()).use { session ->
+                    solver.openSession(buildModel()).use { session ->
                         val refuted = session.check(listOf(negative))
                         refuted.status shouldBe CheckStatus.UNSATISFIABLE
                         refuted.unsatCore shouldBe listOf(negative)
