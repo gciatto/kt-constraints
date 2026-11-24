@@ -7,11 +7,10 @@ import io.github.gciatto.ktconstraints.dsl.allDifferent
 import io.github.gciatto.ktconstraints.dsl.neq
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
 import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
 import io.github.gciatto.ktconstraints.solve.result.SolveResult
-import io.github.gciatto.ktconstraints.solve.spi.createIncrementalSolver
+import io.github.gciatto.ktconstraints.solve.spi.withIncrementalSolver
 import io.github.gciatto.ktconstraints.solve.spi.withSolver
 // --8<-- [end:imports]
 
@@ -54,9 +53,8 @@ internal suspend fun explainPigeonhole(): PigeonholeConflict =
         val rules = listOf(holes[0] neq holes[1], holes[0] neq holes[2], holes[1] neq holes[2])
         val model = buildModel()
         AutoBackend.load().use { auto ->
-            // Sessions need a solver with incremental assertions: pick one among the platform's defaults.
-            val backend = auto.registry.select(model, requiredCapabilities = setOf(SolverCapability.INCREMENTAL_ASSERTIONS))
-            backend.createIncrementalSolver().use { solver ->
+            // The session runs on the best default route with incremental assertions.
+            auto.withIncrementalSolver { solver ->
                 solver.openSession(model).use { session ->
                     val conflict = session.check(assumptions = rules)
                     println(conflict.status)

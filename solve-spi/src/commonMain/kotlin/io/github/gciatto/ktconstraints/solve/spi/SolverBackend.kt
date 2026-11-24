@@ -37,6 +37,9 @@ interface SolverBackend : AutoCloseable {
 /** Creates a solver, runs [block] on it and closes it, also when [block] fails. */
 inline fun <R> SolverBackend.withSolver(block: (ConstraintSolver) -> R): R = createSolver().use(block)
 
+/** Creates a solver that opens incremental sessions, runs [block] on it and closes it, also when [block] fails. */
+inline fun <R> SolverBackend.withIncrementalSolver(block: (IncrementalConstraintSolver) -> R): R = createIncrementalSolver().use(block)
+
 /** Creates a solver that opens incremental sessions, or throws [UnsupportedOperationException] when the route has none. */
 fun SolverBackend.createIncrementalSolver(): IncrementalConstraintSolver {
     val solver = createSolver()

@@ -3,8 +3,9 @@
 ## 1. Use a solver with enumeration support
 
 A solver of `AutoBackend.load()` can enumerate directly: `solutions(model)` delegates to the best
-eligible route declaring `SolverCapability.ENUMERATION`. Keep the backend, the solver and the stream in
-`use` blocks (or `withSolver`) so all three are released; the complete Kotlin example below does so. To choose a specific route instead, require
+eligible route declaring `SolverCapability.ENUMERATION`. `solver.forEachSolution(model) { … }` reads every
+event, closes the stream and returns the terminal result; with `use` on the backend and `withSolver`, nothing
+is left open. The complete Kotlin example below does so. To choose a specific route instead, require
 that capability when [selecting a backend](choose-a-solver.md); TypeScript callers inspect
 the backend’s `capabilities`. A stream API alone does not promise exhaustive enumeration.
 Optimization streams can report improving incumbents; mixed-integer programming (MIP) routes

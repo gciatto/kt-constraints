@@ -32,7 +32,7 @@ In this table, **base** means `SATISFACTION`, `OPTIMIZATION`, `INTEGER_ARITHMETI
 
 No batch descriptor advertises `DOMAIN_PROPAGATION` or `ENTAILMENT`. Those belong to the separate store interface. `ChocoStore` uses the same `choco/direct` ID with a store-specific descriptor. It advertises `INCREMENTAL_ASSERTIONS`, `BACKTRACKING`, `DOMAIN_PROPAGATION`, `ENTAILMENT`, `INTEGER_ARITHMETIC` and `GLOBAL_CONSTRAINTS`, with `PROPAGATION` evidence. `SatisfiabilityStore` wraps an incremental solver and answers entailment by satisfiability checks; it reports `SATISFIABILITY` evidence and does not narrow domains by propagation.
 
-`AutoBackend` has the descriptor `auto/fallback` or `auto/race`, advertising the batch capabilities that at least one of its routes declares. When no route is eligible, its solver throws `UnsupportedModelException`. When eligible attempts produce no answer, it returns `UNKNOWN` with that descriptor. Successful results retain the answering route's descriptor.
+`AutoBackend` has the descriptor `auto/fallback` or `auto/race`, advertising the batch and session capabilities that at least one of its routes declares; its solvers open sessions on the best incremental route. When no route is eligible, its solver throws `UnsupportedModelException`. When eligible attempts produce no answer, it returns `UNKNOWN` with that descriptor. Successful results retain the answering route's descriptor.
 
 ## Concrete backend entry points
 

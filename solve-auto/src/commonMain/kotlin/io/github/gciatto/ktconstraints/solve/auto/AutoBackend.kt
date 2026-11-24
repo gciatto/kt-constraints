@@ -1,10 +1,10 @@
 package io.github.gciatto.ktconstraints.solve.auto
 
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.incremental.IncrementalConstraintSolver
 import io.github.gciatto.ktconstraints.solve.spi.BackendAvailability
 import io.github.gciatto.ktconstraints.solve.spi.Platform
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
@@ -16,8 +16,8 @@ import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
  * A backend that picks, per model, among [backends]: it ranks the eligible ones by [policy] on [platform] and runs
  * them with [strategy]. Its solvers answer with the descriptor of the route that produced each result, list every
  * skipped or failed route in the result's metadata messages, and report `UNKNOWN` from this backend's own
- * descriptor (`auto/fallback` or `auto/race`) when no route answers. It only solves in batch and enumerates; sessions
- * and stores belong to concrete routes. Closing it closes the closeable [backends], which own loaded runtimes.
+ * descriptor (`auto/fallback` or `auto/race`) when no route answers. Enumerations and incremental sessions go to the
+ * best route offering them. Closing it closes [backends], which own loaded runtimes.
  */
 class AutoBackend(
     backends: List<SolverBackend>,
@@ -31,14 +31,14 @@ class AutoBackend(
     /** The routes this backend chooses among, in tie-breaking order. */
     val registry: SolverRegistry = SolverRegistry.of(this.backends)
 
-    /** `auto/<strategy>`, with the batch capabilities that at least one route declares. */
+    /** `auto/<strategy>`, with the batch and session capabilities that at least one route declares. */
     override val descriptor: SolverDescriptor =
         SolverDescriptor(
             ENGINE,
             strategy.route,
             this.backends
                 .flatMap { it.descriptor.capabilities }
-                .filter { it in BATCH_CAPABILITIES }
+                .filter { it in DELEGATED_CAPABILITIES }
                 .toSet(),
         )
 
@@ -59,7 +59,7 @@ class AutoBackend(
         options: SolveOptions,
     ): SupportReport = portfolio.support(model, options)
 
-    override fun createSolver(): ConstraintSolver = AutoSolver(descriptor, portfolio, strategy)
+    override fun createSolver(): IncrementalConstraintSolver = AutoSolver(descriptor, portfolio, strategy)
 
     override fun close() = backends.forEach { it.close() }
 
@@ -68,7 +68,7 @@ class AutoBackend(
         /** Engine identifier of every automatic backend. */
         const val ENGINE: String = "auto"
 
-        private val BATCH_CAPABILITIES =
+        private val DELEGATED_CAPABILITIES =
             setOf(
                 SolverCapability.SATISFACTION,
                 SolverCapability.OPTIMIZATION,
@@ -77,6 +77,10 @@ class AutoBackend(
                 SolverCapability.REAL_ARITHMETIC,
                 SolverCapability.BITVECTORS,
                 SolverCapability.GLOBAL_CONSTRAINTS,
+                SolverCapability.INCREMENTAL_ASSERTIONS,
+                SolverCapability.BACKTRACKING,
+                SolverCapability.ASSUMPTIONS,
+                SolverCapability.UNSAT_CORES,
             )
 
         /**

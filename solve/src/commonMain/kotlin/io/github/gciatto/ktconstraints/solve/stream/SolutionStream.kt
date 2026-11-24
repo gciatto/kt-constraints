@@ -1,5 +1,8 @@
 package io.github.gciatto.ktconstraints.solve.stream
 
+import io.github.gciatto.ktconstraints.model.ConstraintModel
+import io.github.gciatto.ktconstraints.solve.ConstraintSolver
+import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.result.SolveResult
 
 /** Closeable single-consumer asynchronous search; close and cancellation are idempotent. */
@@ -30,3 +33,13 @@ suspend inline fun SolutionStream.forEachSolution(onSolution: (SolutionFound) ->
         }
     }
 }
+
+/**
+ * Enumerates [model]'s solutions, passing each to [onSolution], and returns the terminal result.
+ * The stream is closed afterwards, also when [onSolution] fails.
+ */
+suspend inline fun ConstraintSolver.forEachSolution(
+    model: ConstraintModel,
+    options: SolveOptions = SolveOptions.DEFAULT,
+    onSolution: (SolutionFound) -> Unit,
+): SolveResult = solutions(model, options).use { it.forEachSolution(onSolution) }

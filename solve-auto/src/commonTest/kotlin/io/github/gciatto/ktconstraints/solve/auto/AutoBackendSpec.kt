@@ -16,12 +16,12 @@ import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelExcep
 import io.github.gciatto.ktconstraints.solve.spi.ranking.RankingPolicy
 import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
+import io.github.gciatto.ktconstraints.test.solve.incrementalContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactly
-import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -76,16 +76,17 @@ class AutoBackendSpec :
         }
 
         include(solverContract { AutoBackend(listOf(KotlinBackend())).createSolver() })
+        include(incrementalContract { AutoBackend(listOf(KotlinBackend())).createSolver() })
         include(differentialContract("auto/kotlin") { AutoBackend(listOf(KotlinBackend())).createSolver() })
 
-        test("auto/descriptor-names-the-strategy-and-batch-capabilities") {
+        test("auto/descriptor-names-the-strategy-and-delegated-capabilities") {
             val log = AutoLog()
             val scripted = ScriptedBackend("a", 10, log, script = unknown)
             AutoBackend(listOf(scripted)).descriptor.id shouldBe "auto/fallback"
             val race = AutoBackend(listOf(scripted), AutoStrategy.Race(3))
             race.descriptor.id shouldBe "auto/race"
             race.descriptor.capabilities shouldBe scripted.descriptor.capabilities
-            AutoBackend(listOf(KotlinBackend())).descriptor.capabilities shouldNotContain SolverCapability.INCREMENTAL_ASSERTIONS
+            AutoBackend(listOf(KotlinBackend())).descriptor.capabilities shouldContain SolverCapability.INCREMENTAL_ASSERTIONS
         }
 
         test("auto/without-an-eligible-route-the-model-is-unsupported") {

@@ -43,8 +43,9 @@ See [results and statuses](../../reference/results-and-statuses.md).
     Read [Use incremental sessions](../incremental-sessions.md). An **unsat core** is a sufficient
     subset of temporary assumptions that makes the root assertions inconsistent.
 
-Use a backend supporting incremental checks, assumptions and unsat cores, such as Z3. `AutoBackend` delegates batch solving and enumeration; use its `registry` to select a route with
-`INCREMENTAL_ASSERTIONS` for sessions, and `createIncrementalSolver()` to create a solver that opens them.
+Sessions need a route supporting incremental checks, assumptions and unsat cores, such as Z3. `AutoBackend`
+opens each session on its best route with incremental assertions; `withIncrementalSolver` creates such a solver,
+runs the block and closes it.
 
 Start a new, satisfiable root model containing only the variables and their domains. Express
 the three pairwise separation rules as temporary assumptions. The following application helper

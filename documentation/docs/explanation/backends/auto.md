@@ -27,7 +27,7 @@ The descriptor is the union of registered route capabilities restricted to these
 
 Enumeration selects one highest-ranked eligible route declaring `ENUMERATION`, even for a race strategy. It does not retry or merge streams. The returned stream owns its underlying solver, and closing the automatic solver closes its open enumeration streams. Closing does not stop an automatic batch `solve` already in progress: cancel the coroutine running it. Structured concurrency keeps the candidate work within that calling coroutine.
 
-Automatic solvers do not offer incremental sessions, assumptions, unsatisfiable cores or stores. Pick a concrete backend through `registry` for those APIs. See [the implementation](https://github.com/gciatto/kt-constraints/blob/develop/solve-auto/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/auto/AutoBackend.kt).
+Automatic solvers also open incremental sessions: `openSession(model)` ranks the routes that declare incremental assertions and opens the session on the best one, so assumptions and unsatisfiable cores are available when that route offers them. Closing the session closes the route's solver. Stores are built over an incremental solver with `SatisfiabilityStore.of(auto.createIncrementalSolver())`. See [the implementation](https://github.com/gciatto/kt-constraints/blob/develop/solve-auto/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/auto/AutoBackend.kt).
 
 ## Supported modelling features and numeric limits
 

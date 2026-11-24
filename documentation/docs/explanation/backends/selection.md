@@ -119,7 +119,7 @@ Source: [Portfolio](https://github.com/gciatto/kt-constraints/blob/develop/solve
 
 `AutoSolver.solutions` repeats ranking with `ENUMERATION` required and selects the highest-ranked eligible route. It creates that solver and wraps its stream so closing the stream also closes the solver. Closing the automatic solver closes its owned streams.
 
-Enumeration does not use fallback or racing, even when `AutoStrategy.Race` was selected. There is no stream merging or retry after an enumeration failure. If no enumerator is eligible, it throws `UnsupportedModelException`. The automatic solver offers no incremental session or store API; use a concrete route for those operations.
+Enumeration does not use fallback or racing, even when `AutoStrategy.Race` was selected. There is no stream merging or retry after an enumeration failure. If no enumerator is eligible, it throws `UnsupportedModelException`. Sessions are routed the same way: `openSession` ranks the routes that declare incremental assertions and opens the session on the best one, without fallback, racing or retry.
 
 Source: [AutoSolver](https://github.com/gciatto/kt-constraints/blob/develop/solve-auto/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/auto/AutoSolver.kt).
 

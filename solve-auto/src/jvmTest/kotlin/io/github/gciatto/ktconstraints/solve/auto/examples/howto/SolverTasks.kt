@@ -68,9 +68,7 @@ internal suspend fun enumerateProjectedOutputs(): List<BigInteger> =
         val result =
             AutoBackend.load().use { auto ->
                 auto.withSolver { solver ->
-                    solver.solutions(model).use { stream ->
-                        stream.forEachSolution { found -> values += checkNotNull(found.assignment.valueOf(x)) }
-                    }
+                    solver.forEachSolution(model) { found -> values += checkNotNull(found.assignment.valueOf(x)) }
                 }
             }
         // A timeout or cancellation would leave the list incomplete.

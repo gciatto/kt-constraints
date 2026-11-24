@@ -94,9 +94,7 @@ internal suspend fun enumerateQueens(
         val result =
             AutoBackend.load().use { auto ->
                 auto.withSolver { solver ->
-                    solver.solutions(model).use { stream ->
-                        stream.forEachSolution { found -> boards += rows.map { checkNotNull(found.assignment.intValueOf(it)) } }
-                    }
+                    solver.forEachSolution(model) { found -> boards += rows.map { checkNotNull(found.assignment.intValueOf(it)) } }
                 }
             }
         // Stopping early, for example on a timeout, would leave the list incomplete.

@@ -10,6 +10,7 @@ Use this page to choose an operation and manage its lifetime. See [Modelling lan
 |---|---|
 | `SolverBackend.createSolver()` | Create a fresh `ConstraintSolver`. The caller should first check availability and support for the intended model and options; `createSolver()` takes no model |
 | `SolverBackend.withSolver { solver -> ... }` | Create a solver, run the block on it and close it, also when the block throws; returns the block's result |
+| `SolverBackend.withIncrementalSolver { solver -> ... }` | The same for `createIncrementalSolver()`, handing the block an `IncrementalConstraintSolver` |
 | `ConstraintSolver.descriptor` | Identify the solver's engine, route and advertised capabilities |
 | `solve(model, options)` | Suspending call returning `SolveResult`. Satisfaction returns the first witness; optimization returns the final result |
 | `solutions(model, options)` | Open a `SolutionStream` for multiple solutions or improving optimization candidates |
@@ -18,6 +19,7 @@ Use this page to choose an operation and manage its lifetime. See [Modelling lan
 | `SolutionFound.assignment`, `objectiveValue` | A projected solution and its optional exact integer objective. An optimization candidate is an **incumbent**: the best feasible answer found so far |
 | `SolveCompleted.result` | The stream's single definitive completion result; subsequent reads return null |
 | `SolutionStream.terminalResult` | Null until completion or cancellation, then the definitive result, even before its event is consumed |
+| `ConstraintSolver.forEachSolution(model, options) { found -> ... }` | Suspending enumeration that opens the stream, passes each `SolutionFound` to the block, closes the stream and returns the terminal `SolveResult` |
 | `SolutionStream.forEachSolution { found -> ... }` | Suspending read to the end of the stream, passing each `SolutionFound` to the block and returning the terminal `SolveResult`; the stream stays open, so wrap it in `use` |
 | `SolutionStream.cancel()` / `close()` | Stop unfinished work and release resources; repeated calls are safe and preserve a definitive result |
 
@@ -156,6 +158,6 @@ See [Solvers and routes](solvers-and-routes.md) for actual descriptors and numer
 | `Fallback` (default) | Try ranked routes sequentially under one deadline; proceed after `UNKNOWN` or failure |
 | `Race(parallelism = 2)` | Run at most this positive number of routes at once under one deadline; the first proof wins and cancels the rest; otherwise retain the best incumbent without claiming optimality |
 
-The strategy's `route` is `fallback` or `race`. The backend advertises the union of its routes' batch capabilities. Successful answers identify the answering route; an empty eligible set throws `UnsupportedModelException`. If eligible attempts produce no answer, the result is `UNKNOWN` under `auto/fallback` or `auto/race`. Metadata lists skipped and failed routes. `solutions` uses the best eligible enumerating route. Sessions and stores require concrete routes.
+The strategy's `route` is `fallback` or `race`. The backend advertises the union of its routes' batch and session capabilities, and its `createSolver()` returns an `IncrementalConstraintSolver`. Successful answers identify the answering route; an empty eligible set throws `UnsupportedModelException`. If eligible attempts produce no answer, the result is `UNKNOWN` under `auto/fallback` or `auto/race`. Metadata lists skipped and failed routes. `solutions` uses the best eligible enumerating route, and `openSession` the best route with incremental assertions.
 
 For tuning ranking, extracting features and implementing backends, see [Backend SPI](spi.md). `ExperimentalKtConstraintsApi` is an error-level opt-in annotation for APIs whose shape may change without a deprecation cycle, including benchmark-driven ranking; callers must opt in deliberately.

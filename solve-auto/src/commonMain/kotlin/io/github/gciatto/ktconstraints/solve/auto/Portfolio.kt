@@ -117,6 +117,10 @@ internal class Portfolio(
         options: SolveOptions,
     ): SolverBackend = rank(model, options, mutableListOf(), setOf(SolverCapability.ENUMERATION)).first().backend
 
+    /** The best route that opens incremental sessions over [model]. */
+    fun sessionRoute(model: ConstraintModel): SolverBackend =
+        rank(model, SolveOptions.DEFAULT, mutableListOf(), setOf(SolverCapability.INCREMENTAL_ASSERTIONS)).first().backend
+
     /** Whether some route is eligible for [model], with every rejection reason otherwise. */
     fun support(
         model: ConstraintModel,
