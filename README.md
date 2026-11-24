@@ -154,7 +154,8 @@ is extensible, and it can try solvers one after another or race several in paral
 
 ## From Java, TypeScript and C
 
-Java code needs no Kotlin receivers, extension functions or coroutines (`:interop-java`):
+Java code needs no Kotlin receivers, extension functions or coroutines (`:interop-java`, which re-exports the blocking
+API of `:solve-blocking`; Kotlin code on the JVM and Native can use that module directly):
 
 ```java
 ConstraintScope scope = ConstraintScope.empty();
@@ -162,7 +163,8 @@ IntVar x = scope.intVar("x", 1, 10);
 IntVar y = scope.intVar("y", 1, 10);
 scope.add(x.plus(y).eq(10));
 scope.add(Expressions.allDifferent(x, y));
-try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
+try (ChocoBackend backend = new ChocoBackend();
+     BlockingSolver solver = BlockingSolver.of(backend)) {
     SolveResult result = solver.solve(scope.buildModel()); // also solveAsync (CompletableFuture) and solutions (Iterator)
     long vx = result.getAssignment().longValueOf(x);       // throws rather than truncates
 }
@@ -240,7 +242,8 @@ FlatZinc interchange, Gurobi, and propagating constraint stores beyond Choco.
 | `:solve-z3`, `:solve-cpsat`, `:solve-choco`, `:solve-mip`, `:solve-minizinc` | Solver adapters |
 | `:solve-kotlin` | Pure-Kotlin solver, on every platform |
 | `:solve-auto` | `AutoBackend`: default solvers per platform, fallback and race strategies |
-| `:interop-java`, `:interop-js`, `:interop-c` | Java blocking/`CompletableFuture` API; ES module with TypeScript declarations; C shared library |
+| `:solve-blocking` | Blocking solver, stream, session and store wrappers for the JVM and Native; `CompletableFuture`s on the JVM |
+| `:interop-java`, `:interop-js`, `:interop-c` | Java number conversions plus `:solve-blocking`; ES module with TypeScript declarations; C shared library |
 | `:test-core`, `:test-solve` | Shared contract suites that every backend must pass |
 
 ## Building and contributing

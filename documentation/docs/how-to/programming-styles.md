@@ -36,6 +36,8 @@ builder changes.
 
 - **Java:** use `ConstraintScope`, static `Expressions` factories and `BlockingSolver`.
   The [optimization guide](optimize.md) shows Java factories and a `CompletionStage`.
+- **Kotlin without coroutines:** on the JVM and Native, `backend.withBlockingSolver { ... }` from `:solve-blocking`
+  returns results on the calling thread. See [blocking calls](../reference/solver-api.md#blocking-calls).
 - **TypeScript:** use `ModelBuilder`, `bigint` constants and methods such as
   `x.plus(y).eq(constant(3n))`. Builder methods such as `add` return the builder for chaining.
   See [optimization](optimize.md) for a tested example.
@@ -52,8 +54,8 @@ constraints force an expression to hold. See [solving modes](../explanation/solv
 
 | Task | Kotlin | Java | TypeScript |
 | --- | --- | --- | --- |
-| One satisfaction or optimization result | Suspending `solve` on a backend solver, including `AutoBackend` | Blocking `solve`, or `solveAsync` returning `CompletableFuture` (also a `CompletionStage`) | `solve` returning `Promise<Outcome>` |
-| Stream solutions | `SolutionStream.next()` suspends | Closeable `BlockingSolutionStream` iterator | `for await` over `solver.solutions(...)` |
+| One satisfaction or optimization result | Suspending `solve` on a backend solver, including `AutoBackend`; blocking `solve` through `:solve-blocking` on the JVM and Native | Blocking `solve`, or `solveAsync` returning `CompletableFuture` (also a `CompletionStage`) | `solve` returning `Promise<Outcome>` |
+| Stream solutions | `SolutionStream.next()` suspends; `BlockingSolutionStream` iterates with `for` | Closeable `BlockingSolutionStream` iterator | `for await` over `solver.solutions(...)` |
 | Repeated checks with reversible assertions | `IncrementalSession` | `BlockingSession`, with blocking and future methods | Session with Promise-based `check` |
 | Application-owned branching and entailment | `ConstraintStore` | `BlockingStore`, with blocking and future methods | Store with Promise-based posts and entailment |
 
@@ -65,7 +67,8 @@ for the design trade-offs.
 ## Manage lifetimes and cancellation
 
 Use Kotlin `use`, Java try-with-resources, and TypeScript `try/finally` to close solvers,
-sessions and stores. Close loaded JS backends as well, to release their workers.
+sessions and stores. Close backends too, which releases loaded runtimes such as JS workers; a `BlockingSolver`
+never closes the backend it came from.
 Keep each stream, session or store single-consumer; await an operation before starting
 the next on that resource. For cancellation, choose the mechanism supported by the calling
 language in [set limits and cancel](limits-and-cancellation.md).

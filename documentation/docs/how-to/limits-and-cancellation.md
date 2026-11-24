@@ -51,7 +51,8 @@ suspending function. The shown imports also cover later Kotlin helpers on this p
 
     This example immediately cancels a search proving that 13 objects cannot occupy 12 distinct positions. Its `check` helper throws
     on a wrong result.
-    Closing `BlockingSolver` cancels its pending futures and closes the solver.
+    Closing `BlockingSolver` cancels its pending futures and closes the solver, but not its backend:
+    close the backend in the same try-with-resources statement.
     For blocking calls, interrupt the calling thread. Close `BlockingSolutionStream`
     when leaving iteration early; try-with-resources handles this on exceptions too.
 

@@ -1,6 +1,6 @@
 # Java API
 
-`:interop-java` is a JVM facade in `io.github.gciatto.ktconstraints.interop`. It wraps the common model and result types rather than exporting a separate Java model. It removes coroutine suspension from the calling surface. Maven coordinates and backend dependencies are listed in [Modules and artifacts](modules-and-artifacts.md).
+`:interop-java` is the JVM artifact for Java callers. It wraps the common model and result types rather than exporting a separate Java model, and it removes coroutine suspension from the calling surface. It contains `JavaNumbers` in `io.github.gciatto.ktconstraints.interop` and re-exports `:solve-blocking`, whose `BlockingSolver`, `BlockingSolutionStream`, `BlockingSession` and `BlockingStore` live in `io.github.gciatto.ktconstraints.solve.blocking`. Maven coordinates and backend dependencies are listed in [Modules and artifacts](modules-and-artifacts.md).
 
 ## Modelling and numbers
 
@@ -22,9 +22,17 @@ Arithmetic, comparison, Boolean and conversion operators are instance methods of
 
 | Type | Public surface |
 |---|---|
-| `BlockingSolver` | Static `of(SolverBackend)` creates a solver with `createSolver()` but does not close the backend, so close a backend that owns a runtime yourself; `of(ConstraintSolver)` takes ownership. `getDescriptor`, `solve(model, options)`, `solveAsync(model, options)`, `solutions(model, options)`, `openSession(model)`, `close` |
+| `BlockingSolver` | Static `of(SolverBackend)` creates a solver with `createSolver()` but does not close the backend; `of(ConstraintSolver)` takes ownership. `getDescriptor`, `solve(model, options)`, `solveAsync(model, options)`, `solutions(model, options)`, `openSession(model)`, `close` |
 | `BlockingSolutionStream` | `Iterator<SolutionEvent>` and `AutoCloseable`; `hasNext`, `next`, `getTerminalResult`, `cancel`, `close` |
 | `BlockingSession` | `getDescriptor`, `add`, `push`, `popTo`, `check(assumptions, timeoutMillis)`, `checkAsync(assumptions, timeoutMillis)`, `close` |
+
+Backends are `AutoCloseable`: open the backend in the same try-with-resources statement as the solver, before it, so that a backend owning a runtime (such as `AutoBackend`) is released after the solver. `AutoBackends.load()`, `load(strategy)` and `load(strategy, policy)` in `:solve-auto` load the routes bundled for the JVM on the calling thread; JVM backends such as `new Z3Backend()` or `new ChocoBackend()` are constructed directly.
+
+```java
+--8<-- "interop-java/src/test/java/io/github/gciatto/ktconstraints/interop/examples/howto/SolverTasks.java:auto"
+```
+
+Its `check` helper throws `AssertionError` on a wrong result.
 
 Overloads omit optional solve options, assumptions or timeouts. `solve` blocks the calling thread; thread interruption cancels the search. `solveAsync` returns a `CompletableFuture<SolveResult>`; cancelling it cancels the search. Closing a solver cancels pending futures and closes its solver and streams.
 

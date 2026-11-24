@@ -18,9 +18,10 @@ All modules below are included by `settings.gradle.kts`. Publication eligibility
 | `:solve-minizinc` | MiniZinc compiler/decoder and runtime adapters | Portable IR; JVM and JS execution | Yes | `io.github.gciatto:kt-constraints-solve-minizinc` |
 | `:solve-auto` | `AutoBackend`: automatic selection over the default routes, fallback/race strategies | Portable | Yes | `io.github.gciatto:kt-constraints-solve-auto` |
 | `:solve-kotlin` | Pure-Kotlin solver and incremental sessions | Portable | Yes | `io.github.gciatto:kt-constraints-solve-kotlin` |
+| `:solve-blocking` | `BlockingSolver`, `BlockingSolutionStream`, `BlockingSession`, `BlockingStore`; `CompletableFuture` variants on the JVM | JVM and Native (no JavaScript) | Yes | `io.github.gciatto:kt-constraints-solve-blocking` |
 | `:solve-flatzinc` | Reserved module; no backend implementation | Portable declarations only | No | — |
 | `:solve-highs` | Reserved direct HiGHS adapter; implemented route is in solve-mip | Portable declarations only | No | — |
-| `:interop-java` | Blocking, future and iterator wrappers; Java number conversions | JVM | Yes | `io.github.gciatto:kt-constraints-interop-java` |
+| `:interop-java` | Java number conversions; re-exports `:solve-blocking` | JVM | Yes | `io.github.gciatto:kt-constraints-interop-java` |
 | `:interop-js` | Exported ES module with generated TypeScript declarations | JS | Yes | `io.github.gciatto:kt-constraints-interop-js` |
 | `:interop-c` | Generated C header and shared library | Native desktop libraries | No | — |
 | `:test-core` | Shared representation test utilities | Portable | No | — |

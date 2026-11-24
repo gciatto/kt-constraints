@@ -28,6 +28,7 @@ The diagram shows the main dependency direction rather than every Gradle edge. `
 | `:solve-spi` | Backend and compiler contracts, support reports, availability, registry, feature extraction, ranking and shared lifecycle machinery |
 | Solver adapters | Translation into an engine representation, execution, decoding and validation |
 | `:solve-auto` | `AutoBackend`: platform defaults, automatic solving, sequential fallback and bounded races |
+| `:solve-blocking` | Blocking wrappers for threads that cannot suspend, on the JVM and Native, with `CompletableFuture` variants on the JVM |
 | `:interop-java`, `:interop-js`, `:interop-c` | Language-specific call patterns and boundary representations |
 | `:test-core`, `:test-solve` | Reusable representation and solver contracts, differential checks and a small finite test oracle |
 

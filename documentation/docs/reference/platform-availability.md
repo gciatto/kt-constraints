@@ -35,6 +35,7 @@ JVM Linux, Node and Linux x64 Native; the other cells await CI evidence from the
 | TypeScript (`:interop-js`), `z3/wasm`    | —         | —               | —           | ✅   | ✅       |
 | TypeScript, `gecode/minizinc-js-cli`     | —         | —               | —           | ✅   | —        |
 | TypeScript, `chuffed/minizinc-wasm`      | —         | —               | —           | — | ✅       |
+| Kotlin `:solve-blocking`, `kotlin/direct` (also Linux x64 Native) | ✅ |   |             | —    | —        |
 | Java `BlockingStore` (Choco, Z3)         | ✅        | ✅              | ✅          | —    | —        |
 | TypeScript `Store`, `z3/wasm`            | —         | —               | —           | ✅   | ✅       |
 

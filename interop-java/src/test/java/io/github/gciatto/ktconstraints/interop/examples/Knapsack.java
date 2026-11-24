@@ -4,9 +4,9 @@ package io.github.gciatto.ktconstraints.interop.examples;
 import io.github.gciatto.ktconstraints.core.integer.IntExpr;
 import io.github.gciatto.ktconstraints.core.integer.IntVar;
 import io.github.gciatto.ktconstraints.dsl.Expressions;
-import io.github.gciatto.ktconstraints.interop.BlockingSolver;
 import io.github.gciatto.ktconstraints.model.ConstraintModel;
 import io.github.gciatto.ktconstraints.model.ConstraintScope;
+import io.github.gciatto.ktconstraints.solve.blocking.BlockingSolver;
 import io.github.gciatto.ktconstraints.solve.choco.ChocoBackend;
 import io.github.gciatto.ktconstraints.solve.result.SolveResult;
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus;
@@ -36,7 +36,8 @@ public final class Knapsack {
         ConstraintModel model = scope.buildModel();
         // --8<-- [end:model]
         // --8<-- [start:solve]
-        try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
+        try (ChocoBackend backend = new ChocoBackend();
+             BlockingSolver solver = BlockingSolver.of(backend)) {
             SolveResult result;
             if (asynchronous) {
                 CompletionStage<SolveResult> stage = solver.solveAsync(model);

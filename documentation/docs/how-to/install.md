@@ -32,7 +32,8 @@ Gradle selects JVM, JS or Native variants from module metadata. `:solve-auto` su
 `AutoBackend` and platform-specific default routes. To use only an explicit backend, add its
 artifact instead, such as `kt-constraints-solve-z3` or the JVM-only `kt-constraints-solve-choco`.
 
-Java projects add `kt-constraints-interop-java` and their backend artifact. See the
+Java projects add `kt-constraints-interop-java` and their backend artifact. Kotlin code on the JVM or Native that
+cannot suspend adds `kt-constraints-solve-blocking` for blocking solver wrappers. See the
 [artifact reference](../reference/modules-and-artifacts.md) for the full list.
 The pure-Kotlin backend, `kt-constraints-solve-kotlin`, runs on every platform without an external runtime; add it explicitly, since `AutoBackend.load()` does not register it.
 

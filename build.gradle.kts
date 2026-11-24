@@ -77,6 +77,7 @@ val publishedModules =
         "solve-mip",
         "solve-minizinc",
         "solve-auto",
+        "solve-blocking",
         "interop-java",
         "interop-js",
     )

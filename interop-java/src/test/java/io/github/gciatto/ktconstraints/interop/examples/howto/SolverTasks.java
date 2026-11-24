@@ -3,13 +3,15 @@ package io.github.gciatto.ktconstraints.interop.examples.howto;
 import io.github.gciatto.ktconstraints.core.Rational;
 import io.github.gciatto.ktconstraints.core.integer.IntVar;
 import io.github.gciatto.ktconstraints.core.real.RealVar;
-import io.github.gciatto.ktconstraints.interop.BlockingSession;
-import io.github.gciatto.ktconstraints.interop.BlockingSolutionStream;
-import io.github.gciatto.ktconstraints.interop.BlockingSolver;
-import io.github.gciatto.ktconstraints.interop.BlockingStore;
 import io.github.gciatto.ktconstraints.interop.JavaNumbers;
 import io.github.gciatto.ktconstraints.model.ConstraintScope;
 import io.github.gciatto.ktconstraints.solve.SolveOptions;
+import io.github.gciatto.ktconstraints.solve.auto.AutoBackend;
+import io.github.gciatto.ktconstraints.solve.auto.AutoBackends;
+import io.github.gciatto.ktconstraints.solve.blocking.BlockingSession;
+import io.github.gciatto.ktconstraints.solve.blocking.BlockingSolutionStream;
+import io.github.gciatto.ktconstraints.solve.blocking.BlockingSolver;
+import io.github.gciatto.ktconstraints.solve.blocking.BlockingStore;
 import io.github.gciatto.ktconstraints.solve.choco.ChocoBackend;
 import io.github.gciatto.ktconstraints.solve.choco.ChocoStore;
 import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus;
@@ -39,13 +41,28 @@ public final class SolverTasks {
         IntVar y = scope.intVar("y", 0, 3);
         scope.add(x.plus(y).eq(3));
         scope.maximize(x);
-        try (BlockingSolver solver = BlockingSolver.of(new Z3Backend())) {
+        try (Z3Backend backend = new Z3Backend();
+             BlockingSolver solver = BlockingSolver.of(backend)) {
             CompletionStage<SolveResult> pending = solver.solveAsync(scope.buildModel(), new SolveOptions(1_000L, null));
             SolveResult result = pending.toCompletableFuture().get(10, TimeUnit.SECONDS);
             check(result.getStatus() == SolveStatus.OPTIMAL, "optimality");
             check(Integer.valueOf(3).equals(result.getAssignment().intValueOf(x)), "x = 3");
         }
         // --8<-- [end:optimize]
+    }
+
+    /** Loads every bundled JVM route and lets the automatic backend pick one per model. */
+    public static void auto() {
+        // --8<-- [start:auto]
+        ConstraintScope scope = ConstraintScope.empty();
+        IntVar x = scope.intVar("x", 0, 9);
+        scope.add(x.times(3).eq(12));
+        try (AutoBackend backend = AutoBackends.load();
+             BlockingSolver solver = BlockingSolver.of(backend)) {
+            SolveResult result = solver.solve(scope.buildModel());
+            check(Integer.valueOf(4).equals(result.getAssignment().intValueOf(x)), "x = 4");
+        }
+        // --8<-- [end:auto]
     }
 
     /** Consumes solutions and the completion event separately. */
@@ -55,7 +72,8 @@ public final class SolverTasks {
         IntVar x = scope.intVar("x", 0, 2);
         int count = 0;
         boolean completed = false;
-        try (BlockingSolver solver = BlockingSolver.of(new Z3Backend());
+        try (Z3Backend backend = new Z3Backend();
+             BlockingSolver solver = BlockingSolver.of(backend);
              BlockingSolutionStream stream = solver.solutions(scope.buildModel(), new SolveOptions(1_000L, null))) {
             while (stream.hasNext()) {
                 SolutionEvent event = stream.next();
@@ -79,7 +97,8 @@ public final class SolverTasks {
         ConstraintScope scope = ConstraintScope.empty();
         IntVar x = scope.intVar("x", 0, 3);
         scope.add(x.ge(1));
-        try (BlockingSolver solver = BlockingSolver.of(new Z3Backend());
+        try (Z3Backend backend = new Z3Backend();
+             BlockingSolver solver = BlockingSolver.of(backend);
              BlockingSession session = solver.openSession(scope.buildModel())) {
             Checkpoint before = session.push();
             session.add(x.eq(0));
@@ -110,7 +129,8 @@ public final class SolverTasks {
         ConstraintScope scope = ConstraintScope.empty();
         RealVar r = scope.realVar("r");
         scope.add(r.eq(JavaNumbers.rational(new BigDecimal("0.1"))));
-        try (BlockingSolver solver = BlockingSolver.of(new Z3Backend())) {
+        try (Z3Backend backend = new Z3Backend();
+             BlockingSolver solver = BlockingSolver.of(backend)) {
             SolveResult result = solver.solve(scope.buildModel());
             check(Rational.of(1, 10).equals(result.getAssignment().valueOf(r)), "exact tenth");
         }
@@ -131,7 +151,8 @@ public final class SolverTasks {
                 scope.add(pigeons[i].neq(pigeons[j]));
             }
         }
-        try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
+        try (ChocoBackend backend = new ChocoBackend();
+             BlockingSolver solver = BlockingSolver.of(backend)) {
             CompletableFuture<SolveResult> pending = solver.solveAsync(scope.buildModel());
             check(pending.cancel(true) && pending.isCancelled(), "cancelled");
         }

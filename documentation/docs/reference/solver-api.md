@@ -36,6 +36,31 @@ A stream is single-pass. Close it if you stop reading early. Satisfaction enumer
 
 `SolveResult` carries `status`, nullable `assignment`, `descriptor`, `terminationReason`, nullable `objectiveValue` and `bestBound`, and `metadata`. `SolveMetadata` copies diagnostic `messages` and backend-defined string `statistics`. Read the [status and termination tables](results-and-statuses.md) together: reaching a limit does not prove infeasibility or optimality.
 
+## Blocking calls
+
+`:solve-blocking` (package `io.github.gciatto.ktconstraints.solve.blocking`) runs the same operations on the calling thread, for code that is not a coroutine. It targets the JVM and Kotlin/Native; JavaScript has no blocking threads and uses the Promise-based facade instead. Java receives the same classes through `:interop-java`.
+
+| API | Meaning |
+|---|---|
+| `SolverBackend.withBlockingSolver { solver -> ... }` | Create a `BlockingSolver`, run the block on it and close it; the backend stays open |
+| `ConstraintSolver.blocking()`, `BlockingSolver.of(solver)` | Take ownership of an existing solver |
+| `BlockingSolver.of(backend)` | Create a solver from the backend without taking ownership of the backend |
+| `BlockingSolver.solve`, `solutions`, `openSession` | Blocking `SolveResult`; a `BlockingSolutionStream`; a `BlockingSession` (`UnsupportedOperationException` for routes without sessions) |
+| `BlockingSolutionStream` | `Iterator<SolutionEvent>` and `AutoCloseable`, so `for (event in stream)` reads solutions and then one completion; `terminalResult`, `cancel` |
+| `BlockingSession` | `add`, `push`, `popTo`, blocking `check(assumptions, timeoutMillis)` |
+| `ConstraintStore.blocking()`, `BlockingStore.of(store)` | Take ownership of a store with blocking `constrain`, `entails` and `explain` |
+| `loadAutoBackend(strategy, policy)` | JVM only, in `:solve-auto`: blocking counterpart of `AutoBackend.load` |
+
+On the JVM the wrappers also offer `solveAsync`, `checkAsync`, `constrainAsync` and `entailsAsync`, which return a `CompletableFuture`; closing the owner cancels pending futures, and interrupting a blocked thread cancels its search. Each wrapper is single-consumer, like the object it wraps. Inside coroutines prefer the suspending API, which does not hold a thread while the engine searches.
+
+```kotlin
+--8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/BlockingCalls.kt:imports"
+
+--8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/BlockingCalls.kt:blocking"
+```
+
+See the [Java API](java-api.md) for the Java view of the same classes.
+
 ## Assignments
 
 `Assignment` is a read-only `Valuation`, meaning typed bindings from variables to values. Access uses variable identity, so an identically named variable from another scope does not retrieve a value.

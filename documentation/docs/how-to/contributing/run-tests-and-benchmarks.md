@@ -14,6 +14,7 @@ Run `./gradlew ktlintFormat` first. Once it finishes, run `./gradlew ktlintCheck
 | Complete host-supported checks | `./gradlew check --parallel --continue` |
 | Examples on JVM/Node | `./gradlew :solve-auto:jvmTest :solve-auto:jsNodeTest --continue` |
 | Shared Native examples on Linux | `./gradlew :solve-auto:linuxX64Test` |
+| Blocking wrappers on JVM and Linux Native | `./gradlew :solve-blocking:jvmTest :solve-blocking:linuxX64Test` |
 | Java boundary | `./gradlew :interop-java:test` |
 | Packaged TypeScript boundary on Node | `./gradlew :interop-js:typescriptUsageTest` |
 | C shared library consumer | `./gradlew :interop-c:nativeUsageTest` |

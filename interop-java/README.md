@@ -1,13 +1,18 @@
 # :interop-java
 
-Java entry points; no Kotlin receivers, extension functions or `suspend` calls are needed.
+Java entry points; no Kotlin receivers, extension functions or `suspend` calls are needed. This artifact holds
+`JavaNumbers` (package `io.github.gciatto.ktconstraints.interop`) and re-exports
+[`:solve-blocking`](../solve-blocking/README.md), whose `BlockingSolver`, `BlockingSolutionStream`, `BlockingSession`
+and `BlockingStore` live in `io.github.gciatto.ktconstraints.solve.blocking`.
 
 - **Modelling:** `ConstraintScope` as in Kotlin, with operators as instance methods of the expressions
   (`x.plus(y).eq(10)`, `x.lt(y).and(p)`, `p.not()`, ...) and helpers such as `sum` and `allDifferent` from the static facade
   `io.github.gciatto.ktconstraints.dsl.Expressions`.
 - **Solving:** `BlockingSolver.of(backend)` owns one solver and offers `solve` (blocking), `solveAsync`
   (`CompletableFuture`; cancelling it cancels the search) and `solutions` (a closeable `Iterator` of solutions,
-  then one `SolveCompleted`). Closing it cancels pending futures and open streams.
+  then one `SolveCompleted`). Closing it cancels pending futures and open streams. It never closes the backend:
+  backends are `AutoCloseable`, so open them in the same try-with-resources statement. `AutoBackends.load()` (from
+  `:solve-auto`) loads every route bundled for the JVM without suspending.
 - **Numbers** stay exact. Model integers are kt-math `org.gciatto.kt.math.BigInteger`s, but primitives work where
   they fit: `scope.intVar("x", 1, 10)`, `x.plus(3)`, and `assignment.longValueOf(x)` / `intValueOf(x)`,
   which throw `ArithmeticException` rather than truncate. `JavaNumbers` converts `java.math.BigInteger` both ways and
@@ -21,7 +26,8 @@ IntVar x = scope.intVar("x", 1, 10);
 IntVar y = scope.intVar("y", 1, 10);
 scope.add(x.plus(y).eq(10));
 scope.add(Expressions.allDifferent(x, y));
-try (BlockingSolver solver = BlockingSolver.of(new ChocoBackend())) {
+try (ChocoBackend backend = new ChocoBackend();
+     BlockingSolver solver = BlockingSolver.of(backend)) {
     SolveResult result = solver.solve(scope.buildModel());
     long vx = result.getAssignment().longValueOf(x);
 }

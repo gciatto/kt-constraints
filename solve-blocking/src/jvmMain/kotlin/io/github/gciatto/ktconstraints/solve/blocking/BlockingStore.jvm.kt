@@ -1,4 +1,4 @@
-package io.github.gciatto.ktconstraints.interop
+package io.github.gciatto.ktconstraints.solve.blocking
 
 import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.bool.BoolExpr
@@ -22,47 +22,40 @@ import kotlinx.coroutines.runBlocking
 import java.util.concurrent.CompletableFuture
 
 /**
- * Java owner of one [ConstraintStore]: posting, entailment and explanation are blocking or [CompletableFuture]-based,
- * so Java callers never handle Kotlin suspension. Single consumer: do not overlap calls, including pending futures.
+ * Owner of one [ConstraintStore]: posting, entailment and explanation are blocking or [CompletableFuture]-based,
+ * so callers never handle Kotlin suspension. Single consumer: do not overlap calls, including pending futures.
  * Closing it cancels pending futures and closes the store.
  */
 @Suppress("TooManyFunctions") // One method per store operation, plus blocking and asynchronous variants.
-class BlockingStore private constructor(
+actual class BlockingStore private constructor(
     private val store: ConstraintStore,
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : AutoCloseable {
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
-    /** Engine and route behind the store. */
-    val descriptor: SolverDescriptor get() = store.descriptor
+    actual val descriptor: SolverDescriptor get() = store.descriptor
 
-    /** Whether the posted constraints are known to be unsatisfiable. */
-    val isFailed: Boolean get() = store.isFailed
+    actual val isFailed: Boolean get() = store.isFailed
 
-    /** Declares a Boolean variable. */
-    fun boolVar(name: String): BoolVar = store.boolVar(name)
+    actual fun boolVar(name: String): BoolVar = store.boolVar(name)
 
-    /** Declares an integer variable over [domain]. */
-    fun intVar(
+    actual fun intVar(
         name: String,
         domain: IntDomain,
     ): IntVar = store.intVar(name, domain)
 
-    /** Declares an integer variable over the inclusive interval [min]..[max]. */
-    fun intVar(
+    actual fun intVar(
         name: String,
         min: Long,
         max: Long,
     ): IntVar = store.intVar(name, IntDomain.of(min, max))
 
-    /** Declares an exact real variable, where the store supports reals. */
-    fun realVar(name: String): RealVar = store.realVar(name)
+    actual fun realVar(name: String): RealVar = store.realVar(name)
 
-    /** Posts [constraint] on the calling thread. */
     @JvmOverloads
-    fun constrain(
+    actual fun constrain(
         constraint: BoolExpr,
-        timeoutMillis: Long? = null,
+        timeoutMillis: Long?,
     ): Propagation = runBlocking { store.constrain(constraint, timeoutMillis) }
 
     /** Posts [constraint] in the background; cancelling the future cancels the post where the store allows it. */
@@ -72,17 +65,14 @@ class BlockingStore private constructor(
         timeoutMillis: Long? = null,
     ): CompletableFuture<Propagation> = scope.future { store.constrain(constraint, timeoutMillis) }
 
-    /** Records the current state. */
-    fun mark(): StoreMark = store.mark()
+    actual fun mark(): StoreMark = store.mark()
 
-    /** Restores [mark], invalidating it and newer marks. */
-    fun undoTo(mark: StoreMark) = store.undoTo(mark)
+    actual fun undoTo(mark: StoreMark) = store.undoTo(mark)
 
-    /** Whether the store implies [constraint], its negation, or neither, on the calling thread. */
     @JvmOverloads
-    fun entails(
+    actual fun entails(
         constraint: BoolExpr,
-        timeoutMillis: Long? = null,
+        timeoutMillis: Long?,
     ): EntailmentResult = runBlocking { store.entails(constraint, timeoutMillis) }
 
     /** Entailment in the background. */
@@ -92,28 +82,24 @@ class BlockingStore private constructor(
         timeoutMillis: Long? = null,
     ): CompletableFuture<EntailmentResult> = scope.future { store.entails(constraint, timeoutMillis) }
 
-    /** Posted constraints inconsistent by themselves when the store has failed; null otherwise. */
     @JvmOverloads
-    fun explain(timeoutMillis: Long? = null): List<BoolExpr>? = runBlocking { store.explain(timeoutMillis) }
+    actual fun explain(timeoutMillis: Long?): List<BoolExpr>? = runBlocking { store.explain(timeoutMillis) }
 
-    /** Current domain of [variable]. */
-    fun domain(variable: IntVar): IntDomain = store.domain(variable)
+    actual fun domain(variable: IntVar): IntDomain = store.domain(variable)
 
-    /** Constraints the store still holds on [variables]. */
-    fun project(variables: List<Variable>): Residual = store.project(variables)
+    actual fun project(variables: List<Variable>): Residual = store.project(variables)
 
-    /** An independent copy of the store, without marks. */
-    fun fork(): BlockingStore = BlockingStore(store.fork())
+    actual fun fork(): BlockingStore = BlockingStore(store.fork())
 
-    override fun close() {
+    actual override fun close() {
         scope.cancel()
         store.close()
     }
 
     /** Static factories. */
-    companion object {
+    actual companion object {
         /** Takes ownership of [store]. */
         @JvmStatic
-        fun of(store: ConstraintStore): BlockingStore = BlockingStore(store)
+        actual fun of(store: ConstraintStore): BlockingStore = BlockingStore(store)
     }
 }

@@ -32,6 +32,10 @@ kotlin {
         nativeMain {
             dependencies { implementation(project(":solve-z3")) }
         }
+        // The blocking example; :solve-blocking has no JavaScript target, so it cannot join commonTest.
+        jvmTest {
+            dependencies { implementation(project(":solve-blocking")) }
+        }
     }
 }
 
