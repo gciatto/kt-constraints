@@ -7,7 +7,7 @@ import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CancellationException
 import kotlin.random.Random
 
-/** Exact witnesses and contradictions are checked independently of elimination and reconstruction. */
+/** Exact witnesses and contradictions are checked independently of the simplex. */
 class LinearFeasibilitySpec :
     FunSpec({
         test("linear/empty-system-has-a-complete-zero-witness") {
@@ -82,6 +82,41 @@ class LinearFeasibilitySpec :
             LinearFeasibility().solve(3, rows).values shouldBe null
         }
 
+        test("linear/conflicts-name-only-the-refuting-inequalities") {
+            val rows =
+                listOf(
+                    LinearInequality(mapOf(3 to Rational.ONE), Rational.of(7)),
+                    LinearInequality(mapOf(0 to Rational.ONE, 1 to -Rational.ONE), -Rational.ONE),
+                    LinearInequality(mapOf(1 to Rational.ONE, 2 to -Rational.ONE), -Rational.ONE),
+                    LinearInequality(mapOf(0 to Rational.ONE, 3 to Rational.ONE), Rational.of(100)),
+                    LinearInequality(mapOf(2 to Rational.ONE, 0 to -Rational.ONE), -Rational.ONE),
+                )
+            val result = LinearFeasibility().solve(4, rows)
+            result.values shouldBe null
+            result.conflict shouldBe listOf(1, 2, 4)
+        }
+
+        test("linear/a-reused-tableau-follows-each-call-s-bounds") {
+            val engine = LinearFeasibility()
+            val atMost = LinearInequality(mapOf(0 to Rational.ONE, 1 to Rational.ONE), Rational.of(2))
+            val above = LinearInequality(mapOf(0 to -Rational.ONE, 1 to -Rational.ONE), Rational.of(-2), strict = true)
+            val pinned = LinearInequality(mapOf(0 to Rational.ONE), Rational.ZERO)
+            engine.solve(2, listOf(atMost, above)).conflict shouldBe listOf(0, 1)
+            val values = requireNotNull(engine.solve(2, listOf(above, pinned)).values)
+            (values[0] + values[1] > Rational.of(2) && values[0] <= Rational.ZERO) shouldBe true
+            requireNotNull(engine.solve(2, listOf(atMost, pinned)).values).let {
+                listOf(atMost, pinned).all { row ->
+                    row.accepts(it)
+                }
+            } shouldBe
+                true
+            engine
+                .solve(3, listOf(LinearInequality(mapOf(2 to Rational.ONE), Rational.ZERO, strict = true), pinned))
+                .values
+                ?.get(2)
+                ?.let { it < Rational.ZERO } shouldBe true
+        }
+
         test("linear/strictness-survives-elimination-across-multiple-variables") {
             val rows =
                 listOf(
@@ -129,10 +164,10 @@ class LinearFeasibilitySpec :
         test("linear/cancellation-propagates-without-an-infeasibility-result") {
             var checkpoints = 0
             shouldThrow<CancellationException> {
-                LinearFeasibility().solve(2, emptyList()) {
+                LinearFeasibility {
                     checkpoints++
                     throw CancellationException("requested")
-                }
+                }.solve(2, emptyList())
             }
             checkpoints shouldBe 1
         }
@@ -151,9 +186,9 @@ class LinearFeasibilitySpec :
                 }
             var checkpoints = 0
             val result =
-                LinearFeasibility().solve(2, rows) {
+                LinearFeasibility {
                     if (++checkpoints > 250) throw CancellationException("work budget exceeded")
-                }
+                }.solve(2, rows)
             result.values shouldBe null
         }
 

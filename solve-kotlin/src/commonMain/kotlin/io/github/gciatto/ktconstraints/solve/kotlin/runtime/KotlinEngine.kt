@@ -32,6 +32,10 @@ internal class KotlinEngine(
     var objective: Any? = null
         private set
     private var theoryConflicts = 0L
+    private var theoryBudget = budget
+
+    /** The real theory; its tableau persists across checks, so each SAT model warm-starts from the last basis. */
+    private val reals = LinearFeasibility { theoryBudget.consume() }
     private var presolveReductions = 0
 
     suspend fun initialize(
@@ -82,16 +86,15 @@ internal class KotlinEngine(
             val result = sat.solve(assumptions, budget::checkpoint)
             if (result.status == SatStatus.UNSATISFIABLE) return null
             val values = requireNotNull(result.values)
-            val inequalities = translation.realAtoms.map { it.inequality(values) }
-            val realResult = LinearFeasibility().solve(translation.realCount, inequalities, budget::checkpoint)
-            val reals = realResult.values
-            if (reals != null) {
-                return translation.assignment(values, reals).also { validate(it, model.constraints) }
+            val atoms = translation.realAtoms
+            theoryBudget = budget
+            val realResult = reals.solve(translation.realCount, atoms.map { it.inequality(values) })
+            realResult.values?.let { witness ->
+                return translation.assignment(values, witness).also { validate(it, model.constraints) }
             }
-            // A coarse, sound theory lemma. Both atom polarity and bit-valued coefficients are dependencies.
+            // The lemma blocks only the atoms in the checked Farkas refutation: their polarity and bit-valued constants.
             val dependencies = linkedSetOf<Int>()
-            for (atom in translation.realAtoms) {
-                budget.checkpoint()
+            for (atom in realResult.conflict.map { atoms[it] }) {
                 dependencies += atom.literal
                 dependencies += atom.form.bitCoefficients.keys
             }
