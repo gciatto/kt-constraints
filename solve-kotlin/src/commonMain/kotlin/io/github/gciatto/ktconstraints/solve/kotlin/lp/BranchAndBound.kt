@@ -9,7 +9,7 @@ import org.gciatto.kt.math.BigInteger
  * [Simplex], which repairs feasibility from the previous basis instead of starting over; nodes are explored depth
  * first, the child nearer the relaxation's value first, and pruned when their relaxation cannot beat the incumbent.
  * Integer columns come from finite domains, so the tree is finite. All arithmetic is exact, so an [Outcome.Optimal]
- * reached without stopping is a proof.
+ * reached without stopping is a proof; the simplex's own evidence is checked by [Certificates] where it stands alone.
  */
 internal class BranchAndBound(
     private val program: LinearProgram,
@@ -36,13 +36,20 @@ internal class BranchAndBound(
             if (stopped()) throw SimplexStopped()
             val node = open.removeLast()
             apply(node)
-            if (!simplex.check()) continue
+            if (!simplex.check()) {
+                if (node.isEmpty()) certify(Certificates.refutes(simplex.conflict.map { Certificates.fact(program, it) }), "Farkas")
+                continue
+            }
             if (!simplex.maximize(score)) {
+                certify(Certificates.isRay(program, simplex.ray, score), "ray")
                 // Meyer: a feasible rational mixed-integer program with an unbounded relaxation is unbounded.
                 if (stopAtFirst || search(emptyMap(), node, stopAtFirst = true) != Outcome.Infeasible) return Outcome.Unbounded
                 continue
             }
             val bound = simplex.objectiveValue(score)
+            if (node.isEmpty() && integers.isEmpty()) {
+                certify(Certificates.bounds(simplex.duals.map { Certificates.fact(program, it) }, score, bound.real), "dual")
+            }
             if (best != null && bound <= best.score) continue
             val branching = mostFractional()
             if (branching == null) {
@@ -59,6 +66,16 @@ internal class BranchAndBound(
         }
         return best?.let { Outcome.Optimal(it) } ?: Outcome.Infeasible
     }
+
+    /**
+     * Root evidence is checked against [program] itself: a refutation, a ray (valid at any node, since nodes only add
+     * bounds) and, for pure linear programs, the dual bound. shortcut: deeper nodes' proofs are not checked, since
+     * that would need a tree certificate; upgrade when branch and bound gains cuts.
+     */
+    private fun certify(
+        valid: Boolean,
+        kind: String,
+    ) = check(valid) { "The simplex produced an invalid $kind certificate" }
 
     /** Resets every integer column to its program bounds, then applies [node]'s tightenings. */
     private fun apply(node: List<Tightening>) {

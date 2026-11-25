@@ -9,15 +9,17 @@ import io.github.gciatto.ktconstraints.solve.linear.LinearRelation
  * variables `0 until n`; row `r` gets the slack variable `n + r`, equal to its left-hand side and bounded by its
  * right-hand side. Values are [DeltaRational]s, so strict rows hold exactly. [check] is the general simplex of
  * Dutertre and de Moura, [maximize] the primal simplex with bound flips; both use Bland's rule, so neither cycles.
- * Bounds can be tightened between calls, which is how branch and bound reuses one tableau.
+ * Bounds can be tightened between calls, which is how branch and bound reuses one tableau. Failures and optima leave
+ * [conflict], [ray] or [duals] behind, for [Certificates] to check against the original constraints.
  */
 internal class Simplex(
-    program: LinearProgram,
+    /** Number of columns; variables `0 until columns`. */
+    private val columns: Int,
+    rowTerms: List<Map<Int, Rational>>,
     /** Polled before every pivot: true stops the search with [SimplexStopped]. */
     private val stopped: () -> Boolean = { false },
 ) {
-    private val columns = program.columns.size
-    private val size = columns + program.rows.size
+    private val size = columns + rowTerms.size
     private val lower = arrayOfNulls<DeltaRational>(size)
     private val upper = arrayOfNulls<DeltaRational>(size)
     private val value = Array(size) { DeltaRational.ZERO }
@@ -25,26 +27,36 @@ internal class Simplex(
     /** The tableau: each basic variable as a combination of nonbasic ones. */
     private val rows = HashMap<Int, MutableMap<Int, Rational>>()
 
+    /** After [check] fails: bounds whose combination is contradictory, with positive Farkas multipliers. */
+    var conflict: List<Use> = emptyList()
+        private set
+
+    /** After [maximize] fails: an improving direction per column (absent means 0) that no bound or row limits. */
+    var ray: Map<Int, Rational> = emptyMap()
+        private set
+
+    /** After [maximize] succeeds: bounds whose combination yields `objective ≤ optimum`, with dual multipliers. */
+    var duals: List<Use> = emptyList()
+        private set
+
     init {
+        rowTerms.forEachIndexed { r, terms -> rows[columns + r] = terms.toMutableMap() }
+    }
+
+    /** The continuous relaxation of [program], whose row `r` is bounded through slack `columns + r`. */
+    constructor(program: LinearProgram, stopped: () -> Boolean = { false }) :
+        this(program.columns.size, program.rows.map { it.terms }, stopped) {
         program.columns.forEachIndexed { i, column ->
-            lower[i] = column.lower?.let { DeltaRational.of(it) }
-            upper[i] = column.upper?.let { DeltaRational.of(it) }
+            bound(i, column.lower?.let { DeltaRational.of(it) }, column.upper?.let { DeltaRational.of(it) })
         }
         program.rows.forEachIndexed { r, row ->
-            val slack = columns + r
-            rows[slack] = row.terms.toMutableMap()
             val rhs = DeltaRational.of(row.rhs)
             when (row.relation) {
-                LinearRelation.LESS_OR_EQUAL -> upper[slack] = rhs
-                LinearRelation.LESS -> upper[slack] = rhs - DeltaRational(Rational.ZERO, Rational.ONE)
-                LinearRelation.EQUAL -> {
-                    lower[slack] = rhs
-                    upper[slack] = rhs
-                }
+                LinearRelation.LESS_OR_EQUAL -> bound(columns + r, null, rhs)
+                LinearRelation.LESS -> bound(columns + r, null, rhs - DeltaRational(Rational.ZERO, Rational.ONE))
+                LinearRelation.EQUAL -> bound(columns + r, rhs, rhs)
             }
         }
-        for (i in 0 until columns) value[i] = clamp(i, DeltaRational.ZERO)
-        rows.forEach { (basic, row) -> value[basic] = evaluate(row) }
     }
 
     /** The current value of column [index]. */
@@ -69,6 +81,10 @@ internal class Simplex(
 
     /** Pivots until every bound holds; false when the bounds and rows are infeasible. */
     fun check(): Boolean {
+        (0 until size).firstOrNull { i -> lower[i]?.let { low -> upper[i]?.let { low > it } } == true }?.let {
+            conflict = listOf(Use(it, true, Rational.ONE), Use(it, false, Rational.ONE))
+            return false
+        }
         while (true) {
             if (stopped()) throw SimplexStopped()
             val violated = rows.keys.filter { violates(it) }.minOrNull() ?: return true
@@ -77,7 +93,11 @@ internal class Simplex(
             val entering =
                 row.entries
                     .filter { (j, a) -> if (raise == a > Rational.ZERO) canIncrease(j) else canDecrease(j) }
-                    .minOfOrNull { it.key } ?: return false
+                    .minOfOrNull { it.key }
+            if (entering == null) {
+                conflict = explain(violated, row, raise)
+                return false
+            }
             pivotAndUpdate(violated, entering, requireNotNull(if (raise) lower[violated] else upper[violated]))
         }
     }
@@ -93,9 +113,17 @@ internal class Simplex(
             val entering =
                 costs.entries
                     .filter { (j, c) -> if (c > Rational.ZERO) canIncrease(j) else canDecrease(j) }
-                    .minOfOrNull { it.key } ?: return true
+                    .minOfOrNull { it.key }
+            if (entering == null) {
+                duals = costs.map { (k, c) -> if (c > Rational.ZERO) Use(k, true, c) else Use(k, false, -c) }
+                return true
+            }
             val increase = costs.getValue(entering) > Rational.ZERO
-            val step = step(entering, increase) ?: return false
+            val step = step(entering, increase)
+            if (step == null) {
+                ray = direction(entering, if (increase) Rational.ONE else Rational.of(-1))
+                return false
+            }
             when (val leaving = step.leaving) {
                 null -> update(entering, value[entering] + if (increase) step.amount else DeltaRational.ZERO - step.amount)
                 else -> pivotAndUpdate(leaving, entering, requireNotNull(step.target))
@@ -118,6 +146,29 @@ internal class Simplex(
             upper[i]?.let { epsilon = tighten(epsilon, value[i], it) }
         }
         return epsilon
+    }
+
+    /**
+     * Why basic [violated] cannot be repaired: every variable of its [row] sits at the bound that blocks it, so the
+     * row's identity combined with those bounds and the violated one is contradictory.
+     */
+    private fun explain(
+        violated: Int,
+        row: Map<Int, Rational>,
+        raise: Boolean,
+    ): List<Use> =
+        listOf(Use(violated, !raise, Rational.ONE)) +
+            row.map { (j, a) -> Use(j, (a > Rational.ZERO) == raise, abs(a)) }
+
+    /** How each column moves when nonbasic [entering] moves by [sign]. */
+    private fun direction(
+        entering: Int,
+        sign: Rational,
+    ): Map<Int, Rational> {
+        val moves = HashMap<Int, Rational>()
+        if (entering < columns) moves[entering] = sign
+        rows.forEach { (basic, row) -> if (basic < columns) row[entering]?.let { moves[basic] = it * sign } }
+        return moves
     }
 
     /** The largest movement of [entering] in its improving direction, and the basic variable that would leave. */
@@ -240,6 +291,13 @@ internal class Simplex(
     }
 
     private fun abs(value: Rational): Rational = if (value < Rational.ZERO) -value else value
+
+    /** A bound of variable [index] (a column, or slack `columns + r` of row `r`) used with [multiplier] > 0. */
+    class Use(
+        val index: Int,
+        val upper: Boolean,
+        val multiplier: Rational,
+    )
 
     /** A primal step: how far the entering variable moves, and the basic variable reaching [target] first, if any. */
     private class Step(
