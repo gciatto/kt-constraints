@@ -131,6 +131,13 @@ private suspend fun measure(
             return -1
         }
     val millis = started.elapsedNow().inWholeMilliseconds
+    options.timeoutMillis?.let {
+        if (millis >
+            it + OVERRUN_MILLIS
+        ) {
+            println("ROUTE-OVERRUN,${backend.descriptor.id},${instance.family},$millis")
+        }
+    }
     if (result.status == SolveStatus.OPTIMAL || result.status == SolveStatus.INFEASIBLE) {
         result.status shouldBe instance.expectedStatus
         result.objectiveValue shouldBe instance.expectedObjective
@@ -146,3 +153,6 @@ private suspend fun measure(
     }
     return if (result.status == instance.expectedStatus) millis else -1
 }
+
+/** How far past its timeout a route may run before the benchmark reports it. */
+private const val OVERRUN_MILLIS = 2_000L
