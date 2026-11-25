@@ -2,11 +2,13 @@ package io.github.gciatto.ktconstraints.solve.kotlin.lp
 
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.solve.linear.LinearProgram
+import io.github.gciatto.ktconstraints.solve.linear.LinearRow
 import io.github.gciatto.ktconstraints.solve.linear.LinearSolution
 import org.gciatto.kt.math.BigInteger
 
 /**
- * Exact branch and bound over a [LinearProgram]'s integer columns. Every node tightens integer bounds on one shared
+ * Exact branch and cut over a [LinearProgram]'s integer columns. Rounds of [GomoryCuts] first tighten the root
+ * relaxation, and the cut pool stays in every node's relaxation. Every node tightens integer bounds on one shared
  * [Simplex], which repairs feasibility from the previous basis instead of starting over. The search plunges: after a
  * branching it dives into the child nearer the relaxation's value, and once a dive ends it resumes from the open node
  * with the best bound, so [bestBound] tightens steadily. Columns are chosen by pseudocost, the objective lost per unit
@@ -19,12 +21,18 @@ internal class BranchAndBound(
     private val program: LinearProgram,
     private val stopped: () -> Boolean = { false },
 ) {
-    private val simplex = Simplex(program, stopped)
+    private var simplex = Simplex(program, stopped = stopped)
+
+    /** Gomory cuts added at the root; valid for every integral point, so every node's relaxation shares them. */
+    private val cuts = mutableListOf<LinearRow>()
     private val integers = program.columns.indices.filter { program.columns[it].integer }
     private val pseudocosts = HashMap<Int, Pseudocost>()
 
     /** Unexplored nodes of the main search, and the node being explored: together they bound what is left. */
     private var frontier: List<Node> = emptyList()
+
+    /** The latest root relaxation value: before any node is branched, it bounds every integral solution. */
+    private var rootBound: DeltaRational? = null
     private var current: Node? = null
 
     /** The best integral solution so far, readable after [SimplexStopped] interrupts [maximize]. */
@@ -37,12 +45,36 @@ internal class BranchAndBound(
      */
     fun bestBound(): DeltaRational? {
         val pending = frontier + listOfNotNull(current)
-        if (pending.any { it.bound == null }) return null
-        return (pending.mapNotNull { it.bound } + listOfNotNull(incumbent?.score)).maxOrNull()
+        val open = if (pending.isEmpty() || pending.any { it.bound == null }) rootBound else pending.mapNotNull { it.bound }.max()
+        return open?.let { listOfNotNull(it, incumbent?.score).max() }
     }
 
     /** Maximizes `Σ score[j]·x[j]` over the integral points of the program. */
-    fun maximize(score: Map<Int, Rational>): Outcome = search(score, emptyList(), stopAtFirst = false)
+    fun maximize(score: Map<Int, Rational>): Outcome {
+        if (integers.isNotEmpty()) cut(score)
+        return search(score, emptyList(), stopAtFirst = false)
+    }
+
+    /**
+     * Tightens the root relaxation with rounds of Gomory cuts while they keep lowering its value; the search then
+     * starts over on the tighter relaxation. shortcut: cuts are only generated at the root and never removed from the
+     * pool; upgrade to local cuts and pool aging when benchmarks show large trees or bloated tableaux.
+     */
+    private fun cut(score: Map<Int, Rational>) {
+        var previous: DeltaRational? = null
+        repeat(CUT_ROUNDS) {
+            apply(emptyList())
+            if (!simplex.check() || !simplex.maximize(score)) return
+            val value = simplex.objectiveValue(score)
+            rootBound = value
+            if (previous?.let { value >= it } == true) return
+            previous = value
+            val round = GomoryCuts.of(simplex, program, CUTS_PER_ROUND)
+            if (round.isEmpty()) return
+            cuts += round
+            simplex = Simplex(program, cuts, stopped)
+        }
+    }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod") // One loop owns node selection, pruning and branching.
     private fun search(
@@ -69,7 +101,8 @@ internal class BranchAndBound(
             if (incumbentScore != null && node.bound != null && node.bound <= incumbentScore) continue
             apply(node.tightenings)
             if (!simplex.check()) {
-                if (node.tightenings.isEmpty()) {
+                // With cuts, a root refutation may use them; they are valid, but not part of the program to check against.
+                if (node.tightenings.isEmpty() && cuts.isEmpty()) {
                     certify(
                         Certificates.refutes(simplex.conflict.map { Certificates.fact(program, it) }),
                         "Farkas",
@@ -84,6 +117,7 @@ internal class BranchAndBound(
                 continue
             }
             val bound = simplex.objectiveValue(score)
+            if (!stopAtFirst && node.tightenings.isEmpty()) rootBound = bound
             if (node.tightenings.isEmpty() && integers.isEmpty()) {
                 certify(Certificates.bounds(simplex.duals.map { Certificates.fact(program, it) }, score, bound.real), "dual")
             }
@@ -261,5 +295,7 @@ internal class BranchAndBound(
     private companion object {
         val HALF: Rational = Rational.of(1, 2)
         val MINIMUM_GAIN: Rational = Rational.of(1, 1_000_000)
+        const val CUT_ROUNDS = 5
+        const val CUTS_PER_ROUND = 8
     }
 }
