@@ -17,6 +17,7 @@ import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
 import io.github.gciatto.ktconstraints.solve.spi.managed.ManagedSolutionStream
+import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 import io.github.gciatto.ktconstraints.solve.stream.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
@@ -185,6 +186,8 @@ internal class OrToolsMipStream(
             when (val goal = model.objective) {
                 is Objective.Minimize -> GroundEvaluator.evaluate(goal.expression, full)
                 is Objective.Maximize -> GroundEvaluator.evaluate(goal.expression, full)
+                is Objective.MinimizeReal, is Objective.MaximizeReal ->
+                    rejectRealObjective()
                 null -> null
             }
         return SolutionFound(full.project(model.outputVariables), objective)

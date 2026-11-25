@@ -70,7 +70,7 @@ Arithmetic and comparison overloads accept `Int`, `Long` and `BigInteger` on the
 | `RealLessThan` | `r lt s`, `r gt s` | Strict comparison |
 | `RealLessOrEqual` | `r le s`, `r ge s` | Non-strict comparison |
 
-Constant overloads accept `Rational`, `Long` or `Int`. There is no product of real variables, implicit integer embedding, floating-point overload or real objective.
+Constant overloads accept `Rational`, `Long` or `Int`. There is no product of real variables, implicit integer embedding or floating-point overload. `minimize` and `maximize` also accept a real expression; such a real objective reports exact rational values (`realObjectiveValue`, `realBestBound`), and routes that cannot optimize it reject the model with `Unsupported real objective`.
 
 ## Bit-vector expressions and relations
 

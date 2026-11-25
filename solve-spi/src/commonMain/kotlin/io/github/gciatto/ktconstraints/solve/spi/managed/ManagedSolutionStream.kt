@@ -127,5 +127,6 @@ abstract class ManagedSolutionStream(
             descriptor,
             reason,
             objectiveValue = current.incumbent?.objectiveValue,
+            realObjectiveValue = current.incumbent?.realObjectiveValue,
         )
 }

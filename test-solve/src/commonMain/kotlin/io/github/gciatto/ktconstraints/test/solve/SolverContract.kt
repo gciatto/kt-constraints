@@ -28,11 +28,24 @@ import io.kotest.datatest.withTests
 import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
 
-/** Shared SAT/UNSAT, optimization, enumeration and lifecycle contracts; every leaf owns fresh fixtures. */
+/**
+ * Shared SAT/UNSAT, optimization, enumeration and lifecycle contracts; every leaf owns fresh fixtures. Routes that
+ * optimize real objectives pass [realObjectives] and include [linearProgrammingContract]; the others must reject them.
+ */
 fun solverContract(
     enumeration: Boolean = true,
+    realObjectives: Boolean = false,
     create: () -> ConstraintSolver,
 ) = funSpec {
+    test("solver-contract/unsupported-real-objective-is-rejected").config(enabled = !realObjectives) {
+        val model =
+            ConstraintModel.of {
+                val x = realVar("x")
+                add(x le 1)
+                maximize(x)
+            }
+        create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model) } }
+    }
     test("solver-contract/satisfiable-assignment-is-independently-validated") {
         ConstraintScope.empty {
             val x = intVar("x", 0..3)

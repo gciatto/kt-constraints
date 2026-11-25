@@ -13,6 +13,7 @@ import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.managed.ManagedSolutionStream
+import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 import io.github.gciatto.ktconstraints.solve.stream.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
@@ -55,6 +56,8 @@ internal class OracleStream(
                 when (val objective = model.objective) {
                     is Objective.Minimize -> GroundEvaluator.evaluate(objective.expression, assignment)
                     is Objective.Maximize -> GroundEvaluator.evaluate(objective.expression, assignment)
+                    is Objective.MinimizeReal, is Objective.MaximizeReal ->
+                        rejectRealObjective()
                     null -> null
                 }
         } catch (_: UndefinedExpressionException) {

@@ -48,7 +48,7 @@ class Solver internal constructor(
             next = {
                 scope.promise {
                     when (val event = stream.next()) {
-                        is SolutionFound -> SolutionEvent(Solution(event.assignment, event.objectiveValue), null)
+                        is SolutionFound -> SolutionEvent(Solution(event.assignment, event.objectiveValue, event.realObjectiveValue), null)
                         is SolveCompleted -> SolutionEvent(null, Outcome(event.result))
                         null -> null
                     }
