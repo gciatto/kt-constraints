@@ -70,7 +70,7 @@ These are adapter limits, often more conservative than an engine's advertised ra
 
 MIP assignments are decoded and validated against the original model. Numerical engine proof evidence underlies optimality and infeasibility; these adapters do not supply exact rational proof certificates. A positive OR-Tools MIP relative gap yields feasible results, never optimal ones.
 
-Pure-Kotlin compiler defaults are 16,384 bits per arithmetic circuit, 1,000,000 SAT variables and 4,000,000 compiler clauses; work is unlimited unless configured. Reaching limits yields `UNKNOWN` or an incumbent-bearing `FEASIBLE`, with resource termination. These settings do not bound all learned clauses or real-elimination rows.
+Pure-Kotlin compiler defaults are 16,384 bits per arithmetic circuit, 1,000,000 SAT variables and 4,000,000 compiler clauses; work is unlimited unless configured. Reaching limits yields `UNKNOWN` or an incumbent-bearing `FEASIBLE`, with resource termination. These settings do not bound all learned clauses or simplex tableaux.
 
 ## Runtime and selection rules
 
