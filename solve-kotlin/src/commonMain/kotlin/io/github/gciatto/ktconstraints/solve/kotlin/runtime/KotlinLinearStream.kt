@@ -23,7 +23,8 @@ import kotlin.time.TimeSource
 /**
  * Optimizes a linear or mixed-integer program's real objective with exact branch and bound over the simplex: an exact
  * optimum, an unattained supremum or infimum reported as a bound with a feasible incumbent, unboundedness or
- * infeasibility. Emits at most one incumbent; a stop keeps the best integral solution found so far.
+ * infeasibility. Emits at most one incumbent; a stop keeps the best integral solution found so far, with the proven
+ * bound of the unexplored nodes.
  */
 internal class KotlinLinearStream(
     private val model: ConstraintModel,
@@ -32,6 +33,8 @@ internal class KotlinLinearStream(
     onClosed: () -> Unit,
 ) : ManagedSolutionStream(descriptor, onClosed) {
     private val program = LinearProgram.of(model)
+    private val goal = requireNotNull(program.objective)
+    private val sign = if (goal.maximize) Rational.ONE else Rational.of(-1)
     private val started = TimeSource.Monotonic.markNow()
     private var completion: SolveCompleted? = null
     private var incumbent: SolutionFound? = null
@@ -49,9 +52,11 @@ internal class KotlinLinearStream(
             solve()
         } catch (_: SimplexStopped) {
             val reason = if (released) TerminationReason.CANCELLED else TerminationReason.TIMEOUT
-            val best = search.incumbent ?: return finish(SolveStatus.UNKNOWN, reason)
+            // The real part bounds the score: a remaining δ term only marks a bound approached through strict rows.
+            val bound = search.bestBound()?.let { goal.constant + it.real * sign }
+            val best = search.incumbent ?: return finish(SolveStatus.UNKNOWN, reason, bound)
             emit(best.values)
-            finish(SolveStatus.FEASIBLE, reason)
+            finish(SolveStatus.FEASIBLE, reason, bound)
         }
     }
 
@@ -61,8 +66,6 @@ internal class KotlinLinearStream(
 
     private fun solve(): SolutionEvent {
         if (expired()) throw SimplexStopped()
-        val goal = requireNotNull(program.objective)
-        val sign = if (goal.maximize) Rational.ONE else Rational.of(-1)
         return when (val outcome = search.maximize(goal.terms.mapValues { it.value * sign })) {
             BranchAndBound.Outcome.Infeasible -> finish(SolveStatus.INFEASIBLE, TerminationReason.COMPLETED)
             BranchAndBound.Outcome.Unbounded -> finish(SolveStatus.UNBOUNDED, TerminationReason.COMPLETED)
