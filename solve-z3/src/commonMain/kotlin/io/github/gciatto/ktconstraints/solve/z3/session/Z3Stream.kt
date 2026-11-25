@@ -1,11 +1,14 @@
 package io.github.gciatto.ktconstraints.solve.z3.session
+import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.bitvector.BitVecVar
 import io.github.gciatto.ktconstraints.core.bool.BoolVar
 import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
 import io.github.gciatto.ktconstraints.core.integer.IntVar
+import io.github.gciatto.ktconstraints.core.real.RealExpr
 import io.github.gciatto.ktconstraints.core.real.RealVar
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
+import io.github.gciatto.ktconstraints.model.isReal
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.assignment.Assignment
@@ -17,7 +20,6 @@ import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.managed.ManagedSolutionStream
-import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 import io.github.gciatto.ktconstraints.solve.stream.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
@@ -38,6 +40,9 @@ internal class Z3Stream<T>(
     private val started = TimeSource.Monotonic.markNow()
     private var search: Search<T>? = null
     private var incumbent: SolutionFound? = null
+
+    /** The completion that follows a real objective's single optimizer incumbent. */
+    private var settled: SolveCompleted? = null
     private var emitted = 0
     private val messages = mutableListOf<String>()
 
@@ -46,6 +51,8 @@ internal class Z3Stream<T>(
     override fun release() = owner.close()
 
     private suspend fun step(port: Z3Port<T>): SolutionEvent {
+        settled?.let { return it }
+        if (model.objective?.isReal == true) return optimize(port)
         val current = search ?: open(port)
         while (true) {
             val remaining = options.timeoutMillis?.let { it - started.elapsedNow().inWholeMilliseconds }
@@ -71,14 +78,68 @@ internal class Z3Stream<T>(
         }
     }
 
+    /**
+     * Optimizes a real objective with Z3's optimizer in one call: the exact optimum, an unattained bound with a feasible
+     * incumbent, unboundedness or infeasibility. The incumbent is validated, and must match an attained optimum exactly.
+     */
+    private suspend fun optimize(port: Z3Port<T>): SolutionEvent {
+        val remaining = options.timeoutMillis?.let { it - started.elapsedNow().inWholeMilliseconds }
+        if (remaining != null && remaining <= 0) return complete(TerminationReason.TIMEOUT)
+        val goal = requireNotNull(model.objective)
+        val translation = Z3Translation(port, model)
+        val objective = translation.translate(goal.expression as RealExpr)
+        val constraints = translation.assertions + translation.drainDefinedness()
+        val optimum = port.optimize(constraints, objective, goal.maximize, remaining)
+        return when (optimum.outcome.status) {
+            CheckStatus.UNSATISFIABLE -> complete(TerminationReason.COMPLETED)
+            CheckStatus.UNKNOWN -> unknown(optimum.outcome.reason)
+            CheckStatus.SATISFIABLE ->
+                if (optimum.infinity != Rational.ZERO) {
+                    SolveCompleted(SolveResult(SolveStatus.UNBOUNDED, null, descriptor, metadata = SolveMetadata(messages)))
+                } else {
+                    incumbent(translation, goal.expression as RealExpr, optimum)
+                }
+        }
+    }
+
+    private fun incumbent(
+        translation: Z3Translation<T>,
+        objective: RealExpr,
+        optimum: Z3Optimum,
+    ): SolutionFound {
+        val full = translation.assignment()
+        if (!model.constraints.all { GroundEvaluator.evaluate(it, full) }) {
+            throw BackendExecutionException("${descriptor.id} returned an assignment violating the model")
+        }
+        val value = GroundEvaluator.evaluate(objective, full)
+        val attained = optimum.epsilon == Rational.ZERO
+        if (attained && value != optimum.value) {
+            throw BackendExecutionException("${descriptor.id} reported optimum ${optimum.value}, but its model scores $value")
+        }
+        val found = SolutionFound(full.project(model.outputVariables), realObjectiveValue = value)
+        emitted++
+        incumbent = found
+        settled =
+            SolveCompleted(
+                SolveResult(
+                    if (attained) SolveStatus.OPTIMAL else SolveStatus.FEASIBLE,
+                    found.assignment,
+                    descriptor,
+                    realObjectiveValue = value,
+                    realBestBound = optimum.value,
+                    metadata = SolveMetadata(messages),
+                ),
+            )
+        return found
+    }
+
     private fun open(port: Z3Port<T>): Search<T> {
         val translation = Z3Translation(port, model)
         val objective =
             when (val objective = model.objective) {
                 is Objective.Minimize -> translation.translate(objective.expression)
                 is Objective.Maximize -> translation.translate(objective.expression)
-                is Objective.MinimizeReal, is Objective.MaximizeReal ->
-                    rejectRealObjective()
+                is Objective.MinimizeReal, is Objective.MaximizeReal -> error("Real objectives use the optimizer")
                 null -> null
             }
         port.assert(translation.assertions + translation.drainDefinedness())
@@ -94,8 +155,7 @@ internal class Z3Stream<T>(
             when (val objective = model.objective) {
                 is Objective.Minimize -> GroundEvaluator.evaluate(objective.expression, full)
                 is Objective.Maximize -> GroundEvaluator.evaluate(objective.expression, full)
-                is Objective.MinimizeReal, is Objective.MaximizeReal ->
-                    rejectRealObjective()
+                is Objective.MinimizeReal, is Objective.MaximizeReal -> error("Real objectives use the optimizer")
                 null -> null
             }
         return SolutionFound(full.project(model.outputVariables), value)

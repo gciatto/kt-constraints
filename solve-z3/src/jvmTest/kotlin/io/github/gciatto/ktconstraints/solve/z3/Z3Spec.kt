@@ -30,6 +30,7 @@ import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
+import io.github.gciatto.ktconstraints.test.solve.linearProgrammingContract
 import io.github.gciatto.ktconstraints.test.solve.oracle.FiniteOracle
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.github.gciatto.ktconstraints.test.solve.storeContract
@@ -48,7 +49,8 @@ import kotlin.time.TimeSource
 /** Direct Z3 JVM route: shared contracts, exact arithmetic, oracle differentials and resource release. */
 class Z3Spec :
     FunSpec({
-        include(solverContract { Z3Backend().createSolver() })
+        include(solverContract(realObjectives = true) { Z3Backend().createSolver() })
+        include(linearProgrammingContract { Z3Backend().createSolver() })
         include(incrementalContract { Z3Backend().createSolver() })
         include(storeContract(propagates = false) { SatisfiabilityStore.of(Z3Backend().createSolver()) })
         include(z3OptimizationContract { Z3Backend().createSolver() })

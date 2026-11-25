@@ -4,8 +4,8 @@
 
 Call `minimize(expression)` or `maximize(expression)` on the model builder.
 These methods replace any previous objective; they do not create a multi-objective model.
-Use `satisfy()` to clear it. Real expressions can constrain the model, but objectives
-use integer expressions.
+Use `satisfy()` to clear it. This page uses integer objectives; for real objectives, see
+[linear and mixed-integer programs](linear-programs.md).
 
 This example maximizes `x` subject to `x + y = 3` and `x, y` in `0..3`.
 Kotlin uses automatic selection; Java and TypeScript use Z3. The Java example also shows

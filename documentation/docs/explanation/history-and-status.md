@@ -75,7 +75,7 @@ Release configuration adopted GitHub Packages for Maven and npm artifacts and re
 | Distribution | Partial | Release configuration for GitHub Packages and C release archives; Maven Central and npmjs publication remain planned |
 | Portable model serialization | Planned | No versioned interchange format, identity remapping implementation or portable model fingerprint |
 | Additional adapters | Planned | FlatZinc interchange, direct HiGHS C API and Gurobi; reserved modules do not supply working backends |
-| Broader theories and optimization | Planned | Arrays, strings, sets, uninterpreted symbols, quantifiers and richer bit-vector operations are outside the current model API; real objectives are expressible, but no route optimizes them yet |
+| Broader theories and optimization | Planned | Arrays, strings, sets, uninterpreted symbols, quantifiers and richer bit-vector operations are outside the current model API; real objectives are optimized exactly by Z3 on every platform |
 | External logic-engine adapters | Planned outside this repository | Store primitives exist; no bundled logic runtime or 2p-Kt adapter |
 
 For current route constraints, consult [solvers and routes](../reference/solvers-and-routes.md) and [platform availability](../reference/platform-availability.md). The [benchmark reference](../reference/benchmarks.md) describes recorded performance evidence; [automatic selection](backends/selection.md) distinguishes those observations from the shipped policy.
