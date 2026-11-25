@@ -16,17 +16,22 @@ import io.github.gciatto.ktconstraints.solve.linear.LinearRow
 internal class Simplex(
     /** Number of columns; variables `0 until columns`. */
     private val columns: Int,
-    private val rowTerms: List<Map<Int, Rational>>,
+    rowTerms: List<Map<Int, Rational>>,
     /** Polled before every pivot: true stops the search with [SimplexStopped]. */
     private val stopped: () -> Boolean = { false },
 ) {
-    private val size = columns + rowTerms.size
-    private val lower = arrayOfNulls<DeltaRational>(size)
-    private val upper = arrayOfNulls<DeltaRational>(size)
-    private val value = Array(size) { DeltaRational.ZERO }
+    private val rowTerms = rowTerms.toMutableList()
+    private val size get() = columns + rowTerms.size
+    private val lower = MutableList<DeltaRational?>(columns + rowTerms.size) { null }
+    private val upper = MutableList<DeltaRational?>(columns + rowTerms.size) { null }
+    private val value = MutableList(columns + rowTerms.size) { DeltaRational.ZERO }
 
     /** The tableau: each basic variable as a combination of nonbasic ones. */
     private val rows = HashMap<Int, MutableMap<Int, Rational>>()
+
+    /** Pivots performed so far, for statistics. */
+    var pivots = 0L
+        private set
 
     /** After [check] fails: bounds whose combination is contradictory, with positive Farkas multipliers. */
     var conflict: List<Use> = emptyList()
@@ -41,7 +46,7 @@ internal class Simplex(
         private set
 
     init {
-        rowTerms.forEachIndexed { r, terms -> rows[columns + r] = terms.toMutableMap() }
+        this.rowTerms.forEachIndexed { r, terms -> rows[columns + r] = terms.toMutableMap() }
     }
 
     /**
@@ -61,6 +66,42 @@ internal class Simplex(
                 LinearRelation.EQUAL -> bound(columns + r, rhs, rhs)
             }
         }
+    }
+
+    /**
+     * Appends [extra] rows, such as cuts, to the current tableau: each new slack starts basic, expressed through the
+     * current nonbasic variables, so the next [check] repairs the basis instead of solving again from scratch.
+     */
+    fun addRows(extra: List<LinearRow>) {
+        for (row in extra) {
+            val slack = size
+            rowTerms += row.terms
+            val expressed = HashMap<Int, Rational>()
+            row.terms.forEach { (j, c) -> rows[j]?.forEach { (k, a) -> expressed.add(k, c * a) } ?: expressed.add(j, c) }
+            rows[slack] = expressed
+            value += evaluate(expressed)
+            val rhs = DeltaRational.of(row.rhs)
+            lower += if (row.relation == LinearRelation.EQUAL) rhs else null
+            upper += if (row.relation == LinearRelation.LESS) rhs - DeltaRational(Rational.ZERO, Rational.ONE) else rhs
+        }
+    }
+
+    /**
+     * Pivots the tableau into [guess]'s basis and puts the nonbasic variables at the bounds it names, without regard
+     * for feasibility: [check] and [maximize] then repair and finish exactly, usually with few pivots. Variables the
+     * guess makes basic but the tableau cannot reach stay nonbasic.
+     */
+    fun warmStart(guess: FloatingSimplex.Basis) {
+        for (entering in guess.basic) {
+            if (entering in rows || entering >= size) continue
+            val leaving = rows.entries.firstOrNull { (basic, row) -> basic !in guess.basic && entering in row }?.key ?: continue
+            pivot(leaving, entering)
+        }
+        for (k in 0 until size) {
+            if (k in rows) continue
+            value[k] = if (k in guess.atUpper) upper[k] ?: clamp(k, DeltaRational.ZERO) else lower[k] ?: clamp(k, DeltaRational.ZERO)
+        }
+        rows.forEach { (basic, row) -> value[basic] = evaluate(row) }
     }
 
     /** The basic variables, in increasing order. */
@@ -100,7 +141,9 @@ internal class Simplex(
         }
         while (true) {
             if (stopped()) throw SimplexStopped()
-            val violated = rows.keys.filter { violates(it) }.minOrNull() ?: return true
+            var violated = -1
+            for (basic in rows.keys) if ((violated < 0 || basic < violated) && violates(basic)) violated = basic
+            if (violated < 0) return true
             val row = rows.getValue(violated)
             val raise = lower[violated]?.let { value[violated] < it } == true
             val entering =
@@ -193,14 +236,17 @@ internal class Simplex(
             (if (increase) upper[entering]?.let { it - value[entering] } else lower[entering]?.let { value[entering] - it })?.let {
                 Step(it, null, null)
             }
-        for (basic in rows.keys.sorted()) {
-            val a = rows.getValue(basic)[entering] ?: continue
+        for ((basic, row) in rows) {
+            val a = row[entering] ?: continue
             val rising = (a > Rational.ZERO) == increase
             val bound = (if (rising) upper[basic] else lower[basic]) ?: continue
             val room = if (rising) bound - value[basic] else value[basic] - bound
             val amount = room / abs(a)
             val current = best
-            if (current == null || amount < current.amount) best = Step(amount, basic, bound)
+            // Bland's rule: among equal ratios, a bound flip wins, then the lowest index leaves.
+            val tied = current != null && amount == current.amount && current.leaving.let { it != null && basic < it }
+            val better = current == null || amount < current.amount || tied
+            if (better) best = Step(amount, basic, bound)
         }
         return best
     }
@@ -236,6 +282,7 @@ internal class Simplex(
         leaving: Int,
         entering: Int,
     ) {
+        pivots++
         val old = rows.remove(leaving)!!
         val coefficient = old.remove(entering)!!
         val inverse = Rational.ONE / coefficient
