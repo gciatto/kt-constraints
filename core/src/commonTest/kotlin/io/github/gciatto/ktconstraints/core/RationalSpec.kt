@@ -5,6 +5,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests
 import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
+import kotlin.random.Random
 
 /** Exact rationals are normalized, so structural equality is numeric equality. */
 class RationalSpec :
@@ -63,5 +64,37 @@ class RationalSpec :
         test("rational/integers-are-recognized") {
             Rational.of(6, 3).isInteger shouldBe true
             Rational.of(1, 3).isInteger shouldBe false
+        }
+
+        test("rational/machine-and-big-arithmetic-agree-across-the-limits") {
+            val random = Random(0x2A710)
+            val edges = listOf(0L, 1L, -1L, Int.MAX_VALUE.toLong(), Int.MIN_VALUE.toLong(), Long.MAX_VALUE, Long.MIN_VALUE + 1)
+
+            fun component(): Long =
+                when (random.nextInt(4)) {
+                    0 -> edges.random(random)
+                    1 -> random.nextLong(-1000, 1000)
+                    2 -> random.nextLong(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong())
+                    else -> random.nextLong()
+                }
+
+            fun value(): Rational = Rational.of(BigInteger.of(component()), BigInteger.of(component().let { if (it == 0L) 7 else it }))
+
+            fun big(r: Rational) = r.numerator to r.denominator
+            repeat(2000) {
+                val a = value()
+                val b = value()
+                val (an, ad) = big(a)
+                val (bn, bd) = big(b)
+                a + b shouldBe Rational.of(an * bd + bn * ad, ad * bd)
+                a * b shouldBe Rational.of(an * bn, ad * bd)
+                a - b shouldBe Rational.of(an * bd - bn * ad, ad * bd)
+                if (b != Rational.ZERO) a / b shouldBe Rational.of(an * bd, ad * bn)
+                a.compareTo(b) shouldBe (an * bd).compareTo(bn * ad)
+                (a == Rational.of(an, ad)) shouldBe true
+                a.hashCode() shouldBe Rational.of(an, ad).hashCode()
+                a.floor() shouldBe
+                    Rational.of(an, ad).let { if (an.signum < 0 && (an % ad).signum != 0) an / ad - BigInteger.ONE else an / ad }
+            }
         }
     })
