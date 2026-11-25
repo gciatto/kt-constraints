@@ -80,6 +80,8 @@ jobs:
             macosArm64)
               highs=aarch64-apple-darwin; highs_sha=3ade8c40b789c43bcd514c57ca2dc4fed9226483048553f239452b715064b50f
               lbt=aarch64-apple-darwin; lbt_sha=f7e337908a2f054db2e2ec0478deefd096b44c3fad1601d78821bb68783fa001
+              # Unlike Linux, macOS resolves libhighs' zlib through @rpath, so it must sit beside it as well.
+              zlib=aarch64-apple-darwin; zlib_sha=c0c8d05315e8948e6fba4854d5e7e96e2da21db5e0cefcf8140abe03ade8db41
               library=libhighs.dylib ;;
           esac
           base=https://github.com/JuliaBinaryWrappers
@@ -93,6 +95,12 @@ jobs:
           mkdir "$RUNNER_TEMP/highs"
           tar -xzf "$RUNNER_TEMP/highs.tgz" -C "$RUNNER_TEMP/highs"
           tar -xzf "$RUNNER_TEMP/lbt.tgz" -C "$RUNNER_TEMP/highs"
+          if [ -n "${zlib:-}" ]; then
+            curl --fail --location --retry 3 -o "$RUNNER_TEMP/zlib.tgz" \
+              "$base/Zlib_jll.jl/releases/download/Zlib-v1.3.1%2B2/Zlib.v1.3.1.$zlib.tar.gz"
+            echo "$zlib_sha  $RUNNER_TEMP/zlib.tgz" | shasum -a 256 --check
+            tar -xzf "$RUNNER_TEMP/zlib.tgz" -C "$RUNNER_TEMP/highs"
+          fi
           echo "KT_CONSTRAINTS_HIGHS_LIBRARY=$RUNNER_TEMP/highs/lib/$library" >> "$GITHUB_ENV"
       - name: Test portable representation and solver contracts on native target
         run: >-
