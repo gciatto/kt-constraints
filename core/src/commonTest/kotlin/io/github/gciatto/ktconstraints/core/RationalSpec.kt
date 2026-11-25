@@ -29,6 +29,8 @@ class RationalSpec :
             -Rational.of(2, 7) shouldBe Rational.of(-2, 7)
             val huge = BigInteger.of("1000000000000000000000000000001")
             Rational.of(huge, BigInteger.of(3)) * Rational.of(3) shouldBe Rational.of(huge)
+            Rational.of(1, 3) / Rational.of(-2, 9) shouldBe Rational.of(-3, 2)
+            shouldThrow<IllegalArgumentException> { Rational.ONE / Rational.ZERO }
         }
 
         withTests(

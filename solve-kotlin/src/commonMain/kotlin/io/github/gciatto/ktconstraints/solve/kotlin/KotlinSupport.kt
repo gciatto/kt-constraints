@@ -44,24 +44,14 @@ import io.github.gciatto.ktconstraints.core.real.relation.RealEquality
 import io.github.gciatto.ktconstraints.core.real.relation.RealLessOrEqual
 import io.github.gciatto.ktconstraints.core.real.relation.RealLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.model.isReal
+import io.github.gciatto.ktconstraints.solve.kotlin.lp.LinearPrograms
 import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
-import io.github.gciatto.ktconstraints.solve.spi.support.UNSUPPORTED_REAL_OBJECTIVE
 import kotlin.reflect.KClass
 
 /** Platform-independent assessment of the IR subset the pure Kotlin backend translates exactly. */
 internal object KotlinSupport {
-    fun report(model: ConstraintModel): SupportReport {
-        val report = report(roots(model))
-        // shortcut: real objectives are expressible but not yet optimized here; lift when this route optimizes them.
-        return if (model.objective?.isReal ==
-            true
-        ) {
-            SupportReport(report.unsupported + UNSUPPORTED_REAL_OBJECTIVE, report.losslessDecompositions)
-        } else {
-            report
-        }
-    }
+    fun report(model: ConstraintModel): SupportReport =
+        if (LinearPrograms.handles(model)) LinearPrograms.report(model) else report(roots(model))
 
     fun report(roots: List<Expr>): SupportReport {
         val unsupported = linkedSetOf<String>()

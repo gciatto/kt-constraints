@@ -10,6 +10,7 @@ import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
+import io.github.gciatto.ktconstraints.test.solve.linearProgrammingContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -17,7 +18,8 @@ import org.gciatto.kt.math.BigInteger
 
 class KotlinBackendSpec :
     FunSpec({
-        include(solverContract { KotlinBackend().createSolver() })
+        include(solverContract(realObjectives = true) { KotlinBackend().createSolver() })
+        include(linearProgrammingContract(mixedInteger = false) { KotlinBackend().createSolver() })
         include(differentialContract("kotlin") { KotlinBackend().createSolver() })
         include(incrementalContract { KotlinBackend().createSolver() })
 
