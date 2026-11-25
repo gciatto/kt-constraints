@@ -90,14 +90,25 @@ known optimum or proof.
 
 | Family | JVM CP-SAT | JVM Choco | JVM Z3 | JVM SCIP | JVM HiGHS | JVM Kotlin | Node Z3 Wasm | Node Kotlin | Native Z3 | Native Kotlin |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 28-queens | 143 | 33 | 7419 | 6231 | 3856 | 21 | 4830 | 106 | 7492 | 50 |
-| Pigeonhole (infeasible) | 3 | 0 | timeout | timeout | timeout | 1 | timeout | 2 | timeout | 2 |
-| Knapsack | 5 | 15 | 17 | 6 | 8 | 7 | 81 | 22 | 23 | 7 |
-| Assignment | 17 | 9 | 410 | 1735 | 2328 | 117 | 1743 | 209 | 433 | 153 |
-| Job-shop | 9 | 2 | 10 | 9 | 18 | 4 | 41 | 9 | 15 | 3 |
-| Single-machine scheduling | 31 | timeout | timeout | timeout | 10000* | 10000* | timeout | timeout | timeout | 10000* |
+| 28-queens | 149 | 46 | 1053 | 6245 | 3887 | 34 | 4942 | 96 | 1066 | 45 |
+| Pigeonhole (infeasible) | 2 | 0 | timeout | timeout | timeout | 0 | timeout | 1 | timeout | 0 |
+| Knapsack | 5 | 12 | 34 | 6 | 9 | 8 | 84 | 18 | 34 | 6 |
+| Assignment | 16 | 7 | 229 | 1737 | 2367 | 115 | 1792 | 240 | 226 | 154 |
+| Job-shop | 8 | 2 | 11 | 10 | 18 | 4 | 38 | 10 | 9 | 3 |
+| Single-machine scheduling | 34 | timeout | timeout | timeout | 9637* | 10000* | timeout | timeout | timeout | 10000* |
 
 `*`: some seeds timed out.
+
+Linear and mixed-integer programs with real objectives (scale 16 of the linear families, 30 s timeout):
+
+| Family | JVM Kotlin | JVM Z3 | JVM SCIP | JVM HiGHS | Node Kotlin | Node HiGHS Wasm | Native Kotlin | Native HiGHS |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Dense LP, 128 columns | 311 | timeout | 69 | 56 | 577 | 197 | 767 | 136 |
+| Knapsack, rational profits | 2 | timeout | 8 | 25 | 13 | 14 | 3 | 18 |
+| Facility location, 666 columns | 215 | timeout | 39 | 69 | 441 | 78 | 302 | 42 |
+
+The pure-Kotlin solver answers exactly; SCIP and HiGHS work in floating point and take part only when a numeric
+tolerance is given.
 
 - **JVM:** CP-SAT is the all-rounder, and the only route that stays flat on scheduling with reified disjunctions.
   Choco is the fastest on satisfaction and assignment. Z3 and the MIP solvers lag on counting arguments and large
@@ -107,8 +118,8 @@ known optimum or proof.
 - **Native:** the pure-Kotlin solver beats or ties Z3's C API everywhere. Z3 remains the route for models it
   rejects, such as unbounded integer domains.
 - `AutoBackend.load()` tries routes in a fixed per-platform order, fastest first by these measurements: JVM CP-SAT,
-  Choco, pure Kotlin, Z3, SCIP, HiGHS, then MiniZinc; Node pure Kotlin, Gecode CLI, Z3 Wasm; Native pure Kotlin, Z3,
-  then MiniZinc (Linux and macOS).
+  Choco, pure Kotlin, Z3, SCIP, HiGHS, then MiniZinc; Node pure Kotlin, HiGHS Wasm, Gecode CLI, Z3 Wasm; Native pure
+  Kotlin, HiGHS, Z3, then MiniZinc (Linux and macOS). HiGHS takes linear models only.
   Each model goes to the first route that has its capabilities, is available and supports it.
 - **MiniZinc routes** add a fixed 240–290 ms on the JVM (process start and flattening) and about 130 ms through
   Node's CLI. They pay off on models that need a specific engine, or a decomposition that MiniZinc does better.

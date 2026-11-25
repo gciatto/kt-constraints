@@ -13,7 +13,7 @@ JVM: the route catalogue, store operations, MiniZinc phases and pure-Kotlin fami
 MINIZINC_EXECUTABLE=/path/to/minizinc ./gradlew :solve-minizinc:jvmBenchmark
 ./gradlew :solve-kotlin:jvmFamilyBenchmark
 KT_CONSTRAINTS_PLATFORM_BENCHMARK=1 ./gradlew :solve-kotlin:jvmTest -i
-KT_CONSTRAINTS_ROUTE_BENCHMARK=1 ./gradlew :solve-auto:jvmTest --tests 'io.github.gciatto.ktconstraints.solve.auto.RouteBenchmarkSpec' -i
+KT_CONSTRAINTS_ROUTE_BENCHMARK=1 ./gradlew :solve-auto:jvmTest --rerun -i
 ```
 
 Node: `-i` makes Kotlin/JS print the measurement rows.
@@ -43,6 +43,11 @@ included; set `MINIZINC_EXECUTABLE` to add the MiniZinc routes on the JVM, Node 
 | `KT_CONSTRAINTS_ROUTE_BENCHMARK_SCALES` | `1 2 3` | Instance scales |
 | `KT_CONSTRAINTS_ROUTE_BENCHMARK_SEEDS` | `3` | Seeds per scale |
 | `KT_CONSTRAINTS_ROUTE_BENCHMARK_TIMEOUT` | `10000` | Milliseconds per solve |
+| `KT_CONSTRAINTS_ROUTE_BENCHMARK_FAMILIES` | `catalogue linear` | `catalogue` (CP/SAT families), `linear` (LP/MILP), or both |
+| `KT_CONSTRAINTS_ROUTE_BENCHMARK_ROUTES` | all | Route ids to measure, such as `kotlin/direct` |
+
+A route that runs more than 2 s past its timeout prints a `ROUTE-OVERRUN,` row. Set `KT_CONSTRAINTS_HIGHS_LIBRARY` to
+include the HiGHS route on Native.
 
 The family benchmark uses `BENCHMARK_SCALES`, `BENCHMARK_SEEDS` and `BENCHMARK_FAMILIES`.
 
@@ -120,41 +125,43 @@ integer-program  4     LINEAR_INTEGER  z3/direct           OPTIMAL     57       
 integer-program  4     LINEAR_INTEGER  auto:scip/or-tools  OPTIMAL     57         true     3.84      0.00        16.76    16.76
 ```
 
-## Route selection evidence (2026-11-22, scales 1-6, 3 seeds, 10 s timeout)
+## Route selection evidence (2026-11-25, scales 3 and 6, 3 seeds, 10 s timeout)
 
-`RouteBenchmarkSpec` on one Linux x64 host: JVM 21, Node and a release `linuxX64` binary. Cells are median
-milliseconds of a fresh solver, including setup. A `*` marks a median where some seeds timed out. MiniZinc routes are
-in their own section below. Every proof matched the known answer.
+`RouteBenchmarkSpec` on one Linux x64 host: JVM 21, Node and a release `linuxX64` binary, with HiGHS 1.15.1 for the
+Native route. Cells are median milliseconds of a fresh solver, including setup. A `*` marks a median where some seeds
+timed out. MiniZinc routes are in their own section below. Every proof matched the known answer. This run replaced
+the 2026-11-22 one (scales 1-6) after the pure-Kotlin and `Rational` optimisations; the other routes moved within
+noise. HiGHS Wasm and Native take only the linear families.
 
 Scale 3:
 
-| family | JVM cp-sat | JVM choco | JVM z3 | JVM scip | JVM highs | JVM kotlin | Node z3 wasm | Node kotlin | Native z3 | Native kotlin |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| n-queens | 37 | 10 | 40 | 362 | 1076 | 7 | 425 | 20 | 44 | 9 |
-| graph-coloring | 9 | 2 | 11 | 19 | 17 | 3 | 44 | 8 | 16 | 3 |
-| pigeonhole | 3 | 0 | 1613 | 2110 | 5146 | 0 | 4061 | 1 | 1534 | 0 |
-| knapsack | 5 | 2 | 18 | 6 | 11 | 1 | 74 | 2 | 22 | 0 |
-| assignment | 12 | 2 | 122 | 236 | 87 | 16 | 584 | 31 | 133 | 22 |
-| job-shop | 9 | 2 | 14 | 10 | 14 | 4 | 36 | 10 | 21 | 5 |
-| bit-vectors | — | — | 5 | — | — | 0 | 10 | 1 | 10 | 0 |
-| integer-program | 6 | 2 | 11 | 7 | 10 | 3 | 54 | 5 | 21 | 2 |
-| single-machine | 16 | 392* | 106 | 432 | 727 | 78 | 217 | 138 | 110 | 100 |
+| family | JVM kotlin | JVM z3 | JVM scip | JVM highs | JVM cp-sat | JVM choco | Node kotlin | Node z3 wasm | Node highs wasm | Native kotlin | Native z3 | Native highs |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| n-queens | 14 | 40 | 375 | 1100 | 42 | 28 | 23 | 450 | — | 10 | 38 | — |
+| graph-coloring | 4 | 17 | 18 | 21 | 10 | 3 | 9 | 50 | — | 2 | 10 | — |
+| pigeonhole | 1 | 1522 | 2107 | 5361 | 3 | 0 | 0 | 4135 | — | 0 | 1541 | — |
+| knapsack | 2 | 17 | 6 | 9 | 5 | 6 | 2 | 78 | 8 | 0 | 15 | 8 |
+| assignment | 17 | 80 | 239 | 88 | 12 | 4 | 37 | 609 | — | 24 | 84 | — |
+| job-shop | 5 | 17 | 10 | 19 | 9 | 3 | 9 | 41 | — | 5 | 9 | — |
+| bit-vectors | 0 | 9 | — | — | — | — | 1 | 10 | — | 0 | 4 | — |
+| integer-program | 3 | 18 | 7 | 9 | 6 | 3 | 8 | 55 | 7 | 2 | 10 | 9 |
+| single-machine | 88 | 119 | 434 | 733 | 15 | 394* | 155 | 220 | — | 105 | 117 | — |
 
 Scale 6:
 
-| family | JVM cp-sat | JVM choco | JVM z3 | JVM scip | JVM highs | JVM kotlin | Node z3 wasm | Node kotlin | Native z3 | Native kotlin |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| n-queens | 143 | 33 | 7419 | 6231 | 3856 | 21 | 4830 | 106 | 7492 | 50 |
-| graph-coloring | 11 | 2 | 13 | 27 | 18 | 6 | 55 | 21 | 23 | 10 |
-| pigeonhole | 3 | 0 | timeout | timeout | timeout | 1 | timeout | 2 | timeout | 2 |
-| knapsack | 5 | 15 | 17 | 6 | 8 | 7 | 81 | 22 | 23 | 7 |
-| assignment | 17 | 9 | 410 | 1735 | 2328 | 117 | 1743 | 209 | 433 | 153 |
-| job-shop | 9 | 2 | 10 | 9 | 18 | 4 | 41 | 9 | 15 | 3 |
-| bit-vectors | — | — | 5 | — | — | 0 | 11 | 2 | 16 | 0 |
-| integer-program | 7 | 9 | 18 | 7 | 10 | 27 | 78 | 52 | 21 | 28 |
-| single-machine | 31 | timeout | timeout | timeout | 10000* | 10000* | timeout | timeout | timeout | 10000* |
+| family | JVM kotlin | JVM z3 | JVM scip | JVM highs | JVM cp-sat | JVM choco | Node kotlin | Node z3 wasm | Node highs wasm | Native kotlin | Native z3 | Native highs |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| n-queens | 34 | 1053 | 6245 | 3887 | 149 | 46 | 96 | 4942 | — | 45 | 1066 | — |
+| graph-coloring | 6 | 18 | 26 | 13 | 13 | 2 | 24 | 62 | — | 8 | 15 | — |
+| pigeonhole | 0 | timeout | timeout | timeout | 2 | 0 | 1 | timeout | — | 0 | timeout | — |
+| knapsack | 8 | 34 | 6 | 9 | 5 | 12 | 18 | 84 | 8 | 6 | 34 | 8 |
+| assignment | 115 | 229 | 1737 | 2367 | 16 | 7 | 240 | 1792 | — | 154 | 226 | — |
+| job-shop | 4 | 11 | 10 | 18 | 8 | 2 | 10 | 38 | — | 3 | 9 | — |
+| bit-vectors | 1 | 8 | — | — | — | — | 2 | 11 | — | 3 | 8 | — |
+| integer-program | 28 | 16 | 7 | 7 | 8 | 9 | 54 | 84 | 7 | 28 | 14 | 8 |
+| single-machine | 10000* | timeout | timeout | 9637* | 34 | timeout | timeout | timeout | — | 10000* | timeout | — |
 
-Selection rules suggested by this recorded run; the default registration orders follow rules 1, 2, 4, 5, 6, 9 and 10:
+Selection rules suggested by this recorded run; the default registration orders follow rules 1, 2, 4, 5, 6, 9, 10, 11, 12 and 13:
 
 1. **JVM, `CP_GLOBALS`: CP-SAT first, as the default policy already ranks it.** It is never the fastest on easy
    instances (its fixed cost is about 5-10 ms), but it is the only route that stays flat on single-machine scheduling,
@@ -166,15 +173,15 @@ Selection rules suggested by this recorded run; the default registration orders 
 3. **JVM, `LINEAR_INTEGER`: no evidence for a change.** Every route answers these knapsack and integer-program
    instances within about 30 ms. A MIP-first order would be harmless, but these instances are too easy to justify
    it either; harder linear instances are needed.
-4. **Node and Native: Kotlin first for every model it supports, with Z3 as fallback.** `kotlin/direct` beats Z3 Wasm
+4. **Node and Native: Kotlin first for every model it supports, then HiGHS, then Z3.** `kotlin/direct` beats Z3 Wasm
    on every Node row by 3-100x, mostly through Wasm's fixed cost of about 40 ms and its search on `allDifferent`. On
-   Native it beats or ties the Z3 C API everywhere; scheduling is within noise. Z3 remains the route for what Kotlin
-   rejects.
+   Native it beats or ties the Z3 C API everywhere; scheduling is within noise. HiGHS only takes linear models, and
+   beats Z3 on every one of them (rule 12). Z3 remains the route for the rest of what Kotlin rejects.
 5. **Kotlin on the JVM:** rank it after CP-SAT and Choco but before Z3 and MIP on
    `CP_GLOBALS`. It is faster than Z3 on every JVM row.
 
-Gaps: the catalogue has no `SMT_REAL`, `NONLINEAR_INTEGER` or `PURE_BOOLEAN` family, and its bit-vector instance is
-trivial. Rules for those classes remain the untested defaults.
+Gaps: the catalogue has no `NONLINEAR_INTEGER` or `PURE_BOOLEAN` family, and its bit-vector instance is trivial.
+Rules for those classes remain the untested defaults. The linear families below are the only real-valued ones.
 
 ### MiniZinc routes (pinned 2.10.1 bundle, same run settings)
 
@@ -230,5 +237,45 @@ baseline. Cells are median milliseconds; the number in brackets is the route's p
     answer most rows in under 50 ms. Z3 Native loses to Gecode only on large `allDifferent` and counting models
     (28-queens, scale-6 pigeonhole), which Kotlin answers first anyway. Only CP-SAT through MiniZinc finishes every
     scale-6 scheduling seed.
+
+## Linear and mixed-integer programs (2026-11-25, scales 4-16, 3 seeds, 30 s timeout)
+
+`KT_CONSTRAINTS_ROUTE_BENCHMARK_FAMILIES=linear` runs `LinearCatalogue`, on the same host and binaries as above:
+
+- `lp-planted`: dense LPs with `8·scale` columns and `5·scale` rows, built around a planted optimal primal-dual pair;
+- `milp-knapsack`: 0/1 knapsacks with rational profits, solved by dynamic programming;
+- `facility-location`: uncapacitated facility location with continuous shares, solved by enumerating open sets.
+
+Every route gets `numericTolerance = NumericTolerance()`, so floating-point routes take part. Exact routes must
+match the optimum exactly; floating-point ones within a relative 1e-4. Every answer did, and no route overran its
+timeout by more than 2 s. The size column of a `ROUTE,` row is the column count for `lp-planted` and the knapsack, and
+facilities × customers for facility location.
+
+Scale 8:
+
+| family | JVM kotlin | JVM z3 | JVM scip | JVM highs | Node kotlin | Node z3 wasm | Node highs wasm | Native kotlin | Native z3 | Native highs |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| lp-planted | 47 | 30000* | 26 | 21 | 78 | timeout | 53 | 90 | 30000* | 30 |
+| milp-knapsack | 11 | timeout | 8 | 25 | 34 | timeout | 10 | 11 | timeout | 17 |
+| facility-location | 91 | 1558 | 18 | 36 | 144 | 2092 | 30 | 58 | 1556 | 31 |
+
+Scale 16:
+
+| family | JVM kotlin | JVM z3 | JVM scip | JVM highs | Node kotlin | Node z3 wasm | Node highs wasm | Native kotlin | Native z3 | Native highs |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| lp-planted | 311 | timeout | 69 | 56 | 577 | timeout | 197 | 767 | timeout | 136 |
+| milp-knapsack | 2 | timeout | 8 | 25 | 13 | timeout | 14 | 3 | timeout | 18 |
+| facility-location | 215 | timeout | 39 | 69 | 441 | timeout | 78 | 302 | timeout | 42 |
+
+11. **Exact LP and MILP: Kotlin, never Z3.** `kotlin/direct` is the fastest exact route on every row and platform,
+    by 10-1000x. Z3 times out from scale 8 on the dense LPs and knapsacks; its optimizer also needs every claim
+    confirmed (see [Z3](../explanation/backends/z3.md)). Kotlin already comes before Z3 everywhere.
+12. **With a tolerance, floating-point routes are 2-6x faster than Kotlin on dense LPs and facility location at scale
+    16.** Kotlin stays within 1 s on every row and is fastest on the knapsacks, where one round of Gomory cuts
+    closes the gap. It also returns exact answers. The fixed order keeps Kotlin first; on Node and Native, HiGHS now
+    comes before Z3, because it wins every linear row both accept.
+13. **JVM: keep SCIP and HiGHS after Z3.** They beat Z3 on linear rows, but are 2-20x slower on the `allDifferent`
+    and counting models they also accept (n-queens, pigeonhole, assignment). A fixed order cannot tell those classes
+    apart.
 
 These are observations from the stated hosts and versions, not performance guarantees. See [Solvers and routes](solvers-and-routes.md) for the actual registered defaults and [Run tests and benchmarks](../how-to/contributing/run-tests-and-benchmarks.md) for reproduction steps.
