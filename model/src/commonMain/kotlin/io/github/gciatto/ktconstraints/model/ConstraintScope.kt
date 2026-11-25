@@ -91,6 +91,22 @@ class ConstraintScope private constructor() {
             objective = Objective.Maximize(expression)
         }
 
+    /** Replaces the model objective with the minimization of an exact real expression. */
+    fun minimize(expression: RealExpr): ConstraintScope =
+        apply {
+            requireWellSorted(expression)
+            requireOwned(expression.variables)
+            objective = Objective.MinimizeReal(expression)
+        }
+
+    /** Replaces the model objective with the maximization of an exact real expression. */
+    fun maximize(expression: RealExpr): ConstraintScope =
+        apply {
+            requireWellSorted(expression)
+            requireOwned(expression.variables)
+            objective = Objective.MaximizeReal(expression)
+        }
+
     /** Clears any optimization objective, selecting satisfaction. */
     fun satisfy(): ConstraintScope = apply { objective = null }
 

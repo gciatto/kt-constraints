@@ -11,6 +11,7 @@ import io.github.gciatto.ktconstraints.solve.result.SolveMetadata
 import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendExecutionException
+import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -143,6 +144,8 @@ internal class MiniZincDecoder(
             when (val objective = compiled.model.objective) {
                 is Objective.Minimize -> GroundEvaluator.evaluate(objective.expression, assignment)
                 is Objective.Maximize -> GroundEvaluator.evaluate(objective.expression, assignment)
+                is Objective.MinimizeReal, is Objective.MaximizeReal ->
+                    rejectRealObjective()
                 null -> null
             }
         val projected = assignment.project(compiled.model.outputVariables)

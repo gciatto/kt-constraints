@@ -16,6 +16,7 @@ import io.github.gciatto.ktconstraints.solve.kotlin.sat.SatStatus
 import io.github.gciatto.ktconstraints.solve.kotlin.search.SearchBudget
 import io.github.gciatto.ktconstraints.solve.result.SolveMetadata
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendExecutionException
+import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 
 /** One isolated mutable search. Theory conflicts include every Boolean fact used by the exact real check. */
 internal class KotlinEngine(
@@ -51,6 +52,8 @@ internal class KotlinEngine(
                 when (val target = model.objective) {
                     is Objective.Minimize -> target.expression
                     is Objective.Maximize -> target.expression
+                    is Objective.MinimizeReal, is Objective.MaximizeReal ->
+                        rejectRealObjective()
                     null -> null
                 }
             if (expression != null) {

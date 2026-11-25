@@ -129,6 +129,7 @@ open class BoundedIntegerSupport(
             when (val objective = model.objective) {
                 is Objective.Minimize -> integer(objective.expression)
                 is Objective.Maximize -> integer(objective.expression)
+                is Objective.MinimizeReal, is Objective.MaximizeReal -> unsupported += UNSUPPORTED_REAL_OBJECTIVE
                 null -> Unit
             }
         }

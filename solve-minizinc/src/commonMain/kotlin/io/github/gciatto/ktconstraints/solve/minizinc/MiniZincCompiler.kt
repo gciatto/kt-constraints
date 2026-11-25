@@ -9,6 +9,7 @@ import io.github.gciatto.ktconstraints.solve.minizinc.lowering.MiniZincLowering
 import io.github.gciatto.ktconstraints.solve.spi.ConstraintCompiler
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
 import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
+import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 
 /** Pure compiler for a selected engine's checked finite subset, using MiniZinc for flattening and global lowering. */
 class MiniZincCompiler(
@@ -55,6 +56,7 @@ class MiniZincCompiler(
             when (val objective = model.objective) {
                 is Objective.Minimize -> "solve minimize ${lowering.lower(objective.expression).text};"
                 is Objective.Maximize -> "solve maximize ${lowering.lower(objective.expression).text};"
+                is Objective.MinimizeReal, is Objective.MaximizeReal -> rejectRealObjective()
                 null -> "solve satisfy;"
             }
         val output = mutableListOf(quote("{"))

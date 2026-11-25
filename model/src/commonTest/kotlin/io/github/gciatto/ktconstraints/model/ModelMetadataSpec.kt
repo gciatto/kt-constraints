@@ -67,6 +67,23 @@ class ModelMetadataSpec :
             }
         }
 
+        test("objective/real-objectives-are-separate-from-integer-ones") {
+            ConstraintScope.empty {
+                val r = realVar("r")
+                val minimized = minimize(r).buildModel().objective
+                minimized shouldBe Objective.MinimizeReal(r)
+                minimized?.isReal shouldBe true
+                minimized?.maximize shouldBe false
+                val maximized = maximize(r).buildModel().objective
+                maximized shouldBe Objective.MaximizeReal(r)
+                maximized?.maximize shouldBe true
+                Objective.Maximize(intVar("x", 0..1)).isReal shouldBe false
+                val foreign = ConstraintScope.empty().realVar("r")
+                shouldThrow<IllegalArgumentException> { minimize(foreign) }
+                shouldThrow<IllegalArgumentException> { maximize(foreign) }
+            }
+        }
+
         test("sorts/reject-inconsistent-extension-nodes") {
             ConstraintScope.empty {
                 val invalidBoolean =

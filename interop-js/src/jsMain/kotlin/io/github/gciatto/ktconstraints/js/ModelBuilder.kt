@@ -18,6 +18,7 @@ import kotlin.js.JsBigInt
 
 /** Mutable single-model builder; [build] returns a detached immutable [Model]. */
 @JsExport
+@Suppress("TooManyFunctions") // One method per ConstraintScope operation; JavaScript cannot overload real objectives.
 class ModelBuilder {
     private val scope = ConstraintScope.empty()
 
@@ -42,6 +43,12 @@ class ModelBuilder {
 
     /** Replaces the objective with maximizing [objective]. */
     fun maximize(objective: IntExpression): ModelBuilder = apply { scope.maximize(objective.expr) }
+
+    /** Replaces the objective with minimizing the exact real expression [objective]. */
+    fun minimizeReal(objective: RealExpression): ModelBuilder = apply { scope.minimize(objective.expr) }
+
+    /** Replaces the objective with maximizing the exact real expression [objective]. */
+    fun maximizeReal(objective: RealExpression): ModelBuilder = apply { scope.maximize(objective.expr) }
 
     /**
      * Soft constraints: replaces the objective with minimizing the total non-negative weight of the violated

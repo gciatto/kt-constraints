@@ -33,20 +33,18 @@ import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
 import io.github.gciatto.ktconstraints.core.integer.relation.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.integer.relation.IntLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.model.Objective
+import io.github.gciatto.ktconstraints.model.isReal
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
 import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
+import io.github.gciatto.ktconstraints.solve.spi.support.UNSUPPORTED_REAL_OBJECTIVE
 
 internal fun requireOracleSupported(model: ConstraintModel) {
     val errors = mutableListOf<String>()
     if (model.variables.size > FiniteOracle.MAX_VARIABLES) errors += "Oracle variable cap exceeded"
+    if (model.objective?.isReal == true) errors += UNSUPPORTED_REAL_OBJECTIVE
     val roots: List<Expr> =
         model.variables + model.constraints +
-            when (val objective = model.objective) {
-                is Objective.Minimize -> listOf(objective.expression)
-                is Objective.Maximize -> listOf(objective.expression)
-                null -> emptyList()
-            }
+            listOfNotNull(model.objective?.expression)
     for (root in roots) {
         root.fold { node, _: List<Unit> ->
             if (!knownOracleNode(node)) errors += "Unsupported expression: ${node::class.simpleName}"

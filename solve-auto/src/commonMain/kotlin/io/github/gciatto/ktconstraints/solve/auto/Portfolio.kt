@@ -1,7 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.auto
 
+import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
@@ -185,6 +185,9 @@ internal class Portfolio(
         private fun rejections(selection: Selection) =
             selection.rejections.map { (id, reasons) -> "$id rejected: ${reasons.joinToString("; ")}" }
 
+        /** The objective value of [result], integer or real, as an exact rational. */
+        private fun score(result: SolveResult): Rational? = result.realObjectiveValue ?: result.objectiveValue?.let { Rational.of(it) }
+
         private fun unknown(result: SolveResult) = "${result.descriptor.id}: UNKNOWN (${result.terminationReason})"
 
         private fun isProof(
@@ -202,9 +205,9 @@ internal class Portfolio(
             candidate: SolveResult,
             model: ConstraintModel,
         ): SolveResult {
-            val incumbent = current?.objectiveValue ?: return candidate
-            val value = candidate.objectiveValue ?: return current
-            val improves = if (model.objective is Objective.Maximize) value > incumbent else value < incumbent
+            val incumbent = current?.let { score(it) } ?: return candidate
+            val value = score(candidate) ?: return current
+            val improves = if (model.objective?.maximize == true) value > incumbent else value < incumbent
             return if (improves) candidate else current
         }
     }

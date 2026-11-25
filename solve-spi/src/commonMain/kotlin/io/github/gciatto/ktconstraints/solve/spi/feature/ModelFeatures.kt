@@ -31,7 +31,6 @@ import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntProduct
 import io.github.gciatto.ktconstraints.core.integer.arithmetic.LinearSum
 import io.github.gciatto.ktconstraints.core.real.RealVar
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.model.Objective
 import org.gciatto.kt.math.BigInteger
 
 /** What a model uses, computed in one walk; the input of ranking heuristics and of benchmark evidence lookups. */
@@ -80,12 +79,7 @@ class ModelFeatures private constructor(
             val walk = Walk()
             model.variables.forEach { walk.variable(it.sort, it) }
             model.constraints.forEach { walk.constraint(it) }
-            val objective =
-                when (val goal = model.objective) {
-                    is Objective.Minimize -> walk.objective(goal.expression)
-                    is Objective.Maximize -> walk.objective(goal.expression)
-                    null -> ObjectiveKind.NONE
-                }
+            val objective = model.objective?.let { walk.objective(it.expression) } ?: ObjectiveKind.NONE
             return ModelFeatures(
                 usesBooleans = walk.booleans,
                 usesIntegers = walk.integers,
