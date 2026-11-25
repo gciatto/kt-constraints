@@ -6,8 +6,8 @@ import kotlin.jvm.JvmStatic
 
 /**
  * Exact rational number, always in lowest terms with a positive denominator, so structural equality is numeric equality.
- * Values whose numerator and denominator fit in a `Long` are kept as machine integers, and arithmetic on operands that
- * fit in an `Int` runs without overflow on `Long`s; anything larger falls back to [BigInteger].
+ * Values whose numerator and denominator fit in a `Long` are kept as machine integers, and arithmetic on them runs on
+ * overflow-checked `Long`s; anything larger, or any operation that overflows, falls back to [BigInteger].
  */
 class Rational private constructor(
     private val n: Long,
@@ -25,33 +25,44 @@ class Rational private constructor(
     /** Whether this value is an integer. */
     val isInteger: Boolean get() = if (bigD == null) d == 1L else bigD == BigInteger.ONE
 
-    /** Whether the fast path may combine this value with another one in `Long` arithmetic without overflow. */
-    private val narrow: Boolean get() = bigN == null && n > Int.MIN_VALUE && n <= Int.MAX_VALUE && d <= Int.MAX_VALUE
+    /** Whether this value takes the `Long` fast path; `Long.MIN_VALUE` is left out so negation never overflows. */
+    private val small: Boolean get() = bigN == null && n != Long.MIN_VALUE
 
     /** Exact sum. */
-    operator fun plus(other: Rational): Rational =
-        when {
-            other.isZero -> this
-            isZero -> other
-            narrow && other.narrow ->
-                if (d == other.d) reduce(n + other.n, d) else reduce(n * other.d + other.n * d, d * other.d)
-            else -> of(numerator * other.denominator + other.numerator * denominator, denominator * other.denominator)
+    operator fun plus(other: Rational): Rational {
+        if (other.isZero) return this
+        if (isZero) return other
+        if (small && other.small) {
+            // Knuth: scale by the cofactors of gcd(d, d'), keeping intermediates small.
+            val g = gcd(d, other.d)
+            val left = multiply(n, other.d / g)
+            val right = multiply(other.n, d / g)
+            val sum = add(left, right)
+            val q = multiply(d / g, other.d)
+            if (left != OVERFLOW && right != OVERFLOW && sum != OVERFLOW && q != OVERFLOW) return reduce(sum, q)
         }
+        return of(numerator * other.denominator + other.numerator * denominator, denominator * other.denominator)
+    }
 
     /** Exact difference. */
     operator fun minus(other: Rational): Rational = this + -other
 
     /** Exact product. */
-    operator fun times(other: Rational): Rational =
-        when {
-            isZero || other.isZero -> ZERO
-            narrow && other.narrow -> reduce(n * other.n, d * other.d)
-            else -> of(numerator * other.numerator, denominator * other.denominator)
+    operator fun times(other: Rational): Rational {
+        if (isZero || other.isZero) return ZERO
+        if (small && other.small) {
+            // Cross-cancelling first leaves the product in lowest terms.
+            val g1 = gcd(abs(n), other.d)
+            val g2 = gcd(abs(other.n), d)
+            val p = multiply(n / g1, other.n / g2)
+            val q = multiply(d / g2, other.d / g1)
+            if (p != OVERFLOW && q != OVERFLOW) return Rational(p, q, null, null)
         }
+        return of(numerator * other.numerator, denominator * other.denominator)
+    }
 
     /** Exact additive inverse. */
-    operator fun unaryMinus(): Rational =
-        if (bigN == null && n != Long.MIN_VALUE) Rational(-n, d, null, null) else of(-numerator, denominator)
+    operator fun unaryMinus(): Rational = if (small) Rational(-n, d, null, null) else of(-numerator, denominator)
 
     /** The greatest integer not above this value. */
     fun floor(): BigInteger {
@@ -63,17 +74,22 @@ class Rational private constructor(
     /** Exact quotient; fails when [other] is zero. */
     operator fun div(other: Rational): Rational {
         require(!other.isZero) { "Division by zero" }
-        if (narrow && other.narrow) {
-            return if (other.n < 0) reduce(-(n * other.d), -(d * other.n)) else reduce(n * other.d, d * other.n)
+        if (other.small) {
+            return this *
+                (if (other.n < 0) Rational(-other.d, -other.n, null, null) else Rational(other.d, other.n, null, null))
         }
         return of(numerator * other.denominator, denominator * other.numerator)
     }
 
-    override fun compareTo(other: Rational): Int =
-        when {
-            narrow && other.narrow -> (n * other.d).compareTo(other.n * d)
-            else -> (numerator * other.denominator).compareTo(other.numerator * denominator)
+    override fun compareTo(other: Rational): Int {
+        if (small && other.small) {
+            if (d == other.d) return n.compareTo(other.n)
+            val left = multiply(n, other.d)
+            val right = multiply(other.n, d)
+            if (left != OVERFLOW && right != OVERFLOW) return left.compareTo(right)
         }
+        return (numerator * other.denominator).compareTo(other.numerator * denominator)
+    }
 
     override fun equals(other: Any?): Boolean =
         other is Rational && n == other.n && d == other.d && bigN == other.bigN && bigD == other.bigD
@@ -114,21 +130,56 @@ class Rational private constructor(
             return if (small) Rational(p.toLong(), q.toLong(), null, null) else Rational(0, 0, p, q)
         }
 
-        /** Normalizes `p / q` for `q > 0`, both far enough from the `Long` limits that no step overflows. */
+        /** Marks an overflowed `Long` operation; it is also `Long.MIN_VALUE`, which the fast path never holds. */
+        private const val OVERFLOW = Long.MIN_VALUE
+
+        /** Normalizes `p / q` for `q > 0`, neither of them `Long.MIN_VALUE`. */
         private fun reduce(
             p: Long,
             q: Long,
         ): Rational {
             if (p == 0L) return ZERO
-            var a = if (p < 0) -p else p
-            var b = q
+            val g = gcd(abs(p), q)
+            return Rational(p / g, q / g, null, null)
+        }
+
+        private fun gcd(
+            x: Long,
+            y: Long,
+        ): Long {
+            var a = x
+            var b = y
             while (b != 0L) {
                 val t = a % b
                 a = b
                 b = t
             }
-            return Rational(p / a, q / a, null, null)
+            return a
         }
+
+        private fun abs(x: Long): Long = if (x < 0) -x else x
+
+        /** `a·b`, or [OVERFLOW]; neither argument is `Long.MIN_VALUE`. */
+        private fun multiply(
+            a: Long,
+            b: Long,
+        ): Long {
+            if (a in INT_RANGE && b in INT_RANGE) return a * b
+            if (a == 0L || b == 0L) return 0
+            val product = a * b
+            return if (product / b != a) OVERFLOW else product
+        }
+
+        /** `a + b`, or [OVERFLOW]. */
+        private fun add(
+            a: Long,
+            b: Long,
+        ): Long {
+            val sum = a + b
+            return if ((a xor sum) and (b xor sum) < 0) OVERFLOW else sum
+        }
+
+        private val INT_RANGE = Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()
 
         /** Normalizes [numerator] / [denominator] from machine integers. */
         @JvmStatic
@@ -137,7 +188,7 @@ class Rational private constructor(
             numerator: Long,
             denominator: Long = 1,
         ): Rational =
-            if (denominator > 0 && numerator > Long.MIN_VALUE && denominator < Long.MAX_VALUE) {
+            if (denominator > 0 && numerator != Long.MIN_VALUE) {
                 reduce(numerator, denominator)
             } else {
                 of(BigInteger.of(numerator), BigInteger.of(denominator))
