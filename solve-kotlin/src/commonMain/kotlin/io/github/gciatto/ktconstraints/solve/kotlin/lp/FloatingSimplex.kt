@@ -129,9 +129,11 @@ internal class FloatingSimplex(
         for (k in 0 until size) row[k] = -row[k] / pivot
         row[entering] = 0.0
         row[b] = 1.0 / pivot
+        // Sparse programs have sparse pivot rows: update only their non-zero columns.
+        val support = (0 until size).filter { row[it] != 0.0 }.toIntArray()
         reduced?.let { costs ->
             val factor = costs[entering]
-            if (factor != 0.0) for (k in 0 until size) costs[k] += factor * row[k]
+            if (factor != 0.0) for (k in support) costs[k] += factor * row[k]
             costs[entering] = 0.0
         }
         for (i in 0 until rowCount) {
@@ -139,7 +141,7 @@ internal class FloatingSimplex(
             val other = tableau[i]
             val factor = other[entering]
             if (factor == 0.0) continue
-            for (k in 0 until size) other[k] += factor * row[k]
+            for (k in support) other[k] += factor * row[k]
             other[entering] = 0.0
         }
         basis[r] = entering

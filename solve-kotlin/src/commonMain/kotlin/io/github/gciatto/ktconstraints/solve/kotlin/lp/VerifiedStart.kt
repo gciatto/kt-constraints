@@ -101,7 +101,7 @@ internal object VerifiedStart {
 
     /**
      * Solves the square system `matrix·x = rhs` exactly, or null when it is singular: rows are scaled to integers and
-     * eliminated fraction-free (Bareiss), so every division is exact and no intermediate needs a gcd.
+     * eliminated fraction-free (Bareiss), so every division is exact and only the final quotients need a gcd.
      */
     fun solve(
         matrix: List<List<Rational>>,
@@ -124,12 +124,14 @@ internal object VerifiedStart {
             }
             previous = m[k][k]
         }
-        val x = MutableList(size) { Rational.ZERO }
+        // Fraction-free back-substitution: y = det·x stays integral, so only the final quotients need a gcd.
+        val determinant = if (size == 0) BigInteger.ONE else m[size - 1][size - 1]
+        val y = Array(size) { BigInteger.ZERO }
         for (i in size - 1 downTo 0) {
-            var rest = Rational.of(m[i][size])
-            for (j in i + 1 until size) rest -= Rational.of(m[i][j]) * x[j]
-            x[i] = rest / Rational.of(m[i][i])
+            var rest = determinant * m[i][size]
+            for (j in i + 1 until size) if (m[i][j].signum != 0) rest -= m[i][j] * y[j]
+            y[i] = rest / m[i][i]
         }
-        return x
+        return y.map { Rational.of(it, determinant) }
     }
 }
