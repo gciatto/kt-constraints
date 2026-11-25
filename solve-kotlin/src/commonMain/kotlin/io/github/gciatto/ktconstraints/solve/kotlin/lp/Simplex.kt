@@ -3,6 +3,7 @@ package io.github.gciatto.ktconstraints.solve.kotlin.lp
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.solve.linear.LinearProgram
 import io.github.gciatto.ktconstraints.solve.linear.LinearRelation
+import io.github.gciatto.ktconstraints.solve.linear.LinearRow
 
 /**
  * Exact bounded-variable simplex over a [LinearProgram]'s continuous relaxation (integrality is ignored). Columns are
@@ -15,7 +16,7 @@ import io.github.gciatto.ktconstraints.solve.linear.LinearRelation
 internal class Simplex(
     /** Number of columns; variables `0 until columns`. */
     private val columns: Int,
-    rowTerms: List<Map<Int, Rational>>,
+    private val rowTerms: List<Map<Int, Rational>>,
     /** Polled before every pivot: true stops the search with [SimplexStopped]. */
     private val stopped: () -> Boolean = { false },
 ) {
@@ -43,13 +44,16 @@ internal class Simplex(
         rowTerms.forEachIndexed { r, terms -> rows[columns + r] = terms.toMutableMap() }
     }
 
-    /** The continuous relaxation of [program], whose row `r` is bounded through slack `columns + r`. */
-    constructor(program: LinearProgram, stopped: () -> Boolean = { false }) :
-        this(program.columns.size, program.rows.map { it.terms }, stopped) {
+    /**
+     * The continuous relaxation of [program] plus [extra] rows, such as cuts; row `r` of `program.rows + extra` is
+     * bounded through slack `columns + r`.
+     */
+    constructor(program: LinearProgram, extra: List<LinearRow> = emptyList(), stopped: () -> Boolean = { false }) :
+        this(program.columns.size, (program.rows + extra).map { it.terms }, stopped) {
         program.columns.forEachIndexed { i, column ->
             bound(i, column.lower?.let { DeltaRational.of(it) }, column.upper?.let { DeltaRational.of(it) })
         }
-        program.rows.forEachIndexed { r, row ->
+        (program.rows + extra).forEachIndexed { r, row ->
             val rhs = DeltaRational.of(row.rhs)
             when (row.relation) {
                 LinearRelation.LESS_OR_EQUAL -> bound(columns + r, null, rhs)
@@ -58,6 +62,15 @@ internal class Simplex(
             }
         }
     }
+
+    /** The basic variables, in increasing order. */
+    fun basics(): List<Int> = rows.keys.sorted()
+
+    /** Basic [index] as a combination of nonbasic variables, or null when [index] is nonbasic. */
+    fun rowOf(index: Int): Map<Int, Rational>? = rows[index]
+
+    /** Column [index] as a combination of columns, or slack `columns + r`'s row. */
+    fun formOf(index: Int): Map<Int, Rational> = if (index < columns) mapOf(index to Rational.ONE) else rowTerms[index - columns]
 
     /** The current value of column [index]. */
     fun valueOf(index: Int): DeltaRational = value[index]
