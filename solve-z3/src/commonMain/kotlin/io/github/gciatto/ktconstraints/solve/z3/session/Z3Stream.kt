@@ -26,6 +26,7 @@ import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.github.gciatto.ktconstraints.solve.z3.port.Z3Owner
 import io.github.gciatto.ktconstraints.solve.z3.port.Z3Port
 import io.github.gciatto.ktconstraints.solve.z3.translation.Z3Translation
+import kotlinx.coroutines.withTimeoutOrNull
 import org.gciatto.kt.math.BigInteger
 import kotlin.time.TimeSource
 
@@ -49,7 +50,21 @@ internal class Z3Stream<T>(
     private var emitted = 0
     private val messages = mutableListOf<String>()
 
-    override suspend fun readNext(): SolutionEvent = owner.confined { step(it) }
+    override suspend fun readNext(): SolutionEvent {
+        // A settled completion needs no port, which may still be busy with a call the watchdog abandoned.
+        settled?.let { return it }
+        val budget = options.timeoutMillis ?: return owner.confined { step(it) }
+        // Z3's optimizer can overrun its own timeout parameter; cancelling the confined call interrupts the context.
+        val left = budget - started.elapsedNow().inWholeMilliseconds + WATCHDOG_GRACE_MILLIS
+        return withTimeoutOrNull(left.coerceAtLeast(1)) { owner.confined { step(it) } }
+            ?: if (model.objective?.isReal ==
+                true
+            ) {
+                settle(candidate, null, TerminationReason.TIMEOUT)
+            } else {
+                complete(TerminationReason.TIMEOUT)
+            }
+    }
 
     override fun release() = owner.close()
 
@@ -349,6 +364,7 @@ internal class Z3Stream<T>(
     private companion object {
         /** Optimizer runs whose claims a plain check refutes, before settling for the incumbent. */
         const val MAX_OPTIMIZER_ROUNDS = 8
+        const val WATCHDOG_GRACE_MILLIS = 1000L
     }
 
     /** Search state; optimization gallops beyond the incumbent, then bisects below the least refuted score. */
