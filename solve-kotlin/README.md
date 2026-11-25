@@ -65,9 +65,9 @@ must have a valid index when that enclosing assertion is active. Definedness fro
 temporary too. Objective expressions also require definedness.
 
 Integer domains are finite, although their bounds and intermediate values are arbitrary precision. The
-current core has integer objectives, linear real expressions and real objectives, which the exact simplex
-optimizes over continuous linear programs. Scheduling globals, set/graph/string/array theories, real objectives
-over integer variables, division/remainder, general nonlinear real optimisation and the full feature sets
+current core has integer objectives, linear real expressions and real objectives, which the exact simplex and
+branch and bound optimize over linear and mixed-integer programs. Scheduling globals, set/graph/string/array
+theories, division/remainder, general nonlinear real optimisation and the full feature sets
 of external solvers require future IR and engine work.
 
 ## Engine

@@ -31,6 +31,9 @@ class RationalSpec :
             Rational.of(huge, BigInteger.of(3)) * Rational.of(3) shouldBe Rational.of(huge)
             Rational.of(1, 3) / Rational.of(-2, 9) shouldBe Rational.of(-3, 2)
             shouldThrow<IllegalArgumentException> { Rational.ONE / Rational.ZERO }
+            Rational.of(7, 2).floor() shouldBe BigInteger.of(3)
+            Rational.of(-7, 2).floor() shouldBe BigInteger.of(-4)
+            Rational.of(-4).floor() shouldBe BigInteger.of(-4)
         }
 
         withTests(

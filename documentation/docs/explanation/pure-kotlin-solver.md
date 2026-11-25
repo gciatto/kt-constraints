@@ -236,7 +236,9 @@ A model whose objective is real goes to a different engine: [`Simplex`][simplex]
 2. **Optimization.** The primal simplex then moves the lowest-indexed nonbasic variable that improves the objective, as far as its own bound (a bound flip, without pivoting) or the first basic variable to reach a bound (a pivot). When nothing limits the move, the objective is unbounded.
 3. **Reading the answer.** A positive rational small enough that every bound still holds replaces δ, giving an exact rational solution; it is checked against the program before it is reported. An optimum with a non-zero δ part is approached through strict rows but never reached: the route reports `FEASIBLE`, the concrete solution, and the exact supremum or infimum as `realBestBound`.
 
-Both phases use Bland's rule, the lowest index among candidates, so degenerate pivots cannot cycle; Beale's classic cycling example is part of the shared contract. All arithmetic is exact, so the price is growing numerators and denominators rather than numerical error. Mixed-integer programs with real objectives are rejected until branch and bound lands.
+Both phases use Bland's rule, the lowest index among candidates, so degenerate pivots cannot cycle; Beale's classic cycling example is part of the shared contract. All arithmetic is exact, so the price is growing numerators and denominators rather than numerical error.
+
+Integer columns turn this into [branch and bound][branch-and-bound]. Each node only tightens integer bounds on the one shared simplex, which repairs feasibility from the previous basis instead of starting over. Nodes are explored depth first, the child nearer the relaxation's value first; the most fractional integer column is branched, and a node is pruned when its relaxation cannot beat the incumbent. Integer columns come from finite domains, so the tree is finite, and with exact arithmetic a completed search proves its optimum. A node whose relaxation is unbounded makes the program unbounded exactly when that node has an integral point (Meyer's theorem for rational data), which a feasibility search settles. A seeded differential test checks the results against Z3's on random mixed-integer programs, including strict rows.
 
 ## Enumeration is over the output projection
 
@@ -356,6 +358,7 @@ Use this route when a portable implementation with no external solver installati
 [real-feasibility]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/arithmetic/LinearFeasibility.kt
 [stream]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/runtime/KotlinStream.kt
 [optimization]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/search/OptimizationState.kt
+[branch-and-bound]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/lp/BranchAndBound.kt
 [simplex]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/lp/Simplex.kt
 [blocker]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/search/ProjectionBlocker.kt
 [session]: https://github.com/gciatto/kt-constraints/blob/develop/solve-kotlin/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/kotlin/runtime/KotlinSession.kt
