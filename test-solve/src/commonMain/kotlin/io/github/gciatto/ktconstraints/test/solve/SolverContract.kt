@@ -31,10 +31,12 @@ import org.gciatto.kt.math.BigInteger
 /**
  * Shared SAT/UNSAT, optimization, enumeration and lifecycle contracts; every leaf owns fresh fixtures. Routes that
  * optimize real objectives pass [realObjectives] and include [linearProgrammingContract]; the others must reject them.
+ * Routes without global constraints, such as purely linear ones, pass `globals = false`.
  */
 fun solverContract(
     enumeration: Boolean = true,
     realObjectives: Boolean = false,
+    globals: Boolean = true,
     create: () -> ConstraintSolver,
 ) = funSpec {
     test("solver-contract/unsupported-real-objective-is-rejected").config(enabled = !realObjectives) {
@@ -133,7 +135,7 @@ fun solverContract(
             answers.toSet() shouldBe setOf(BigInteger.ZERO, BigInteger.ONE, BigInteger.TWO)
         }
     }
-    test("solver-contract/globals-and-projection-match-the-independent-oracle") {
+    test("solver-contract/globals-and-projection-match-the-independent-oracle").config(enabled = globals) {
         ConstraintScope.empty {
             val x = intVar("x", 0..2)
             val y = intVar("y", 0..2)

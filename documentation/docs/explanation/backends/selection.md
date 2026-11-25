@@ -13,8 +13,8 @@ Registration order is a decreasing-performance order taken from the [recorded be
 | Platform | Registration order | Optional additions |
 |---|---|---|
 | JVM | `cp-sat/direct`, `choco/direct`, `kotlin/direct`, `z3/direct`, `scip/or-tools`, `highs/or-tools` | If `MINIZINC_EXECUTABLE` is set, appended: `gecode/minizinc`, `chuffed/minizinc`, `cp-sat/minizinc`, `highs/minizinc`, `cbc/minizinc`, in that order |
-| JS | `kotlin/direct`, then `z3/wasm`, asynchronously loaded | On Node, Gecode `gecode/minizinc-js-cli` between them when `MINIZINC_EXECUTABLE` is set |
-| Native | `kotlin/direct`, `z3/native` | If `MINIZINC_EXECUTABLE` is set, appended: the same five MiniZinc routes as the JVM; they start processes on Linux and macOS only |
+| JS | `kotlin/direct`, `z3/wasm`, `highs/wasm`, the Wasm modules asynchronously loaded | On Node, Gecode `gecode/minizinc-js-cli` after `kotlin/direct` when `MINIZINC_EXECUTABLE` is set |
+| Native | `kotlin/direct`, `z3/native`, `highs/native` | If `MINIZINC_EXECUTABLE` is set, appended: the same five MiniZinc routes as the JVM; they start processes on Linux and macOS only |
 
 The default HiGHS instance has a mandatory 60,000 ms backend limit because OR-Tools cannot interrupt it. Browser Chuffed through MiniZinc requires explicit loading. `AutoBackend.load()` ranks with `RankingPolicy.REGISTRATION_ORDER` unless given another policy, so each model goes to the first route in this order that passes the eligibility checks of step 3. Step 4 applies only to a scoring policy, such as `RankingPolicy.DEFAULT`, passed explicitly. On JS, a Z3 Wasm module that cannot start is left out instead of failing the load.
 

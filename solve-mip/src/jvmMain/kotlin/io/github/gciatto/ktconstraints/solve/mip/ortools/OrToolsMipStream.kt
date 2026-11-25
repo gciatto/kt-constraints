@@ -2,22 +2,17 @@ package io.github.gciatto.ktconstraints.solve.mip.ortools
 import com.google.ortools.linearsolver.MPSolver
 import com.google.ortools.linearsolver.MPSolverParameters
 import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
-import io.github.gciatto.ktconstraints.core.integer.IntExpr
-import io.github.gciatto.ktconstraints.core.real.RealExpr
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
-import io.github.gciatto.ktconstraints.model.isReal
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.assignment.Assignment
 import io.github.gciatto.ktconstraints.solve.assignment.project
 import io.github.gciatto.ktconstraints.solve.backend
+import io.github.gciatto.ktconstraints.solve.linear.FloatingPointPrograms
 import io.github.gciatto.ktconstraints.solve.linear.LinearProgram
-import io.github.gciatto.ktconstraints.solve.linear.LinearSolution
-import io.github.gciatto.ktconstraints.solve.linear.exactRational
 import io.github.gciatto.ktconstraints.solve.mip.MipOptions
 import io.github.gciatto.ktconstraints.solve.mip.program.MipLowering
-import io.github.gciatto.ktconstraints.solve.mip.program.RealPrograms
 import io.github.gciatto.ktconstraints.solve.result.SolveMetadata
 import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
@@ -51,7 +46,7 @@ internal class OrToolsMipStream(
     private val exact = (tuning?.relativeGap ?: 0.0) == 0.0
 
     /** The linear program of a model with reals, solved in floating point; null for the exact integer lowering. */
-    private val linear = if (RealPrograms.isReal(model)) RealPrograms.lower(model, options) else null
+    private val linear = if (FloatingPointPrograms.usesReals(model)) FloatingPointPrograms.lower(model, options) else null
     private val program = if (linear == null) MipLowering.lower(model) else null
     private val messages = mutableListOf<String>()
     private val started = TimeSource.Monotonic.markNow()
@@ -222,27 +217,9 @@ internal class OrToolsMipStream(
         program: LinearProgram,
         values: DoubleArray,
     ): SolutionFound {
-        val tolerance = requireNotNull(options.numericTolerance)
-        val solution =
-            try {
-                LinearSolution.ofDoubles(program, values.toList(), tolerance.integrality)
-            } catch (problem: IllegalStateException) {
-                throw BackendExecutionException("${descriptor.id}: ${problem.message}", problem)
-            }
-        if (solution.violation > exactRational(tolerance.feasibility)) {
-            throw BackendExecutionException(
-                "${descriptor.id} exceeded a constraint by ${solution.violation}, beyond ${tolerance.feasibility}",
-            )
-        }
-        messages += "Floating-point solution: largest exact excess ${solution.violation} (tolerance ${tolerance.feasibility})"
-        val full = solution.assignment()
-        val projected = full.project(model.outputVariables)
-        val goal = model.objective ?: return SolutionFound(projected)
-        return if (goal.isReal) {
-            SolutionFound(projected, realObjectiveValue = GroundEvaluator.evaluate(goal.expression as RealExpr, full))
-        } else {
-            SolutionFound(projected, GroundEvaluator.evaluate(goal.expression as IntExpr, full))
-        }
+        val solution = FloatingPointPrograms.accept(program, values.toList(), options, descriptor.id)
+        messages += "Floating-point solution: largest exact excess ${solution.violation}"
+        return FloatingPointPrograms.found(model, solution)
     }
 
     private fun complete(reason: TerminationReason): SolveCompleted {

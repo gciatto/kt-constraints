@@ -32,7 +32,7 @@ The diagram shows the main dependency direction rather than every Gradle edge. `
 | `:interop-java`, `:interop-js`, `:interop-c` | Language-specific call patterns and boundary representations |
 | `:test-core`, `:test-solve` | Reusable representation and solver contracts, differential checks and a small finite test oracle |
 
-The implemented external adapters are `:solve-z3`, `:solve-choco`, `:solve-cpsat`, `:solve-mip` and `:solve-minizinc`. The pure-Kotlin `:solve-kotlin` engine has its own [explanation](pure-kotlin-solver.md). `:solve-flatzinc` and `:solve-highs` are reserved modules, not operational adapters. HiGHS execution currently belongs to the MiniZinc and OR-Tools routes.
+The implemented external adapters are `:solve-z3`, `:solve-choco`, `:solve-cpsat`, `:solve-mip`, `:solve-highs` and `:solve-minizinc`; `:solve-linear` holds the exact linear-program representation they share. The pure-Kotlin `:solve-kotlin` engine has its own [explanation](pure-kotlin-solver.md). `:solve-flatzinc` is a reserved module, not an operational adapter. HiGHS runs through OR-Tools on the JVM, its C API on Kotlin/Native, Wasm in JavaScript, and MiniZinc.
 
 ## From a model to a result
 

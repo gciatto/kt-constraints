@@ -52,7 +52,8 @@ Real objectives are optimized exactly, without floating-point tolerances, by Z3 
 Kotlin/Native. `AutoBackend.load()` selects such a route; routes that cannot optimize real objectives reject the
 model with `Unsupported real objective`.
 
-Floating-point MIP engines, such as SCIP and HiGHS through OR-Tools on the JVM, are usually much faster on large
+Floating-point MIP engines, such as SCIP and HiGHS through OR-Tools on the JVM, HiGHS through its C API on
+Kotlin/Native (`HighsNativeBackend`) and HiGHS Wasm in JavaScript (`HighsJsBackend`), are usually much faster on large
 programs, but they answer within tolerances. They take models with reals only when you consent with
 `SolveOptions.numericTolerance`; without it they reject the model, and automatic selection skips them.
 
