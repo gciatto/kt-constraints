@@ -311,7 +311,10 @@ internal class BranchAndBound(
     private companion object {
         val HALF: Rational = Rational.of(1, 2)
         val MINIMUM_GAIN: Rational = Rational.of(1, 1_000_000)
-        const val CUT_ROUNDS = 5
+
+        // shortcut: one round, tuned on the knapsack and facility-location families only (more rounds bloated the
+        // tableau for little bound gain); revisit with more MILP families or a gap-based stopping rule.
+        const val CUT_ROUNDS = 1
         const val CUTS_PER_ROUND = 8
     }
 }

@@ -9,7 +9,8 @@ import io.github.gciatto.ktconstraints.solve.linear.LinearRow
  * Exact bounded-variable simplex over a [LinearProgram]'s continuous relaxation (integrality is ignored). Columns are
  * variables `0 until n`; row `r` gets the slack variable `n + r`, equal to its left-hand side and bounded by its
  * right-hand side. Values are [DeltaRational]s, so strict rows hold exactly. [check] is the general simplex of
- * Dutertre and de Moura, [maximize] the primal simplex with bound flips; both use Bland's rule, so neither cycles.
+ * Dutertre and de Moura, [maximize] the primal simplex with bound flips. [check] uses Bland's rule; [maximize] uses Dantzig's rule and falls
+ * back to Bland's after a run of degenerate steps, so neither cycles.
  * Bounds can be tightened between calls, which is how branch and bound reuses one tableau. Failures and optima leave
  * [conflict], [ray] or [duals] behind, for [Certificates] to check against the original constraints.
  */
@@ -163,13 +164,18 @@ internal class Simplex(
      * objective is unbounded, true when the current state is optimal.
      */
     fun maximize(objective: Map<Int, Rational>): Boolean {
+        var degenerate = 0
         while (true) {
             if (stopped()) throw SimplexStopped()
             val costs = reducedCosts(objective)
+            val eligible = costs.entries.filter { (j, c) -> if (c > Rational.ZERO) canIncrease(j) else canDecrease(j) }
+            // Dantzig's rule (largest cost) moves fastest; after a run of degenerate steps, Bland's rule rules out cycling.
             val entering =
-                costs.entries
-                    .filter { (j, c) -> if (c > Rational.ZERO) canIncrease(j) else canDecrease(j) }
-                    .minOfOrNull { it.key }
+                if (degenerate < DEGENERATE_STREAK) {
+                    eligible.maxWithOrNull(compareBy<Map.Entry<Int, Rational>> { abs(it.value) }.thenByDescending { it.key })?.key
+                } else {
+                    eligible.minOfOrNull { it.key }
+                }
             if (entering == null) {
                 duals = costs.map { (k, c) -> if (c > Rational.ZERO) Use(k, true, c) else Use(k, false, -c) }
                 return true
@@ -180,6 +186,7 @@ internal class Simplex(
                 ray = direction(entering, if (increase) Rational.ONE else Rational.of(-1))
                 return false
             }
+            degenerate = if (step.amount == DeltaRational.ZERO) degenerate + 1 else 0
             when (val leaving = step.leaving) {
                 null -> update(entering, value[entering] + if (increase) step.amount else DeltaRational.ZERO - step.amount)
                 else -> pivotAndUpdate(leaving, entering, requireNotNull(step.target))
@@ -351,6 +358,11 @@ internal class Simplex(
     }
 
     private fun abs(value: Rational): Rational = if (value < Rational.ZERO) -value else value
+
+    private companion object {
+        /** Degenerate steps in a row after which [maximize] falls back to Bland's rule. */
+        const val DEGENERATE_STREAK = 50
+    }
 
     /** A bound of variable [index] (a column, or slack `columns + r` of row `r`) used with [multiplier] > 0. */
     class Use(

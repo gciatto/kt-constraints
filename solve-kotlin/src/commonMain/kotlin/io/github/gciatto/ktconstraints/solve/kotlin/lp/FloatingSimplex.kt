@@ -24,6 +24,9 @@ internal class FloatingSimplex(
     private val rowOf = IntArray(size) { if (it >= columns) it - columns else -1 }
     private val tableau = Array(rowCount) { DoubleArray(size) }
 
+    /** The objective's reduced costs over nonbasic variables, kept up to date by every pivot once computed. */
+    private var reduced: DoubleArray? = null
+
     init {
         program.columns.forEachIndexed { j, column ->
             column.lower?.let { lower[j] = approximate(it) }
@@ -73,11 +76,14 @@ internal class FloatingSimplex(
 
     /** One primal step with Dantzig's rule. */
     private fun improve(objective: Map<Int, Double>): Step {
-        val reduced = DoubleArray(size)
-        objective.forEach { (j, c) ->
-            val r = rowOf[j]
-            if (r < 0) reduced[j] += c else for (k in 0 until size) reduced[k] += c * tableau[r][k]
-        }
+        val reduced =
+            reduced ?: DoubleArray(size).also { costs ->
+                objective.forEach { (j, c) ->
+                    val r = rowOf[j]
+                    if (r < 0) costs[j] += c else for (k in 0 until size) costs[k] += c * tableau[r][k]
+                }
+                reduced = costs
+            }
         var entering = -1
         for (k in 0 until size) {
             if (rowOf[k] >= 0 || abs(reduced[k]) <= TOLERANCE) continue
@@ -123,6 +129,11 @@ internal class FloatingSimplex(
         for (k in 0 until size) row[k] = -row[k] / pivot
         row[entering] = 0.0
         row[b] = 1.0 / pivot
+        reduced?.let { costs ->
+            val factor = costs[entering]
+            if (factor != 0.0) for (k in 0 until size) costs[k] += factor * row[k]
+            costs[entering] = 0.0
+        }
         for (i in 0 until rowCount) {
             if (i == r) continue
             val other = tableau[i]
