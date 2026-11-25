@@ -2,14 +2,18 @@ package io.github.gciatto.ktconstraints.solve.kotlin.lp
 
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.solve.linear.LinearProgram
+import io.github.gciatto.ktconstraints.solve.linear.LinearSolution
 import org.gciatto.kt.math.BigInteger
 
 /**
  * Exact branch and bound over a [LinearProgram]'s integer columns. Every node tightens integer bounds on one shared
- * [Simplex], which repairs feasibility from the previous basis instead of starting over; nodes are explored depth
- * first, the child nearer the relaxation's value first, and pruned when their relaxation cannot beat the incumbent.
- * Integer columns come from finite domains, so the tree is finite. All arithmetic is exact, so an [Outcome.Optimal]
- * reached without stopping is a proof; the simplex's own evidence is checked by [Certificates] where it stands alone.
+ * [Simplex], which repairs feasibility from the previous basis instead of starting over. The search plunges: after a
+ * branching it dives into the child nearer the relaxation's value, and once a dive ends it resumes from the open node
+ * with the best bound, so [bestBound] tightens steadily. Columns are chosen by pseudocost, the objective lost per unit
+ * of past branchings, and every fractional relaxation is also rounded, which often finds incumbents early. Nodes are
+ * pruned when their relaxation cannot beat the incumbent. Integer columns come from finite domains, so the tree is
+ * finite. All arithmetic is exact, so an [Outcome.Optimal] reached without stopping is a proof; the simplex's own
+ * evidence is checked by [Certificates] where it stands alone.
  */
 internal class BranchAndBound(
     private val program: LinearProgram,
@@ -17,54 +21,148 @@ internal class BranchAndBound(
 ) {
     private val simplex = Simplex(program, stopped)
     private val integers = program.columns.indices.filter { program.columns[it].integer }
+    private val pseudocosts = HashMap<Int, Pseudocost>()
+
+    /** Unexplored nodes of the main search, and the node being explored: together they bound what is left. */
+    private var frontier: List<Node> = emptyList()
+    private var current: Node? = null
 
     /** The best integral solution so far, readable after [SimplexStopped] interrupts [maximize]. */
     var incumbent: Incumbent? = null
         private set
 
+    /**
+     * After [SimplexStopped] interrupts [maximize]: an upper bound on the score of every integral solution, or null
+     * when the root relaxation was not solved. Every unexplored node's bound is its parent's relaxation value.
+     */
+    fun bestBound(): DeltaRational? {
+        val pending = frontier + listOfNotNull(current)
+        if (pending.any { it.bound == null }) return null
+        return (pending.mapNotNull { it.bound } + listOfNotNull(incumbent?.score)).maxOrNull()
+    }
+
     /** Maximizes `Σ score[j]·x[j]` over the integral points of the program. */
     fun maximize(score: Map<Int, Rational>): Outcome = search(score, emptyList(), stopAtFirst = false)
 
+    @Suppress("CyclomaticComplexMethod", "LongMethod") // One loop owns node selection, pruning and branching.
     private fun search(
         score: Map<Int, Rational>,
         root: List<Tightening>,
         stopAtFirst: Boolean,
     ): Outcome {
-        val open = ArrayDeque(listOf(root))
+        val open = mutableListOf(Node(root, null, null))
+        if (!stopAtFirst) frontier = open
+        var plunge = true
         var best: Incumbent? = null
+
+        fun improve(found: Incumbent) {
+            best = found
+            if (!stopAtFirst) incumbent = found
+        }
         while (open.isNotEmpty()) {
             if (stopped()) throw SimplexStopped()
-            val node = open.removeLast()
-            apply(node)
+            // shortcut: best-bound selection scans the open list; upgrade to a heap if trees reach many thousands of nodes.
+            val node = if (plunge) open.removeLast() else open.removeAt(open.indices.maxBy { requireNotNull(open[it].bound) })
+            if (!stopAtFirst) current = node
+            plunge = false
+            val incumbentScore = best?.score
+            if (incumbentScore != null && node.bound != null && node.bound <= incumbentScore) continue
+            apply(node.tightenings)
             if (!simplex.check()) {
-                if (node.isEmpty()) certify(Certificates.refutes(simplex.conflict.map { Certificates.fact(program, it) }), "Farkas")
+                if (node.tightenings.isEmpty()) {
+                    certify(
+                        Certificates.refutes(simplex.conflict.map { Certificates.fact(program, it) }),
+                        "Farkas",
+                    )
+                }
                 continue
             }
             if (!simplex.maximize(score)) {
                 certify(Certificates.isRay(program, simplex.ray, score), "ray")
                 // Meyer: a feasible rational mixed-integer program with an unbounded relaxation is unbounded.
-                if (stopAtFirst || search(emptyMap(), node, stopAtFirst = true) != Outcome.Infeasible) return Outcome.Unbounded
+                if (stopAtFirst || search(emptyMap(), node.tightenings, stopAtFirst = true) != Outcome.Infeasible) return Outcome.Unbounded
                 continue
             }
             val bound = simplex.objectiveValue(score)
-            if (node.isEmpty() && integers.isEmpty()) {
+            if (node.tightenings.isEmpty() && integers.isEmpty()) {
                 certify(Certificates.bounds(simplex.duals.map { Certificates.fact(program, it) }, score, bound.real), "dual")
             }
-            if (best != null && bound <= best.score) continue
-            val branching = mostFractional()
+            if (!stopAtFirst) node.branch?.let { learn(it, requireNotNull(node.bound), bound) }
+            if (incumbentScore != null && bound <= incumbentScore) continue
+            val branching = branching()
             if (branching == null) {
-                best = Incumbent(values(), bound).also { if (!stopAtFirst) incumbent = it }
-                if (stopAtFirst) return Outcome.Optimal(best)
+                val found = Incumbent(values(), bound)
+                improve(found)
+                if (stopAtFirst) return Outcome.Optimal(found)
                 continue
+            }
+            rounded(score)?.let { found ->
+                if (best?.let { found.score > it.score } != false) improve(found)
+                if (stopAtFirst) return Outcome.Optimal(found)
             }
             val value = simplex.valueOf(branching)
             val floor = floor(value)
-            val down = node + Tightening(branching, null, DeltaRational.of(Rational.of(floor)))
-            val up = node + Tightening(branching, DeltaRational.of(Rational.of(floor + BigInteger.ONE)), null)
-            // Last pushed is explored first: dive towards the nearer integer.
-            if (value.real - Rational.of(floor) >= HALF) open.addAll(listOf(down, up)) else open.addAll(listOf(up, down))
+            val fraction = value.real - Rational.of(floor)
+            val down =
+                Node(
+                    node.tightenings + Tightening(branching, null, DeltaRational.of(Rational.of(floor))),
+                    bound,
+                    Branch(branching, false, fraction),
+                )
+            val up =
+                Node(
+                    node.tightenings + Tightening(branching, DeltaRational.of(Rational.of(floor + BigInteger.ONE)), null),
+                    bound,
+                    Branch(branching, true, Rational.ONE - fraction),
+                )
+            // Last pushed is explored next: dive towards the nearer integer.
+            if (fraction >= HALF) open.addAll(listOf(down, up)) else open.addAll(listOf(up, down))
+            plunge = true
         }
+        if (!stopAtFirst) current = null
         return best?.let { Outcome.Optimal(it) } ?: Outcome.Infeasible
+    }
+
+    /** Records how much a branching on [branch]'s column cost, per unit it moved the column. */
+    private fun learn(
+        branch: Branch,
+        parent: DeltaRational,
+        bound: DeltaRational,
+    ) {
+        if (branch.distance == Rational.ZERO) return
+        val loss = (parent.real - bound.real).let { if (it < Rational.ZERO) Rational.ZERO else it }
+        pseudocosts.getOrPut(branch.index) { Pseudocost() }.record(branch.up, loss / branch.distance)
+    }
+
+    /**
+     * The fractional integer column whose branching is expected to lose the most on both sides (the product of the
+     * pseudocost estimates, unknown ones taken as 1), lowest index first; null when all are integral.
+     */
+    private fun branching(): Int? {
+        var chosen: Int? = null
+        var best = Rational.ZERO
+        for (index in integers) {
+            val value = simplex.valueOf(index)
+            if (value.delta == Rational.ZERO && value.real.isInteger) continue
+            val fraction = value.real - Rational.of(floor(value))
+            val costs = pseudocosts[index]
+            val down = maxOf((costs?.estimate(false) ?: Rational.ONE) * fraction, MINIMUM_GAIN)
+            val up = maxOf((costs?.estimate(true) ?: Rational.ONE) * (Rational.ONE - fraction), MINIMUM_GAIN)
+            val gain = down * up
+            if (chosen == null || gain > best) {
+                chosen = index
+                best = gain
+            }
+        }
+        return chosen
+    }
+
+    /** The relaxation with every integer column rounded to its nearest integer, when that is a solution. */
+    private fun rounded(score: Map<Int, Rational>): Incumbent? {
+        val values = values().toMutableList()
+        integers.forEach { values[it] = (values[it] + HALF).floor().let { floor -> Rational.of(floor) } }
+        if (!LinearSolution(program, values).isFeasible) return null
+        return Incumbent(values, DeltaRational.of(score.entries.fold(Rational.ZERO) { sum, (j, c) -> sum + c * values[j] }))
     }
 
     /**
@@ -88,23 +186,6 @@ internal class BranchAndBound(
         integers.forEach { simplex.bound(it, lower[it], upper[it]) }
     }
 
-    /** The integer column whose value is farthest from an integer, lowest index first; null when all are integral. */
-    private fun mostFractional(): Int? {
-        var chosen: Int? = null
-        var distance = Rational.ZERO
-        for (index in integers) {
-            val value = simplex.valueOf(index)
-            if (value.delta == Rational.ZERO && value.real.isInteger) continue
-            val fraction = value.real - Rational.of(floor(value))
-            val gap = if (fraction > HALF) Rational.ONE - fraction else fraction
-            if (chosen == null || gap > distance) {
-                chosen = index
-                distance = gap
-            }
-        }
-        return chosen
-    }
-
     private fun values(): List<Rational> {
         val epsilon = simplex.epsilon()
         return List(program.columns.size) { simplex.valueOf(it).at(epsilon) }
@@ -114,6 +195,40 @@ internal class BranchAndBound(
     private fun floor(value: DeltaRational): BigInteger {
         val floor = value.real.floor()
         return if (value.real.isInteger && value.delta < Rational.ZERO) floor - BigInteger.ONE else floor
+    }
+
+    /** Pending work: bounds on top of the program's, the parent's relaxation value, and the branching that made it. */
+    private class Node(
+        val tightenings: List<Tightening>,
+        val bound: DeltaRational?,
+        val branch: Branch?,
+    )
+
+    /** A branching on column [index], [up] or down, moving it by [distance] from the parent's value. */
+    private class Branch(
+        val index: Int,
+        val up: Boolean,
+        val distance: Rational,
+    )
+
+    /** Average objective loss per unit of branching on one column, per direction. */
+    private class Pseudocost {
+        private val total = arrayOf(Rational.ZERO, Rational.ZERO)
+        private val count = intArrayOf(0, 0)
+
+        fun record(
+            up: Boolean,
+            loss: Rational,
+        ) {
+            val side = if (up) 1 else 0
+            total[side] += loss
+            count[side]++
+        }
+
+        fun estimate(up: Boolean): Rational? {
+            val side = if (up) 1 else 0
+            return if (count[side] == 0) null else total[side] / Rational.of(count[side].toLong())
+        }
     }
 
     /** Bounds a node adds to integer column [index]; null keeps the inherited bound. */
@@ -145,5 +260,6 @@ internal class BranchAndBound(
 
     private companion object {
         val HALF: Rational = Rational.of(1, 2)
+        val MINIMUM_GAIN: Rational = Rational.of(1, 1_000_000)
     }
 }
