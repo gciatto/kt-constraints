@@ -191,7 +191,7 @@ internal class JsZ3Port(
             "sat" -> {
                 model = optimizer.model()
                 val vector: dynamic = if (maximize) optimizer.getUpperAsVector(index) else optimizer.getLowerAsVector(index)
-                val (infinity, value, epsilon) = List(3) { exactRational(vector.get(it).asString().unsafeCast<String>()) }
+                val (infinity, value, epsilon) = List(OPTIMUM_PARTS) { exactRational(vector.get(it).asString().unsafeCast<String>()) }
                 Z3Optimum(Z3Outcome(CheckStatus.SATISFIABLE), infinity, value, epsilon)
             }
             "unsat" -> Z3Optimum(Z3Outcome(CheckStatus.UNSATISFIABLE))
@@ -257,5 +257,8 @@ internal class JsZ3Port(
 
     private companion object {
         const val MAX_TIMEOUT: Long = 4_294_967_295L
+
+        /** An optimum vector holds the infinity, value and epsilon coefficients. */
+        const val OPTIMUM_PARTS = 3
     }
 }
