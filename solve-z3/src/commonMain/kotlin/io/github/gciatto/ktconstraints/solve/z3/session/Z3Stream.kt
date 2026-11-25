@@ -113,7 +113,7 @@ internal class Z3Stream<T>(
                     val incumbent = best ?: return complete(TerminationReason.COMPLETED)
                     val value = requireNotNull(incumbent.realObjectiveValue)
                     // Nothing improves on the incumbent, if the plain solver agrees with the optimizer.
-                    when (val counter = refute(port, translation, expression, constraints + improving(value), remaining)) {
+                    when (val counter = refute(port, translation, expression, constraints + improving(value))) {
                         null -> return settle(incumbent, value, TerminationReason.COMPLETED)
                         else -> best = better(incumbent, counter, goal.maximize)
                     }
@@ -128,7 +128,7 @@ internal class Z3Stream<T>(
                     best = incumbent
                     val attained = optimum.epsilon == Rational.ZERO
                     val refutation = improves(port, objective, optimum.value, goal.maximize, strict = attained)
-                    when (val counter = refute(port, translation, expression, constraints + refutation, remaining)) {
+                    when (val counter = refute(port, translation, expression, constraints + refutation)) {
                         null -> return settle(incumbent, optimum.value, TerminationReason.COMPLETED)
                         else -> best = better(incumbent, counter, goal.maximize)
                     }
@@ -162,8 +162,9 @@ internal class Z3Stream<T>(
         translation: Z3Translation<T>,
         objective: RealExpr,
         constraints: List<T>,
-        remaining: Long?,
     ): SolutionFound? {
+        // The optimizer call may have used most of the budget: confirm only within what is left now.
+        val remaining = options.timeoutMillis?.let { (it - started.elapsedNow().inWholeMilliseconds).coerceAtLeast(1) }
         port.push()
         try {
             port.assert(constraints)
