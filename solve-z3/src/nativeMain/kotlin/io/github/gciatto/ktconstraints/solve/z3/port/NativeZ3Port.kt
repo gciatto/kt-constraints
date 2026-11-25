@@ -54,6 +54,7 @@ import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_lt
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_mul
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_not
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_numeral
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_optimize
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_or
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_params
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_mk_pbeq
@@ -67,6 +68,18 @@ import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_model
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_model_dec_ref
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_model_eval
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_model_inc_ref
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_optimize_assert
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_optimize_check
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_optimize_dec_ref
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_optimize_get_lower_as_vector
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_optimize_get_model
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_optimize_get_reason_unknown
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_optimize_get_upper_as_vector
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_optimize_inc_ref
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_optimize_maximize
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_optimize_minimize
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_optimize_set_params
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_params
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_params_dec_ref
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_params_inc_ref
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_params_set_uint
@@ -80,6 +93,7 @@ import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_solver_inc_ref
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_solver_pop
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_solver_push
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_solver_set_params
+import io.github.gciatto.ktconstraints.solve.z3.session.Z3Optimum
 import io.github.gciatto.ktconstraints.solve.z3.session.Z3Outcome
 import io.github.gciatto.ktconstraints.solve.z3.translation.exactRational
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -252,6 +266,72 @@ internal class NativeZ3Port(
         }
     }
 
+    override suspend fun optimize(
+        constraints: List<Z3_ast>,
+        objective: Z3_ast,
+        maximize: Boolean,
+        timeoutMillis: Long?,
+    ): Z3Optimum {
+        releaseModel()
+        val optimizer = checkNotNull(checked(Z3_mk_optimize(context)))
+        Z3_optimize_inc_ref(context, optimizer)
+        try {
+            withParameters(timeoutMillis?.coerceIn(0L, UInt.MAX_VALUE.toLong())?.toUInt() ?: UInt.MAX_VALUE) {
+                checked(Z3_optimize_set_params(context, optimizer, it))
+            }
+            constraints.forEach { checked(Z3_optimize_assert(context, optimizer, it)) }
+            val index =
+                checked(
+                    if (maximize) {
+                        Z3_optimize_maximize(
+                            context,
+                            optimizer,
+                            objective,
+                        )
+                    } else {
+                        Z3_optimize_minimize(context, optimizer, objective)
+                    },
+                )
+            return when (checked(Z3_optimize_check(context, optimizer, 0u, null))) {
+                LBOOL_TRUE -> {
+                    model = checked(Z3_optimize_get_model(context, optimizer))?.also { Z3_model_inc_ref(context, it) }
+                    val vector =
+                        checkNotNull(
+                            checked(
+                                if (maximize) {
+                                    Z3_optimize_get_upper_as_vector(context, optimizer, index)
+                                } else {
+                                    Z3_optimize_get_lower_as_vector(context, optimizer, index)
+                                },
+                            ),
+                        )
+                    Z3_ast_vector_inc_ref(context, vector)
+                    try {
+                        val (infinity, value, epsilon) =
+                            List(OPTIMUM_PARTS) {
+                                exactRational(
+                                    checked(Z3_get_numeral_string(context, Z3_ast_vector_get(context, vector, it.toUInt())))?.toKString(),
+                                )
+                            }
+                        Z3Optimum(Z3Outcome(CheckStatus.SATISFIABLE), infinity, value, epsilon)
+                    } finally {
+                        Z3_ast_vector_dec_ref(context, vector)
+                    }
+                }
+                LBOOL_FALSE -> Z3Optimum(Z3Outcome(CheckStatus.UNSATISFIABLE))
+                else ->
+                    Z3Optimum(
+                        Z3Outcome(
+                            CheckStatus.UNKNOWN,
+                            checked(Z3_optimize_get_reason_unknown(context, optimizer))?.toKString() ?: "unknown",
+                        ),
+                    )
+            }
+        } finally {
+            Z3_optimize_dec_ref(context, optimizer)
+        }
+    }
+
     override fun boolValue(term: Z3_ast): Boolean = Z3_get_bool_value(context, evaluate(term)) == LBOOL_TRUE
 
     override fun intValue(term: Z3_ast): BigInteger =
@@ -284,12 +364,18 @@ internal class NativeZ3Port(
         Z3_solver_dec_ref(context, solver)
     }
 
-    private fun setTimeout(millis: UInt) {
+    private fun setTimeout(millis: UInt) = withParameters(millis) { checked(Z3_solver_set_params(context, solver, it)) }
+
+    /** Applies fresh parameters carrying a [millis] timeout. */
+    private fun withParameters(
+        millis: UInt,
+        apply: (Z3_params) -> Unit,
+    ) {
         val parameters = checkNotNull(checked(Z3_mk_params(context)))
         Z3_params_inc_ref(context, parameters)
         try {
             checked(Z3_params_set_uint(context, parameters, Z3_mk_string_symbol(context, "timeout"), millis))
-            checked(Z3_solver_set_params(context, solver, parameters))
+            apply(parameters)
         } finally {
             Z3_params_dec_ref(context, parameters)
         }
@@ -318,6 +404,7 @@ internal class NativeZ3Port(
 
     private companion object {
         const val LBOOL_TRUE = 1
+        const val OPTIMUM_PARTS = 3
         const val LBOOL_FALSE = -1
     }
 }

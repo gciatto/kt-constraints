@@ -3,6 +3,7 @@ import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecOperator
 import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecRelation
 import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
+import io.github.gciatto.ktconstraints.solve.z3.session.Z3Optimum
 import io.github.gciatto.ktconstraints.solve.z3.session.Z3Outcome
 import io.github.gciatto.ktconstraints.solve.z3.translation.exactRational
 import kotlinx.coroutines.CancellationException
@@ -166,21 +167,35 @@ internal class JsZ3Port(
         // Z3's timeout parameter is an unsigned 32-bit count of milliseconds; its maximum means no limit.
         solver.set("timeout", (timeoutMillis?.coerceAtMost(MAX_TIMEOUT) ?: MAX_TIMEOUT).toDouble())
         model = null
-        val promise: Promise<String> = spread(solver.check, assumptions, solver).unsafeCast<Promise<String>>()
-        val pending = promise.asDeferred()
-        val result =
-            try {
-                pending.await()
-            } catch (cancellation: CancellationException) {
-                // The native check keeps running on a worker thread; release the context only once it has stopped.
-                context.interrupt()
-                withContext(NonCancellable) { runCatching { pending.await() } }
-                throw cancellation
-            }
+        val result = settle(spread(solver.check, assumptions, solver).unsafeCast<Promise<String>>())
         return when (result) {
             "sat" -> Z3Outcome(CheckStatus.SATISFIABLE).also { model = solver.model() }
             "unsat" -> Z3Outcome(CheckStatus.UNSATISFIABLE)
             else -> Z3Outcome(CheckStatus.UNKNOWN, solver.reasonUnknown().unsafeCast<String>())
+        }
+    }
+
+    override suspend fun optimize(
+        constraints: List<Any>,
+        objective: Any,
+        maximize: Boolean,
+        timeoutMillis: Long?,
+    ): Z3Optimum {
+        model = null
+        val optimizer: dynamic = js("Reflect.construct")(context.Optimize, emptyArray<Any>())
+        optimizer.set("timeout", (timeoutMillis?.coerceAtMost(MAX_TIMEOUT) ?: MAX_TIMEOUT).toDouble())
+        constraints.forEach { optimizer.add(it) }
+        val index = if (maximize) optimizer.maximize(objective) else optimizer.minimize(objective)
+        val result = settle(optimizer.check().unsafeCast<Promise<String>>())
+        return when (result) {
+            "sat" -> {
+                model = optimizer.model()
+                val vector: dynamic = if (maximize) optimizer.getUpperAsVector(index) else optimizer.getLowerAsVector(index)
+                val (infinity, value, epsilon) = List(3) { exactRational(vector.get(it).asString().unsafeCast<String>()) }
+                Z3Optimum(Z3Outcome(CheckStatus.SATISFIABLE), infinity, value, epsilon)
+            }
+            "unsat" -> Z3Optimum(Z3Outcome(CheckStatus.UNSATISFIABLE))
+            else -> Z3Optimum(Z3Outcome(CheckStatus.UNKNOWN, optimizer.reasonUnknown().unsafeCast<String>()))
         }
     }
 
@@ -219,6 +234,19 @@ internal class JsZ3Port(
     /** Interrupts an active native check from the JS thread. */
     fun interrupt() {
         context.interrupt()
+    }
+
+    /** Awaits a native check; on cancellation, interrupts it and waits until it has stopped. */
+    private suspend fun settle(promise: Promise<String>): String {
+        val pending = promise.asDeferred()
+        return try {
+            pending.await()
+        } catch (cancellation: CancellationException) {
+            // The native check keeps running on a worker thread; release the context only once it has stopped.
+            context.interrupt()
+            withContext(NonCancellable) { runCatching { pending.await() } }
+            throw cancellation
+        }
     }
 
     private fun spread(

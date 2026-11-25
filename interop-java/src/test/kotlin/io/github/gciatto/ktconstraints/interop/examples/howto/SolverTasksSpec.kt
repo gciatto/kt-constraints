@@ -7,6 +7,7 @@ class SolverTasksSpec :
     FunSpec({
         test("optimize asynchronously") { SolverTasks.optimize() }
         test("load the automatic backend") { SolverTasks.auto() }
+        test("prove a mixed-integer optimum") { SolverTasks.mixedIntegerProgram() }
         test("enumerate") { SolverTasks.enumerate() }
         test("restore sessions") { SolverTasks.session() }
         test("restore stores") { SolverTasks.store() }

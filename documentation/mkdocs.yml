@@ -18,6 +18,7 @@ nav:
       - Install: how-to/install.md
       - Choose a programming style: how-to/programming-styles.md
       - Optimize: how-to/optimize.md
+      - Solve linear and mixed-integer programs: how-to/linear-programs.md
       - Enumerate solutions: how-to/enumerate-solutions.md
       - Set limits and cancel: how-to/limits-and-cancellation.md
       - Classic problems:

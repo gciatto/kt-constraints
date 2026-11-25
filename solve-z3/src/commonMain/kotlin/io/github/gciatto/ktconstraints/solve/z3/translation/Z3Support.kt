@@ -44,23 +44,11 @@ import io.github.gciatto.ktconstraints.core.real.relation.RealEquality
 import io.github.gciatto.ktconstraints.core.real.relation.RealLessOrEqual
 import io.github.gciatto.ktconstraints.core.real.relation.RealLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.model.isReal
 import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
-import io.github.gciatto.ktconstraints.solve.spi.support.UNSUPPORTED_REAL_OBJECTIVE
 
 /** Platform-independent assessment of the IR subset every Z3 route translates exactly. */
 internal object Z3Support {
-    fun report(model: ConstraintModel): SupportReport {
-        val report = report(roots(model))
-        // shortcut: real objectives are expressible but not yet optimized here; lift when this route optimizes them.
-        return if (model.objective?.isReal ==
-            true
-        ) {
-            SupportReport(report.unsupported + UNSUPPORTED_REAL_OBJECTIVE, report.losslessDecompositions)
-        } else {
-            report
-        }
-    }
+    fun report(model: ConstraintModel): SupportReport = report(roots(model))
 
     fun report(roots: List<Expr>): SupportReport {
         val unsupported = linkedSetOf<String>()

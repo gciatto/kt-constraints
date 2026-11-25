@@ -21,6 +21,7 @@ import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
+import io.github.gciatto.ktconstraints.test.solve.linearProgrammingContract
 import io.github.gciatto.ktconstraints.test.solve.oracle.FiniteOracle
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.github.gciatto.ktconstraints.test.solve.storeContract
@@ -46,7 +47,9 @@ class Z3JsSpec :
             val loaded = { backend ?: throw IllegalStateException("z3-solver did not load: $loadFailure", loadFailure) }
             afterSpec { backend?.close() }
 
-            include(solverContract { loaded().createSolver() })
+            include(solverContract(realObjectives = true) { loaded().createSolver() })
+
+            include(linearProgrammingContract { loaded().createSolver() })
             include(incrementalContract { loaded().createSolver() })
             include(storeContract(propagates = false) { SatisfiabilityStore.of(loaded().createSolver()) })
             include(z3OptimizationContract { loaded().createSolver() })

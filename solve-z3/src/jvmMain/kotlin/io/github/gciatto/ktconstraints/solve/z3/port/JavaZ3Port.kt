@@ -2,7 +2,9 @@
 @file:Suppress("SpreadOperator", "UNCHECKED_CAST")
 
 package io.github.gciatto.ktconstraints.solve.z3.port
+import com.microsoft.z3.ASTVector
 import com.microsoft.z3.ArithExpr
+import com.microsoft.z3.ArithSort
 import com.microsoft.z3.BitVecNum
 import com.microsoft.z3.BitVecSort
 import com.microsoft.z3.BoolExpr
@@ -11,11 +13,15 @@ import com.microsoft.z3.Expr
 import com.microsoft.z3.IntNum
 import com.microsoft.z3.IntSort
 import com.microsoft.z3.Model
+import com.microsoft.z3.Native
+import com.microsoft.z3.Optimize
 import com.microsoft.z3.Status
+import com.microsoft.z3.Z3Object
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecOperator
 import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecRelation
 import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
+import io.github.gciatto.ktconstraints.solve.z3.session.Z3Optimum
 import io.github.gciatto.ktconstraints.solve.z3.session.Z3Outcome
 import io.github.gciatto.ktconstraints.solve.z3.translation.exactRational
 import org.gciatto.kt.math.BigInteger
@@ -177,6 +183,30 @@ internal class JavaZ3Port(
         }
     }
 
+    override suspend fun optimize(
+        constraints: List<Expr<*>>,
+        objective: Expr<*>,
+        maximize: Boolean,
+        timeoutMillis: Long?,
+    ): Z3Optimum {
+        model = null
+        val optimizer = context.mkOptimize()
+        val timeout = timeoutMillis?.coerceAtMost(Int.MAX_VALUE.toLong())?.toInt() ?: Int.MAX_VALUE
+        optimizer.setParameters(context.mkParams().apply { add("timeout", timeout) })
+        optimizer.Add(*bools(constraints))
+        val goal = objective as Expr<ArithSort>
+        if (maximize) optimizer.MkMaximize(goal) else optimizer.MkMinimize(goal)
+        return when (optimizer.Check()) {
+            Status.SATISFIABLE -> {
+                model = optimizer.model
+                val (infinity, value, epsilon) = optimum(optimizer, maximize)
+                Z3Optimum(Z3Outcome(CheckStatus.SATISFIABLE), infinity, value, epsilon)
+            }
+            Status.UNSATISFIABLE -> Z3Optimum(Z3Outcome(CheckStatus.UNSATISFIABLE))
+            else -> Z3Optimum(Z3Outcome(CheckStatus.UNKNOWN, optimizer.reasonUnknown))
+        }
+    }
+
     override fun boolValue(term: Expr<*>): Boolean = checkNotNull(model).eval(term, true).isTrue
 
     override fun intValue(term: Expr<*>): BigInteger = BigInteger.of((checkNotNull(model).eval(term, true) as IntNum).toString())
@@ -193,6 +223,22 @@ internal class JavaZ3Port(
     override fun unsatCore(assumptions: List<Expr<*>>): Set<Int> {
         val core = solver.unsatCore.toSet()
         return assumptions.indices.filterTo(linkedSetOf()) { assumptions[it] in core }
+    }
+
+    /** The single objective's optimum as `[infinity, value, epsilon]` coefficients. */
+    private fun optimum(
+        optimizer: Optimize,
+        maximize: Boolean,
+    ): List<Rational> {
+        // Handle.get*AsVector casts plain ASTs to Expr and fails; rebuilding the vector turns the numerals into Exprs.
+        val pointer = Z3Object.arrayToNative(arrayOf(optimizer)).single()
+        val native =
+            if (maximize) {
+                Native.optimizeGetUpperAsVector(context.nCtx(), pointer, 0)
+            } else {
+                Native.optimizeGetLowerAsVector(context.nCtx(), pointer, 0)
+            }
+        return ASTVector(context, native).ToExprArray().map { exactRational(it.toString()) }
     }
 
     private fun int(term: Expr<*>): ArithExpr<IntSort> = term as ArithExpr<IntSort>
