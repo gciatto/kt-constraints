@@ -49,7 +49,7 @@ A real objective reports its value in `realObjectiveValue` (TypeScript: `realObj
 ## 3. Choose an exact or a floating-point route
 
 Real objectives are optimized exactly, without floating-point tolerances, by Z3 on the JVM, in JavaScript and on
-Kotlin/Native. `AutoBackend.load()` selects such a route; routes that cannot optimize real objectives reject the
+Kotlin/Native, and by the pure-Kotlin route's simplex for programs without integer variables. `AutoBackend.load()` selects such a route; routes that cannot optimize real objectives reject the
 model with `Unsupported real objective`.
 
 Floating-point MIP engines, such as SCIP and HiGHS through OR-Tools on the JVM, HiGHS through its C API on

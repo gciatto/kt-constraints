@@ -3,6 +3,7 @@ kotlin {
         commonMain {
             dependencies {
                 api(project(":solve-spi"))
+                implementation(project(":solve-linear"))
                 implementation(libs.kotlinx.coroutines.core)
             }
         }
