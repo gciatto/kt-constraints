@@ -17,8 +17,8 @@ In this table, **base** means `SATISFACTION`, `OPTIMIZATION`, `INTEGER_ARITHMETI
 | `z3/native` | `Z3NativeBackend`, dynamically loaded Z3 C API | Native | Base + SMT + `ENUMERATION` |
 | `cp-sat/direct` | `CpSatBackend`, OR-Tools CP-SAT | JVM | Base + `ENUMERATION` |
 | `choco/direct` | `ChocoBackend`, Choco | JVM | Base + `ENUMERATION` |
-| `scip/or-tools` | `OrToolsMipBackend.scip()`, OR-Tools MPSolver | JVM | Base |
-| `highs/or-tools` | `OrToolsMipBackend.highs(limitMillis)`, OR-Tools MPSolver | JVM | Base |
+| `scip/or-tools` | `OrToolsMipBackend.scip()`, OR-Tools MPSolver | JVM | Base + floating-point reals (`REAL_ARITHMETIC`, `FLOATING_POINT_REALS`) |
+| `highs/or-tools` | `OrToolsMipBackend.highs(limitMillis)`, OR-Tools MPSolver | JVM | Base + floating-point reals (`REAL_ARITHMETIC`, `FLOATING_POINT_REALS`) |
 | `gecode/minizinc` | `MiniZincBackend(GECODE)`, Gecode CLI configuration | JVM | Base + `ENUMERATION` |
 | `chuffed/minizinc` | `MiniZincBackend(CHUFFED)`, Chuffed CLI configuration | JVM | Base + `ENUMERATION` |
 | `cp-sat/minizinc` | `MiniZincBackend(CP_SAT)`, CP-SAT CLI configuration | JVM | Base + `ENUMERATION` |
@@ -60,7 +60,7 @@ These are adapter limits, often more conservative than an engine's advertised ra
 | `kotlin/direct` | Arbitrary-precision finite integer domains and circuits, subject to compiler/work limits | Exact rational linear feasibility and bit-vectors |
 | `cp-sat/direct` | Checked magnitude at most `2^61` | Boolean/integer only |
 | `choco/direct`, `ChocoStore` | Checked magnitude at most `10^7` | Boolean/integer only |
-| `scip/or-tools`, `highs/or-tools` | Checked margin `10^6` for literals, coefficients, bounds and derived rows; affine products only | Boolean/integer MIP lowering |
+| `scip/or-tools`, `highs/or-tools` | Checked margin `10^6` for literals, coefficients, bounds and derived rows; affine products only | Boolean/integer MIP lowering; with a numeric tolerance, linear programs with continuous columns and no strict inequalities |
 | `gecode/minizinc`, `gecode/minizinc-js-cli` | Symmetric maximum absolute integer `2,147,483,646` | Boolean/integer only |
 | `chuffed/minizinc`, `chuffed/minizinc-wasm` | Symmetric maximum absolute integer `499,999,999`; ±500,000,000 are reserved sentinels | Boolean/integer only |
 | `cp-sat/minizinc` | Symmetric maximum absolute integer `2,147,483,646` | Boolean/integer only |

@@ -4,6 +4,7 @@ kotlin {
             dependencies {
                 api(project(":solve-spi"))
                 api(project(":model"))
+                implementation(project(":solve-linear"))
             }
         }
         jvmMain {

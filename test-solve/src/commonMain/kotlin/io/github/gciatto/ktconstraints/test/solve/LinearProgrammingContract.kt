@@ -7,8 +7,12 @@ import io.github.gciatto.ktconstraints.core.real.RealExpr
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
+import io.github.gciatto.ktconstraints.solve.NumericTolerance
+import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.funSpec
 import io.kotest.datatest.withTests
 import io.kotest.matchers.shouldBe
@@ -29,21 +33,39 @@ data class LinearCase(
 }
 
 /**
- * Shared LP and MILP contracts for routes that optimize real objectives exactly: every optimum is checked against the
- * known exact value, and every returned assignment is validated independently against the constraints and objective.
+ * Shared LP and MILP contracts for routes that optimize real objectives. Exact routes (no [tolerance]) must reach
+ * every known optimum exactly, with assignments validated independently against constraints and objective.
+ * Floating-point routes run under [tolerance]: optima must match within a relative `1e-6`, the reported objective
+ * must equal the objective of the returned values exactly, and strict inequalities must be rejected.
  */
-fun linearProgrammingContract(create: () -> ConstraintSolver) =
-    funSpec {
-        withTests(nameFn = { "linear-contract/${it.name}" }, LINEAR_CASES) { case ->
-            val model = ConstraintModel.of(case.build)
-            val result = create().use { it.solve(model) }
-            result.status shouldBe case.status
-            if (case.status == SolveStatus.OPTIMAL) {
-                result.realObjectiveValue shouldBe case.optimum
-                result.objectiveValue shouldBe null
-            }
-            validate(model, result)
+fun linearProgrammingContract(
+    tolerance: NumericTolerance? = null,
+    create: () -> ConstraintSolver,
+) = funSpec {
+    val options = if (tolerance == null) SolveOptions.DEFAULT else SolveOptions(numericTolerance = tolerance)
+    withTests(nameFn = { "linear-contract/${it.name}" }, LINEAR_CASES) { case ->
+        val model = ConstraintModel.of(case.build)
+        val result = create().use { it.solve(model, options) }
+        result.status shouldBe case.status
+        if (case.status == SolveStatus.OPTIMAL) {
+            result.objectiveValue shouldBe null
+            val value = requireNotNull(result.realObjectiveValue)
+            val optimum = requireNotNull(case.optimum)
+            if (tolerance == null) value shouldBe optimum else (absolute(value - optimum) <= relative(optimum)) shouldBe true
         }
+        if (tolerance == null) validate(model, result) else validateObjective(model, result)
+    }
+    if (tolerance != null) {
+        test("linear-contract/strict-inequalities-are-rejected-in-floating-point") {
+            val model =
+                ConstraintModel.of {
+                    val x = realVar("x")
+                    add(x lt 1)
+                    maximize(x)
+                }
+            create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model, options) } }
+        }
+    } else {
         test("linear-contract/unattained-supremum-is-not-optimal") {
             // sup { x | x < 1 } = 1 is not attained: no answer may claim optimality, and any bound must be exact.
             val model =
@@ -59,6 +81,21 @@ fun linearProgrammingContract(create: () -> ConstraintSolver) =
             validate(model, result)
         }
     }
+}
+
+private fun absolute(value: Rational): Rational = if (value < Rational.ZERO) -value else value
+
+/** `1e-6 · max(1, |value|)`. */
+private fun relative(value: Rational): Rational = Rational.of(1, 1_000_000) * maxOf(Rational.ONE, absolute(value))
+
+private fun validateObjective(
+    model: ConstraintModel,
+    result: SolveResult,
+) {
+    val assignment = result.assignment ?: return
+    val objective = model.objective?.expression as? RealExpr ?: return
+    result.realObjectiveValue shouldBe GroundEvaluator.evaluate(objective, assignment)
+}
 
 private fun validate(
     model: ConstraintModel,

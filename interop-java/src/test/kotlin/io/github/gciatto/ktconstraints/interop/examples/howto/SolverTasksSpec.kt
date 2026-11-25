@@ -8,6 +8,7 @@ class SolverTasksSpec :
         test("optimize asynchronously") { SolverTasks.optimize() }
         test("load the automatic backend") { SolverTasks.auto() }
         test("prove a mixed-integer optimum") { SolverTasks.mixedIntegerProgram() }
+        test("solve a program in floating point") { SolverTasks.floatingPointProgram() }
         test("enumerate") { SolverTasks.enumerate() }
         test("restore sessions") { SolverTasks.session() }
         test("restore stores") { SolverTasks.store() }

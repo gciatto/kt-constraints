@@ -74,6 +74,7 @@ val publishedModules =
         "solve-z3",
         "solve-choco",
         "solve-cpsat",
+        "solve-linear",
         "solve-mip",
         "solve-minizinc",
         "solve-auto",

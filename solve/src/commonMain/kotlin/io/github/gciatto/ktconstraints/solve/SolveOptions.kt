@@ -11,6 +11,8 @@ data class SolveOptions
         val solutionLimit: Int? = null,
         /** Per-backend tuning, at most one per type; see [BackendOptions]. */
         val backendOptions: List<BackendOptions> = emptyList(),
+        /** Consent to floating-point routes for real models, with their tolerances; null keeps real models exact. */
+        val numericTolerance: NumericTolerance? = null,
     ) {
         init {
             require(timeoutMillis == null || timeoutMillis >= 0L)
