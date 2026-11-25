@@ -14,7 +14,7 @@ private val miniZincExecutable: String? =
 /** JavaScript routes. */
 internal actual object DefaultBackends {
     /**
-     * Pure Kotlin, MiniZinc's Node CLI route when `MINIZINC_EXECUTABLE` is set, Z3 Wasm, then HiGHS Wasm. A module
+     * Pure Kotlin, HiGHS Wasm, MiniZinc's Node CLI route when `MINIZINC_EXECUTABLE` is set, then Z3 Wasm. A module
      * that cannot start, such as Z3 in a browser page without cross-origin isolation, leaves the other routes.
      */
     actual suspend fun load(): List<SolverBackend> {
@@ -31,6 +31,6 @@ internal actual object DefaultBackends {
                 null
             }
         val miniZinc = miniZincExecutable?.let { MiniZincJsBackend.loadNode(it) }
-        return listOfNotNull(KotlinBackend(), miniZinc, z3, highs)
+        return listOfNotNull(KotlinBackend(), highs, miniZinc, z3)
     }
 }
