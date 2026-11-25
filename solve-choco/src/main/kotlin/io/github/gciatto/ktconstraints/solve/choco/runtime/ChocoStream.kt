@@ -17,6 +17,7 @@ import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.managed.ManagedSolutionStream
+import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 import io.github.gciatto.ktconstraints.solve.stream.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
@@ -104,6 +105,8 @@ internal class ChocoStream(
             }
             is Objective.Minimize -> improving(GroundEvaluator.evaluate(objective.expression, full), projected, maximize = false)
             is Objective.Maximize -> improving(GroundEvaluator.evaluate(objective.expression, full), projected, maximize = true)
+            is Objective.MinimizeReal, is Objective.MaximizeReal ->
+                rejectRealObjective()
         }
     }
 

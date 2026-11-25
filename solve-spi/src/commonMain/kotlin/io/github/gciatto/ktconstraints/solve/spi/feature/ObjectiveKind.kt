@@ -5,7 +5,7 @@ enum class ObjectiveKind {
     /** Satisfaction. */
     NONE,
 
-    /** A linear integer expression. */
+    /** A linear integer or real expression. */
     LINEAR,
 
     /** An integer expression with products of variables or other non-linear nodes. */

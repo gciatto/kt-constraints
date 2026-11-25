@@ -34,6 +34,7 @@ import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.assignment.Assignment
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
 import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
+import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 import org.chocosolver.solver.Model
 import org.chocosolver.solver.constraints.Constraint
 import org.chocosolver.solver.constraints.extension.Tuples
@@ -67,6 +68,8 @@ internal class ChocoTranslation(
         when (val objective = model.objective) {
             is Objective.Minimize -> chocoModel.setObjective(Model.MINIMIZE, variable(objective.expression))
             is Objective.Maximize -> chocoModel.setObjective(Model.MAXIMIZE, variable(objective.expression))
+            is Objective.MinimizeReal, is Objective.MaximizeReal ->
+                rejectRealObjective()
             null -> Unit
         }
     }

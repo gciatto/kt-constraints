@@ -21,11 +21,17 @@ class Outcome internal constructor(
     val route: String = result.descriptor.id
 
     /** Best solution found, if any. */
-    val solution: Solution? = result.assignment?.let { Solution(it, result.objectiveValue) }
+    val solution: Solution? = result.assignment?.let { Solution(it, result.objectiveValue, result.realObjectiveValue) }
 
-    /** Exact objective value of [solution], when optimizing. */
+    /** Exact value of [solution]'s integer objective, when optimizing one. */
     val objective: JsBigInt? = result.objectiveValue?.toBigInt()
 
-    /** Exact proven objective bound, when the backend supplies one. */
+    /** Exact proven bound of an integer objective, when the backend supplies one. */
     val bestBound: JsBigInt? = result.bestBound?.toBigInt()
+
+    /** Exact value of [solution]'s real objective as `p` or `p/q`, when optimizing one. */
+    val realObjective: String? = result.realObjectiveValue?.toString()
+
+    /** Exact proven bound of a real objective as `p` or `p/q`, when the backend supplies one. */
+    val realBestBound: String? = result.realBestBound?.toString()
 }

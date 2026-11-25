@@ -18,6 +18,7 @@ import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.managed.ManagedSolutionStream
+import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 import io.github.gciatto.ktconstraints.solve.stream.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
@@ -78,6 +79,8 @@ internal class KotlinStream(
                     when (val objective = model.objective) {
                         is Objective.Minimize -> GroundEvaluator.evaluate(objective.expression, full)
                         is Objective.Maximize -> GroundEvaluator.evaluate(objective.expression, full)
+                        is Objective.MinimizeReal, is Objective.MaximizeReal ->
+                            rejectRealObjective()
                         null -> null
                     }
                 if (objectiveValue != null) requireNotNull(optimization).improved(objectiveValue)
@@ -95,7 +98,7 @@ internal class KotlinStream(
         current.initialize(budget, includeObjective = true)
         val objective = current.objective
         if (objective != null) {
-            val maximize = model.objective is Objective.Maximize
+            val maximize = model.objective?.maximize == true
             val (min, max) =
                 if (objective is IntegerLinear) {
                     objective.min to objective.max
@@ -117,7 +120,7 @@ internal class KotlinStream(
     ): Int {
         val translation = current.translation
         val objective = requireNotNull(current.objective)
-        return if (model.objective is Objective.Maximize) {
+        return if (model.objective?.maximize == true) {
             translation.linear.lessOrEqual(translation.binary.integer(target), objective)
         } else {
             translation.linear.lessOrEqual(objective, translation.binary.integer(-target))

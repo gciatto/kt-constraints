@@ -40,6 +40,7 @@ import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.assignment.Assignment
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
 import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
+import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 import org.gciatto.kt.math.BigInteger
 
 /**
@@ -74,6 +75,8 @@ internal class CpSatTranslation(
         when (val objective = model.objective) {
             is Objective.Minimize -> cpModel.minimize(integer(objective.expression))
             is Objective.Maximize -> cpModel.maximize(integer(objective.expression))
+            is Objective.MinimizeReal, is Objective.MaximizeReal ->
+                rejectRealObjective()
             null -> Unit
         }
         val problem = cpModel.validate()

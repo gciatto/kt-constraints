@@ -1,5 +1,6 @@
 package io.github.gciatto.ktconstraints.solve
 
+import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.solve.assignment.Assignment
 import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
@@ -64,6 +65,25 @@ class SolveResultSpec :
                 objectiveValue = BigInteger.ONE,
                 bestBound = BigInteger.ONE,
             ).status shouldBe SolveStatus.OPTIMAL
+        }
+
+        test("result/real-objectives-report-exact-rationals") {
+            val descriptor = SolverDescriptor("example", "direct", emptySet())
+            val half = Rational.of(1, 2)
+            SolveResult(SolveStatus.OPTIMAL, Assignment.empty(), descriptor, realObjectiveValue = half, realBestBound = half)
+                .realObjectiveValue shouldBe half
+            // An unattained supremum: a feasible incumbent with a strictly better exact bound.
+            SolveResult(SolveStatus.FEASIBLE, Assignment.empty(), descriptor, realObjectiveValue = half, realBestBound = Rational.ONE)
+                .realBestBound shouldBe Rational.ONE
+            shouldThrow<IllegalArgumentException> {
+                SolveResult(SolveStatus.OPTIMAL, Assignment.empty(), descriptor, realObjectiveValue = half, realBestBound = Rational.ONE)
+            }
+            shouldThrow<IllegalArgumentException> {
+                SolveResult(SolveStatus.UNKNOWN, null, descriptor, realObjectiveValue = half)
+            }
+            shouldThrow<IllegalArgumentException> {
+                SolveResult(SolveStatus.FEASIBLE, Assignment.empty(), descriptor, objectiveValue = BigInteger.ONE, realBestBound = half)
+            }
         }
 
         test("result/optimal-objective-and-provided-bound-must-agree") {

@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalWasmJsInterop::class)
 
 package io.github.gciatto.ktconstraints.js.solve
+import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.bool.BoolVar
 import io.github.gciatto.ktconstraints.core.integer.IntVar
 import io.github.gciatto.ktconstraints.core.real.RealVar
@@ -18,9 +19,13 @@ import kotlin.js.JsBigInt
 class Solution internal constructor(
     private val assignment: Assignment,
     objective: BigInteger?,
+    realObjective: Rational? = null,
 ) {
-    /** Exact objective value of this incumbent, or null for satisfaction. */
+    /** Exact value of this incumbent's integer objective, or null for satisfaction or a real objective. */
     val objective: JsBigInt? = objective?.toBigInt()
+
+    /** Exact value of this incumbent's real objective as `p` or `p/q`, or null otherwise. */
+    val realObjective: String? = realObjective?.toString()
 
     /**
      * Exact value of an integer variable, or null when it is not projected; other expressions are rejected.

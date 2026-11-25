@@ -17,6 +17,7 @@ import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.managed.ManagedSolutionStream
+import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 import io.github.gciatto.ktconstraints.solve.stream.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
@@ -76,10 +77,12 @@ internal class Z3Stream<T>(
             when (val objective = model.objective) {
                 is Objective.Minimize -> translation.translate(objective.expression)
                 is Objective.Maximize -> translation.translate(objective.expression)
+                is Objective.MinimizeReal, is Objective.MaximizeReal ->
+                    rejectRealObjective()
                 null -> null
             }
         port.assert(translation.assertions + translation.drainDefinedness())
-        return Search(translation, objective, model.objective is Objective.Maximize).also { search = it }
+        return Search(translation, objective, model.objective?.maximize == true).also { search = it }
     }
 
     private fun read(current: Search<T>): SolutionFound {
@@ -91,6 +94,8 @@ internal class Z3Stream<T>(
             when (val objective = model.objective) {
                 is Objective.Minimize -> GroundEvaluator.evaluate(objective.expression, full)
                 is Objective.Maximize -> GroundEvaluator.evaluate(objective.expression, full)
+                is Objective.MinimizeReal, is Objective.MaximizeReal ->
+                    rejectRealObjective()
                 null -> null
             }
         return SolutionFound(full.project(model.outputVariables), value)
@@ -116,7 +121,7 @@ internal class Z3Stream<T>(
         val objective = current.objective
         if (objective != null) {
             val bound = port.int(requireNotNull(value))
-            return if (model.objective is Objective.Minimize) port.less(objective, bound) else port.less(bound, objective)
+            return if (model.objective?.maximize == true) port.less(bound, objective) else port.less(objective, bound)
         }
         val differences =
             model.outputVariables.map { variable ->

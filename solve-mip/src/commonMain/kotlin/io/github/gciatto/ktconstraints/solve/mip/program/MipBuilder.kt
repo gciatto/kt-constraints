@@ -31,6 +31,7 @@ import io.github.gciatto.ktconstraints.core.integer.relation.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.integer.relation.IntLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
+import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 import org.gciatto.kt.math.BigInteger
 
 /**
@@ -58,6 +59,8 @@ internal class MipBuilder(
                 when (val goal = model.objective) {
                     is Objective.Minimize -> linear(goal.expression).let { MipObjective(it.terms, it.constant, maximize = false) }
                     is Objective.Maximize -> linear(goal.expression).let { MipObjective(it.terms, it.constant, maximize = true) }
+                    is Objective.MinimizeReal, is Objective.MaximizeReal ->
+                        rejectRealObjective()
                     null -> null
                 }
         }
