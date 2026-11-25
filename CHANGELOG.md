@@ -1,3 +1,10 @@
+## [3.1.0](https://github.com/gciatto/kt-constraints/compare/3.0.0...3.1.0) (2026-11-25)
+
+### Features
+
+* **solve-auto:** try each platform's routes in benchmarked performance order ([6d11870](https://github.com/gciatto/kt-constraints/commit/6d11870a4f92de1b3b694259cc575b692fbcd877))
+* **solve-minizinc:** run MiniZinc on Linux and macOS Native ([f64ca40](https://github.com/gciatto/kt-constraints/commit/f64ca4063b7730462151baaf76f042513be524e6))
+
 ## [3.0.0](https://github.com/gciatto/kt-constraints/compare/2.0.0...3.0.0) (2026-11-24)
 
 ### ⚠ BREAKING CHANGES
