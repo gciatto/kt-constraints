@@ -192,7 +192,13 @@ internal class JavaZ3Port(
         model = null
         val optimizer = context.mkOptimize()
         val timeout = timeoutMillis?.coerceAtMost(Int.MAX_VALUE.toLong())?.toInt() ?: Int.MAX_VALUE
-        optimizer.setParameters(context.mkParams().apply { add("timeout", timeout) })
+        optimizer.setParameters(
+            context.mkParams().apply {
+                add("timeout", timeout)
+                // Farkas-based optimization: Z3's default engine reports wrong bounds on some mixed-integer programs.
+                add("optsmt_engine", "farkas")
+            },
+        )
         optimizer.Add(*bools(constraints))
         val goal = objective as Expr<ArithSort>
         if (maximize) optimizer.MkMaximize(goal) else optimizer.MkMinimize(goal)

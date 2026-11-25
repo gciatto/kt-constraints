@@ -98,6 +98,7 @@ typedef void Z3_error_handler(Z3_context c, Z3_error_code e);
     V(Z3_params_inc_ref, (Z3_context c, Z3_params p), (c, p)) \
     V(Z3_params_dec_ref, (Z3_context c, Z3_params p), (c, p)) \
     V(Z3_params_set_uint, (Z3_context c, Z3_params p, Z3_symbol k, unsigned v), (c, p, k, v)) \
+    V(Z3_params_set_symbol, (Z3_context c, Z3_params p, Z3_symbol k, Z3_symbol v), (c, p, k, v)) \
     V(Z3_solver_set_params, (Z3_context c, Z3_solver s, Z3_params p), (c, s, p)) \
     F(Z3_optimize, Z3_mk_optimize, (Z3_context c), (c)) \
     V(Z3_optimize_inc_ref, (Z3_context c, Z3_optimize o), (c, o)) \
