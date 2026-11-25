@@ -4,6 +4,7 @@ import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.solve.linear.LinearProgram
 import io.github.gciatto.ktconstraints.solve.linear.LinearRow
 import io.github.gciatto.ktconstraints.solve.linear.LinearSolution
+import io.github.gciatto.ktconstraints.solve.linear.approximate
 import org.gciatto.kt.math.BigInteger
 
 /**
@@ -21,7 +22,7 @@ internal class BranchAndBound(
     private val program: LinearProgram,
     private val stopped: () -> Boolean = { false },
 ) {
-    private var simplex = Simplex(program, stopped = stopped)
+    private val simplex = Simplex(program, stopped = stopped)
 
     /** Gomory cuts added at the root; valid for every integral point, so every node's relaxation shares them. */
     private val cuts = mutableListOf<LinearRow>()
@@ -49,8 +50,22 @@ internal class BranchAndBound(
         return open?.let { listOfNotNull(it, incumbent?.score).max() }
     }
 
+    private var nodes = 0L
+
+    /** Search counters, for result metadata. */
+    fun statistics(): Map<String, String> =
+        mapOf("nodes" to nodes.toString(), "pivots" to simplex.pivots.toString(), "cuts" to cuts.size.toString())
+
     /** Maximizes `Σ score[j]·x[j]` over the integral points of the program. */
     fun maximize(score: Map<Int, Rational>): Outcome {
+        val guess = FloatingSimplex(program, stopped).optimalBasis(score.mapValues { approximate(it.value) })
+        if (guess != null) {
+            VerifiedStart.optimum(program, score, guess)?.let { proven ->
+                incumbent = proven
+                return Outcome.Optimal(proven)
+            }
+            simplex.warmStart(guess)
+        }
         if (integers.isNotEmpty()) cut(score)
         return search(score, emptyList(), stopAtFirst = false)
     }
@@ -72,7 +87,7 @@ internal class BranchAndBound(
             val round = GomoryCuts.of(simplex, program, CUTS_PER_ROUND)
             if (round.isEmpty()) return
             cuts += round
-            simplex = Simplex(program, cuts, stopped)
+            simplex.addRows(round)
         }
     }
 
@@ -99,6 +114,7 @@ internal class BranchAndBound(
             plunge = false
             val incumbentScore = best?.score
             if (incumbentScore != null && node.bound != null && node.bound <= incumbentScore) continue
+            nodes++
             apply(node.tightenings)
             if (!simplex.check()) {
                 // With cuts, a root refutation may use them; they are valid, but not part of the program to check against.
