@@ -2,15 +2,23 @@ package io.github.gciatto.ktconstraints.solve.mip.ortools
 import com.google.ortools.linearsolver.MPSolver
 import com.google.ortools.linearsolver.MPSolverParameters
 import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
+import io.github.gciatto.ktconstraints.core.integer.IntExpr
+import io.github.gciatto.ktconstraints.core.real.RealExpr
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.Objective
+import io.github.gciatto.ktconstraints.model.isReal
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.assignment.Assignment
 import io.github.gciatto.ktconstraints.solve.assignment.project
 import io.github.gciatto.ktconstraints.solve.backend
+import io.github.gciatto.ktconstraints.solve.linear.LinearProgram
+import io.github.gciatto.ktconstraints.solve.linear.LinearSolution
+import io.github.gciatto.ktconstraints.solve.linear.exactRational
 import io.github.gciatto.ktconstraints.solve.mip.MipOptions
 import io.github.gciatto.ktconstraints.solve.mip.program.MipLowering
+import io.github.gciatto.ktconstraints.solve.mip.program.RealPrograms
+import io.github.gciatto.ktconstraints.solve.result.SolveMetadata
 import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
@@ -41,7 +49,11 @@ internal class OrToolsMipStream(
 ) : ManagedSolutionStream(descriptor, onClosed) {
     private val tuning = options.backend<MipOptions>()
     private val exact = (tuning?.relativeGap ?: 0.0) == 0.0
-    private val program = MipLowering.lower(model)
+
+    /** The linear program of a model with reals, solved in floating point; null for the exact integer lowering. */
+    private val linear = if (RealPrograms.isReal(model)) RealPrograms.lower(model, options) else null
+    private val program = if (linear == null) MipLowering.lower(model) else null
+    private val messages = mutableListOf<String>()
     private val started = TimeSource.Monotonic.markNow()
     private val outcome = CompletableFuture<OrToolsMipOutcome>()
     private val lock = Any()
@@ -104,6 +116,8 @@ internal class OrToolsMipStream(
     }
 
     private fun populate(native: MPSolver) {
+        linear?.let { return LinearOrTools.populate(native, it) }
+        val program = requireNotNull(program)
         val variables = program.variables.mapIndexed { i, v -> native.makeIntVar(v.min.toDouble(), v.max.toDouble(), "v$i") }
         for (row in program.rows) {
             val constraint =
@@ -141,7 +155,7 @@ internal class OrToolsMipStream(
                     MPSolver.ResultStatus.NOT_SOLVED
                 }
             val solved = status == MPSolver.ResultStatus.OPTIMAL || status == MPSolver.ResultStatus.FEASIBLE
-            val values = if (solved) native.variables().map { it.solutionValue().roundToLong() }.toLongArray() else null
+            val values = if (solved) native.variables().map { it.solutionValue() }.toDoubleArray() else null
             outcome.complete(OrToolsMipOutcome(status, values))
         } catch (problem: Throwable) {
             outcome.completeExceptionally(problem)
@@ -153,7 +167,15 @@ internal class OrToolsMipStream(
         }
     }
 
-    private fun interpret(result: OrToolsMipOutcome): SolutionEvent {
+    private fun interpret(result: OrToolsMipOutcome): SolutionEvent =
+        if (result.status == MPSolver.ResultStatus.UNBOUNDED) {
+            // Only real models have unbounded columns; integer domains are always bounded.
+            SolveCompleted(SolveResult(SolveStatus.UNBOUNDED, null, descriptor)).also { completion = it }
+        } else {
+            conclude(result)
+        }
+
+    private fun conclude(result: OrToolsMipOutcome): SolutionEvent {
         val proven = result.status == MPSolver.ResultStatus.OPTIMAL || result.status == MPSolver.ResultStatus.INFEASIBLE
         val reason =
             when {
@@ -169,7 +191,10 @@ internal class OrToolsMipStream(
         return found
     }
 
-    private fun solution(values: LongArray): SolutionFound {
+    private fun solution(found: DoubleArray): SolutionFound {
+        linear?.let { return linearSolution(it, found) }
+        val program = requireNotNull(program)
+        val values = found.map { it.roundToLong() }
         val full =
             try {
                 Assignment.of(
@@ -186,11 +211,38 @@ internal class OrToolsMipStream(
             when (val goal = model.objective) {
                 is Objective.Minimize -> GroundEvaluator.evaluate(goal.expression, full)
                 is Objective.Maximize -> GroundEvaluator.evaluate(goal.expression, full)
-                is Objective.MinimizeReal, is Objective.MaximizeReal ->
-                    rejectRealObjective()
+                is Objective.MinimizeReal, is Objective.MaximizeReal -> rejectRealObjective()
                 null -> null
             }
         return SolutionFound(full.project(model.outputVariables), objective)
+    }
+
+    /** Reads floating-point [values] exactly, accepting them only within the caller's tolerances. */
+    private fun linearSolution(
+        program: LinearProgram,
+        values: DoubleArray,
+    ): SolutionFound {
+        val tolerance = requireNotNull(options.numericTolerance)
+        val solution =
+            try {
+                LinearSolution.ofDoubles(program, values.toList(), tolerance.integrality)
+            } catch (problem: IllegalStateException) {
+                throw BackendExecutionException("${descriptor.id}: ${problem.message}", problem)
+            }
+        if (solution.violation > exactRational(tolerance.feasibility)) {
+            throw BackendExecutionException(
+                "${descriptor.id} exceeded a constraint by ${solution.violation}, beyond ${tolerance.feasibility}",
+            )
+        }
+        messages += "Floating-point solution: largest exact excess ${solution.violation} (tolerance ${tolerance.feasibility})"
+        val full = solution.assignment()
+        val projected = full.project(model.outputVariables)
+        val goal = model.objective ?: return SolutionFound(projected)
+        return if (goal.isReal) {
+            SolutionFound(projected, realObjectiveValue = GroundEvaluator.evaluate(goal.expression as RealExpr, full))
+        } else {
+            SolutionFound(projected, GroundEvaluator.evaluate(goal.expression as IntExpr, full))
+        }
     }
 
     private fun complete(reason: TerminationReason): SolveCompleted {
@@ -210,6 +262,9 @@ internal class OrToolsMipStream(
                 reason,
                 best?.objectiveValue,
                 if (status == SolveStatus.OPTIMAL) best?.objectiveValue else null,
+                SolveMetadata(messages.toList()),
+                best?.realObjectiveValue,
+                if (status == SolveStatus.OPTIMAL) best?.realObjectiveValue else null,
             ),
         )
     }

@@ -2,7 +2,7 @@
 
 ## What it is
 
-Mixed-integer programming (MIP) represents constraints as linear equalities or inequalities, such as `2*x + y <= 10`, with integer decisions. These adapters use OR-Tools' `MPSolver` interface to SCIP or HiGHS. Although those engines support continuous variables, this library route exposes a bounded Boolean/integer subset.
+Mixed-integer programming (MIP) represents constraints as linear equalities or inequalities, such as `2*x + y <= 10`, with integer decisions. These adapters use OR-Tools' `MPSolver` interface to SCIP or HiGHS. Integer models use a bounded Boolean/integer lowering. Models with reals become linear programs with continuous columns, solved in floating point only when the caller sets `SolveOptions.numericTolerance`; each solution is re-checked exactly against that tolerance, and strict real inequalities are rejected. See [linear and mixed-integer programs](../../how-to/linear-programs.md).
 
 ## Routes and classes
 

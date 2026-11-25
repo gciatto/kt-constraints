@@ -15,4 +15,10 @@ enum class SolverCapability {
     BITVECTORS,
     GLOBAL_CONSTRAINTS,
     UNSAT_CORES,
+
+    /**
+     * Real arithmetic in floating point, within tolerances rather than exactly. Such routes take real models only when
+     * the caller sets [SolveOptions.numericTolerance]; their solutions are re-checked exactly against it.
+     */
+    FLOATING_POINT_REALS,
 }
