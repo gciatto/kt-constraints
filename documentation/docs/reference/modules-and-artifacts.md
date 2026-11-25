@@ -15,12 +15,13 @@ All modules below are included by `settings.gradle.kts`. Publication eligibility
 | `:solve-choco` | Choco batch solver and propagating ChocoStore | JVM | Yes | `io.github.gciatto:kt-constraints-solve-choco` |
 | `:solve-cpsat` | Direct OR-Tools CP-SAT adapter | JVM | Yes | `io.github.gciatto:kt-constraints-solve-cpsat` |
 | `:solve-mip` | MIP lowering; SCIP and HiGHS through OR-Tools | Portable IR; JVM execution | Yes | `io.github.gciatto:kt-constraints-solve-mip` |
+| `:solve-linear` | Exact linear programs of models, exact checking of floating-point answers | Portable | Yes | `io.github.gciatto:kt-constraints-solve-linear` |
 | `:solve-minizinc` | MiniZinc compiler/decoder and runtime adapters | Portable IR; JVM and JS execution | Yes | `io.github.gciatto:kt-constraints-solve-minizinc` |
 | `:solve-auto` | `AutoBackend`: automatic selection over the default routes, fallback/race strategies | Portable | Yes | `io.github.gciatto:kt-constraints-solve-auto` |
 | `:solve-kotlin` | Pure-Kotlin solver and incremental sessions | Portable | Yes | `io.github.gciatto:kt-constraints-solve-kotlin` |
 | `:solve-blocking` | `BlockingSolver`, `BlockingSolutionStream`, `BlockingSession`, `BlockingStore`; `CompletableFuture` variants on the JVM | JVM and Native (no JavaScript) | Yes | `io.github.gciatto:kt-constraints-solve-blocking` |
 | `:solve-flatzinc` | Reserved module; no backend implementation | Portable declarations only | No | — |
-| `:solve-highs` | Reserved direct HiGHS adapter; implemented route is in solve-mip | Portable declarations only | No | — |
+| `:solve-highs` | Direct HiGHS routes: C API loaded at run time, and the `highs` Wasm module | Native and JS execution | Yes | `io.github.gciatto:kt-constraints-solve-highs` |
 | `:interop-java` | Java number conversions; re-exports `:solve-blocking` | JVM | Yes | `io.github.gciatto:kt-constraints-interop-java` |
 | `:interop-js` | Exported ES module with generated TypeScript declarations | JS | Yes | `io.github.gciatto:kt-constraints-interop-js` |
 | `:interop-c` | Generated C header and shared library | Native desktop libraries | No | — |

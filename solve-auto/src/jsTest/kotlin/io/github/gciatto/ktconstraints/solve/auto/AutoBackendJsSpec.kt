@@ -18,6 +18,9 @@ class AutoBackendJsSpec :
                 auto.registry
                     .require("z3/wasm")
                     .descriptor.id shouldBe "z3/wasm"
+                auto.registry
+                    .require("highs/wasm")
+                    .descriptor.id shouldBe "highs/wasm"
                 val result = auto.withSolver { it.solve(reals) }
                 result.status shouldBe SolveStatus.FEASIBLE
                 result.descriptor.id shouldBe "kotlin/direct"

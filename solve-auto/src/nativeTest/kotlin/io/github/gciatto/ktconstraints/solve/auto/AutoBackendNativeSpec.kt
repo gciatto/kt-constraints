@@ -10,11 +10,14 @@ private val MINIZINC_ROUTES = listOf("gecode", "chuffed", "cp-sat", "highs", "cb
 /** Native bundles pure Kotlin first, then the Z3 C API route loaded at run time, then MiniZinc when configured. */
 class AutoBackendNativeSpec :
     FunSpec({
-        test("defaults/native-registers-z3") {
+        test("defaults/native-registers-z3-and-highs") {
             AutoBackend.load().use {
                 it.registry
                     .require("z3/native")
                     .descriptor.id shouldBe "z3/native"
+                it.registry
+                    .require("highs/native")
+                    .descriptor.id shouldBe "highs/native"
             }
         }
 

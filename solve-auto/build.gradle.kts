@@ -29,6 +29,7 @@ kotlin {
             dependencies {
                 implementation(project(":solve-z3"))
                 implementation(project(":solve-minizinc"))
+                implementation(project(":solve-highs"))
             }
         }
         commonTest {
@@ -42,6 +43,7 @@ kotlin {
             dependencies {
                 implementation(project(":solve-z3"))
                 implementation(project(":solve-minizinc"))
+                implementation(project(":solve-highs"))
             }
         }
         // The blocking example; :solve-blocking has no JavaScript target, so it cannot join commonTest.

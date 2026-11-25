@@ -1,0 +1,73 @@
+# HiGHS C API loaded at run time: only the stable prototypes the binding calls, no HiGHS headers or link-time library.
+package = io.github.gciatto.ktconstraints.solve.highs.capi
+linkerOpts.linux = -ldl
+
+---
+
+#include <stdbool.h>
+
+/* HiGHS' default build uses 32-bit HighsInt. */
+typedef int HighsInt;
+typedef void HighsCallback(int type, const char *message, const void *out, void *in, void *user);
+
+#define KHS_API(F) \
+    F(void *, Highs_create, (void), ()) \
+    F(void, Highs_destroy, (void *h), (h)) \
+    F(const char *, Highs_version, (void), ()) \
+    F(HighsInt, Highs_setBoolOptionValue, (void *h, const char *o, HighsInt v), (h, o, v)) \
+    F(HighsInt, Highs_setDoubleOptionValue, (void *h, const char *o, double v), (h, o, v)) \
+    F(HighsInt, Highs_passMip, (void *h, HighsInt nc, HighsInt nr, HighsInt nz, HighsInt f, HighsInt s, double o, \
+        const double *cc, const double *cl, const double *cu, const double *rl, const double *ru, \
+        const HighsInt *as, const HighsInt *ai, const double *av, const HighsInt *in), \
+        (h, nc, nr, nz, f, s, o, cc, cl, cu, rl, ru, as, ai, av, in)) \
+    F(HighsInt, Highs_run, (void *h), (h)) \
+    F(HighsInt, Highs_getModelStatus, (const void *h), (h)) \
+    F(HighsInt, Highs_getSolution, (const void *h, double *cv, double *cd, double *rv, double *rd), (h, cv, cd, rv, rd)) \
+    F(HighsInt, Highs_getIntInfoValue, (const void *h, const char *i, HighsInt *v), (h, i, v)) \
+    F(double, Highs_getInfinity, (const void *h), (h)) \
+    F(HighsInt, Highs_setCallback, (void *h, HighsCallback *c, void *u), (h, c, u)) \
+    F(HighsInt, Highs_startCallback, (void *h, HighsInt t), (h, t))
+
+#define KHS_POINTER(ret, name, params, args) static ret (*khsp_##name) params;
+KHS_API(KHS_POINTER)
+
+#define KHS_CALL(ret, name, params, args) static inline ret name params { return khsp_##name args; }
+KHS_API(KHS_CALL)
+
+/** Detail of the last khs_load failure: the loader message or the missing symbol. */
+static const char *khs_failure;
+
+/** Loads the HiGHS library at [path] once per process; returns false and sets khs_failure when it cannot. */
+static inline bool khs_load(const char *path) {
+#ifdef _WIN32
+    void *LoadLibraryExA(const char *, void *, unsigned long);
+    void *GetProcAddress(void *, const char *);
+    void *library = LoadLibraryExA(path, 0, 0x00000008UL); /* LOAD_WITH_ALTERED_SEARCH_PATH: dependencies beside it */
+    if (!library) { khs_failure = "LoadLibraryEx could not load the library or its dependencies"; return false; }
+#define KHS_SYMBOL(library, name) GetProcAddress(library, name)
+#else
+    void *dlopen(const char *, int);
+    void *dlsym(void *, const char *);
+    char *dlerror(void);
+    void *library = dlopen(path, 2); /* RTLD_NOW */
+    if (!library) { khs_failure = dlerror(); return false; }
+#define KHS_SYMBOL(library, name) dlsym(library, name)
+#endif
+#define KHS_RESOLVE(ret, name, params, args) \
+    if (!(*(void **) &khsp_##name = KHS_SYMBOL(library, #name))) { khs_failure = #name; return false; }
+    KHS_API(KHS_RESOLVE)
+    return true;
+}
+
+/* Interrupt callbacks: HighsCallbackDataIn starts with `int user_interrupt`, set while *user is non-zero. */
+static void khs_interrupt(int type, const char *message, const void *out, void *in, void *user) {
+    (void) type; (void) message; (void) out;
+    if (in && user && *(volatile int *) user) *(int *) in = 1;
+}
+
+/** Makes HiGHS poll [flag] in its simplex, interior-point and MIP loops; returns false when it cannot. */
+static inline bool khs_watch(void *highs, int *flag) {
+    if (Highs_setCallback(highs, khs_interrupt, flag) != 0) return false;
+    /* kHighsCallbackSimplexInterrupt, kHighsCallbackIpmInterrupt, kHighsCallbackMipInterrupt */
+    return Highs_startCallback(highs, 1) == 0 && Highs_startCallback(highs, 2) == 0 && Highs_startCallback(highs, 6) == 0;
+}

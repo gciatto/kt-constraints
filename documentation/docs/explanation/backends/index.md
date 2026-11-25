@@ -26,7 +26,7 @@ programming) uses finite domains; CP-SAT combines these with Boolean satisfiabil
 (mixed-integer programming) uses linear equalities and inequalities; these routes expose only a
 bounded Boolean/integer subset. MiniZinc compiles a model for a configured engine.
 
-Reserved `:solve-flatzinc` and `:solve-highs` modules do not supply operational routes.
+The reserved `:solve-flatzinc` module does not supply an operational route.
 
 ## Which one when?
 

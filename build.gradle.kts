@@ -75,6 +75,7 @@ val publishedModules =
         "solve-choco",
         "solve-cpsat",
         "solve-linear",
+        "solve-highs",
         "solve-mip",
         "solve-minizinc",
         "solve-auto",
