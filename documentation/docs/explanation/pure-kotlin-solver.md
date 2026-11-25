@@ -1,6 +1,6 @@
 # The pure-Kotlin solver
 
-The `kotlin/direct` route implements constraint solving in portable Kotlin: a finite arithmetic compiler, a conflict-driven SAT engine, and an exact rational linear feasibility checker. It can solve satisfaction models, optimize integer expressions, enumerate projected solutions, and maintain incremental assertion sessions. It is published for every platform as `:solve-kotlin`, and the default automatic selection uses it as the last resort on every platform.
+The `kotlin/direct` route implements constraint solving in portable Kotlin: a finite arithmetic compiler, a conflict-driven SAT engine, and an exact rational linear feasibility checker. It can solve satisfaction models, optimize integer expressions, enumerate projected solutions, and maintain incremental assertion sessions. It is published for every platform as `:solve-kotlin`, and the default automatic selection tries it first on JS and Native and after CP-SAT and Choco on the JVM, following the recorded benchmarks.
 
 Its design puts portability and sound answers before specialized solving strength. The same production sources live in `solve-kotlin/src/commonMain`, with no external solver executable, JNI library, C binding, or WebAssembly solver binary. “Dependency-free” here means **no external solver runtime**: the module still uses `:solve-spi`, the project's arbitrary-precision integer/rational infrastructure, and Kotlin coroutines. See the [module build file][module-build] and [public API reference](/kt-constraints/api/index.html).
 

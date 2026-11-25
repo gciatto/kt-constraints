@@ -39,7 +39,10 @@ kotlin {
             }
         }
         nativeMain {
-            dependencies { implementation(project(":solve-z3")) }
+            dependencies {
+                implementation(project(":solve-z3"))
+                implementation(project(":solve-minizinc"))
+            }
         }
         // The blocking example; :solve-blocking has no JavaScript target, so it cannot join commonTest.
         jvmTest {
@@ -68,6 +71,11 @@ tasks.withType<org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest>().co
 // build/bin/linuxX64/releaseTest/test.kexe with KT_CONSTRAINTS_ROUTE_BENCHMARK=1 and KT_CONSTRAINTS_Z3_LIBRARY set.
 kotlin.targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
     binaries.test(listOf(org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType.RELEASE))
+}
+
+// Native tests inherit the environment; MINIZINC_EXECUTABLE changes which routes the default loader registers.
+tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
+    inputs.property("miniZincExecutable", providers.environmentVariable("MINIZINC_EXECUTABLE").orElse(""))
 }
 
 // Native tests (including the documentation's examples) solve through Z3's C API: load the pinned build that

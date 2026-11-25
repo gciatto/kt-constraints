@@ -8,13 +8,15 @@ This walkthrough follows `SolverRegistry.rank`, `ModelFeatures`, `Heuristics`, `
 
 `AutoBackend.load()` loads an explicit platform bundle, then builds an immutable registry. It does not scan the classpath for backends.
 
+Registration order is a decreasing-performance order taken from the [recorded benchmarks](../../reference/benchmarks.md).
+
 | Platform | Registration order | Optional additions |
 |---|---|---|
-| JVM | `cp-sat/direct`, `choco/direct`, `z3/direct`, `scip/or-tools`, `highs/or-tools` | If `MINIZINC_EXECUTABLE` is set: `gecode/minizinc`, `chuffed/minizinc`, `cp-sat/minizinc`, `highs/minizinc`, `cbc/minizinc`, in that order |
-| JS | `z3/wasm`, asynchronously loaded | On Node, Gecode `gecode/minizinc-js-cli` when `MINIZINC_EXECUTABLE` is set |
-| Native | `z3/native` | None |
+| JVM | `cp-sat/direct`, `choco/direct`, `kotlin/direct`, `z3/direct`, `scip/or-tools`, `highs/or-tools` | If `MINIZINC_EXECUTABLE` is set, appended: `gecode/minizinc`, `chuffed/minizinc`, `cp-sat/minizinc`, `highs/minizinc`, `cbc/minizinc`, in that order |
+| JS | `kotlin/direct`, then `z3/wasm`, asynchronously loaded | On Node, Gecode `gecode/minizinc-js-cli` between them when `MINIZINC_EXECUTABLE` is set |
+| Native | `kotlin/direct`, `z3/native` | If `MINIZINC_EXECUTABLE` is set, appended: the same five MiniZinc routes as the JVM; they start processes on Linux and macOS only |
 
-The default HiGHS instance has a mandatory 60,000 ms backend limit because OR-Tools cannot interrupt it. Browser Chuffed through MiniZinc requires explicit loading. Every platform also registers the pure-Kotlin route and refines the ranking policy with the `last-resort` heuristic, weighted so that `kotlin/direct` ranks after every other eligible route. It answers only when no other route is available or eligible; on JS it also covers a Z3 Wasm module that cannot start.
+The default HiGHS instance has a mandatory 60,000 ms backend limit because OR-Tools cannot interrupt it. Browser Chuffed through MiniZinc requires explicit loading. `AutoBackend.load()` ranks with `RankingPolicy.REGISTRATION_ORDER` unless given another policy, so each model goes to the first route in this order that passes the eligibility checks of step 3. Step 4 applies only to a scoring policy, such as `RankingPolicy.DEFAULT`, passed explicitly. On JS, a Z3 Wasm module that cannot start is left out instead of failing the load.
 
 Loading happens before a solve. A JS runtime initialization failure can throw before the portfolio exists; fallback does not recover from a failure of `AutoBackend.load()` itself. Availability and support are checked later for each model. Closing `AutoBackend` closes its closeable registered backends and their runtimes.
 
@@ -63,14 +65,13 @@ Source: [SolverRegistry](https://github.com/gciatto/kt-constraints/blob/develop/
 
 For each candidate, total score is the sum of `weight × score.value` across heuristics with an opinion. A null opinion adds no contribution. Higher totals rank first; equal totals retain registration order. Each contribution retains the heuristic name, weight, raw score and reason, available through `Candidate.contributions` and `Candidate.explanation`.
 
-`RankingPolicy.DEFAULT` uses the following three heuristics with weight **1.0 each**:
+`RankingPolicy.DEFAULT` uses the following three heuristics with weight **1.0 each**. `Heuristics.lastResort(engines)` is also available for custom policies: it scores the listed engines `-1.0`.
 
 | Heuristic | Exact score |
 |---|---|
 | `capability-fit` | `-min(0.05 × unused, 0.25)`, where unused is the number of descriptor capabilities outside the model-derived required set |
 | `feature-affinity` | The table below, using engine ID and problem class |
 | `route-overhead` | `-0.5` if the route string contains `minizinc`; otherwise `0.0` |
-| `last-resort` | `-1.0` for the listed engines, no opinion otherwise; the default loaders add it for `kotlin` with weight 1,000, so it outweighs every other heuristic |
 
 This is a specialization preference, not evidence that extra capabilities make a solver slower.
 
@@ -148,14 +149,12 @@ If MiniZinc defaults are enabled and available, HiGHS/CBC score `0.45` on the fi
 
 ## What the benchmark evidence suggests
 
-The repository's measured catalogue supports several policy directions, with workload and platform qualifications:
+The default registration orders encode the repository's measured catalogue:
 
-- On JVM models classified as `CP_GLOBALS`, CP-SAT first and Choco alongside it in a race cover different strengths. Z3 and MIP should follow the CP routes for these measured families.
-- For the measured linear integer families, there is insufficient evidence to change the current MIP preference. The instances are too easy to establish a general winner.
-- On Node and Native, the measurements favor explicitly registered Kotlin first for models it supports, with Z3 available for rejected models. With MiniZinc installed on Node, the suggested order is Kotlin, Gecode CLI, then Z3 Wasm.
-- If Kotlin is registered on the JVM, the measured globals families suggest placing it after CP-SAT and Choco and before Z3 and MIP.
-- MiniZinc startup and flattening suggest putting compiled routes after in-process routes for small and medium models. The current additive policy does not enforce this: MIP affinity can put MiniZinc HiGHS/CBC ahead of direct CP routes for linear optimization.
+- On the JVM, CP-SAT first and Choco second cover different strengths on `CP_GLOBALS` models; a race of both covers every measured family. Kotlin follows them and beats Z3 and MIP on every measured JVM row.
+- On Node and Native, Kotlin beats Z3 on every family it supports, so it comes first; Z3 answers the models it rejects. With MiniZinc installed on Node, Gecode CLI's fixed cost of about 130 ms pays off against Z3 Wasm on the harder families.
+- MiniZinc startup and flattening cost 240-290 ms on the JVM, so compiled routes come after every in-process route there.
 
-These are observations and recommendations from the recorded runs, not changes already encoded in `RankingPolicy.DEFAULT`. The catalogue has gaps in real arithmetic, nonlinear integers and pure Boolean workloads, and its bit-vector case is too small to establish a broad rule. It also shows that MiniZinc's MIP global decompositions can outperform the project's direct MIP lowering, so a fixed route penalty cannot explain every workload.
+`RankingPolicy.DEFAULT` does not encode this evidence: MIP affinity can put MiniZinc HiGHS/CBC ahead of direct CP routes for linear optimization. The catalogue has gaps in real arithmetic, nonlinear integers and pure Boolean workloads, its linear instances are too easy to separate routes, and its bit-vector case is too small to establish a broad rule. It also shows that MiniZinc's MIP global decompositions can outperform the project's direct MIP lowering.
 
 Use the [benchmark reference](../../reference/benchmarks.md) for measurements and limitations. For explicit route choice, policy configuration and strategies, see [choose a solver](../../how-to/choose-a-solver.md).

@@ -9,16 +9,18 @@ import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-/** On Node the bundled routes are loaded asynchronously and Z3 Wasm answers SMT models. */
+/** On Node the bundled routes are loaded asynchronously; pure Kotlin answers first and Z3 Wasm is registered after it. */
 class AutoBackendJsSpec :
     FunSpec({
-        test("defaults/js-routes-reals-to-z3-wasm") {
+        test("defaults/js-tries-kotlin-before-z3-wasm") {
             val reals = ConstraintModel.of { add(RealLessThan(RealLiteral(Rational.of(1, 2)), realVar("r"))) }
-            AutoBackend.load().use { loaded ->
-                loaded.registry
-                    .rank(reals)
-                    .best.backend.descriptor.id shouldBe "z3/wasm"
+            AutoBackend.load().use { auto ->
+                auto.registry
+                    .require("z3/wasm")
+                    .descriptor.id shouldBe "z3/wasm"
+                val result = auto.withSolver { it.solve(reals) }
+                result.status shouldBe SolveStatus.FEASIBLE
+                result.descriptor.id shouldBe "kotlin/direct"
             }
-            AutoBackend.load().use { auto -> auto.withSolver { it.solve(reals) } }.status shouldBe SolveStatus.FEASIBLE
         }
     })

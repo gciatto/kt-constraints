@@ -106,7 +106,10 @@ known optimum or proof.
   family it supports.
 - **Native:** the pure-Kotlin solver beats or ties Z3's C API everywhere. Z3 remains the route for models it
   rejects, such as unbounded integer domains.
-- `AutoBackend.load()` registers the pure-Kotlin solver on every platform as its last resort, after every other route.
+- `AutoBackend.load()` tries routes in a fixed per-platform order, fastest first by these measurements: JVM CP-SAT,
+  Choco, pure Kotlin, Z3, SCIP, HiGHS, then MiniZinc; Node pure Kotlin, Gecode CLI, Z3 Wasm; Native pure Kotlin, Z3,
+  then MiniZinc (Linux and macOS).
+  Each model goes to the first route that has its capabilities, is available and supports it.
 - **MiniZinc routes** add a fixed 240–290 ms on the JVM (process start and flattening) and about 130 ms through
   Node's CLI. They pay off on models that need a specific engine, or a decomposition that MiniZinc does better.
 
@@ -226,7 +229,7 @@ npm install @gciatto/kt-constraints-interop-js
 [Installation](https://gciatto.github.io/kt-constraints/how-to/install/) covers Maven, the C library, building from source, and the runtime each solver
 needs. Publishing on Maven Central and npmjs is planned.
 
-**Good to know:** not available yet: MiniZinc execution from Kotlin/Native, a direct HiGHS C API adapter,
+**Good to know:** not available yet: MiniZinc execution from Kotlin/Native on Windows, a direct HiGHS C API adapter,
 FlatZinc interchange, Gurobi, and propagating constraint stores beyond Choco.
 
 ## Modules

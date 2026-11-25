@@ -43,6 +43,9 @@ implementation or build changes.
 - Verify JVM, JS and available Native targets; include differential tests for any model supported by multiple backends.
 - Test the actual Java and exported JS/TS API at their boundary, not only Kotlin interfaces.
 - Benchmark separately: model construction, compilation, backend setup, solve, projection and checkpoint restoration.
+- `AutoBackend.load()` tries each platform's routes in a fixed decreasing-performance order (`DefaultBackends` in
+  `:solve-auto`) taken from `documentation/docs/reference/benchmarks.md`. Rerun the route benchmarks, then update the
+  recorded data and that order, whenever a backend is added, removed, made available on a new platform, or improved.
 
 ## Tasks and build
 

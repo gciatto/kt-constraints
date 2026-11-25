@@ -54,7 +54,7 @@ static void optimization(void) {
 
     Outcome outcome = KC.solve(KC.ModelBuilder.build(builder), 0);
     expect("status", KC.Outcome.get_status(outcome), "OPTIMAL");
-    expect("route", KC.Outcome.get_route(outcome), "z3/native");
+    expect("route", KC.Outcome.get_route(outcome), "kotlin/direct");
     expect("objective", KC.Outcome.get_objective(outcome), "63");
     expect("x", KC.Outcome.valueOf(outcome, x), "9");
     expect("y", KC.Outcome.valueOf(outcome, y), "7");

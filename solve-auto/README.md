@@ -6,11 +6,14 @@
 AutoBackend.load().use { auto -> auto.withSolver { it.solve(model) } }
 ```
 
-- `AutoBackend.load()` registers the routes bundled for the current platform:
-  - JVM: CP-SAT, Choco, Z3, SCIP and HiGHS, plus the MiniZinc engines when `MINIZINC_EXECUTABLE` is set;
-  - JS: Z3 Wasm, plus MiniZinc's Node CLI route when `MINIZINC_EXECUTABLE` is set;
-  - Native: Z3;
-  - every platform: pure Kotlin, as the last resort.
+- `AutoBackend.load()` registers the routes bundled for the current platform, fastest first according to the
+  recorded benchmarks:
+  - JVM: CP-SAT, Choco, pure Kotlin, Z3, SCIP, HiGHS, then the MiniZinc engines when `MINIZINC_EXECUTABLE` is set;
+  - JS: pure Kotlin, MiniZinc's Node CLI route when `MINIZINC_EXECUTABLE` is set, then Z3 Wasm;
+  - Native: pure Kotlin, Z3, then the MiniZinc engines when `MINIZINC_EXECUTABLE` is set (Linux and macOS).
+
+  Its default policy, `RankingPolicy.REGISTRATION_ORDER`, keeps that order: each model goes to the first route that
+  has its capabilities, is available and supports it. Pass `RankingPolicy.DEFAULT` to rank by model features instead.
 - On the JVM and Native, `loadAutoBackend()` (Java: `AutoBackends.loadAutoBackend()`) does the same on the calling thread, for code
   that cannot suspend; pair it with [`:solve-blocking`](../solve-blocking/README.md).
 - `AutoBackend(listOf(...))` chooses among explicitly given routes instead.
@@ -26,7 +29,7 @@ Results name the answering route and list every skipped or failed one in `metada
 take is rejected with `UnsupportedModelException`.
 
 Ranking is extensible: implement `RankingHeuristic` and pass `RankingPolicy.DEFAULT.with(heuristic, weight)` to
-`AutoBackend`. Benchmark-driven ranking plugs in through `Heuristics.evidence(PerformanceEvidence)`, which is
+`AutoBackend.load` or `AutoBackend`. Benchmark-driven ranking plugs in through `Heuristics.evidence(PerformanceEvidence)`, which is
 experimental.
 
 `./gradlew :solve-auto:jvmBenchmark` runs the benchmark catalogue on every eligible route (see

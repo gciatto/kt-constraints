@@ -42,7 +42,7 @@ Structural globals expanded to routing, automata, scheduling and packing. Native
 
 ## A common Kotlin engine and broader measurements
 
-The pure-Kotlin engine added a route implemented in common code, reusing the representation and solver contracts. It is published for every platform and registered by default as the last resort. Its design and current limitations are covered in [the pure-Kotlin solver](pure-kotlin-solver.md).
+The pure-Kotlin engine added a route implemented in common code, reusing the representation and solver contracts. It is published for every platform and registered by default at its benchmarked position in each platform's route order. Its design and current limitations are covered in [the pure-Kotlin solver](pure-kotlin-solver.md).
 
 Benchmarks grew from separate construction and translation observations into seeded problem families, cross-route comparisons and store-operation measurements. Measurements of the Kotlin route across JVM, Node and Native widened the comparison. The recorded runs exposed startup and flattening costs, differences between global decompositions and gaps in the default ranking policy. The experimental timing-evidence hook remains separate from the default heuristics.
 
@@ -64,13 +64,13 @@ Release configuration adopted GitHub Packages for Maven and npm artifacts and re
 | Z3 routes | Implemented | JVM, JavaScript Wasm and desktop Native; incremental checks, assumptions and cores |
 | Direct JVM CP | Implemented | Choco and CP-SAT, with checked bounded integer subsets |
 | MIP through OR-Tools | Implemented, restricted | SCIP and HiGHS; bounded affine integer lowering, numerical proof statuses, no enumeration; HiGHS requires a backend time limit |
-| MiniZinc execution | Partial | Five JVM engine configurations, Node Gecode CLI and browser Chuffed Wasm; no Native command transport |
+| MiniZinc execution | Partial | Five engine configurations on the JVM and on Linux and macOS Native, Node Gecode CLI and browser Chuffed Wasm; no Native Windows command transport |
 | Constraint stores | Implemented, restricted | Choco native propagation on JVM and a generic satisfiability store over incremental solvers; sound non-exact residuals and non-minimal explanations |
 | Java and TypeScript facades | Implemented | Real language-boundary tests; facade surfaces differ from the full Kotlin API |
 | C facade | Implemented, restricted | Shared library for desktop targets; integer/Boolean modelling and batch solving through the Native defaults |
 | Automatic selection (`AutoBackend`) | Implemented | Explicit platform bundles, eligibility checks, explained heuristics, fallback and races; no automatic inclusion of Kotlin or browser MiniZinc |
 | Benchmark-informed ranking | Partial | Recorded measurements and an experimental evidence interface; no timing dataset in the default policy |
-| Pure-Kotlin route | Implemented | Published for JVM, JS and Native with shared-contract coverage; last resort in every default registry |
+| Pure-Kotlin route | Implemented | Published for JVM, JS and Native with shared-contract coverage; in every default registry, ordered by benchmarks |
 | Platform reach | Partial | JVM, Kotlin/JS and desktop Native integrations; iOS compilation does not provision Z3; Kotlin/Wasm targets await dependencies and binding work |
 | Distribution | Partial | Release configuration for GitHub Packages and C release archives; Maven Central and npmjs publication remain planned |
 | Portable model serialization | Planned | No versioned interchange format, identity remapping implementation or portable model fingerprint |

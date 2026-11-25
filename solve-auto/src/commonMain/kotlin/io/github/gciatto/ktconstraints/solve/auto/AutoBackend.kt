@@ -85,17 +85,19 @@ class AutoBackend(
             )
 
         /**
-         * Loads the routes bundled for the current platform: on the JVM CP-SAT, Choco, Z3, SCIP and HiGHS; on JS
-         * Z3 Wasm; on Native Z3 through its C API; plus MiniZinc's engines on the JVM and Node when
-         * `MINIZINC_EXECUTABLE` is set. Every platform adds the pure-Kotlin route as its last resort, ranked after
-         * all the others by the platform's refinement of [policy]. Close the result to release loaded runtimes.
+         * Loads the routes bundled for the current platform, fastest first according to the recorded benchmarks: on
+         * the JVM CP-SAT, Choco, pure Kotlin, Z3, SCIP and HiGHS; on JS pure Kotlin and Z3 Wasm, with MiniZinc's Node CLI between them; on Native pure
+         * Kotlin and Z3 through its C API; MiniZinc's routes need `MINIZINC_EXECUTABLE`, and come last
+         * on the JVM and Native. The default [policy] keeps that order: each model goes to the first route that has its capabilities,
+         * is available and supports it. Pass [RankingPolicy.DEFAULT] to rank routes by model features instead. Close
+         * the result to release loaded runtimes.
          */
         suspend fun load(
             strategy: AutoStrategy,
-            policy: RankingPolicy = RankingPolicy.DEFAULT,
-        ): AutoBackend = AutoBackend(DefaultBackends.load(), strategy, DefaultBackends.policy(policy))
+            policy: RankingPolicy = RankingPolicy.REGISTRATION_ORDER,
+        ): AutoBackend = AutoBackend(DefaultBackends.load(), strategy, policy)
 
-        /** Loads the bundled routes with the [AutoStrategy.Fallback] strategy and the default ranking policy. */
+        /** Loads the bundled routes with the [AutoStrategy.Fallback] strategy, in their platform performance order. */
         override suspend fun load(): AutoBackend = load(AutoStrategy.Fallback)
     }
 }

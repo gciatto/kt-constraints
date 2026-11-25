@@ -17,7 +17,7 @@ An incumbent is a feasible assignment found so far, without an optimality proof.
 
 ## Platforms and runtime requirements
 
-`AutoBackend.load()` loads the platform bundle: direct CP-SAT, Choco, Z3 and OR-Tools SCIP/HiGHS on JVM; Z3 Wasm on JS; Native Z3 on Kotlin/Native. `MINIZINC_EXECUTABLE` enables five additional JVM MiniZinc configurations or Node Gecode CLI. Kotlin and browser MiniZinc are excluded. See [the exact loading order](selection.md#1-load-the-platform-defaults).
+`AutoBackend.load()` loads the platform bundle, fastest first according to the recorded benchmarks: direct CP-SAT, Choco, pure Kotlin, Z3 and OR-Tools SCIP/HiGHS on JVM; pure Kotlin and Z3 Wasm on JS; pure Kotlin and Native Z3 on Kotlin/Native. `MINIZINC_EXECUTABLE` enables five additional MiniZinc configurations on the JVM and Native, ranked last, or Node Gecode CLI, ranked before Z3 Wasm. Browser MiniZinc is excluded. By default it keeps this order, trying each model on the first route that has its capabilities, is available and supports it. See [the exact loading order](selection.md#1-load-the-platform-defaults).
 
 Loading JS runtimes is asynchronous and may fail before candidate execution begins. Closing the automatic backend closes its closeable registered backends and their loaded runtimes. Callers supplying their own list must account for that ownership.
 
@@ -43,7 +43,7 @@ There is no automatic `BackendOptions` implementation. Configure `AutoStrategy` 
 
 ## Performance
 
-Default ranking uses fixed feature heuristics; no measured timing evidence is loaded. Fallback adds selection and failed-attempt cost. Racing can cover complementary solver strengths but runs several attempts and cancels losers according to their interruption behavior. The recorded JVM catalogue supports pairing CP-SAT with Choco on the measured global families; it also exposes cases where MiniZinc's ranking penalty is too small to offset startup cost. See [benchmarks](../../reference/benchmarks.md) and [benchmark evidence versus shipped policy](selection.md#what-the-benchmark-evidence-suggests).
+`AutoBackend.load()` follows a fixed route order taken from recorded benchmarks; `RankingPolicy.DEFAULT` instead ranks by fixed feature heuristics. Neither loads timing evidence at run time. Fallback adds selection and failed-attempt cost. Racing can cover complementary solver strengths but runs several attempts and cancels losers according to their interruption behavior. The recorded JVM catalogue supports pairing CP-SAT with Choco on the measured global families; it also exposes cases where MiniZinc's ranking penalty is too small to offset startup cost. See [benchmarks](../../reference/benchmarks.md) and [benchmark evidence versus shipped policy](selection.md#what-the-benchmark-evidence-suggests).
 
 ## How to use it directly
 

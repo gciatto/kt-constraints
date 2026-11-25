@@ -1,10 +1,10 @@
 package io.github.gciatto.ktconstraints.solve.auto
 
 import io.github.gciatto.ktconstraints.solve.SolveOptions
-import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.spi.Platform
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
+import io.github.gciatto.ktconstraints.solve.spi.ranking.RankingPolicy
 import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkCatalogue
 import io.github.gciatto.ktconstraints.test.solve.benchmark.BenchmarkInstance
@@ -15,11 +15,11 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.TimeSource
 
 /**
- * Every bundled route of this platform, plus `kotlin/direct`, on the seeded catalogue, as evidence for backend
+ * Every bundled route of this platform on the seeded catalogue, as evidence for the order of backend
  * selection; skipped unless `KT_CONSTRAINTS_ROUTE_BENCHMARK` is set. After a warm-up, prints one
  * `ROUTE,platform,family,class,scale,size,variables,constraints,route,rank,solved,seeds,median_ms,min_ms,max_ms` row
- * per instance and eligible route, where `rank` is the route's position under the default policy (`-` when it is
- * not registered) and unsolved seeds count as the timeout. `_SCALES` (default `1 2 3`), `_SEEDS` (default 3) and
+ * per instance and eligible route, where `rank` is the route's position in the order `AutoBackend.load()` tries
+ * them and unsolved seeds count as the timeout. `_SCALES` (default `1 2 3`), `_SEEDS` (default 3) and
  * `_TIMEOUT` (milliseconds, default 10000) size the run. A wrong proof fails the run.
  */
 class RouteBenchmarkSpec :
@@ -39,10 +39,9 @@ class RouteBenchmarkSpec :
             AutoBackend.load().use { loaded ->
                 fun routes(instance: BenchmarkInstance): List<SolverBackend> =
                     loaded.registry
-                        .rank(instance.model, options)
+                        .rank(instance.model, options, policy = RankingPolicy.REGISTRATION_ORDER)
                         .candidates
-                        .map { it.backend } +
-                        listOf(KotlinBackend()).filter { it.support(instance.model, options).isSupported }
+                        .map { it.backend }
                 BenchmarkCatalogue.instances(1).forEach { instance -> routes(instance).forEach { measure(it, instance, options) } }
                 for (scale in scales) {
                     for (index in BenchmarkCatalogue.builders(scale).indices) {
@@ -51,13 +50,13 @@ class RouteBenchmarkSpec :
                         val distinct =
                             listOf(first) +
                                 if (seeded) (1 until seeds).map { BenchmarkCatalogue.builders(scale, it)[index]() } else emptyList()
-                        val selection = loaded.registry.rank(first.model, options)
+                        val selection = loaded.registry.rank(first.model, options, policy = RankingPolicy.REGISTRATION_ORDER)
                         val ranked = selection.candidates.map { it.backend.descriptor.id }
                         val features = selection.features
                         for (route in routes(first)) {
                             val millis = distinct.map { measure(route, it, options) }
                             val sorted = millis.map { if (it < 0) timeout else it }.sorted()
-                            val rank = ranked.indexOf(route.descriptor.id).let { if (it < 0) "-" else "$it" }
+                            val rank = ranked.indexOf(route.descriptor.id)
                             println(
                                 listOf(
                                     "ROUTE",

@@ -15,5 +15,5 @@ import kotlin.jvm.JvmOverloads
 @JvmOverloads
 fun loadAutoBackend(
     strategy: AutoStrategy = AutoStrategy.Fallback,
-    policy: RankingPolicy = RankingPolicy.DEFAULT,
+    policy: RankingPolicy = RankingPolicy.REGISTRATION_ORDER,
 ): AutoBackend = runBlocking { AutoBackend.load(strategy, policy) }

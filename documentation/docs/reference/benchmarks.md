@@ -34,8 +34,9 @@ KT_CONSTRAINTS_ROUTE_BENCHMARK=1 KT_CONSTRAINTS_Z3_LIBRARY=solve-z3/build/z3-nat
 
 Provision the Z3 shared library before the Native route run; the path above is the repository’s
 provisioned test-library location. Platform rows start with `BENCH,`; route rows start with
-`ROUTE,` and include each route’s default-policy rank. Route benchmarks include bundled routes
-and explicitly registered `kotlin/direct`.
+`ROUTE,` and include each route’s position in the order `AutoBackend.load()` tries them (runs before
+2026-11-25 recorded the default-policy rank instead). Route benchmarks cover the bundled routes, `kotlin/direct`
+included; set `MINIZINC_EXECUTABLE` to add the MiniZinc routes on the JVM, Node and Native.
 
 | Route benchmark variable | Default | Meaning |
 |---|---|---|
@@ -61,7 +62,7 @@ Randomly generated families (knapsack, assignment, integer program, single-machi
 keeps the original instances, and `BenchmarkCatalogueSpec` confirms seed 1 too. Compare encodings over several seeds:
 a single instance's search path can swing by 2-3x between equivalent encodings.
 
-The `kotlin/direct` route is measured too; `AutoBackend.load()` registers it only as the last resort; its observations and the
+The `kotlin/direct` route is measured too, and `AutoBackend.load()` registers it at the position these measurements earn; its observations and the
 optimisations they drove are in [the pure-Kotlin solver](../explanation/pure-kotlin-solver.md). Known answers come from closed forms or
 dynamic programming, never from enumerating permutations or grids, so large scales stay within memory.
 
@@ -153,7 +154,7 @@ Scale 6:
 | integer-program | 7 | 9 | 18 | 7 | 10 | 27 | 78 | 52 | 21 | 28 |
 | single-machine | 31 | timeout | timeout | timeout | 10000* | 10000* | timeout | timeout | timeout | 10000* |
 
-Selection rules suggested by this recorded run (not additional default-registry entries):
+Selection rules suggested by this recorded run; the default registration orders follow rules 1, 2, 4, 5, 6, 9 and 10:
 
 1. **JVM, `CP_GLOBALS`: CP-SAT first, as the default policy already ranks it.** It is never the fastest on easy
    instances (its fixed cost is about 5-10 ms), but it is the only route that stays flat on single-machine scheduling,
@@ -163,13 +164,13 @@ Selection rules suggested by this recorded run (not additional default-registry 
 2. **JVM, `CP_GLOBALS`: rank MIP and Z3 last.** Counting arguments (pigeonhole) and large `allDifferent` instances
    (n-queens, assignment) make SCIP, HiGHS and Z3 seconds slower or time out.
 3. **JVM, `LINEAR_INTEGER`: no evidence for a change.** Every route answers these knapsack and integer-program
-   instances within about 30 ms. The current MIP-first order is harmless, but these instances are too easy to justify
+   instances within about 30 ms. A MIP-first order would be harmless, but these instances are too easy to justify
    it either; harder linear instances are needed.
-4. **Node and Native: Kotlin first for every model it supports, with Z3 as fallback** (the default loaders keep Kotlin as the last resort instead). `kotlin/direct` beats Z3 Wasm
+4. **Node and Native: Kotlin first for every model it supports, with Z3 as fallback.** `kotlin/direct` beats Z3 Wasm
    on every Node row by 3-100x, mostly through Wasm's fixed cost of about 40 ms and its search on `allDifferent`. On
    Native it beats or ties the Z3 C API everywhere; scheduling is within noise. Z3 remains the route for what Kotlin
    rejects.
-5. **Kotlin on the JVM, if it ever ranks above last resort:** rank it after CP-SAT and Choco but before Z3 and MIP on
+5. **Kotlin on the JVM:** rank it after CP-SAT and Choco but before Z3 and MIP on
    `CP_GLOBALS`. It is faster than Z3 on every JVM row.
 
 Gaps: the catalogue has no `SMT_REAL`, `NONLINEAR_INTEGER` or `PURE_BOOLEAN` family, and its bit-vector instance is
@@ -207,4 +208,27 @@ What they add to the rules:
    floor loses to Z3 Wasm on tiny models. It wins on 28-queens, pigeonhole and assignment, where Z3 Wasm takes
    seconds. It finishes two of three scale-6 scheduling seeds, which neither Kotlin nor Z3 Wasm does.
 
-These are observations from the stated hosts and versions, not performance guarantees. The pure-Kotlin route remains outside the default registries. See [Solvers and routes](solvers-and-routes.md) for the actual registered defaults and [Run tests and benchmarks](../how-to/contributing/run-tests-and-benchmarks.md) for reproduction steps.
+### Native MiniZinc routes (2026-11-25, pinned 2.10.1 bundle, scales 3 and 6, 3 seeds, 10 s timeout)
+
+`RouteBenchmarkSpec` from a release `linuxX64` binary, with `MINIZINC_EXECUTABLE` set, on the host of the 2026-11-21
+baseline. Cells are median milliseconds; the number in brackets is the route's position in the order
+`AutoBackend.load()` tries them. A `*` marks a median where some seeds timed out. Every proof matched the known answer.
+
+| family, scale | kotlin | z3 native | gecode | chuffed | cp-sat | highs | cbc |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| n-queens, 3 | 17 (0) | 40 (1) | 307 (2) | 288 (3) | 530 (4) | 475 (5) | timeout (6) |
+| n-queens, 6 | 48 (0) | 7456 (1) | 298 (2) | timeout (3) | timeout (4) | 1052 (5) | timeout (6) |
+| pigeonhole, 6 | 0 (0) | timeout (1) | 271 (2) | 251 (3) | 249 (4) | 286 (5) | 281 (6) |
+| knapsack, 6 | 7 (0) | 25 (1) | 269 (2) | 249 (3) | 261 (4) | 277 (5) | 273 (6) |
+| assignment, 6 | 156 (0) | 407 (1) | 268 (2) | 258 (3) | 297 (4) | 289 (5) | 284 (6) |
+| job-shop, 6 | 5 (0) | 15 (1) | 264 (2) | 235 (3) | 252 (4) | 279 (5) | 277 (6) |
+| integer-program, 6 | 28 (0) | 18 (1) | 267 (2) | 249 (3) | 255 (4) | 276 (5) | 269 (6) |
+| single-machine, 3 | 102 (0) | 110 (1) | 279 (2) | 254 (3) | 297 (4) | 669 (5) | 1297 (6) |
+| single-machine, 6 | 10000* (0) | timeout (1) | 9794* (2) | 2783* (3) | 3919 (4) | timeout (5) | timeout (6) |
+
+10. **Native MiniZinc routes cost a fixed 235-300 ms, as on the JVM.** They belong after Kotlin and Z3 Native, which
+    answer most rows in under 50 ms. Z3 Native loses to Gecode only on large `allDifferent` and counting models
+    (28-queens, scale-6 pigeonhole), which Kotlin answers first anyway. Only CP-SAT through MiniZinc finishes every
+    scale-6 scheduling seed.
+
+These are observations from the stated hosts and versions, not performance guarantees. See [Solvers and routes](solvers-and-routes.md) for the actual registered defaults and [Run tests and benchmarks](../how-to/contributing/run-tests-and-benchmarks.md) for reproduction steps.

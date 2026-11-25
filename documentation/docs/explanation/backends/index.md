@@ -38,6 +38,6 @@ Check availability and whole-model support before direct use. A broad capability
 
 ## What the measurements establish
 
-The recorded catalogue shows complementary strengths, not one universal winner. Choco often has lower cost on easy JVM models; CP-SAT remains strong on the harder measured scheduling family. Z3 and direct MIP routes can struggle with large all-different decompositions. Explicitly registered Kotlin often beats Z3 on the measured Node and Native instances, but remains absent from defaults. MiniZinc adds process and flattening cost; its MIP global decompositions can nevertheless beat the direct MIP lowering.
+The recorded catalogue shows complementary strengths, not one universal winner. Choco often has lower cost on easy JVM models; CP-SAT remains strong on the harder measured scheduling family. Z3 and direct MIP routes can struggle with large all-different decompositions. Kotlin often beats Z3 on the measured Node and Native instances, so the defaults try it first there. MiniZinc adds process and flattening cost; its MIP global decompositions can nevertheless beat the direct MIP lowering.
 
 Default ranking uses fixed heuristics, not these timings. The catalogue lacks real-arithmetic, nonlinear-integer and pure-Boolean families, and its bit-vector case is small. See [benchmarks](../../reference/benchmarks.md) for numbers, host/version details and qualifications.

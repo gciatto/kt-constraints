@@ -29,7 +29,7 @@ Z3 is loaded at run time rather than linked into the executable.
 ## 3. Run your common model
 
 Use the [tested common optimization example](optimize.md). Its Kotlin code calls
-`AutoBackend.load()`, whose Native registry contains `Z3NativeBackend`, route `z3/native`.
+`AutoBackend.load()`, whose Native registry tries `kotlin/direct` first and then `Z3NativeBackend`, route `z3/native`.
 Inspect `result.descriptor.id` to identify the answering route. Keep the call in a suspend
 context; use your application's coroutine entry point.
 

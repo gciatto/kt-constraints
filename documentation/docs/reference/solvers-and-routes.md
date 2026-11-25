@@ -82,11 +82,11 @@ MiniZinc's configurations are selected explicitly; there is no substitution of t
 | `HIGHS` | `org.minizinc.mip.highs` |
 | `CBC` | `org.minizinc.mip.coin-bc` |
 
-The JVM default registry contains CP-SAT, Choco, Z3, SCIP and HiGHS (60,000 ms backend limit), plus all five MiniZinc routes when `MINIZINC_EXECUTABLE` is set. The JS default loader loads Z3 Wasm, plus Node Gecode when that variable is set. The Native default registry contains Z3 Native. Every platform also registers `kotlin/direct` as the last resort, ranked after all the other eligible routes; on JS, a Z3 Wasm module that cannot start is left out instead of failing the load.
+Default registries list routes fastest first, according to the recorded benchmarks. JVM: CP-SAT, Choco, `kotlin/direct`, Z3, SCIP and HiGHS (60,000 ms backend limit), then all five MiniZinc routes when `MINIZINC_EXECUTABLE` is set. JS: `kotlin/direct`, Node Gecode when that variable is set, then Z3 Wasm; a Z3 Wasm module that cannot start is left out instead of failing the load. Native: `kotlin/direct`, Z3 Native, then the five MiniZinc routes when `MINIZINC_EXECUTABLE` is set. `AutoBackend.load()` keeps that order by default (`RankingPolicy.REGISTRATION_ORDER`): each model goes to the first route that has its capabilities, is available and supports it.
 
 HiGHS through OR-Tools cannot be interrupted by OR-Tools: its constructor requires a positive per-solve limit. Closing returns promptly, but an abandoned engine call may run until that limit. MiniZinc JS permits one owning backend at a time; close it before loading another.
 
-`:solve-highs` and `:solve-flatzinc` are reserved modules, not implemented routes. Native MiniZinc execution is not implemented. See [Platform availability](platform-availability.md), [Configuration](configuration.md), [Choose a solver](../how-to/choose-a-solver.md) and [Engines and routes](../explanation/engines-and-routes.md).
+`:solve-highs` and `:solve-flatzinc` are reserved modules, not implemented routes. Native MiniZinc execution is available on Linux and macOS, not on Windows or iOS. See [Platform availability](platform-availability.md), [Configuration](configuration.md), [Choose a solver](../how-to/choose-a-solver.md) and [Engines and routes](../explanation/engines-and-routes.md).
 
 
 ## MiniZinc compilation API

@@ -21,7 +21,7 @@ Kotlin object references have generated handle types such as `libktconstraints_k
 | `allDifferent(list)` | Boolean pairwise distinctness constraint |
 | `sum(list)` | Exact integer sum; empty sum is zero |
 | `Model` | Immutable snapshot; `get_variableCount`, `get_constraintCount` |
-| `solve(model, timeoutMillis)` | Blocking solve using Native defaults, currently `z3/native`; non-positive timeout means no limit |
+| `solve(model, timeoutMillis)` | Blocking solve using Native defaults, `kotlin/direct` first and then `z3/native`; non-positive timeout means no limit |
 | `Outcome` | `get_status`, `get_message`, `get_route`, `get_objective`, `valueOf`, `truthOf` |
 
 Variables created through `intVar` have inclusive `Long` bounds. Constants and intermediates can exceed 64 bits. There are no C facade real/bit-vector expressions, projection controls, sessions, streams, stores, soft-constraint helpers or general solver tuning.

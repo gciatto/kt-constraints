@@ -14,7 +14,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
 
-/** The bundled JVM routes, ranked by the default policy, pick the engine each model family suits. */
+/** The bundled JVM routes answer in benchmark order; the feature-based default policy remains available. */
 class AutoBackendJvmSpec :
     FunSpec({
         val linear =
@@ -27,7 +27,7 @@ class AutoBackendJvmSpec :
         val globals = ConstraintModel.of { add(AllDifferent(List(3) { intVar("x$it", 0..2) })) }
         val reals = ConstraintModel.of { add(RealLessThan(RealLiteral(Rational.of(1, 2)), realVar("r"))) }
 
-        test("defaults/jvm-ranks-routes-by-model-features") {
+        test("defaults/jvm-feature-policy-ranks-routes-by-model-features") {
             AutoBackend.load().use { loaded ->
                 loaded.registry
                     .rank(linear)
@@ -38,6 +38,13 @@ class AutoBackendJvmSpec :
                 loaded.registry
                     .rank(reals)
                     .best.backend.descriptor.id shouldBe "z3/direct"
+            }
+        }
+
+        test("defaults/jvm-tries-routes-in-benchmark-order") {
+            AutoBackend.load().use { auto ->
+                auto.withSolver { it.solve(linear) }.descriptor.id shouldBe "cp-sat/direct"
+                auto.withSolver { it.solve(reals) }.descriptor.id shouldBe "kotlin/direct"
             }
         }
 
