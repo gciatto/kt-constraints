@@ -74,7 +74,7 @@ Release configuration adopted GitHub Packages for Maven and npm artifacts and re
 | Platform reach | Partial | JVM, Kotlin/JS and desktop Native integrations; iOS compilation does not provision Z3; Kotlin/Wasm targets await dependencies and binding work |
 | Distribution | Partial | Release configuration for GitHub Packages and C release archives; Maven Central and npmjs publication remain planned |
 | Portable model serialization | Planned | No versioned interchange format, identity remapping implementation or portable model fingerprint |
-| Additional adapters | Planned | FlatZinc interchange, direct HiGHS C API and Gurobi; reserved modules do not supply working backends |
+| Additional adapters | Partial | Direct HiGHS on Kotlin/Native (C API) and JavaScript (Wasm) implemented; FlatZinc interchange and Gurobi planned |
 | Broader theories and optimization | Planned | Arrays, strings, sets, uninterpreted symbols, quantifiers and richer bit-vector operations are outside the current model API; real objectives are optimized exactly by Z3 on every platform |
 | External logic-engine adapters | Planned outside this repository | Store primitives exist; no bundled logic runtime or 2p-Kt adapter |
 

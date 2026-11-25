@@ -11,6 +11,7 @@ serialization = "1.12.0"
 minizincJs = "4.5.2"
 z3Turnkey = "4.14.0"
 z3Js = "5.3.3"
+highsJs = "1.16.0"
 ortools = "9.15.6755"
 choco = "6.0.2"
 

@@ -13,7 +13,7 @@ Both routes belong to `:solve-mip`, artifact `kt-constraints-solve-mip`, and sha
 | `scip/or-tools` | `OrToolsMipBackend.scip()` | Interruptible through OR-Tools |
 | `highs/or-tools` | `OrToolsMipBackend.highs(solveLimitMillis)` | Requires a positive backend time limit |
 
-Both are JVM automatic defaults; the bundled HiGHS instance has a 60,000 ms backend limit. HiGHS through MiniZinc is a [different route](minizinc.md). The reserved `:solve-highs` module does not implement a direct HiGHS C API backend.
+Both are JVM automatic defaults; the bundled HiGHS instance has a 60,000 ms backend limit. HiGHS through MiniZinc is a [different route](minizinc.md). `:solve-highs` provides direct HiGHS routes for Kotlin/Native (C API) and JavaScript (Wasm); see [linear and mixed-integer programs](../../how-to/linear-programs.md).
 
 ## Platforms and runtime requirements
 

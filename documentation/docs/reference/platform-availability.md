@@ -11,6 +11,8 @@ Each ✅ below records real-engine test coverage described by the repository val
 | `highs/or-tools`              | ✅        | ✅              | ✅          | —    | —        | —                | —                  | —                  |
 | `z3/wasm`                     | —         | —               | —           | ✅   | ✅       | —                | —                  | —                  |
 | `z3/native`                   | —         | —               | —           | —    | —        | ✅               | ✅                 | ✅                 |
+| `highs/native`                | —         | —               | —           | —    | —        | ✅               |                    |                    |
+| `highs/wasm`                  | —         | —               | —           | ✅   |          | —                | —                  | —                  |
 | `gecode/minizinc`             | ✅        |                 |             | —    | —        | ✅               |                    | —                  |
 | `chuffed/minizinc`            | ✅        |                 |             | —    | —        | ✅               |                    | —                  |
 | `cp-sat/minizinc`             | ✅        |                 |             | —    | —        | ✅               |                    | —                  |
