@@ -27,14 +27,8 @@ fun exactRational(value: Double): Rational {
     }
 }
 
-/** The greatest integer not above [value]. */
-internal fun floor(value: Rational): BigInteger {
-    val quotient = value.numerator / value.denominator
-    return if (value.numerator.signum < 0 && quotient * value.denominator != value.numerator) quotient - BigInteger.ONE else quotient
-}
-
 /** The integer nearest to [value], rounding halves up. */
-internal fun nearest(value: Rational): BigInteger = floor(value + Rational.of(1, 2))
+internal fun nearest(value: Rational): BigInteger = (value + Rational.of(1, 2)).floor()
 
 /** The absolute value of [value]. */
 internal fun abs(value: Rational): Rational = if (value < Rational.ZERO) -value else value

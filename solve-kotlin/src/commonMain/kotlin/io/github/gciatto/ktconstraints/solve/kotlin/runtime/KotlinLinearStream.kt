@@ -4,7 +4,7 @@ import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
-import io.github.gciatto.ktconstraints.solve.kotlin.lp.Simplex
+import io.github.gciatto.ktconstraints.solve.kotlin.lp.BranchAndBound
 import io.github.gciatto.ktconstraints.solve.kotlin.lp.SimplexStopped
 import io.github.gciatto.ktconstraints.solve.linear.FloatingPointPrograms
 import io.github.gciatto.ktconstraints.solve.linear.LinearProgram
@@ -21,8 +21,9 @@ import kotlin.concurrent.Volatile
 import kotlin.time.TimeSource
 
 /**
- * Optimizes a linear program's real objective with the exact simplex: an exact optimum, an unattained supremum or
- * infimum reported as a bound with a feasible incumbent, unboundedness or infeasibility. Emits at most one incumbent.
+ * Optimizes a linear or mixed-integer program's real objective with exact branch and bound over the simplex: an exact
+ * optimum, an unattained supremum or infimum reported as a bound with a feasible incumbent, unboundedness or
+ * infeasibility. Emits at most one incumbent; a stop keeps the best integral solution found so far.
  */
 internal class KotlinLinearStream(
     private val model: ConstraintModel,
@@ -34,6 +35,7 @@ internal class KotlinLinearStream(
     private val started = TimeSource.Monotonic.markNow()
     private var completion: SolveCompleted? = null
     private var incumbent: SolutionFound? = null
+    private val search = BranchAndBound(program) { released || expired() }
 
     @Volatile
     private var released = false
@@ -46,7 +48,10 @@ internal class KotlinLinearStream(
         return try {
             solve()
         } catch (_: SimplexStopped) {
-            finish(SolveStatus.UNKNOWN, if (released) TerminationReason.CANCELLED else TerminationReason.TIMEOUT)
+            val reason = if (released) TerminationReason.CANCELLED else TerminationReason.TIMEOUT
+            val best = search.incumbent ?: return finish(SolveStatus.UNKNOWN, reason)
+            emit(best.values)
+            finish(SolveStatus.FEASIBLE, reason)
         }
     }
 
@@ -55,24 +60,29 @@ internal class KotlinLinearStream(
     }
 
     private fun solve(): SolutionEvent {
-        val simplex = Simplex(program) { released || expired() }
         if (expired()) throw SimplexStopped()
-        if (!simplex.check()) return finish(SolveStatus.INFEASIBLE, TerminationReason.COMPLETED)
         val goal = requireNotNull(program.objective)
         val sign = if (goal.maximize) Rational.ONE else Rational.of(-1)
-        val score = goal.terms.mapValues { it.value * sign }
-        if (!simplex.maximize(score)) return finish(SolveStatus.UNBOUNDED, TerminationReason.COMPLETED)
-        val epsilon = simplex.epsilon()
-        val solution = LinearSolution(program, List(program.columns.size) { simplex.valueOf(it).at(epsilon) })
+        return when (val outcome = search.maximize(goal.terms.mapValues { it.value * sign })) {
+            BranchAndBound.Outcome.Infeasible -> finish(SolveStatus.INFEASIBLE, TerminationReason.COMPLETED)
+            BranchAndBound.Outcome.Unbounded -> finish(SolveStatus.UNBOUNDED, TerminationReason.COMPLETED)
+            is BranchAndBound.Outcome.Optimal -> {
+                val found = emit(outcome.incumbent.values)
+                val optimum = outcome.incumbent.score
+                // A remaining δ term means the optimum is approached through strict rows but never reached.
+                val attained = optimum.delta == Rational.ZERO
+                val bound = optimum.real * sign + goal.constant
+                finish(if (attained) SolveStatus.OPTIMAL else SolveStatus.FEASIBLE, TerminationReason.COMPLETED, bound)
+                found
+            }
+        }
+    }
+
+    /** Checks exact [values] against the program and records them as the incumbent. */
+    private fun emit(values: List<Rational>): SolutionFound {
+        val solution = LinearSolution(program, values)
         if (!solution.isFeasible) throw BackendExecutionException("${descriptor.id} produced a solution violating the program")
-        val optimum = simplex.objectiveValue(score)
-        val bound = optimum.real * sign + goal.constant
-        val found = FloatingPointPrograms.found(model, solution)
-        incumbent = found
-        // A remaining δ term means the optimum is approached through strict rows but never reached.
-        val attained = optimum.delta == Rational.ZERO
-        finish(if (attained) SolveStatus.OPTIMAL else SolveStatus.FEASIBLE, TerminationReason.COMPLETED, bound)
-        return found
+        return FloatingPointPrograms.found(model, solution).also { incumbent = it }
     }
 
     private fun expired(): Boolean = options.timeoutMillis?.let { started.elapsedNow().inWholeMilliseconds >= it } == true

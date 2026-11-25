@@ -19,7 +19,7 @@ import org.gciatto.kt.math.BigInteger
 class KotlinBackendSpec :
     FunSpec({
         include(solverContract(realObjectives = true) { KotlinBackend().createSolver() })
-        include(linearProgrammingContract(mixedInteger = false) { KotlinBackend().createSolver() })
+        include(linearProgrammingContract { KotlinBackend().createSolver() })
         include(differentialContract("kotlin") { KotlinBackend().createSolver() })
         include(incrementalContract { KotlinBackend().createSolver() })
 

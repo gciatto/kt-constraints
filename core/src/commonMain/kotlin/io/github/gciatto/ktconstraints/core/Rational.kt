@@ -30,6 +30,12 @@ class Rational private constructor(
     /** Exact additive inverse. */
     operator fun unaryMinus(): Rational = Rational(-numerator, denominator)
 
+    /** The greatest integer not above this value. */
+    fun floor(): BigInteger {
+        val quotient = numerator / denominator
+        return if (numerator.signum < 0 && quotient * denominator != numerator) quotient - BigInteger.ONE else quotient
+    }
+
     /** Exact quotient; fails when [other] is zero. */
     operator fun div(other: Rational): Rational {
         require(other.numerator.signum != 0) { "Division by zero" }

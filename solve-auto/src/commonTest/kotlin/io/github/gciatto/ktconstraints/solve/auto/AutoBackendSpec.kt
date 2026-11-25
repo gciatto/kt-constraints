@@ -77,7 +77,7 @@ class AutoBackendSpec :
         }
 
         include(solverContract(realObjectives = true) { AutoBackend(listOf(KotlinBackend())).createSolver() })
-        include(linearProgrammingContract(mixedInteger = false) { AutoBackend(listOf(KotlinBackend())).createSolver() })
+        include(linearProgrammingContract { AutoBackend(listOf(KotlinBackend())).createSolver() })
         include(incrementalContract { AutoBackend(listOf(KotlinBackend())).createSolver() })
         include(differentialContract("auto/kotlin") { AutoBackend(listOf(KotlinBackend())).createSolver() })
 
