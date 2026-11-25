@@ -82,6 +82,7 @@ import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_optimize_set_params
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_params
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_params_dec_ref
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_params_inc_ref
+import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_params_set_symbol
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_params_set_uint
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_solver_assert
 import io.github.gciatto.ktconstraints.solve.z3.capi.Z3_solver_check_assumptions
@@ -277,6 +278,15 @@ internal class NativeZ3Port(
         Z3_optimize_inc_ref(context, optimizer)
         try {
             withParameters(timeoutMillis?.coerceIn(0L, UInt.MAX_VALUE.toLong())?.toUInt() ?: UInt.MAX_VALUE) {
+                // Farkas-based optimization: Z3's default engine reports wrong bounds on some mixed-integer programs.
+                checked(
+                    Z3_params_set_symbol(
+                        context,
+                        it,
+                        Z3_mk_string_symbol(context, "optsmt_engine"),
+                        Z3_mk_string_symbol(context, "farkas"),
+                    ),
+                )
                 checked(Z3_optimize_set_params(context, optimizer, it))
             }
             constraints.forEach { checked(Z3_optimize_assert(context, optimizer, it)) }

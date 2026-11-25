@@ -41,6 +41,9 @@ internal class Z3Stream<T>(
     private var search: Search<T>? = null
     private var incumbent: SolutionFound? = null
 
+    /** The best confirmed-feasible solution of a real objective's optimization so far. */
+    private var candidate: SolutionFound? = null
+
     /** The completion that follows a real objective's single optimizer incumbent. */
     private var settled: SolveCompleted? = null
     private var emitted = 0
@@ -52,7 +55,13 @@ internal class Z3Stream<T>(
 
     private suspend fun step(port: Z3Port<T>): SolutionEvent {
         settled?.let { return it }
-        if (model.objective?.isReal == true) return optimize(port)
+        if (model.objective?.isReal == true) {
+            return try {
+                optimize(port)
+            } catch (inconclusive: Unconfirmed) {
+                settle(candidate, null, unknownReason(inconclusive.reason))
+            }
+        }
         val current = search ?: open(port)
         while (true) {
             val remaining = options.timeoutMillis?.let { it - started.elapsedNow().inWholeMilliseconds }
@@ -79,58 +88,159 @@ internal class Z3Stream<T>(
     }
 
     /**
-     * Optimizes a real objective with Z3's optimizer in one call: the exact optimum, an unattained bound with a feasible
-     * incumbent, unboundedness or infeasibility. The incumbent is validated, and must match an attained optimum exactly.
+     * Optimizes a real objective with Z3's optimizer, treating each of its answers as a claim to confirm: Z3's MILP
+     * optimization can report wrong bounds, so a claimed attained optimum `v` stands only once the plain solver finds
+     * nothing better than `v`, and a claimed unattained bound `u` only once nothing reaches `u`. A refuting model
+     * becomes the incumbent and the optimizer runs again above it. Unconfirmed claims leave a `FEASIBLE` incumbent.
      */
     private suspend fun optimize(port: Z3Port<T>): SolutionEvent {
-        val remaining = options.timeoutMillis?.let { it - started.elapsedNow().inWholeMilliseconds }
-        if (remaining != null && remaining <= 0) return complete(TerminationReason.TIMEOUT)
         val goal = requireNotNull(model.objective)
+        val expression = goal.expression as RealExpr
         val translation = Z3Translation(port, model)
-        val objective = translation.translate(goal.expression as RealExpr)
+        val objective = translation.translate(expression)
         val constraints = translation.assertions + translation.drainDefinedness()
-        val optimum = port.optimize(constraints, objective, goal.maximize, remaining)
-        return when (optimum.outcome.status) {
-            CheckStatus.UNSATISFIABLE -> complete(TerminationReason.COMPLETED)
-            CheckStatus.UNKNOWN -> unknown(optimum.outcome.reason)
-            CheckStatus.SATISFIABLE ->
-                if (optimum.infinity != Rational.ZERO) {
-                    SolveCompleted(SolveResult(SolveStatus.UNBOUNDED, null, descriptor, metadata = SolveMetadata(messages)))
-                } else {
-                    incumbent(translation, goal.expression as RealExpr, optimum)
+        val improving = { value: Rational -> listOf(improves(port, objective, value, goal.maximize, strict = true)) }
+        var best: SolutionFound? by ::candidate
+        repeat(MAX_OPTIMIZER_ROUNDS) {
+            val remaining = options.timeoutMillis?.let { it - started.elapsedNow().inWholeMilliseconds }
+            if (remaining != null && remaining <= 0) return settle(best, null, TerminationReason.TIMEOUT)
+            val above = best?.realObjectiveValue?.let(improving).orEmpty()
+            val optimum = port.optimize(constraints + above, objective, goal.maximize, remaining)
+            when (optimum.outcome.status) {
+                CheckStatus.UNKNOWN -> return best?.let { settle(it, null, unknownReason(optimum.outcome.reason)) }
+                    ?: unknown(optimum.outcome.reason)
+                CheckStatus.UNSATISFIABLE -> {
+                    val incumbent = best ?: return complete(TerminationReason.COMPLETED)
+                    val value = requireNotNull(incumbent.realObjectiveValue)
+                    // Nothing improves on the incumbent, if the plain solver agrees with the optimizer.
+                    when (val counter = refute(port, translation, expression, constraints + improving(value), remaining)) {
+                        null -> return settle(incumbent, value, TerminationReason.COMPLETED)
+                        else -> best = better(incumbent, counter, goal.maximize)
+                    }
                 }
+                CheckStatus.SATISFIABLE -> {
+                    // shortcut: unboundedness is the optimizer's claim; a ray certificate would need the linear structure.
+                    if (optimum.infinity != Rational.ZERO) {
+                        return SolveCompleted(SolveResult(SolveStatus.UNBOUNDED, null, descriptor, metadata = SolveMetadata(messages)))
+                    }
+                    val found = read(translation, expression)
+                    val incumbent = best?.let { better(it, found, goal.maximize) } ?: found
+                    best = incumbent
+                    val attained = optimum.epsilon == Rational.ZERO
+                    val refutation = improves(port, objective, optimum.value, goal.maximize, strict = attained)
+                    when (val counter = refute(port, translation, expression, constraints + refutation, remaining)) {
+                        null -> return settle(incumbent, optimum.value, TerminationReason.COMPLETED)
+                        else -> best = better(incumbent, counter, goal.maximize)
+                    }
+                }
+            }
+        }
+        messages += "Z3's optimizer claims could not be confirmed in $MAX_OPTIMIZER_ROUNDS rounds"
+        return settle(best, null, TerminationReason.COMPLETED)
+    }
+
+    /** `objective > value` (or `≥` when not [strict]) when maximizing, its mirror when minimizing. */
+    private fun improves(
+        port: Z3Port<T>,
+        objective: T,
+        value: Rational,
+        maximize: Boolean,
+        strict: Boolean,
+    ): T {
+        val bound = port.real(value)
+        return when {
+            maximize && strict -> port.less(bound, objective)
+            maximize -> port.lessOrEqual(bound, objective)
+            strict -> port.less(objective, bound)
+            else -> port.lessOrEqual(objective, bound)
         }
     }
 
-    private fun incumbent(
+    /** A validated model satisfying [constraints], from the plain solver, or null when it proves there is none. */
+    private suspend fun refute(
+        port: Z3Port<T>,
         translation: Z3Translation<T>,
         objective: RealExpr,
-        optimum: Z3Optimum,
+        constraints: List<T>,
+        remaining: Long?,
+    ): SolutionFound? {
+        port.push()
+        try {
+            port.assert(constraints)
+            val outcome = port.check(emptyList(), remaining)
+            return when (outcome.status) {
+                CheckStatus.UNSATISFIABLE -> null
+                CheckStatus.SATISFIABLE -> read(translation, objective)
+                CheckStatus.UNKNOWN -> throw Unconfirmed(outcome.reason)
+            }
+        } finally {
+            port.pop(1)
+        }
+    }
+
+    private fun better(
+        current: SolutionFound,
+        candidate: SolutionFound,
+        maximize: Boolean,
+    ): SolutionFound {
+        val old = requireNotNull(current.realObjectiveValue)
+        val new = requireNotNull(candidate.realObjectiveValue)
+        return if (if (maximize) new > old else new < old) candidate else current
+    }
+
+    /** The validated model of the last satisfiable call, with its exact objective value. */
+    private fun read(
+        translation: Z3Translation<T>,
+        objective: RealExpr,
     ): SolutionFound {
         val full = translation.assignment()
         if (!model.constraints.all { GroundEvaluator.evaluate(it, full) }) {
             throw BackendExecutionException("${descriptor.id} returned an assignment violating the model")
         }
-        val value = GroundEvaluator.evaluate(objective, full)
-        val attained = optimum.epsilon == Rational.ZERO
-        if (attained && value != optimum.value) {
-            throw BackendExecutionException("${descriptor.id} reported optimum ${optimum.value}, but its model scores $value")
-        }
-        val found = SolutionFound(full.project(model.outputVariables), realObjectiveValue = value)
+        return SolutionFound(full.project(model.outputVariables), realObjectiveValue = GroundEvaluator.evaluate(objective, full))
+    }
+
+    /**
+     * Emits [found] and settles on its completion: `OPTIMAL` when the confirmed [bound] equals its value, otherwise
+     * `FEASIBLE` with the bound, if any. Without an incumbent, completes as the [reason] dictates.
+     */
+    private fun settle(
+        found: SolutionFound?,
+        bound: Rational?,
+        reason: TerminationReason,
+    ): SolutionEvent {
+        if (found == null) return complete(reason)
+        val value = requireNotNull(found.realObjectiveValue)
+        val optimal = reason == TerminationReason.COMPLETED && bound == value
         emitted++
         incumbent = found
         settled =
             SolveCompleted(
                 SolveResult(
-                    if (attained) SolveStatus.OPTIMAL else SolveStatus.FEASIBLE,
+                    if (optimal) SolveStatus.OPTIMAL else SolveStatus.FEASIBLE,
                     found.assignment,
                     descriptor,
+                    reason,
                     realObjectiveValue = value,
-                    realBestBound = optimum.value,
+                    realBestBound = bound,
                     metadata = SolveMetadata(messages),
                 ),
             )
         return found
+    }
+
+    private fun unknownReason(reason: String): TerminationReason {
+        messages += "Z3 unknown: $reason"
+        val expired = options.timeoutMillis?.let { started.elapsedNow().inWholeMilliseconds >= it } == true
+        return if (owner.isClosed) {
+            TerminationReason.CANCELLED
+        } else if (expired ||
+            reason == "timeout"
+        ) {
+            TerminationReason.TIMEOUT
+        } else {
+            TerminationReason.COMPLETED
+        }
     }
 
     private fun open(port: Z3Port<T>): Search<T> {
@@ -228,6 +338,16 @@ internal class Z3Stream<T>(
                 SolveMetadata(messages),
             ),
         )
+    }
+
+    /** A plain-solver check that could not confirm or refute an optimizer claim. */
+    private class Unconfirmed(
+        val reason: String,
+    ) : RuntimeException("Z3 could not confirm an optimizer claim: $reason")
+
+    private companion object {
+        /** Optimizer runs whose claims a plain check refutes, before settling for the incumbent. */
+        const val MAX_OPTIMIZER_ROUNDS = 8
     }
 
     /** Search state; optimization gallops beyond the incumbent, then bisects below the least refuted score. */

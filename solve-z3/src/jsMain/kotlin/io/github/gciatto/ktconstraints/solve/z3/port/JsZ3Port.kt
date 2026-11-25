@@ -184,6 +184,8 @@ internal class JsZ3Port(
         model = null
         val optimizer: dynamic = js("Reflect.construct")(context.Optimize, emptyArray<Any>())
         optimizer.set("timeout", (timeoutMillis?.coerceAtMost(MAX_TIMEOUT) ?: MAX_TIMEOUT).toDouble())
+        // Farkas-based optimization: Z3's default engine reports wrong bounds on some mixed-integer programs.
+        optimizer.set("optsmt_engine", "farkas")
         constraints.forEach { optimizer.add(it) }
         val index = if (maximize) optimizer.maximize(objective) else optimizer.minimize(objective)
         val result = settle(optimizer.check().unsafeCast<Promise<String>>())
