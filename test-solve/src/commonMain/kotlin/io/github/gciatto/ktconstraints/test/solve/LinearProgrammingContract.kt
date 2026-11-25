@@ -36,15 +36,21 @@ data class LinearCase(
  * Shared LP and MILP contracts for routes that optimize real objectives. Exact routes (no [tolerance]) must reach
  * every known optimum exactly, with assignments validated independently against constraints and objective.
  * Floating-point routes run under [tolerance]: optima must match within a relative `1e-6`, the reported objective
- * must equal the objective of the returned values exactly, and strict inequalities must be rejected.
+ * must equal the objective of the returned values exactly, and strict inequalities must be rejected. Routes that do
+ * not yet optimize mixed-integer programs pass `mixedInteger = false` and must reject them.
  */
 fun linearProgrammingContract(
     tolerance: NumericTolerance? = null,
+    mixedInteger: Boolean = true,
     create: () -> ConstraintSolver,
 ) = funSpec {
     val options = if (tolerance == null) SolveOptions.DEFAULT else SolveOptions(numericTolerance = tolerance)
     withTests(nameFn = { "linear-contract/${it.name}" }, LINEAR_CASES) { case ->
         val model = ConstraintModel.of(case.build)
+        if (!mixedInteger && case.name.startsWith("milp/")) {
+            create().use { solver -> shouldThrow<UnsupportedModelException> { solver.solve(model, options) } }
+            return@withTests
+        }
         val result = create().use { it.solve(model, options) }
         result.status shouldBe case.status
         if (case.status == SolveStatus.OPTIMAL) {
@@ -154,6 +160,18 @@ val LINEAR_CASES: List<LinearCase> =
             add(x ge 0)
             add(y ge 0)
             maximize(x)
+        },
+        LinearCase("lp/beale-cycling-example", SolveStatus.OPTIMAL, r(1, 20)) {
+            // Beale's degenerate program, on which textbook pivoting rules cycle forever.
+            val x4 = realVar("x4")
+            val x5 = realVar("x5")
+            val x6 = realVar("x6")
+            val x7 = realVar("x7")
+            listOf(x4, x5, x6, x7).forEach { add(it ge 0) }
+            add((x4 * r(1, 4) - x5 * 60 - x6 * r(1, 25) + x7 * 9) le 0)
+            add((x4 * r(1, 2) - x5 * 90 - x6 * r(1, 50) + x7 * 3) le 0)
+            add(x6 le 1)
+            maximize(x4 * r(3, 4) - x5 * 150 + x6 * r(1, 50) - x7 * 6)
         },
         LinearCase("lp/infeasible", SolveStatus.INFEASIBLE) {
             val x = realVar("x")

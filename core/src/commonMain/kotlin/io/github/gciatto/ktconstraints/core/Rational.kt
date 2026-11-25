@@ -30,6 +30,12 @@ class Rational private constructor(
     /** Exact additive inverse. */
     operator fun unaryMinus(): Rational = Rational(-numerator, denominator)
 
+    /** Exact quotient; fails when [other] is zero. */
+    operator fun div(other: Rational): Rational {
+        require(other.numerator.signum != 0) { "Division by zero" }
+        return of(numerator * other.denominator, denominator * other.numerator)
+    }
+
     override fun compareTo(other: Rational): Int = (numerator * other.denominator).compareTo(other.numerator * denominator)
 
     override fun equals(other: Any?): Boolean = other is Rational && numerator == other.numerator && denominator == other.denominator

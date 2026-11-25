@@ -6,6 +6,7 @@ import io.github.gciatto.ktconstraints.solve.incremental.IncrementalConstraintSo
 import io.github.gciatto.ktconstraints.solve.incremental.IncrementalSession
 import io.github.gciatto.ktconstraints.solve.kotlin.KotlinConfiguration
 import io.github.gciatto.ktconstraints.solve.kotlin.KotlinSupport
+import io.github.gciatto.ktconstraints.solve.kotlin.lp.LinearPrograms
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
 import io.github.gciatto.ktconstraints.solve.spi.managed.ManagedConstraintSolver
 import io.github.gciatto.ktconstraints.solve.spi.managed.ManagedSolutionStream
@@ -27,6 +28,7 @@ internal class KotlinSolver(
         onClosed: () -> Unit,
     ): ManagedSolutionStream {
         requireSupported(model)
+        if (LinearPrograms.handles(model)) return KotlinLinearStream(model, options, descriptor, onClosed)
         return KotlinStream(model, options, descriptor, configuration, onClosed)
     }
 

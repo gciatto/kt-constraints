@@ -17,6 +17,7 @@ import io.github.gciatto.ktconstraints.solve.spi.ranking.RankingPolicy
 import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
+import io.github.gciatto.ktconstraints.test.solve.linearProgrammingContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
@@ -75,7 +76,8 @@ class AutoBackendSpec :
             auto.withSolver { it.solve(model) }
         }
 
-        include(solverContract { AutoBackend(listOf(KotlinBackend())).createSolver() })
+        include(solverContract(realObjectives = true) { AutoBackend(listOf(KotlinBackend())).createSolver() })
+        include(linearProgrammingContract(mixedInteger = false) { AutoBackend(listOf(KotlinBackend())).createSolver() })
         include(incrementalContract { AutoBackend(listOf(KotlinBackend())).createSolver() })
         include(differentialContract("auto/kotlin") { AutoBackend(listOf(KotlinBackend())).createSolver() })
 
