@@ -15,6 +15,7 @@ typedef struct _Z3_solver *Z3_solver;
 typedef struct _Z3_model *Z3_model;
 typedef struct _Z3_ast_vector *Z3_ast_vector;
 typedef struct _Z3_params *Z3_params;
+typedef struct _Z3_optimize *Z3_optimize;
 typedef int Z3_lbool;
 typedef int Z3_error_code;
 typedef const char *Z3_string;
@@ -97,7 +98,19 @@ typedef void Z3_error_handler(Z3_context c, Z3_error_code e);
     V(Z3_params_inc_ref, (Z3_context c, Z3_params p), (c, p)) \
     V(Z3_params_dec_ref, (Z3_context c, Z3_params p), (c, p)) \
     V(Z3_params_set_uint, (Z3_context c, Z3_params p, Z3_symbol k, unsigned v), (c, p, k, v)) \
-    V(Z3_solver_set_params, (Z3_context c, Z3_solver s, Z3_params p), (c, s, p))
+    V(Z3_solver_set_params, (Z3_context c, Z3_solver s, Z3_params p), (c, s, p)) \
+    F(Z3_optimize, Z3_mk_optimize, (Z3_context c), (c)) \
+    V(Z3_optimize_inc_ref, (Z3_context c, Z3_optimize o), (c, o)) \
+    V(Z3_optimize_dec_ref, (Z3_context c, Z3_optimize o), (c, o)) \
+    V(Z3_optimize_set_params, (Z3_context c, Z3_optimize o, Z3_params p), (c, o, p)) \
+    V(Z3_optimize_assert, (Z3_context c, Z3_optimize o, Z3_ast a), (c, o, a)) \
+    F(unsigned, Z3_optimize_maximize, (Z3_context c, Z3_optimize o, Z3_ast t), (c, o, t)) \
+    F(unsigned, Z3_optimize_minimize, (Z3_context c, Z3_optimize o, Z3_ast t), (c, o, t)) \
+    F(Z3_lbool, Z3_optimize_check, (Z3_context c, Z3_optimize o, unsigned n, Z3_ast const a[]), (c, o, n, a)) \
+    F(Z3_string, Z3_optimize_get_reason_unknown, (Z3_context c, Z3_optimize o), (c, o)) \
+    F(Z3_model, Z3_optimize_get_model, (Z3_context c, Z3_optimize o), (c, o)) \
+    F(Z3_ast_vector, Z3_optimize_get_upper_as_vector, (Z3_context c, Z3_optimize o, unsigned i), (c, o, i)) \
+    F(Z3_ast_vector, Z3_optimize_get_lower_as_vector, (Z3_context c, Z3_optimize o, unsigned i), (c, o, i))
 
 #define KZ3_POINTER(ret, name, params, args) static ret (*kz3p_##name) params;
 #define KZ3_VOID_POINTER(name, params, args) static void (*kz3p_##name) params;

@@ -24,6 +24,7 @@ import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
+import io.github.gciatto.ktconstraints.test.solve.linearProgrammingContract
 import io.github.gciatto.ktconstraints.test.solve.oracle.FiniteOracle
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.github.gciatto.ktconstraints.test.solve.storeContract
@@ -54,7 +55,9 @@ class Z3NativeSpec :
         // Gradle provisions the pinned library for the host's native test task; other runs only check unavailability.
         if (!getenv("KT_CONSTRAINTS_Z3_LIBRARY")?.toKString().isNullOrEmpty()) {
 
-            include(solverContract { Z3NativeBackend().createSolver() })
+            include(solverContract(realObjectives = true) { Z3NativeBackend().createSolver() })
+
+            include(linearProgrammingContract { Z3NativeBackend().createSolver() })
             include(incrementalContract { Z3NativeBackend().createSolver() })
             include(storeContract(propagates = false) { SatisfiabilityStore.of(Z3NativeBackend().createSolver()) })
             include(z3OptimizationContract { Z3NativeBackend().createSolver() })

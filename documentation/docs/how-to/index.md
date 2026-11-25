@@ -7,6 +7,7 @@ Contents in navigation order. Follow the [suggested reading order](../index.md#s
 | [Install](install.md) | Dependencies, package access and runtime setup |
 | [Choose a programming style](programming-styles.md) | Receiver DSL, explicit factories and language facades |
 | [Optimize](optimize.md) | Optimize an objective |
+| [Solve linear and mixed-integer programs](linear-programs.md) | Real objectives, exact optima and LP/MILP statuses |
 | [Enumerate solutions](enumerate-solutions.md) | Enumerate solutions |
 | [Set limits and cancel](limits-and-cancellation.md) | Set limits and cancel a search |
 | [Classic problems](problems/index.md) | Classic problems |

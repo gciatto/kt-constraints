@@ -2,6 +2,7 @@ package io.github.gciatto.ktconstraints.solve.z3.port
 import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecOperator
 import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecRelation
+import io.github.gciatto.ktconstraints.solve.z3.session.Z3Optimum
 import io.github.gciatto.ktconstraints.solve.z3.session.Z3Outcome
 import org.gciatto.kt.math.BigInteger
 
@@ -129,6 +130,17 @@ internal interface Z3Port<T> {
         assumptions: List<T>,
         timeoutMillis: Long?,
     ): Z3Outcome
+
+    /**
+     * Optimizes the arithmetic [objective] subject to [constraints] with a fresh Z3 optimizer over this context's terms,
+     * independent of the solver's assertions. After a satisfiable outcome, value reads use the optimizer's model.
+     */
+    suspend fun optimize(
+        constraints: List<T>,
+        objective: T,
+        maximize: Boolean,
+        timeoutMillis: Long?,
+    ): Z3Optimum
 
     /** Value of [term] in the model of the last satisfiable check, with model completion. */
     fun boolValue(term: T): Boolean

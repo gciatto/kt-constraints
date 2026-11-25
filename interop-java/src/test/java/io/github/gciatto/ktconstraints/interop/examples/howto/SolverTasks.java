@@ -51,6 +51,26 @@ public final class SolverTasks {
         // --8<-- [end:optimize]
     }
 
+    /** Proves the exact optimum of a mixed-integer linear program with Z3. */
+    public static void mixedIntegerProgram() {
+        // --8<-- [start:milp]
+        ConstraintScope scope = ConstraintScope.empty();
+        IntVar x = scope.intVar("x", 0, 10);
+        RealVar y = scope.realVar("y");
+        scope.add(y.ge(0));
+        scope.add(x.asRealExpr().plus(y).le(Rational.parse("4.5")));
+        scope.add(x.asRealExpr().plus(y.times(3)).le(6));
+        scope.maximize(x.asRealExpr().times(3).plus(y.times(2)));
+        try (Z3Backend backend = new Z3Backend();
+             BlockingSolver solver = BlockingSolver.of(backend)) {
+            SolveResult result = solver.solve(scope.buildModel());
+            check(result.getStatus() == SolveStatus.OPTIMAL, "optimality");
+            check(Rational.of(13).equals(result.getRealObjectiveValue()), "objective = 13");
+            check(Rational.parse("1/2").equals(result.getAssignment().valueOf(y)), "y = 1/2");
+        }
+        // --8<-- [end:milp]
+    }
+
     /** Loads every bundled JVM route and lets the automatic backend pick one per model. */
     public static void auto() {
         // --8<-- [start:auto]
