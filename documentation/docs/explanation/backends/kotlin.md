@@ -28,7 +28,7 @@ There is no Kotlin-specific `BackendOptions` type. Construct `KotlinBackend` wit
 
 ## Performance
 
-The recorded catalogue often favors this route over Z3 on Node and Native, and on small JVM models. Hard scheduling, larger arithmetic circuits and rational elimination can still be expensive. Measurements do not justify silently adding it to defaults. See [benchmarks](../../reference/benchmarks.md) for numbers, release Native settings and missing workload families.
+The recorded catalogue often favors this route over Z3 on Node and Native, and on small JVM models. Hard scheduling, larger arithmetic circuits and growing exact rationals can still be expensive. Measurements do not justify silently adding it to defaults. See [benchmarks](../../reference/benchmarks.md) for numbers, release Native settings and missing workload families.
 
 ## How to use it directly
 
