@@ -7,8 +7,8 @@ import io.github.gciatto.ktconstraints.solve.minizinc.lowering.MiniZincDecoder
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.managed.ManagedSolutionStream
 import io.github.gciatto.ktconstraints.solve.stream.SolutionEvent
+import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
-import java.nio.file.Path
 
 internal class MiniZincStream(
     executable: String,
@@ -27,7 +27,7 @@ internal class MiniZincStream(
             compiled.engine.solverArguments(options.backend<MiniZincOptions>()?.arguments(compiled.engine).orEmpty()),
         )
     private var emitted = 0
-    internal val workDirectory: Path? get() = process.directory
+    internal val workDirectory: String? get() = process.directory
     internal val processId: Long? get() = process.processId
 
     override suspend fun readNext(): SolutionEvent {
@@ -46,7 +46,7 @@ internal class MiniZincStream(
             val line = process.readLine()
             event = if (line == null) SolveCompleted(decoder.finish(process.exitCode(), process.stderr())) else decoder.accept(line)
         }
-        if (event is io.github.gciatto.ktconstraints.solve.stream.SolutionFound) emitted++
+        if (event is SolutionFound) emitted++
         return event
     }
 

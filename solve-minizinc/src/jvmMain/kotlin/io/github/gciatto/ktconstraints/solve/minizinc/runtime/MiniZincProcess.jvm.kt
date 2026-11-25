@@ -1,5 +1,4 @@
 package io.github.gciatto.ktconstraints.solve.minizinc.runtime
-import io.github.gciatto.ktconstraints.solve.minizinc.MiniZincEngine
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendExecutionException
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -14,14 +13,14 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
 
-internal class MiniZincProcess(
+internal actual class MiniZincProcess actual constructor(
     private val executable: String,
     private val source: String,
     private val timeoutMillis: Long?,
     private val onTimeout: () -> Unit,
     private val onCancel: () -> Unit,
     /** Driver flags selecting the engine, its search and any tuning. */
-    private val solverArguments: List<String> = MiniZincEngine.GECODE.solverArguments(),
+    private val solverArguments: List<String>,
 ) : AutoCloseable {
     private val lock = Any()
     private var closed = false
@@ -31,21 +30,21 @@ internal class MiniZincProcess(
     private var timer: ScheduledExecutorService? = null
     private var deadline: ScheduledFuture<*>? = null
     private var workspace: Path? = null
-    val directory: Path? get() = synchronized(lock) { workspace }
-    val processId: Long? get() = synchronized(lock) { process?.pid() }
+    actual val directory: String? get() = synchronized(lock) { workspace?.toString() }
+    actual val processId: Long? get() = synchronized(lock) { process?.pid() }
 
-    suspend fun readLine(): String? {
+    actual suspend fun readLine(): String? {
         start()
         val input = requireNotNull(reader)
         return io { input.readLine() }
     }
 
-    suspend fun exitCode(): Int {
+    actual suspend fun exitCode(): Int {
         val child = requireNotNull(process)
         return io { child.waitFor() }
     }
 
-    fun stderr(): String =
+    actual fun stderr(): String =
         synchronized(lock) {
             workspace?.resolve("stderr.log")?.let { Files.readString(it) }.orEmpty()
         }
@@ -105,7 +104,7 @@ internal class MiniZincProcess(
         }
     }
 
-    override fun close() =
+    actual override fun close() =
         synchronized(lock) {
             if (closed) return@synchronized
             closed = true

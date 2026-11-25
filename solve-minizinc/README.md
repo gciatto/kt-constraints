@@ -1,8 +1,9 @@
 # :solve-minizinc
 
-Experimental JVM execution of Gecode, Chuffed, CP-SAT, HiGHS and CBC through MiniZinc.
+Experimental JVM and Linux/macOS Native execution of Gecode, Chuffed, CP-SAT, HiGHS and CBC through MiniZinc.
 The checked compiler and JSON decoder are portable. The official JS runtime provides
-Node/Gecode CLI and browser/Chuffed Wasm execution. Native execution is not implemented.
+Node/Gecode CLI and browser/Chuffed Wasm execution. Native Windows and iOS cannot start the executable, so
+there `MiniZincBackend` reports itself unavailable.
 
 ```kotlin
 val backend = MiniZincBackend(MiniZincEngine.CHUFFED, executable = "/path/to/minizinc")
@@ -110,5 +111,5 @@ runtime spec when its environment is absent.
 
 ## Boundaries
 
-This is Kotlin/JS invoking solver Wasm, not a Kotlin/Wasm or WASI target. Native execution,
+This is Kotlin/JS invoking solver Wasm, not a Kotlin/Wasm or WASI target. Native Windows execution,
 incremental sessions and native propagation remain planned.

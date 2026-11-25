@@ -1,0 +1,170 @@
+# Child-process control for the MiniZinc driver. Only Linux and macOS can start processes here: Windows would need
+# CreateProcess and iOS forbids spawning, so there every call fails with ENOSYS and the route reports itself unavailable.
+package = io.github.gciatto.ktconstraints.solve.minizinc.process
+
+---
+
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
+
+#if defined(_WIN32) || (defined(__APPLE__) && TARGET_OS_IPHONE)
+#define KMZ_SUPPORTED 0
+#else
+#define KMZ_SUPPORTED 1
+#include <fcntl.h>
+#include <signal.h>
+#include <spawn.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <unistd.h>
+#if defined(__APPLE__)
+#include <crt_externs.h>
+#define KMZ_ENVIRON (*_NSGetEnviron())
+#else
+extern char **environ;
+#define KMZ_ENVIRON environ
+#endif
+#endif
+
+/* Starts argv[0], searched on PATH, in a new process group led by the child, so that signalling the group also
+ * reaches the solver processes MiniZinc starts. Standard input reads /dev/null, standard error goes to errPath, and
+ * standard output goes to outPath, or to a pipe whose reading end is stored in *out when outPath is NULL.
+ * Returns 0, or an errno value. */
+static inline int kmz_spawn(char *const *argv, const char *outPath, const char *errPath, int *pid, void **out) {
+#if KMZ_SUPPORTED
+    int fds[2] = {-1, -1};
+    if (outPath == NULL) {
+        if (pipe(fds) != 0) return errno;
+        fcntl(fds[0], F_SETFD, FD_CLOEXEC);
+        fcntl(fds[1], F_SETFD, FD_CLOEXEC);
+    }
+    posix_spawn_file_actions_t actions;
+    posix_spawnattr_t attributes;
+    posix_spawn_file_actions_init(&actions);
+    posix_spawnattr_init(&attributes);
+    posix_spawn_file_actions_addopen(&actions, 0, "/dev/null", O_RDONLY, 0);
+    if (outPath == NULL) {
+        posix_spawn_file_actions_adddup2(&actions, fds[1], 1);
+    } else {
+        posix_spawn_file_actions_addopen(&actions, 1, outPath, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    }
+    posix_spawn_file_actions_addopen(&actions, 2, errPath, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETPGROUP);
+    posix_spawnattr_setpgroup(&attributes, 0);
+    pid_t child;
+    int result = posix_spawnp(&child, argv[0], &actions, &attributes, argv, KMZ_ENVIRON);
+    posix_spawn_file_actions_destroy(&actions);
+    posix_spawnattr_destroy(&attributes);
+    if (fds[1] >= 0) close(fds[1]);
+    if (result != 0) {
+        if (fds[0] >= 0) close(fds[0]);
+        return result;
+    }
+    *pid = child;
+    if (outPath == NULL) {
+        FILE *reader = fdopen(fds[0], "r");
+        if (reader == NULL) {
+            int error = errno;
+            close(fds[0]);
+            kill(-child, SIGKILL);
+            waitpid(child, NULL, 0);
+            return error;
+        }
+        *out = reader;
+    }
+    return 0;
+#else
+    (void) argv; (void) outPath; (void) errPath; (void) pid; (void) out;
+    return ENOSYS;
+#endif
+}
+
+/* Reads at most size - 1 bytes, up to and including a newline, from a reader returned by kmz_spawn.
+ * Returns the number of bytes read, or -1 at the end of the stream. */
+static inline int kmz_read(void *reader, char *buffer, int size) {
+    if (fgets(buffer, size, (FILE *) reader) == NULL) return -1;
+    return (int) strlen(buffer);
+}
+
+/* Closes a reader returned by kmz_spawn. */
+static inline void kmz_close_reader(void *reader) {
+    fclose((FILE *) reader);
+}
+
+/* Reaps pid, waiting when block is non-zero. Returns 1 with its exit code (128 + signal when killed) in *code,
+ * 0 while it is still running, or -1 with errno set. */
+static inline int kmz_wait(int pid, int block, int *code) {
+#if KMZ_SUPPORTED
+    int status = 0;
+    pid_t result;
+    do {
+        result = waitpid(pid, &status, block ? 0 : WNOHANG);
+    } while (result < 0 && errno == EINTR);
+    if (result == 0) return 0;
+    if (result < 0) return -1;
+    *code = WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
+    return 1;
+#else
+    (void) pid; (void) block; (void) code;
+    errno = ENOSYS;
+    return -1;
+#endif
+}
+
+/* Sends SIGTERM, or SIGKILL when force is non-zero, to the process group led by pid. Returns 0 or an errno value. */
+static inline int kmz_signal_group(int pid, int force) {
+#if KMZ_SUPPORTED
+    return kill(-pid, force ? SIGKILL : SIGTERM) == 0 ? 0 : errno;
+#else
+    (void) pid; (void) force;
+    return ENOSYS;
+#endif
+}
+
+/* Whether any process of the group led by pid still exists, including unreaped ones. */
+static inline int kmz_group_exists(int pid) {
+#if KMZ_SUPPORTED
+    return kill(-pid, 0) == 0 || errno == EPERM;
+#else
+    (void) pid;
+    return 0;
+#endif
+}
+
+/* Replaces the trailing XXXXXX of path with a fresh private directory's suffix. Returns 0 or an errno value. */
+static inline int kmz_make_directory(char *path) {
+#if KMZ_SUPPORTED
+    return mkdtemp(path) == NULL ? errno : 0;
+#else
+    (void) path;
+    return ENOSYS;
+#endif
+}
+
+/* Removes the empty directory path. Returns 0 or an errno value. */
+static inline int kmz_remove_directory(const char *path) {
+#if KMZ_SUPPORTED
+    return rmdir(path) == 0 ? 0 : errno;
+#else
+    (void) path;
+    return ENOSYS;
+#endif
+}
+
+/* Sleeps for millis milliseconds. */
+static inline void kmz_sleep(int millis) {
+#if KMZ_SUPPORTED
+    struct timespec delay = {millis / 1000, (long) (millis % 1000) * 1000000L};
+    while (nanosleep(&delay, &delay) != 0 && errno == EINTR) {}
+#else
+    (void) millis;
+#endif
+}

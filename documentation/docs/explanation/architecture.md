@@ -57,7 +57,7 @@ Adapters check full returned assignments against source constraints before apply
 
 ## Runtime ownership and platform code
 
-Common code contains the typed representation and portable contracts. JVM code hosts Java bindings, native-library wrappers and command execution. JavaScript code integrates asynchronous Wasm runtimes and the MiniZinc Node/browser routes. Kotlin/Native uses the Z3 C API through a runtime-loaded library shim.
+Common code contains the typed representation and portable contracts. JVM code hosts Java bindings, native-library wrappers and command execution. JavaScript code integrates asynchronous Wasm runtimes and the MiniZinc Node/browser routes. Kotlin/Native uses the Z3 C API through a runtime-loaded library shim, and starts MiniZinc through a small `posix_spawn` shim on Linux and macOS.
 
 A model owns no process or native context. Solvers own their active searches, and sessions and streams have explicit close operations. JavaScript backend objects can additionally own a shared upstream runtime, so closing an individual solver and closing the loaded backend are distinct operations. These lifetimes are part of the execution contract, not model semantics.
 

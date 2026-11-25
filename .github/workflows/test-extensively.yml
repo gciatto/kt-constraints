@@ -113,7 +113,9 @@ jobs:
         env:
           MINIZINC_EXECUTABLE: minizinc
           MINIZINC_ENGINES: gecode,chuffed,cp-sat,highs,cbc
-        run: ./gradlew :solve-minizinc:jvmTest :solve-minizinc:jsNodeTest :interop-js:typescriptUsageTest --continue
+        run: >-
+          ./gradlew :solve-minizinc:jvmTest :solve-minizinc:jsNodeTest :solve-minizinc:linuxX64Test
+          :interop-js:typescriptUsageTest --continue
       - name: Job summary
         if: always()
         uses: ./.github/actions/ci-summary

@@ -29,6 +29,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withTimeout
 import org.gciatto.kt.math.BigInteger
 import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.coroutines.coroutineContext
 
 /** Actual MiniZinc/Gecode tests; CI explicitly installs and requests the runtime. */
@@ -84,7 +85,7 @@ class MiniZincIntegrationSpec :
                     val children = process.descendants().toList()
                     stream.close()
                     stream.terminalResult?.terminationReason shouldBe TerminationReason.CANCELLED
-                    Files.exists(directory) shouldBe false
+                    Files.exists(Path.of(directory)) shouldBe false
                     process.isAlive shouldBe false
                     children.any { it.isAlive } shouldBe false
                 }

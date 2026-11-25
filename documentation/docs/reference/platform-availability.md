@@ -11,16 +11,16 @@ Each ✅ below records real-engine test coverage described by the repository val
 | `highs/or-tools`              | ✅        | ✅              | ✅          | —    | —        | —                | —                  | —                  |
 | `z3/wasm`                     | —         | —               | —           | ✅   | ✅       | —                | —                  | —                  |
 | `z3/native`                   | —         | —               | —           | —    | —        | ✅               | ✅                 | ✅                 |
-| `gecode/minizinc`             | ✅        |                 |             | —    | —        | — | — | — |
-| `chuffed/minizinc`            | ✅        |                 |             | —    | —        | — | — | — |
-| `cp-sat/minizinc`             | ✅        |                 |             | —    | —        | — | — | — |
-| `highs/minizinc`              | ✅        |                 |             | —    | —        | — | — | — |
-| `cbc/minizinc`                | ✅        |                 |             | —    | —        | — | — | — |
+| `gecode/minizinc`             | ✅        |                 |             | —    | —        | ✅               |                    | —                  |
+| `chuffed/minizinc`            | ✅        |                 |             | —    | —        | ✅               |                    | —                  |
+| `cp-sat/minizinc`             | ✅        |                 |             | —    | —        | ✅               |                    | —                  |
+| `highs/minizinc`              | ✅        |                 |             | —    | —        | ✅               |                    | —                  |
+| `cbc/minizinc`                | ✅        |                 |             | —    | —        | ✅               |                    | —                  |
 | `gecode/minizinc-js-cli`      | —         | —               | —           | ✅   | —        | —                | —                  | —                  |
 | `chuffed/minizinc-wasm`       | —         | —               | —           | — | ✅       | —                | —                  | —                  |
 | `kotlin/direct`              | ✅        |                 |             | ✅   |          | ✅               |                    |                    |
 
-Native MiniZinc cells are marked — because command execution from Kotlin/Native is not implemented. The Node cell of `chuffed/minizinc-wasm` is marked — because that route runs MiniZinc's browser build.
+Native MiniZinc routes start the `minizinc` executable with `posix_spawn`, so they exist on Linux and macOS; Native Windows is marked — because it would need `CreateProcess`, which is not implemented, and iOS forbids starting processes. The Node cell of `chuffed/minizinc-wasm` is marked — because that route runs MiniZinc's browser build.
 
 `kotlin/direct` has an implementation in `commonMain` and unconditional shared conformance tests, executed locally on
 JVM Linux, Node and Linux x64 Native; the other cells await CI evidence from the jobs that now include the module. The production implementation is portable; that alone does not prove the remaining platform cells.

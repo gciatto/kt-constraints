@@ -1,4 +1,17 @@
 kotlin {
+    // `processMain` holds the MiniZinc driver runs that the JVM and Native share: JavaScript has its own runtime.
+    applyDefaultHierarchyTemplate {
+        common {
+            group("process") {
+                withJvm()
+                group("native")
+            }
+        }
+    }
+    // src/nativeInterop/cinterop/process.def starts and stops the driver with posix_spawn on Linux and macOS.
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+        compilations.getByName("main").cinterops.create("process")
+    }
     sourceSets {
         commonMain {
             dependencies {
@@ -16,7 +29,7 @@ kotlin {
                 implementation(npm("minizinc", libs.versions.minizincJs.get()))
             }
         }
-        jvmMain {
+        val processMain by getting {
             dependencies { implementation(libs.kotlinx.coroutines.core) }
         }
     }
@@ -52,6 +65,12 @@ kotlin.js {
 }
 
 val miniZincBrowserTest = providers.environmentVariable("MINIZINC_BROWSER_TEST")
+tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
+    inputs.property("miniZincExecutable", miniZincExecutable.orElse(""))
+    inputs.property("miniZincEngines", providers.environmentVariable("MINIZINC_ENGINES").orElse(""))
+    outputs.upToDateWhen { !miniZincExecutable.isPresent }
+}
+
 tasks.matching { it.name == "jsNodeTest" || it.name == "jsBrowserTest" }.configureEach {
     inputs.property("miniZincExecutable", miniZincExecutable.orElse(""))
     inputs.property("miniZincBrowserTest", miniZincBrowserTest.orElse(""))

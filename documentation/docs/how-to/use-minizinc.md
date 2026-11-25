@@ -62,7 +62,7 @@ Integer ranges and intermediate expressions are checked before launch. Reals and
 are rejected by these routes. Inspect the support report rather than reducing values to fit.
 For HiGHS/CBC, proof statuses rely on the numerical engine's evidence, not exact rational
 certificates. Malformed output or a failed process is an error, not an infeasibility proof.
-MiniZinc execution is not implemented on Kotlin/Native; use [Z3 Native](native-and-z3.md).
+On Kotlin/Native, `MiniZincBackend(engine, executable)` works as on the JVM on Linux and macOS. Native Windows and iOS cannot start the executable and report the route unavailable; use [Z3 Native](native-and-z3.md) there.
 
 ## Browser runtime assets
 

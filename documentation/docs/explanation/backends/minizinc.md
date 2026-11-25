@@ -28,7 +28,7 @@ JVM execution requires an installed MiniZinc executable and the exact selected c
 
 Node executes the installed CLI using Gecode. Its automatic loader adds that route when `MINIZINC_EXECUTABLE` is set. Browser execution requires explicit absolute worker, Wasm and data asset URLs and loads Chuffed. Browser MiniZinc is never added by `AutoBackend.load()`.
 
-Only one JS MiniZinc backend may own the runtime pool at a time. Close solvers and then the loaded backend; await a fresh load before reuse after shutdown. Kotlin/Native command transport is not implemented. The [platform reference](../../reference/platform-availability.md) distinguishes the implementation from operating-system test coverage.
+Only one JS MiniZinc backend may own the runtime pool at a time. Close solvers and then the loaded backend; await a fresh load before reuse after shutdown. On Kotlin/Native, `MiniZincBackend` starts the executable on Linux and macOS, as on the JVM; Native Windows and iOS report the route unavailable. The [platform reference](../../reference/platform-availability.md) distinguishes the implementation from operating-system test coverage.
 
 ## Capabilities
 

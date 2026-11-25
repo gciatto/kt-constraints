@@ -37,7 +37,7 @@ The npm preview builds the distribution before asking npm to dry-run publication
 | `test-minizinc` | Ubuntu, checksum-pinned MiniZinc 2.10.1 bundle | Five requested JVM engines, Node Gecode and TypeScript CLI checks |
 | `test-minizinc-browser` | Ubuntu, headless Chrome | Chuffed MiniZinc Wasm, Z3 Wasm and packaged TypeScript browser checks |
 
-Native tests extract the matching pinned Z3 C library. The Native job also runs the C consumer on Linux and macOS; Windows skips that step. Native MiniZinc tests cover portable code, not a Native execution route.
+Native tests extract the matching pinned Z3 C library. The Native job also runs the C consumer on Linux and macOS; Windows skips that step. Without a MiniZinc installation, Native MiniZinc tests cover portable code and missing-executable diagnostics; the `test-minizinc` job runs the Linux x64 Native route against the pinned bundle.
 
 The MiniZinc job sets `MINIZINC_EXECUTABLE=minizinc` and `MINIZINC_ENGINES=gecode,chuffed,cp-sat,highs,cbc`; it installs `libegl1` required by bundled Gecode. Browser steps set `MINIZINC_BROWSER_TEST`, `Z3_BROWSER_TEST` or `INTEROP_BROWSER_TEST` and `CHROME_BIN=/usr/bin/google-chrome`. Browser reports are uploaded on failure. Runtime suites check that the actual contract report exists so omitted setup failures cannot silently pass.
 

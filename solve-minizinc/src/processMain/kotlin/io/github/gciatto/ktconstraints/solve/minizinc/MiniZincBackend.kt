@@ -11,7 +11,10 @@ import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
 import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 
-/** JVM execution of one explicitly selected MiniZinc engine configuration. */
+/**
+ * Runs one explicitly selected MiniZinc engine configuration through the `minizinc` [executable], on the JVM and on
+ * Linux and macOS Native. Other Native targets cannot start processes and report the route unavailable.
+ */
 class MiniZincBackend(
     private val engine: MiniZincEngine,
     private val executable: String = "minizinc",
