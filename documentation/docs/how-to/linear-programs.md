@@ -46,9 +46,26 @@ A real objective reports its value in `realObjectiveValue` (TypeScript: `realObj
 | `UNBOUNDED` | The objective improves without limit; there is no assignment. |
 | `INFEASIBLE` | No assignment satisfies the constraints. |
 
-## 3. Choose a route
+## 3. Choose an exact or a floating-point route
 
 Real objectives are optimized exactly, without floating-point tolerances, by Z3 on the JVM, in JavaScript and on
 Kotlin/Native. `AutoBackend.load()` selects such a route; routes that cannot optimize real objectives reject the
-model with `Unsupported real objective`. See [choose a solver](choose-a-solver.md) and
+model with `Unsupported real objective`.
+
+Floating-point MIP engines, such as SCIP and HiGHS through OR-Tools on the JVM, are usually much faster on large
+programs, but they answer within tolerances. They take models with reals only when you consent with
+`SolveOptions.numericTolerance`; without it they reject the model, and automatic selection skips them.
+
+=== "Java"
+
+    ```java
+    --8<-- "interop-java/src/test/java/io/github/gciatto/ktconstraints/interop/examples/howto/SolverTasks.java:tolerance"
+    ```
+
+Every floating-point answer is read back exactly: integer variables are rounded only when within the integrality
+tolerance, and the result is rejected when any bound or constraint is exceeded by more than the feasibility
+tolerance. The largest exact excess is reported in the result's metadata messages, and the objective value is
+computed exactly from the returned values. `OPTIMAL` from such a route is the engine's numerical claim, not an exact
+proof; strict inequalities such as `x < 1`, which floating point cannot represent, are rejected. Routes that work in
+floating point declare `SolverCapability.FLOATING_POINT_REALS`. See [choose a solver](choose-a-solver.md) and
 [exact reals](exact-reals-and-bitvectors.md).

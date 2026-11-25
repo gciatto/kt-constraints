@@ -8,6 +8,7 @@ import io.github.gciatto.ktconstraints.core.integer.relation.IntEquality
 import io.github.gciatto.ktconstraints.core.integer.relation.IntLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
+import io.github.gciatto.ktconstraints.solve.NumericTolerance
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
@@ -16,6 +17,7 @@ import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelExcep
 import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.DifferentialCase
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
+import io.github.gciatto.ktconstraints.test.solve.linearProgrammingContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.funSpec
@@ -23,24 +25,30 @@ import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
 import kotlin.random.Random
 
+/** Every OR-Tools MIP route's capabilities: no enumeration, and reals only in floating point. */
+private val CAPABILITIES =
+    setOf(
+        SolverCapability.SATISFACTION,
+        SolverCapability.OPTIMIZATION,
+        SolverCapability.INTEGER_ARITHMETIC,
+        SolverCapability.GLOBAL_CONSTRAINTS,
+        SolverCapability.REAL_ARITHMETIC,
+        SolverCapability.FLOATING_POINT_REALS,
+    )
+
 /** Shared tests of one OR-Tools MIP route: contract, numeric guards, oracle differentials and exact optima. */
 fun mipRoute(
     id: String,
     backend: () -> OrToolsMipBackend,
 ) = funSpec {
     include(solverContract(enumeration = false) { backend().createSolver() })
+    include(linearProgrammingContract(NumericTolerance()) { backend().createSolver() })
 
     test("$id/runtime-is-available-and-does-not-enumerate") {
         val instance = backend()
         instance.availability().available shouldBe true
         instance.descriptor.id shouldBe id
-        instance.descriptor.capabilities shouldBe
-            setOf(
-                SolverCapability.SATISFACTION,
-                SolverCapability.OPTIMIZATION,
-                SolverCapability.INTEGER_ARITHMETIC,
-                SolverCapability.GLOBAL_CONSTRAINTS,
-            )
+        instance.descriptor.capabilities shouldBe CAPABILITIES
     }
 
     test("$id/out-of-range-models-are-rejected-before-execution") {

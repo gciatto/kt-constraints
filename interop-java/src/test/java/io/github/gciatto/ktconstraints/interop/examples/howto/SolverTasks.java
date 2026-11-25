@@ -5,6 +5,7 @@ import io.github.gciatto.ktconstraints.core.integer.IntVar;
 import io.github.gciatto.ktconstraints.core.real.RealVar;
 import io.github.gciatto.ktconstraints.interop.JavaNumbers;
 import io.github.gciatto.ktconstraints.model.ConstraintScope;
+import io.github.gciatto.ktconstraints.solve.NumericTolerance;
 import io.github.gciatto.ktconstraints.solve.SolveOptions;
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend;
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackends;
@@ -15,6 +16,7 @@ import io.github.gciatto.ktconstraints.solve.blocking.BlockingStore;
 import io.github.gciatto.ktconstraints.solve.choco.ChocoBackend;
 import io.github.gciatto.ktconstraints.solve.choco.ChocoStore;
 import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus;
+import io.github.gciatto.ktconstraints.solve.mip.OrToolsMipBackend;
 import io.github.gciatto.ktconstraints.solve.incremental.Checkpoint;
 import io.github.gciatto.ktconstraints.solve.result.SolveResult;
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus;
@@ -25,6 +27,7 @@ import io.github.gciatto.ktconstraints.solve.stream.SolutionFound;
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted;
 import io.github.gciatto.ktconstraints.solve.z3.Z3Backend;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -69,6 +72,27 @@ public final class SolverTasks {
             check(Rational.parse("1/2").equals(result.getAssignment().valueOf(y)), "y = 1/2");
         }
         // --8<-- [end:milp]
+    }
+
+    /** Solves the same program in floating point with SCIP, consenting to its tolerances. */
+    public static void floatingPointProgram() {
+        // --8<-- [start:tolerance]
+        ConstraintScope scope = ConstraintScope.empty();
+        IntVar x = scope.intVar("x", 0, 10);
+        RealVar y = scope.realVar("y");
+        scope.add(y.ge(0));
+        scope.add(x.asRealExpr().plus(y).le(Rational.parse("4.5")));
+        scope.add(x.asRealExpr().plus(y.times(3)).le(6));
+        scope.maximize(x.asRealExpr().times(3).plus(y.times(2)));
+        SolveOptions options = new SolveOptions(null, null, List.of(), new NumericTolerance(1e-6, 1e-6));
+        try (OrToolsMipBackend backend = OrToolsMipBackend.scip();
+             BlockingSolver solver = BlockingSolver.of(backend)) {
+            SolveResult result = solver.solve(scope.buildModel(), options);
+            check(result.getStatus() == SolveStatus.OPTIMAL, "optimality within tolerances");
+            Rational gap = result.getRealObjectiveValue().minus(Rational.of(13));
+            check(gap.compareTo(Rational.parse("-0.000001")) >= 0 && gap.compareTo(Rational.parse("0.000001")) <= 0, "objective near 13");
+        }
+        // --8<-- [end:tolerance]
     }
 
     /** Loads every bundled JVM route and lets the automatic backend pick one per model. */

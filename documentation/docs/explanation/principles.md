@@ -26,7 +26,7 @@ The current real expression language is linear and uses exact `Rational` values.
 
 A backend may impose tighter bounds than the representation. Its support check must reject values or intermediate expressions it cannot represent. Silently truncating an integer, substituting a floating-point real or dropping an assertion would change the set of answers. Explicit rejection preserves the opportunity to choose another route.
 
-Exact representation and exact witness checking do not make every engine's reasoning exact. MIP routes validate returned integer assignments against the source model, but their optimality and infeasibility statuses rely on numerical solver evidence. They do not provide rational proof certificates. See [engines and routes](engines-and-routes.md).
+Exact representation and exact witness checking do not make every engine's reasoning exact. MIP routes validate returned integer assignments against the source model, but their optimality and infeasibility statuses rely on numerical solver evidence. They do not provide rational proof certificates. Real models reach them only with the caller's explicit `NumericTolerance`: floating point is then a stated contract, every returned solution is re-checked exactly against it, and routes working this way declare `FLOATING_POINT_REALS`. See [engines and routes](engines-and-routes.md).
 
 ## Keep global structure until lowering
 

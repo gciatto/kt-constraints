@@ -78,6 +78,10 @@ class SolverRegistry private constructor(
     ): List<String> {
         val missing = required - backend.descriptor.capabilities
         if (missing.isNotEmpty()) return missing.sortedBy { it.ordinal }.map { "Missing capability: $it" }
+        val floating = SolverCapability.FLOATING_POINT_REALS in backend.descriptor.capabilities
+        if (floating && SolverCapability.REAL_ARITHMETIC in required && options.numericTolerance == null) {
+            return listOf("Floating-point reals need SolveOptions.numericTolerance")
+        }
         val availability = backend.availability()
         if (!availability.available) return listOf(requireNotNull(availability.reason))
         return backend.support(model, options).unsupported

@@ -9,6 +9,7 @@ import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.mip.ortools.OrToolsMipSolver
 import io.github.gciatto.ktconstraints.solve.mip.program.MipLowering
+import io.github.gciatto.ktconstraints.solve.mip.program.RealPrograms
 import io.github.gciatto.ktconstraints.solve.spi.BackendAvailability
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendUnavailableException
@@ -43,7 +44,7 @@ class OrToolsMipBackend private constructor(
     override fun support(
         model: ConstraintModel,
         options: SolveOptions,
-    ): SupportReport = MipLowering.report(model)
+    ): SupportReport = if (RealPrograms.isReal(model)) RealPrograms.report(model, options) else MipLowering.report(model)
 
     override fun createSolver(): ConstraintSolver {
         val probe = availability()
@@ -84,6 +85,8 @@ class OrToolsMipBackend private constructor(
                     SolverCapability.OPTIMIZATION,
                     SolverCapability.INTEGER_ARITHMETIC,
                     SolverCapability.GLOBAL_CONSTRAINTS,
+                    SolverCapability.REAL_ARITHMETIC,
+                    SolverCapability.FLOATING_POINT_REALS,
                 ),
             )
     }
