@@ -1,4 +1,5 @@
 package io.github.gciatto.ktconstraints.test.solve.benchmark
+import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import org.gciatto.kt.math.BigInteger
@@ -15,6 +16,8 @@ class BenchmarkInstance(
     val expectedStatus: SolveStatus,
     /** Known optimum, for optimization instances. */
     val expectedObjective: BigInteger? = null,
+    /** Known optimum of a real objective, for linear and mixed-integer programs. */
+    val expectedRealObjective: Rational? = null,
 ) {
     override fun toString(): String = "$family-$size"
 }
