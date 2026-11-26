@@ -62,9 +62,15 @@ class BranchAndBoundSpec :
             }
             (stops > 5 && bounded > 0) shouldBe true
         }
-    
+
         test("branch-and-bound/cut-rounds-keep-the-optimum") {
-            for (instance in listOf(LinearCatalogue.multiKnapsack(12, 1), LinearCatalogue.facilityLocation(4, 8, 2), LinearCatalogue.rationalKnapsack(14, 3))) {
+            val instances =
+                listOf(
+                    LinearCatalogue.multiKnapsack(12, 1),
+                    LinearCatalogue.facilityLocation(4, 8, 2),
+                    LinearCatalogue.rationalKnapsack(14, 3),
+                )
+            for (instance in instances) {
                 val program = LinearProgram.of(instance.model)
                 val goal = requireNotNull(program.objective)
                 val sign = if (goal.maximize) Rational.ONE else Rational.of(-1)
