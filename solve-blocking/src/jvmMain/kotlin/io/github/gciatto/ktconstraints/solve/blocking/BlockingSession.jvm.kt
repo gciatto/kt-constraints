@@ -1,10 +1,12 @@
 package io.github.gciatto.ktconstraints.solve.blocking
 
 import io.github.gciatto.ktconstraints.core.bool.BoolExpr
+import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.incremental.CheckResult
 import io.github.gciatto.ktconstraints.solve.incremental.Checkpoint
 import io.github.gciatto.ktconstraints.solve.incremental.IncrementalSession
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
@@ -39,6 +41,21 @@ actual class BlockingSession internal constructor(
         assumptions: List<BoolExpr> = emptyList(),
         timeoutMillis: Long? = null,
     ): CompletableFuture<CheckResult> = scope.future { session.check(assumptions, timeoutMillis) }
+
+    @JvmOverloads
+    actual fun optimize(
+        objective: Objective,
+        assumptions: List<BoolExpr>,
+        timeoutMillis: Long?,
+    ): SolveResult = runBlocking { session.optimize(objective, assumptions, timeoutMillis) }
+
+    /** Optimizes in the background; cancelling the returned future cancels the optimization. */
+    @JvmOverloads
+    fun optimizeAsync(
+        objective: Objective,
+        assumptions: List<BoolExpr> = emptyList(),
+        timeoutMillis: Long? = null,
+    ): CompletableFuture<SolveResult> = scope.future { session.optimize(objective, assumptions, timeoutMillis) }
 
     actual override fun close() = session.close()
 }
