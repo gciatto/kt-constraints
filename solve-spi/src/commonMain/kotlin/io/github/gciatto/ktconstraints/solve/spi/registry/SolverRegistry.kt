@@ -67,7 +67,8 @@ class SolverRegistry private constructor(
                         }
                     Candidate(backend, contributions)
                 }.sortedByDescending { it.total }
-        return Selection(features, candidates, rejections)
+        val offered = backends.flatMapTo(mutableSetOf()) { it.descriptor.capabilities }
+        return Selection(features, candidates, rejections, required - offered)
     }
 
     private fun rejectionReasons(

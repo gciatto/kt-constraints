@@ -75,6 +75,7 @@ object Heuristics {
             if (features.usesReals) add(SolverCapability.REAL_ARITHMETIC)
             if (features.usesBitVectors) add(SolverCapability.BITVECTORS)
             if (features.globals.isNotEmpty()) add(SolverCapability.GLOBAL_CONSTRAINTS)
+            if (features.realObjective && features.objective == ObjectiveKind.NONLINEAR) add(SolverCapability.NONLINEAR_REAL_OBJECTIVES)
         }
 
     @Suppress("CyclomaticComplexMethod", "MagicNumber") // One row per (problem class, paradigm) pair of the table.
@@ -84,6 +85,19 @@ object Heuristics {
         engine: String,
     ): Score =
         when (features.problemClass) {
+            ProblemClass.LINEAR_PROGRAM, ProblemClass.MIXED_INTEGER_PROGRAM ->
+                when (paradigm) {
+                    MIP -> Score(1.0, "$MIP solves linear programs by simplex and branch and bound")
+                    SMT -> Score(0.5, "$SMT optimizes linear arithmetic exactly")
+                    else -> Score(0.0, "$paradigm handles linear programs")
+                }
+            ProblemClass.BINARY_PROGRAM ->
+                when {
+                    engine == "cp-sat" -> Score(1.0, "CP-SAT is a SAT-based engine for 0-1 programs")
+                    paradigm == MIP -> Score(if (features.objective == ObjectiveKind.NONE) 0.5 else 1.0, "$MIP suits 0-1 programs")
+                    paradigm == CP -> Score(0.5, "$CP handles 0-1 programs")
+                    else -> Score(0.25, "$SMT handles 0-1 programs")
+                }
             ProblemClass.SMT_REAL, ProblemClass.SMT_BITVECTOR ->
                 if (paradigm == SMT) Score(1.0, "$SMT suits ${features.problemClass}") else Score(-1.0, "$paradigm lacks SMT sorts")
             ProblemClass.LINEAR_INTEGER ->
