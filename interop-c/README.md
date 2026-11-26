@@ -5,15 +5,19 @@ release attaches it as `kt-constraints-c-<version>-<target>.zip`; `./gradlew :in
 zips this host can link into `build/distributions`. It is not a Maven publication: Kotlin/Native users depend on the
 other modules' klibs instead.
 
-- **Modelling:** `ModelBuilder` with `intVar(name, min, max)` and `boolVar(name)`; `IntExpression` (`plus`, `minus`,
+- **Modelling:** `ModelBuilder` with `intVar(name, min, max)`, `boolVar(name)` and `realVar(name)`; `IntExpression` (`plus`, `minus`,
   `times`, `negate`, `eq`, `neq`, `lt`, `le`, `gt`, `ge`) and `BoolExpression` (`and_`, `or_`, `not_`, `implies`,
   `iff`); `constant(long)`, and `constantOf("…")` for exact integers of any size; `allDifferent` and `sum` over an
-  `IntExpressionList`; `minimize` / `maximize`; `build()` returns an immutable `Model`.
+  `IntExpressionList`; `RealExpression` with exact arithmetic and comparisons, `realConstant("4.5")` /
+  `realConstant("9/2")`, and `IntExpression.toReal()`; `minimize` / `maximize` and `minimizeReal` / `maximizeReal`;
+  `build()` returns an immutable `Model`.
 - **Solving:** `solve(model, timeoutMillis)` blocks the calling thread and uses the solvers bundled for Kotlin/Native,
-  which today means Z3 through its C API. Z3 is loaded at run time from `KT_CONSTRAINTS_Z3_LIBRARY` or the loader
-  path. The `Outcome` gives `status` (`OPTIMAL`, `FEASIBLE`, `INFEASIBLE`, … or `ERROR` with a `message`), the
-  answering `route`, the exact `objective`, and `valueOf` / `truthOf` for variables.
-- **Exactness:** integer values come back as decimal strings, so nothing is truncated to 64 bits.
+  including the pure-Kotlin exact solver and Z3 through its C API. Z3 is loaded at run time from
+  `KT_CONSTRAINTS_Z3_LIBRARY` or the loader path. The `Outcome` gives `status` (`OPTIMAL`, `FEASIBLE`, `INFEASIBLE`, … or `ERROR` with a `message`), the
+  answering `route`, the exact integer `objective` or rational `realObjective`, and `valueOf` / `valueOfReal` /
+  `truthOf` for variables.
+- **Exactness:** integer values come back as decimal strings and real values as exact rational strings, so nothing is
+  truncated to 64 bits or rounded to floating point.
 - **No exceptions cross into C** (they would abort the process): invalid input gives a null handle or `false`, and
   solver failures give an `ERROR` outcome.
 
