@@ -69,6 +69,7 @@ class Z3NativeBackend(
                     SolverCapability.INTEGER_ARITHMETIC,
                     SolverCapability.GLOBAL_CONSTRAINTS,
                     SolverCapability.INCREMENTAL_ASSERTIONS,
+                    SolverCapability.INCREMENTAL_OPTIMIZATION,
                     SolverCapability.BACKTRACKING,
                     SolverCapability.ASSUMPTIONS,
                     SolverCapability.UNSAT_CORES,

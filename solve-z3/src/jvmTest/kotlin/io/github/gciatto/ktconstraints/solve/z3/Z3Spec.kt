@@ -30,6 +30,7 @@ import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
+import io.github.gciatto.ktconstraints.test.solve.incrementalOptimizationContract
 import io.github.gciatto.ktconstraints.test.solve.linearProgrammingContract
 import io.github.gciatto.ktconstraints.test.solve.oracle.FiniteOracle
 import io.github.gciatto.ktconstraints.test.solve.solverContract
@@ -52,6 +53,7 @@ class Z3Spec :
         include(solverContract(realObjectives = true) { Z3Backend().createSolver() })
         include(linearProgrammingContract { Z3Backend().createSolver() })
         include(incrementalContract { Z3Backend().createSolver() })
+        include(incrementalOptimizationContract { Z3Backend().createSolver() })
         include(storeContract(propagates = false) { SatisfiabilityStore.of(Z3Backend().createSolver()) })
         include(z3OptimizationContract { Z3Backend().createSolver() })
         include(z3RealContract { Z3Backend().createSolver() })
@@ -65,6 +67,7 @@ class Z3Spec :
             backend.descriptor.capabilities.containsAll(
                 setOf(
                     SolverCapability.INCREMENTAL_ASSERTIONS,
+                    SolverCapability.INCREMENTAL_OPTIMIZATION,
                     SolverCapability.ASSUMPTIONS,
                     SolverCapability.UNSAT_CORES,
                     SolverCapability.REAL_ARITHMETIC,

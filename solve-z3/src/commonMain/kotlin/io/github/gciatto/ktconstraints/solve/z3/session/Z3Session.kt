@@ -3,6 +3,7 @@ import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.bool.BoolExpr
 import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
 import io.github.gciatto.ktconstraints.model.ConstraintModel
+import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.assignment.project
 import io.github.gciatto.ktconstraints.solve.incremental.CheckResult
@@ -10,9 +11,11 @@ import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
 import io.github.gciatto.ktconstraints.solve.incremental.Checkpoint
 import io.github.gciatto.ktconstraints.solve.incremental.IncrementalSession
 import io.github.gciatto.ktconstraints.solve.result.SolveMetadata
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
+import io.github.gciatto.ktconstraints.solve.spi.incremental.SessionModels
 import io.github.gciatto.ktconstraints.solve.spi.managed.CheckpointStack
 import io.github.gciatto.ktconstraints.solve.z3.port.Z3Owner
 import io.github.gciatto.ktconstraints.solve.z3.port.Z3Port
@@ -28,6 +31,8 @@ internal class Z3Session<T>(
     private val model: ConstraintModel,
     override val descriptor: SolverDescriptor,
     private val owner: Z3Owner<T>,
+    /** Solves a batch model with a fresh Z3 context, as the owning solver does. */
+    private val solveFresh: suspend (ConstraintModel, Long?) -> SolveResult,
     private val onClosed: (Z3Session<T>) -> Unit,
 ) : IncrementalSession {
     private val busy = AtomicBoolean(false)
@@ -96,6 +101,25 @@ internal class Z3Session<T>(
                 owner.confined { port -> checkNative(port, assumptions, timeoutMillis, started) }
             }
         }
+    }
+
+    /**
+     * Optimizes a batch model standing for the session, with the claim-confirming optimizer of batch solves.
+     * shortcut: each call starts a fresh Z3 context instead of reusing the session's, since confirmations run plain
+     * checks that would interleave with the session's frames; reuse it when Z3 optimizations dominate a workload.
+     */
+    override suspend fun optimize(
+        objective: Objective,
+        assumptions: List<BoolExpr>,
+        timeoutMillis: Long?,
+    ): SolveResult {
+        require(timeoutMillis == null || timeoutMillis >= 0) { "Timeout must be non-negative" }
+        val snapshot =
+            exclusive {
+                requireAccepted(assumptions)
+                SessionModels.of(model, declarations.flatten(), frames.flatten().drop(model.constraints.size) + assumptions, objective)
+            }
+        return solveFresh(snapshot, timeoutMillis).copy(descriptor = descriptor)
     }
 
     override fun close() {

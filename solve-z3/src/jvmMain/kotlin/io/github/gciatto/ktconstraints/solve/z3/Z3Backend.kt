@@ -58,6 +58,7 @@ class Z3Backend : SolverBackend {
                     SolverCapability.INTEGER_ARITHMETIC,
                     SolverCapability.GLOBAL_CONSTRAINTS,
                     SolverCapability.INCREMENTAL_ASSERTIONS,
+                    SolverCapability.INCREMENTAL_OPTIMIZATION,
                     SolverCapability.BACKTRACKING,
                     SolverCapability.ASSUMPTIONS,
                     SolverCapability.UNSAT_CORES,
