@@ -88,7 +88,9 @@ when a limit stops it, `INFEASIBLE`, `UNBOUNDED` or `UNKNOWN`.
 The pure-Kotlin route keeps its work between calls. Integer objectives over models with logic or globals are searched
 on the session's own SAT engine, with every objective bound passed as an assumption, so learned clauses and compiled
 definitions carry over to later checks and optimizations. Linear models, and every real objective, are optimized
-exactly by branch and cut over the current assertions. Z3 optimizes a snapshot of the session with a fresh context
-and confirms every claim, as batch solves do; it does not yet reuse the session's own context. A non-linear real
-objective is rejected, as in batch solving.
+exactly by branch and cut over the current assertions, starting afresh from a floating-point guess on each call:
+keeping the exact tableau between calls was measured to be slower, since exact pivots from a warm basis carry large
+fractions. Z3 optimizes on the session's own context: its optimizer sees the active assertions, and every claim is
+confirmed by a plain check of the session's solver, as batch solves do. A non-linear real objective is rejected, as in
+batch solving.
 
