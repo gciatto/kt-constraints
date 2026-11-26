@@ -90,12 +90,12 @@ known optimum or proof.
 
 | Family | JVM CP-SAT | JVM Choco | JVM Z3 | JVM SCIP | JVM HiGHS | JVM Kotlin | Node Z3 Wasm | Node Kotlin | Native Z3 | Native Kotlin |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 28-queens | 149 | 46 | 1053 | 6245 | 3887 | 34 | 4942 | 96 | 1066 | 45 |
-| Pigeonhole (infeasible) | 2 | 0 | timeout | timeout | timeout | 0 | timeout | 1 | timeout | 0 |
-| Knapsack | 5 | 12 | 34 | 6 | 9 | 8 | 84 | 18 | 34 | 6 |
-| Assignment | 16 | 7 | 229 | 1737 | 2367 | 115 | 1792 | 240 | 226 | 154 |
-| Job-shop | 8 | 2 | 11 | 10 | 18 | 4 | 38 | 10 | 9 | 3 |
-| Single-machine scheduling | 34 | timeout | timeout | timeout | 9637* | 10000* | timeout | timeout | timeout | 10000* |
+| 28-queens | 149 | 40 | 1064 | 6347 | 3865 | 23 | 4798 | 98 | 1068 | 46 |
+| Pigeonhole (infeasible) | 3 | 0 | timeout | timeout | timeout | 0 | timeout | 1 | timeout | 0 |
+| Knapsack | 5 | 11 | 39 | 6 | 8 | 1 | 94 | 9 | 40 | 2 |
+| Assignment | 17 | 7 | 231 | 1733 | 2345 | 117 | 1761 | 211 | 227 | 155 |
+| Job-shop | 8 | 2 | 14 | 10 | 15 | 4 | 39 | 16 | 14 | 6 |
+| Single-machine scheduling | 43 | timeout | timeout | timeout | 9930* | 10000* | timeout | timeout | timeout | 10000* |
 
 `*`: some seeds timed out.
 
@@ -103,9 +103,9 @@ Linear and mixed-integer programs with real objectives (scale 16 of the linear f
 
 | Family | JVM Kotlin | JVM Z3 | JVM SCIP | JVM HiGHS | Node Kotlin | Node HiGHS Wasm | Native Kotlin | Native HiGHS |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Dense LP, 128 columns | 311 | timeout | 69 | 56 | 577 | 197 | 767 | 136 |
-| Knapsack, rational profits | 2 | timeout | 8 | 25 | 13 | 14 | 3 | 18 |
-| Facility location, 666 columns | 215 | timeout | 39 | 69 | 441 | 78 | 302 | 42 |
+| Dense LP, 128 columns | 312 | timeout | 69 | 53 | 573 | 194 | 774 | 147 |
+| Knapsack, rational profits | 2 | timeout | 7 | 18 | 7 | 12 | 3 | 16 |
+| Facility location, 666 columns | 204 | timeout | 33 | 58 | 349 | 68 | 292 | 49 |
 
 The pure-Kotlin solver answers exactly; SCIP and HiGHS work in floating point and take part only when a numeric
 tolerance is given.
