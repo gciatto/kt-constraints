@@ -18,7 +18,7 @@ The descriptor declares batch satisfaction, integer optimization, exhaustive pro
 
 ## Supported modelling features and numeric limits
 
-The route accepts finite arbitrary-precision integers, Boolean formulas, exact rational linear real feasibility, integer-to-real embedding, bit-vectors and built-in globals through native compiler forms or exact decomposition. Integer objectives may include bounded nonlinear expressions. Real objectives over linear and mixed-integer programs are optimized exactly by its simplex and branch and bound. It does not offer unrestricted integer search or nonlinear real arithmetic.
+The route accepts finite arbitrary-precision integers, Boolean formulas, exact rational linear real feasibility, integer-to-real embedding, bit-vectors and built-in globals through native compiler forms or exact decomposition. Integer objectives may include bounded nonlinear expressions. Real objectives over linear and mixed-integer programs, and integer objectives over linear models, are optimized exactly by branch and cut over its simplex; other models use its SAT engine (see [choosing the technique](../pure-kotlin-solver.md#choosing-the-technique)). It does not offer unrestricted integer search or nonlinear real arithmetic.
 
 There is no fixed machine-integer magnitude margin. Encoding width, compiler size and work limits can still stop a structurally supported model. The [internals page](../pure-kotlin-solver.md) describes the supported fragment and search costs in detail.
 
