@@ -103,9 +103,9 @@ Linear and mixed-integer programs with real objectives (scale 16 of the linear f
 
 | Family | JVM Kotlin | JVM Z3 | JVM SCIP | JVM HiGHS | Node Kotlin | Node HiGHS Wasm | Native Kotlin | Native HiGHS |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Dense LP, 128 columns | 312 | timeout | 69 | 53 | 573 | 194 | 774 | 147 |
-| Knapsack, rational profits | 2 | timeout | 7 | 18 | 7 | 12 | 3 | 16 |
-| Facility location, 666 columns | 204 | timeout | 33 | 58 | 349 | 68 | 292 | 49 |
+| Dense LP, 128 columns | 397 | timeout | 69 | 53 | 552 | 194 | 700 | 147 |
+| Knapsack, rational profits | 15 | timeout | 7 | 18 | 53 | 12 | 34 | 16 |
+| Facility location, 666 columns | 223 | timeout | 33 | 58 | 340 | 68 | 283 | 49 |
 
 The pure-Kotlin solver answers exactly; SCIP and HiGHS work in floating point and take part only when a numeric
 tolerance is given.
