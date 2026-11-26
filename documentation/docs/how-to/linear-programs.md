@@ -76,18 +76,39 @@ reported in `objectiveValue` (TypeScript: `objective`). The [integer optimizatio
 integer objectives in all three languages. Real objectives use `realObjectiveValue` and `realBestBound`
 (TypeScript: `realObjective` and `realBestBound`), with the integer fields empty.
 
-## C: integer programs
+## C
 
-The C facade supports integer objectives but has no real variables or real objectives, so it cannot express
-these LP or mixed real/integer examples. Its [tested assignment program](../tutorials/c-assignment.md) is a binary
-linear integer program. The model and solve steps are quoted below; follow the tutorial for the complete C
-program, handle cleanup and build instructions.
+The C facade uses exact rational strings for constants, real objectives and real variable values. The standalone
+`interop-c/src/nativeUsageTest/c/linear-program.c`
+program solves both examples through Native automatic defaults. These defaults may load external runtimes;
+see [Assignment from C](../tutorials/c-assignment.md) for compilation and runtime setup.
+
+The shared helper builds the constraints and objective, disposing intermediate handles after the model retains them:
 
 ```c
---8<-- "interop-c/src/nativeUsageTest/c/assignment.c:model"
-
---8<-- "interop-c/src/nativeUsageTest/c/assignment.c:solve"
+--8<-- "interop-c/src/nativeUsageTest/c/linear-program.c:model"
 ```
+
+=== "LP"
+
+    ```c
+    --8<-- "interop-c/src/nativeUsageTest/c/linear-program.c:lp"
+    ```
+
+=== "MILP"
+
+    ```c
+    --8<-- "interop-c/src/nativeUsageTest/c/linear-program.c:milp"
+    ```
+
+`expect` asserts the exact returned text and releases it with `DisposeString`; `post` asserts successful addition
+and disposes the constraint handle. Release the remaining handles after inspecting the result:
+
+```c
+--8<-- "interop-c/src/nativeUsageTest/c/linear-program.c:cleanup"
+```
+
+The MILP also disposes `integerX`. Run `./gradlew :interop-c:nativeUsageTest` to compile and execute every C example.
 
 ## 3. Interpret the result
 

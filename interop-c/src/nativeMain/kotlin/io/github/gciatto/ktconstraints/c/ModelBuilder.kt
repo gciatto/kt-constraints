@@ -19,6 +19,9 @@ class ModelBuilder {
     /** Declares a Boolean variable; null if the name is taken. */
     fun boolVar(name: String): BoolExpression? = runCatching { BoolExpression(scope.boolVar(name)) }.getOrNull()
 
+    /** Declares an unbounded real variable; null if the name is invalid or taken. */
+    fun realVar(name: String): RealExpression? = runCatching { RealExpression(scope.realVar(name)) }.getOrNull()
+
     /** Asserts [constraint]; false if it mentions variables of another builder. */
     fun add(constraint: BoolExpression): Boolean = runCatching { scope.add(constraint.expr) }.isSuccess
 
@@ -27,6 +30,12 @@ class ModelBuilder {
 
     /** Replaces the objective with maximizing [objective]; false if it mentions variables of another builder. */
     fun maximize(objective: IntExpression): Boolean = runCatching { scope.maximize(objective.expr) }.isSuccess
+
+    /** Replaces the objective with minimizing [objective]; false if it mentions variables of another builder. */
+    fun minimizeReal(objective: RealExpression): Boolean = runCatching { scope.minimize(objective.expr) }.isSuccess
+
+    /** Replaces the objective with maximizing [objective]; false if it mentions variables of another builder. */
+    fun maximizeReal(objective: RealExpression): Boolean = runCatching { scope.maximize(objective.expr) }.isSuccess
 
     /** Snapshots the current model. */
     fun build(): Model = Model(scope.buildModel())
