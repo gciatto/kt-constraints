@@ -60,23 +60,23 @@ Release configuration adopted GitHub Packages for Maven and npm artifacts and re
 |---|---|---|
 | Immutable modelling | Implemented | Typed Boolean, integer, linear real and bit-vector expressions; finite exact integer domains; metadata and projection |
 | Global constraints and DSL helpers | Implemented | Routing, automata, scheduling, packing, counting and ordering constructs; native lowering or exact decomposition subject to route support |
-| Batch results and streams | Implemented | Satisfaction, integer optimization, projected enumeration on capable routes, cancellation and explicit completion evidence |
-| Z3 routes | Implemented | JVM, JavaScript Wasm and desktop Native; incremental checks, assumptions and cores |
+| Batch results and streams | Implemented | Satisfaction, integer and real optimization, projected enumeration on capable routes, cancellation and explicit completion evidence |
+| Z3 routes | Implemented | JVM, JavaScript Wasm and desktop Native; incremental checks and optimization, assumptions and cores |
 | Direct JVM CP | Implemented | Choco and CP-SAT, with checked bounded integer subsets |
 | Linear and mixed-integer programs | Implemented | Real objectives; exact optima from the pure-Kotlin simplex and branch and bound (checked certificates, floating-point start) and from Z3; SCIP and HiGHS in floating point on an explicit numeric tolerance; benchmark families with known optima |
-| MIP through OR-Tools | Implemented, restricted | SCIP and HiGHS; bounded affine integer lowering, numerical proof statuses, no enumeration; HiGHS requires a backend time limit |
+| MIP through OR-Tools | Implemented, restricted | SCIP and HiGHS; bounded affine integer lowering plus LP/MILP with explicit tolerance, numerical proof statuses, no enumeration; HiGHS requires a backend time limit |
 | MiniZinc execution | Partial | Five engine configurations on the JVM and on Linux and macOS Native, Node Gecode CLI and browser Chuffed Wasm; no Native Windows command transport |
 | Constraint stores | Implemented, restricted | Choco native propagation on JVM and a generic satisfiability store over incremental solvers; sound non-exact residuals and non-minimal explanations |
 | Java and TypeScript facades | Implemented | Real language-boundary tests; facade surfaces differ from the full Kotlin API |
 | C facade | Implemented, restricted | Shared library for desktop targets; integer/Boolean modelling and batch solving through the Native defaults |
-| Automatic selection (`AutoBackend`) | Implemented | Explicit platform bundles, eligibility checks, explained heuristics, fallback and races; no automatic inclusion of Kotlin or browser MiniZinc |
+| Automatic selection (`AutoBackend`) | Implemented | Explicit platform bundles, eligibility checks, explained heuristics, fallback and races; Kotlin included on every platform; browser MiniZinc requires explicit loading |
 | Benchmark-informed ranking | Partial | Recorded measurements and an experimental evidence interface; no timing dataset in the default policy |
 | Pure-Kotlin route | Implemented | Published for JVM, JS and Native with shared-contract coverage; in every default registry, ordered by benchmarks |
 | Platform reach | Partial | JVM, Kotlin/JS and desktop Native integrations; iOS compilation does not provision Z3; Kotlin/Wasm targets await dependencies and binding work |
 | Distribution | Partial | Release configuration for GitHub Packages and C release archives; Maven Central and npmjs publication remain planned |
 | Portable model serialization | Planned | No versioned interchange format, identity remapping implementation or portable model fingerprint |
 | Additional adapters | Partial | Direct HiGHS on Kotlin/Native (C API) and JavaScript (Wasm) implemented; FlatZinc interchange and Gurobi planned |
-| Broader theories and optimization | Planned | Arrays, strings, sets, uninterpreted symbols, quantifiers and richer bit-vector operations are outside the current model API; nonlinear objectives, such as quadratic ones, are not supported |
+| Broader theories and optimization | Planned | Arrays, strings, sets, uninterpreted symbols, quantifiers and richer bit-vector operations are outside the current model API; nonlinear real objectives, such as quadratic ones, are not supported; bounded nonlinear integer objectives are implemented |
 | External logic-engine adapters | Planned outside this repository | Store primitives exist; no bundled logic runtime or 2p-Kt adapter |
 
 For current route constraints, consult [solvers and routes](../reference/solvers-and-routes.md) and [platform availability](../reference/platform-availability.md). The [benchmark reference](../reference/benchmarks.md) describes recorded performance evidence; [automatic selection](backends/selection.md) distinguishes those observations from the shipped policy.

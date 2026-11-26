@@ -22,7 +22,7 @@ Object equality and symbolic equality serve different purposes: `==` compares Ko
 
 Integer literals, finite-domain bounds and integer assignment values use arbitrary-precision `BigInteger`. A finite domain can contain values outside machine-integer ranges. The mathematical integer sort is distinct from a fixed-width bit-vector sort: bit-vector arithmetic wraps by definition; integer arithmetic does not.
 
-The current real expression language is linear and uses exact `Rational` values. A decimal such as `0.1` can be represented as `1/10`. Integer objectives report integer values. Real objectives, `minimize(realExpression)` and `maximize(realExpression)`, are separate: their results report exact rational values in `realObjectiveValue` and `realBestBound`, and routes that cannot optimize them exactly reject the model.
+The current real expression language is linear and uses exact `Rational` values. A decimal such as `0.1` can be represented as `1/10`. Integer objectives report integer values. Real objectives, `minimize(realExpression)` and `maximize(realExpression)`, are separate: their results report exact rational values in `realObjectiveValue` and `realBestBound`, and routes that cannot optimize them reject the model. Floating-point routes require explicit tolerance consent, as described below.
 
 A backend may impose tighter bounds than the representation. Its support check must reject values or intermediate expressions it cannot represent. Silently truncating an integer, substituting a floating-point real or dropping an assertion would change the set of answers. Explicit rejection preserves the opportunity to choose another route.
 

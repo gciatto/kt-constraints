@@ -1,6 +1,6 @@
 # The pure-Kotlin solver
 
-The `kotlin/direct` route implements constraint solving in portable Kotlin: a finite arithmetic compiler, a conflict-driven SAT engine, and an exact rational linear feasibility checker. It can solve satisfaction models, optimize integer expressions, enumerate projected solutions, and maintain incremental assertion sessions. It is published for every platform as `:solve-kotlin`, and the default automatic selection tries it first on JS and Native and after CP-SAT and Choco on the JVM, following the recorded benchmarks.
+The `kotlin/direct` route implements constraint solving in portable Kotlin: a finite arithmetic compiler, a conflict-driven SAT engine, and an exact rational linear feasibility checker. It can solve satisfaction models, optimize integer and linear real expressions, enumerate projected solutions, and maintain incremental assertion sessions. It is published for every platform as `:solve-kotlin`, and the default automatic selection tries it first on JS and Native and after CP-SAT and Choco on the JVM, following the recorded benchmarks.
 
 Its design puts portability and sound answers before specialized solving strength. The same production sources live in `solve-kotlin/src/commonMain`, with no external solver executable, JNI library, C binding, or WebAssembly solver binary. “Dependency-free” here means **no external solver runtime**: the module still uses `:solve-spi`, the project's arbitrary-precision integer/rational infrastructure, and Kotlin coroutines. See the [module build file][module-build] and [public API reference](/kt-constraints/api/index.html).
 
@@ -10,11 +10,11 @@ This page explains the implementation and the consequences of its choices. For o
 
 [`KotlinBackend`][backend] implements `SolverBackend`. Its descriptor distinguishes the engine `kotlin` from the execution route `direct`. `availability()` reports available without probing an installation; `support(model, options)` delegates to [`KotlinSupport`][support]. `createSolver()` returns an `IncrementalConstraintSolver` implemented by [`KotlinSolver`][solver].
 
-The descriptor advertises satisfaction, optimization, enumeration, incremental assertions, backtracking, assumptions, integer arithmetic, real arithmetic, bit-vectors, global constraints and unsat cores. These are capability categories, not promises to accept every possible expression of those kinds. Support inspection walks variables, constraints, the objective and decompositions, reporting unsupported expression classes and the decompositions it will use. Unsupported nodes are rejected even inside an inactive Boolean branch. A structurally supported model can still exceed compilation or search limits.
+The descriptor advertises satisfaction, optimization, enumeration, incremental assertions and optimization, backtracking, assumptions, integer arithmetic, real arithmetic, bit-vectors, global constraints and unsat cores. These are capability categories, not promises to accept every possible expression of those kinds. Support inspection walks variables, constraints, the objective and decompositions, reporting unsupported expression classes and the decompositions it will use. Unsupported nodes are rejected even inside an inactive Boolean branch. A structurally supported model can still exceed compilation or search limits.
 
-The route can participate in a caller-supplied `SolverRegistry` or [`AutoBackend`][auto-backend] through this same SPI. The platform bundles currently omit it, so adding `:solve-kotlin` does not make `AutoBackend` select it. The automatic-selection benchmark adds it explicitly for comparison. See [automatic solver selection](backends/selection.md) for ranking, fallback and racing.
+The route can participate in a caller-supplied `SolverRegistry` or [`AutoBackend`][auto-backend] through this same SPI. The platform bundles include it in the benchmark-informed registration order described above. See [automatic solver selection](backends/selection.md) for ranking, fallback and racing.
 
-Portable source and a delivered language facade are separate concerns. Kotlin/JVM, Kotlin/JS and Kotlin/Native can use the common implementation. Java boundary tests construct the backend and pass it through the blocking/async facade. JavaScript facade tests wrap it as a test dependency; that does not provide a published TypeScript loader for this route. The C facade uses Z3, rather than this engine. There is no Kotlin/Wasm target implied by using Kotlin/JS, and common code alone is not evidence of a packaged browser route. Consult [platform availability](../reference/platform-availability.md) for platform evidence.
+Portable source and a delivered language facade are separate concerns. Kotlin/JVM, Kotlin/JS and Kotlin/Native can use the common implementation. Java boundary tests construct the backend and pass it through the blocking/async facade. The TypeScript facade exports `loadKotlin()`. The C facade solves through Native automatic defaults, which try this route first. There is no Kotlin/Wasm target implied by using Kotlin/JS, and common code alone is not evidence of a packaged browser route. Consult [platform availability](../reference/platform-availability.md) for platform evidence.
 
 ## The supported mathematical fragment
 
@@ -27,11 +27,11 @@ The finite part is arbitrary precision, not unbounded search. An integer variabl
 | Mixed integer/real expressions | Exact integer-to-real embedding, rational constants, real sums/differences/negation, scaling by a rational constant, and equality or strict/non-strict order |
 | Bit-vectors | Fixed-width addition, subtraction, multiplication, bitwise operations, negation, shifts, signed/unsigned comparisons and integer conversion |
 | Globals | `AllDifferent`, `Element`, `Table`, Boolean cardinalities, and the built-in decomposable graph, scheduling, packing and automaton constraints |
-| Objectives | One integer minimization or maximization expression, including finite nonlinear products |
+| Objectives | One integer objective, including finite nonlinear products, or a real objective over a linear program |
 
 Some familiar DSL operations are already compositions of these nodes. For example, `abs(x)` is `max(x, -x)`, and weighted soft-constraint minimization builds an integer objective. These do not require separate numerical algorithms.
 
-This is not a solver for unrestricted integer variables, general nonlinear real arithmetic, real-valued objectives, division/remainder, or general string, set and array theories. A product of two finite integer terms is supported; multiplication of two real variables is not. An integer product can nevertheless be embedded into a linear real expression: the product is first encoded discretely, then supplied to the real theory as Boolean-weighted data. The support report is the authoritative check for the actual expression nodes, rather than an inference from the names of capability flags.
+This is not a solver for unrestricted integer variables, general nonlinear real arithmetic, nonlinear real objectives, division/remainder, or general string, set and array theories. A product of two finite integer terms is supported; multiplication of two real variables is not. An integer product can nevertheless be embedded into a linear real expression: the product is first encoded discretely, then supplied to the real theory as Boolean-weighted data. The support report is the authoritative check for the actual expression nodes, rather than an inference from the names of capability flags.
 
 Exactness has a practical limit: arbitrary-precision values can demand circuits wider than the configured maximum. That produces a resource-limit outcome, not a truncated value.
 
@@ -44,7 +44,7 @@ failed so that later search avoids the same conflict. A **reified rational linea
 Boolean value standing for a rational arithmetic comparison. A **theory clause** rules out a
 Boolean candidate whose arithmetic comparisons cannot hold together.
 
-Each stream or session owns an isolated [`KotlinEngine`][engine]. The immutable `ConstraintModel` never stores mutable solver state. Within an engine, one SAT database and one translator survive successive checks.
+The following pipeline describes the SAT path; [linear optimization](#linear-programs-the-exact-simplex) uses a separate simplex search. Each SAT stream or session owns an isolated [`KotlinEngine`][engine]. The immutable `ConstraintModel` never stores mutable solver state. Within an engine, one SAT database and one translator survive successive checks.
 
 ```mermaid
 flowchart TD
@@ -233,9 +233,9 @@ The route reads the model's structure ([`ModelFeatures`](backends/selection.md#2
 |---|---|---|
 | A real objective | Branch and bound over the exact simplex | The SAT engine does not optimize real objectives |
 | An integer objective over a **linear** model: a 0-1, linear integer or mixed-integer program | Branch and bound over the exact simplex | On the benchmark families it beat the SAT encoding everywhere: 3 ms against 57 ms on a 26-item 0-1 knapsack, 8 ms against 1 s on an integer program, and 5 ms against a 20 s timeout on knapsacks whose items can be taken 50 times |
-| Satisfaction, enumeration, Boolean logic, globals or products | The SAT engine, with the exact simplex as its real theory | Branch and bound reports one optimum, not every solution, and does not take logic or globals |
+| Satisfaction and its enumeration; integer optimization with Boolean logic, globals or products | The SAT engine, with the exact simplex as its real theory | Branch and bound reports one optimum, not every solution, and does not take logic or globals |
 
-A linear model whose translation to a linear program fails falls back to the SAT engine. Results record the choice in the `technique` statistic: `branch-and-bound` or `sat`. A real objective that multiplies variables, such as a quadratic one, needs a capability no bundled route offers, so automatic selection rejects it before any route runs and names that requirement.
+A linear model whose translation to a linear program fails falls back to the SAT engine. Optimization completion results record the choice in the `technique` statistic: `branch-and-bound` or `sat`. Batch satisfaction may omit stream completion statistics. A real objective that multiplies variables, such as a quadratic one, needs a capability no bundled route offers, so automatic selection rejects it before any route runs and names that requirement.
 
 ## Linear programs: the exact simplex
 
@@ -244,9 +244,9 @@ A model with a real objective, or an integer objective over a linear model, goes
 1. **Feasibility.** The general simplex of Dutertre and de Moura, the procedure SMT solvers use, repeatedly takes the lowest-indexed basic variable outside its bounds and pivots it with the lowest-indexed nonbasic variable that can repair it. When none can, the bounds and rows are infeasible.
 2. **Optimization.** The primal simplex then moves the nonbasic variable with the largest reduced cost (Dantzig's rule), as far as its own bound (a bound flip, without pivoting) or the first basic variable to reach a bound (a pivot). When nothing limits the move, the objective is unbounded.
 3. **Reading the answer.** A positive rational small enough that every bound still holds replaces δ, giving an exact rational solution; it is checked against the program before it is reported. An optimum with a non-zero δ part is approached through strict rows but never reached: the route reports `FEASIBLE`, the concrete solution, and the exact supremum or infimum as `realBestBound`.
-4. **Certificates.** Each outcome leaves evidence behind: Farkas multipliers for infeasibility, a direction along which the objective grows for unboundedness, and dual multipliers for an optimum. [`Certificates`][certificates] checks that evidence against the original program, not the tableau, before the route reports a linear program infeasible, unbounded or optimal. A simplex bug can then cause an error, but never a wrong claim.
+4. **Certificates.** Each outcome leaves evidence behind: Farkas multipliers for infeasibility, a direction along which the objective grows for unboundedness, and dual multipliers for an optimum. [`Certificates`][certificates] checks that evidence against the original program, not the tableau, before the route reports a linear program infeasible, unbounded or optimal. These internal checks guard the reported evidence; certificates are not exported in `SolveResult`. MILP proof also depends on correct branching and pruning.
 
-Feasibility uses Bland's rule, the lowest index among candidates, throughout. Optimization falls back to it after 50 degenerate steps in a row, so degenerate pivots cannot cycle; Beale's classic cycling example is part of the shared contract. All arithmetic is exact, so the price is growing numerators and denominators rather than numerical error. `Rational` keeps numerators and denominators that fit in a `Long` as machine integers, with overflow-checked arithmetic, and only larger values use arbitrary precision.
+Feasibility uses Bland's rule, the lowest index among candidates, throughout. Optimization falls back to it after 50 degenerate steps in a row, so degenerate pivots cannot cycle; Beale's classic cycling example is part of the shared contract. All arithmetic is exact, so the price is growing numerators and denominators rather than numerical error. `Rational` uses normalized `Int`, `Long` or arbitrary-precision numerator/denominator storage, promoting on overflow without changing numeric equality or exactness.
 
 **A floating-point start.** Exact pivots on dense programs are expensive: tableau entries become ratios of large determinants. Before any exact pivot, a dense double-precision simplex guesses an optimal basis.
 
@@ -273,9 +273,11 @@ An optimization stream emits improving incumbents rather than every feasible ass
 
 `push()` creates a user checkpoint. `popTo(checkpoint)` removes that frame and all newer frames, consuming those checkpoints. Session declarations are scoped too: popped variables cease to be known to the public session, and assertions must use currently declared variables. Compiled definitions can remain internally without keeping their popped assertions active. Successful checks project onto model outputs plus active session declarations.
 
-User checkpoints are not SAT decision levels. A SAT check may backjump or restart many times while the same user frame remains active. Conversely, popping a user frame does not erase sound learned clauses or force the remaining model to be recompiled. Each new check resets SAT assignments and rebuilds rational feasibility, while reusing the permanent encodings and learned consequences.
+User checkpoints are not SAT decision levels. A SAT check may backjump or restart many times while the same user frame remains active. Conversely, popping a user frame does not erase sound learned clauses or force the remaining model to be recompiled. Each new check resets SAT assignments while reusing permanent encodings, learned consequences and the real theory's tableau where possible; selected bounds change with the candidate.
 
 The current unsat core is the **entire input assumption list** whenever the active assertions plus those assumptions are unsatisfiable. It is a sufficient source-level core, not necessarily small or irreducible. If active assertions are inconsistent without assumptions, the returned list may be empty. Named root assertions are not extracted as an irreducible infeasible subsystem. No proof certificate accompanies a core.
+
+`session.optimize` instead takes an objective per call. Integer objectives with logic or globals reuse the session SAT engine. Linear optimization starts a fresh exact branch-and-bound search over active assertions, seeded by a floating-point basis guess; it does not retain the optimization tableau across calls. See [incremental optimization](../how-to/incremental-sessions.md#4-re-optimize-as-the-session-changes).
 
 A session check ignores the model's objective and returns `SATISFIABLE`, `UNSATISFIABLE`, or `UNKNOWN`. Each check gets a fresh timeout/work budget. Overlapping checks and mutations are rejected, assumptions are copied before the first suspension, and closing the owning solver closes its sessions. These guarantees do not imply CP domain reflection, propagation queries, entailment or a CLP constraint store.
 

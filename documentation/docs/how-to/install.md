@@ -73,14 +73,17 @@ Configure your C compiler's include path and link against `ktconstraints`; make 
 visible to your operating system's dynamic loader when you run the program.
 Windows archives also include a `.def` file.
 
-Install a compatible Z3 shared library and set `KT_CONSTRAINTS_Z3_LIBRARY` to its absolute
-path. See the [C tutorial](../tutorials/c-assignment.md) for a complete consumer and
+The C facade uses Native automatic defaults, trying the portable Kotlin solver first. To enable Z3 fallback,
+install a compatible shared library and set `KT_CONSTRAINTS_Z3_LIBRARY` to its absolute path. See the [C tutorial](../tutorials/c-assignment.md) for a complete consumer and
 [the C API](../reference/c-api.md) for handle and string ownership.
 
 ## 3. Prepare the solver runtime
 
 | Route | Runtime setup |
 | --- | --- |
+| Pure Kotlin on JVM, JS or Native | No external solver runtime; supports exact LP/MILP. |
+| HiGHS on Native | Install a compatible HiGHS shared library and set `KT_CONSTRAINTS_HIGHS_LIBRARY`; see [direct HiGHS](../explanation/backends/highs.md). |
+| HiGHS on Kotlin/JS | `highs` npm Wasm dependency; no exported TypeScript loader. |
 | Choco on JVM | Included as a Java dependency. |
 | CP-SAT, SCIP and HiGHS through OR-Tools on JVM | Native libraries come with the OR-Tools dependency for supported desktop platforms. |
 | Z3 on JVM | Native libraries come with `z3-turnkey`. |
@@ -89,7 +92,7 @@ path. See the [C tutorial](../tutorials/c-assignment.md) for a complete consumer
 | Z3 on Native or through C | Install a shared library; see [Native setup](native-and-z3.md). |
 | MiniZinc | Install the CLI and solver configuration, or serve the browser runtime assets; see [MiniZinc setup](use-minizinc.md). |
 
-Before solving, check [availability and whole-model support](choose-a-solver.md).
+Before solving, check [availability and whole-model support](choose-a-solver.md). Real models on numerical MIP routes require explicit tolerance consent; see [solve LP and MILP models](linear-programs.md) for examples in Kotlin, Java and TypeScript/JavaScript and the C integer-program subset.
 
 ## Build from source instead
 

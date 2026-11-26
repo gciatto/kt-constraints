@@ -8,9 +8,12 @@ Execution preferences are separate from model constraints. A route may reject a 
 |---|---|---|
 | `timeoutMillis` | `Long? = null` | Null means no caller time limit; non-negative values only; zero immediately times out |
 | `solutionLimit` | `Int? = null` | Null means no count limit; otherwise strictly positive |
+| `numericTolerance` | `NumericTolerance? = null` | Explicit consent for real models on floating-point routes; null keeps those routes ineligible for reals |
 | `backendOptions` | `List<BackendOptions> = emptyList()` | Typed route tuning; `backend<T>()` reads the last matching instance |
 
 `SolveOptions.DEFAULT` has these defaults. `options + tuning` replaces earlier entries of the same concrete tuning type. Limits can produce `FEASIBLE` with an incumbent or `UNKNOWN` without one; they do not establish optimality. See [Results and statuses](results-and-statuses.md).
+
+`NumericTolerance(feasibility = 1e-6, integrality = 1e-6)` uses absolute tolerances. Feasibility must be finite and non-negative; integrality must be finite and in `[0, 0.5)`. Returned values are checked with exact arithmetic against these limits. The objective is evaluated exactly from those values; numerical optimality remains an engine claim. See [LP/MILP models](../how-to/linear-programs.md).
 
 ## Backend settings
 
@@ -26,8 +29,10 @@ Execution preferences are separate from model constraints. A route may reject a 
 | `MiniZincBackend(engine, executable = "minizinc")` | Explicit engine configuration and executable path/name |
 | `MiniZincJsBackend.loadNode(executable = "minizinc")` | Installed Gecode CLI |
 | `MiniZincJsBackend.loadBrowser(workerURL, wasmURL, dataURL)` | Explicit absolute URLs of MiniZinc browser assets; Chuffed |
+| `HighsNativeBackend(libraryPath = ...)` | Runtime-loaded HiGHS C API; default from `KT_CONSTRAINTS_HIGHS_LIBRARY` or platform loader path |
+| `HighsJsBackend.load()` | Asynchronously loads the `highs` Wasm module; solves occupy the JS thread until completion or engine time limit |
 | `Z3NativeBackend(libraryPath = ...)` | Library path defaults to the environment/loader rule below |
-| `KotlinBackend(configuration = KotlinConfiguration())` | Pure-Kotlin compiler and work limits; source checkout only |
+| `KotlinBackend(configuration = KotlinConfiguration())` | Pure-Kotlin compiler and work limits; published portable route |
 
 `ChocoSearch` values: `DOM_OVER_WDEG`, `DOM_OVER_WDEG_REF`, `ACTIVITY_BASED`, `CONFLICT_HISTORY`, `FAILURE_RATE`, `FAILURE_LENGTH`, `MIN_DOMAIN_LOWER_BOUND`, `MIN_DOMAIN_UPPER_BOUND`, `INPUT_ORDER_LOWER_BOUND`, `INPUT_ORDER_UPPER_BOUND`.
 
@@ -42,6 +47,7 @@ Execution preferences are separate from model constraints. A route may reject a 
 | Variable | Read by | Meaning |
 |---|---|---|
 | `KT_CONSTRAINTS_Z3_LIBRARY` | Native Z3 loader | Non-empty path to the Z3 shared library. Otherwise use `libz3.so` on Linux, `libz3.dll` on Windows, `libz3.dylib` on other configured desktop systems, through the platform loader path |
+| `KT_CONSTRAINTS_HIGHS_LIBRARY` | Native HiGHS loader | Non-empty shared-library path; otherwise `libhighs.so`, `libhighs.dylib` or `libhighs.dll` via the platform loader |
 | `MINIZINC_EXECUTABLE` | JVM/Node `AutoBackend.load()` and runtime tests | Explicitly enables default MiniZinc registration and identifies the executable; constructing a backend directly uses its constructor argument |
 | `MINIZINC_ENGINES` | JVM integration suites | Comma-separated requested engines: `gecode,chuffed,cp-sat,highs,cbc`; requested engines must run successfully |
 | `MINIZINC_BROWSER_TEST` | MiniZinc browser test task | Presence enables real browser tests |
@@ -64,6 +70,7 @@ Native Z3 loads one library per process; changing paths after loading is rejecte
 | `KT_CONSTRAINTS_ROUTE_BENCHMARK` | Opt in to the `:solve-auto` cross-platform route catalogue |
 | `KT_CONSTRAINTS_ROUTE_BENCHMARK_SCALES` | Scales, default `1 2 3` |
 | `KT_CONSTRAINTS_ROUTE_BENCHMARK_SEEDS` | Seed count, default 3 |
+| `KT_CONSTRAINTS_ROUTE_BENCHMARK_FAMILIES`, `KT_CONSTRAINTS_ROUTE_BENCHMARK_ROUTES` | Family filter (`catalogue linear` by default) and optional route-ID filter |
 | `KT_CONSTRAINTS_ROUTE_BENCHMARK_TIMEOUT` | Milliseconds, default 10000 |
 
 See [Benchmarks](benchmarks.md) for measured phases and observations.

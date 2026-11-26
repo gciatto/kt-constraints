@@ -1,63 +1,135 @@
-# Solve linear and mixed-integer programs
+# Solve LP and MILP models
 
-A linear program (LP) optimizes a linear objective over real variables subject to linear constraints. A
-mixed-integer linear program (MILP) also has integer variables. Both are ordinary models here: declare real
-variables with `realVar`, embed integers with `asRealExpr()`, and pass a real expression to `minimize` or
-`maximize`.
+A linear program (LP) optimizes a linear objective over continuous real variables subject to linear constraints.
+A mixed-integer linear program (MILP) also has integer variables. Both use ordinary models: declare real
+variables with `realVar`, embed integers with `asRealExpr()`, and set one integer or real objective.
 
-## 1. Write the program
+The examples use the pure-Kotlin exact solver. Kotlin uses the same common API on JVM, JS and Native;
+Java uses `BlockingSolver`, and TypeScript/JavaScript uses the exported ES module. No external solver runtime
+is needed for these examples. Add `:solve-kotlin` (artifact `kt-constraints-solve-kotlin`) for direct Kotlin use;
+see [installation](install.md) and [modules](../reference/modules-and-artifacts.md).
 
-This example maximizes `3x + 2y` over an integer `x` in `0..10` and a real `y >= 0`, subject to
-`x + y <= 4.5` and `x + 3y <= 6`. Its optimum is `13`, at `x = 4` and `y = 1/2`.
+## 1. Solve a continuous LP
 
-=== "Kotlin"
+Maximize `3x + 2y` with `x, y >= 0`, `x + y <= 4.5` and `x + 3y <= 6`.
+The exact optimum is `27/2`, at `x = 9/2`, `y = 0`.
+
+=== "Kotlin (JVM / JS / Native)"
 
     ```kotlin
     --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/LinearPrograms.kt:imports"
 
+    --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/LinearPrograms.kt:lp"
+    ```
+
+=== "Java"
+
+    ```java
+    --8<-- "interop-java/src/test/java/io/github/gciatto/ktconstraints/interop/examples/howto/LinearPrograms.java:lp"
+    ```
+
+=== "TypeScript / JavaScript"
+
+    ```typescript
+    --8<-- "interop-js/src/test/typescript/examples/howto-lp.mts:imports"
+
+    --8<-- "interop-js/src/test/typescript/examples/howto-lp.mts:lp"
+    ```
+
+Call Kotlin's suspending helper from a coroutine. Java imports `ConstraintScope` from `model`,
+`Rational` from `core`, `RealVar` from `core.real`, `KotlinBackend` from `solve.kotlin`, `BlockingSolver`
+from `solve.blocking`, and result types from `solve.result`, all under `io.github.gciatto.ktconstraints`.
+Its `check` helper throws `AssertionError` on failure. The TypeScript example includes imports and runtime cleanup;
+use it in an async function or at the top level of an ES module. It is also valid JavaScript. Consumer tests use the local package name; released package names
+are in [installation](install.md).
+
+## 2. Make it mixed-integer
+
+Require `x` to be an integer in `0..10`, keeping `y` real. The optimum becomes `13`, at `x = 4`, `y = 1/2`.
+
+=== "Kotlin (JVM / JS / Native)"
+
+    ```kotlin
     --8<-- "solve-auto/src/commonTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/LinearPrograms.kt:milp"
     ```
 
 === "Java"
 
     ```java
-    --8<-- "interop-java/src/test/java/io/github/gciatto/ktconstraints/interop/examples/howto/SolverTasks.java:milp"
+    --8<-- "interop-java/src/test/java/io/github/gciatto/ktconstraints/interop/examples/howto/LinearPrograms.java:milp"
     ```
 
-=== "TypeScript"
+=== "TypeScript / JavaScript"
 
     ```typescript
+    --8<-- "interop-js/src/test/typescript/examples/howto-milp.mts:imports"
+
     --8<-- "interop-js/src/test/typescript/examples/howto-milp.mts:milp"
     ```
 
-Write decimal and fractional constants exactly, as `Rational.parse("4.5")` or `real("4.5")`: `4.5` is the
-rational `9/2`, not a binary floating-point approximation. TypeScript has no overloads, so its builder names
-the real objectives `minimizeReal` and `maximizeReal`.
+Java additionally imports `IntVar` from `core.integer`. The Kotlin imports from section 1 cover both examples.
+Write fractions and decimals as exact text (`Rational.parse("4.5")` or `real("4.5")`); the value is `9/2`.
+TypeScript uses distinct names `minimizeReal` and `maximizeReal` for real objectives.
 
-## 2. Read the exact result
+The MILP examples then replace the objective with integer `x`, keeping the real constraints. Its optimum is 4,
+reported in `objectiveValue` (TypeScript: `objective`). The [integer optimization guide](optimize.md) covers
+integer objectives in all three languages. Real objectives use `realObjectiveValue` and `realBestBound`
+(TypeScript: `realObjective` and `realBestBound`), with the integer fields empty.
 
-A real objective reports its value in `realObjectiveValue` (TypeScript: `realObjective`) and any proven bound in
-`realBestBound`, as exact rationals; the integer `objectiveValue` and `bestBound` stay empty.
+## C: integer programs
+
+The C facade supports integer objectives but has no real variables or real objectives, so it cannot express
+these LP or mixed real/integer examples. Its [tested assignment program](../tutorials/c-assignment.md) is a binary
+linear integer program. The model and solve steps are quoted below; follow the tutorial for the complete C
+program, handle cleanup and build instructions.
+
+```c
+--8<-- "interop-c/src/nativeUsageTest/c/assignment.c:model"
+
+--8<-- "interop-c/src/nativeUsageTest/c/assignment.c:solve"
+```
+
+## 3. Interpret the result
 
 | Status | Meaning |
 |---|---|
-| `OPTIMAL` | The value is the exact optimum. |
-| `FEASIBLE` | An incumbent without an optimality proof, such as after a limit. A `realBestBound` different from the value can also be an optimum that no solution attains: maximizing `x` subject to `x < 1` has supremum `1` but no maximum. |
-| `UNBOUNDED` | The objective improves without limit; there is no assignment. |
-| `INFEASIBLE` | No assignment satisfies the constraints. |
+| `OPTIMAL` | An attained optimum according to the answering route's evidence: exact on Kotlin/Z3; a numerical claim on tolerance routes. |
+| `FEASIBLE` | An incumbent without an attained-optimum proof, possibly after a limit. On exact routes, a different `realBestBound` may be an unattained supremum/infimum: maximizing `x < 1` has supremum 1 and no maximum. |
+| `UNBOUNDED` | The objective improves without limit according to the route's evidence; no assignment is returned. |
+| `INFEASIBLE` | No assignment satisfies the constraints, according to the route's evidence. |
+| `INFEASIBLE_OR_UNBOUNDED` | Engine evidence does not distinguish infeasibility from unboundedness. |
+| `UNKNOWN` | No decisive answer and no feasible incumbent. Inspect termination and diagnostics. |
 
-## 3. Choose an exact or a floating-point route
+A missing bound means none was supplied. It is not the incumbent value. See [results and statuses](../reference/results-and-statuses.md).
 
-Real objectives are optimized exactly, without floating-point tolerances, by Z3 on the JVM, in JavaScript and on
-Kotlin/Native, and by the pure-Kotlin route's simplex and branch and bound on every platform. `AutoBackend.load()` selects such a route; routes that cannot optimize real objectives reject the
-model with `Unsupported real objective`. The pure-Kotlin route also uses branch and bound for integer objectives over linear
-models, such as 0-1 and integer programs, where it is much faster than its SAT encoding. A quadratic or other
-non-linear real objective is rejected with a report that names the missing `NONLINEAR_REAL_OBJECTIVES` capability.
+## 4. Choose a route and inspect diagnostics
 
-Floating-point MIP engines, such as SCIP and HiGHS through OR-Tools on the JVM, HiGHS through its C API on
-Kotlin/Native (`HighsNativeBackend`) and HiGHS Wasm in JavaScript (`HighsJsBackend`), are usually much faster on large
-programs, but they answer within tolerances. They take models with reals only when you consent with
-`SolveOptions.numericTolerance`; without it they reject the model, and automatic selection skips them.
+Kotlin's simplex and branch and bound optimize supported LP/MILP exactly on all Kotlin platforms. Z3 supports
+exact real optimization on JVM, JS and Native too. `AutoBackend.load()` selects among its platform defaults;
+without numeric tolerance consent it skips floating-point routes for real models. Loading the automatic bundle
+may initialize external runtimes, even when Kotlin eventually answers. Use `KotlinBackend` directly when you
+want only the portable engine.
+
+Route choice and the Kotlin engine's internal technique are separate decisions. Kotlin uses branch and bound
+for every supported real objective and for integer objectives over translatable linear models. Satisfaction,
+its enumeration, and integer optimization with logic, globals or variable products use SAT plus its real theory.
+A real objective with logic or globals is rejected by linear lowering. For optimization completion results,
+`metadata.statistics["technique"]` reports `branch-and-bound` or `sat`.
+
+Inspect `SolverRegistry.rank`'s `features`, `rejections`, `diagnosis` and `unmetCapabilities` to understand eligibility.
+No bundled route supports nonlinear real objectives; diagnostics name `NONLINEAR_REAL_OBJECTIVES` when needed.
+The built-in real expression language itself has no product of real variables. See [selection](../explanation/backends/selection.md)
+and [techniques and internal certificates](../explanation/pure-kotlin-solver.md#choosing-the-technique).
+Kotlin checks exact primal/dual evidence, Farkas refutations and unbounded rays internally; `SolveResult` does not
+export certificates. MILP proof also depends on branch-and-bound search. Z3 confirms attained optima and
+unattained bounds with plain solver checks; unboundedness uses its optimizer's claim.
+
+## 5. Opt into floating-point LP/MILP
+
+SCIP and HiGHS through OR-Tools on JVM, and [direct HiGHS](../explanation/backends/highs.md) through the Native C API
+or JS Wasm, use numerical engines. Models with reals require explicit `SolveOptions.numericTolerance`; without
+it support rejects them. Setting it permits these routes but does not force automatic selection to prefer them.
+MiniZinc MIP routes still accept only their Boolean/integer subset.
 
 === "Java"
 
@@ -65,10 +137,16 @@ programs, but they answer within tolerances. They take models with reals only wh
     --8<-- "interop-java/src/test/java/io/github/gciatto/ktconstraints/interop/examples/howto/SolverTasks.java:tolerance"
     ```
 
-Every floating-point answer is read back exactly: integer variables are rounded only when within the integrality
-tolerance, and the result is rejected when any bound or constraint is exceeded by more than the feasibility
-tolerance. The largest exact excess is reported in the result's metadata messages, and the objective value is
-computed exactly from the returned values. `OPTIMAL` from such a route is the engine's numerical claim, not an exact
-proof; strict inequalities such as `x < 1`, which floating point cannot represent, are rejected. Routes that work in
-floating point declare `SolverCapability.FLOATING_POINT_REALS`. See [choose a solver](choose-a-solver.md) and
-[exact reals](exact-reals-and-bitvectors.md).
+The Java example imports `SolveOptions` and `NumericTolerance` from `solve` and `OrToolsMipBackend` from `solve.mip`.
+Kotlin uses the same options on JVM, JS and Native. The TypeScript facade exports neither tolerance options nor
+a HiGHS loader; use Kotlin/JS for those routes.
+
+Returned doubles are converted to rationals; integer columns round only within integrality tolerance. Exact
+arithmetic then checks each bound and row against feasibility tolerance, and evaluates the objective from the
+accepted values. Diagnostics record the largest excess. An accepted assignment may therefore exceed an exact
+constraint within the consented tolerance. `OPTIMAL` remains a numerical engine claim. Strict real inequalities
+are rejected. See [configuration](../reference/configuration.md), [route limits](../reference/solvers-and-routes.md)
+and [exact reals](exact-reals-and-bitvectors.md).
+
+To re-optimize after reversible changes, use [incremental sessions](incremental-sessions.md#4-re-optimize-as-the-session-changes).
+The same operation is available through Kotlin blocking calls, Java blocking/future calls and TypeScript promises.

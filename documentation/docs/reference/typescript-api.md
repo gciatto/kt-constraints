@@ -6,7 +6,7 @@
 
 | Surface | Members |
 |---|---|
-| `new ModelBuilder()` | `intVar(name, min, max)`, `boolVar(name)`, `realVar(name)`, `add`, `minimize`, `maximize`, `minimizeViolations`, `satisfy`, `build` |
+| `new ModelBuilder()` | `intVar(name, min, max)`, `boolVar(name)`, `realVar(name)`, `add`, `minimize`, `maximize`, `minimizeReal`, `maximizeReal`, `minimizeViolations`, `satisfy`, `build` |
 | `IntExpression` | `plus`, `minus`, `times`, `negate`, `eq`, `neq`, `lt`, `le`, `gt`, `ge` |
 | `BoolExpression` | `and`, `or`, `implies`, `iff`, `not` |
 | `RealExpression` | `plus`, `minus`, `scale(factorText)`, `negate`, `eq`, `neq`, `lt`, `le`, `gt`, `ge` |
@@ -15,7 +15,7 @@
 
 Integer bounds, constants and weights are `bigint`; integer results do not round through `number`. Real constants and scale factors use exact integer, fraction or decimal strings. `minimizeViolations(constraints, weights)` takes parallel arrays with non-negative `bigint` weights, replaces the objective, and returns the integer penalty expression.
 
-Builder names must be unique, and expressions may only reference that builder's variables. Objectives are integers. There is no exported bit-vector facade, arbitrary projection setter, constraint metadata builder or allowed-tuple `Table` wrapper.
+Builder names must be unique, and expressions may only reference that builder's variables. Integer objectives use `minimize`/`maximize`; real objectives use `minimizeReal`/`maximizeReal`. See [LP/MILP models](../how-to/linear-programs.md) for tested examples. The facade does not export numeric tolerance options or a HiGHS loader; Kotlin/JS can use those APIs directly. There is no exported bit-vector facade, arbitrary projection setter, constraint metadata builder or allowed-tuple `Table` wrapper.
 
 | Function group | Exported names and argument shape |
 |---|---|
@@ -63,7 +63,9 @@ Timeouts and solution counts use machine numbers; null/omitted values use defaul
 | `Outcome.route` | Answering engine/route |
 | `Outcome.solution` | Nullable validated `Solution` |
 | `Outcome.objective`, `Outcome.bestBound` | Nullable exact `bigint` values |
-| `Solution.objective` | Nullable exact incumbent objective |
+| `Solution.objective` | Nullable exact integer incumbent objective |
+| `Outcome.realObjective`, `Outcome.realBestBound` | Nullable exact real objective and bound as `p` or `p/q` text |
+| `Solution.realObjective` | Nullable real incumbent objective as `p` or `p/q` text |
 | `Solution.intValueOf(variable)` | Nullable integer `bigint` |
 | `Solution.boolValueOf(variable)` | Nullable Boolean |
 | `Solution.realValueOf(variable)` | Nullable exact `p` or `p/q` text |

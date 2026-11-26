@@ -21,7 +21,8 @@ Add `io.github.gciatto:kt-constraints-dsl:<version>` and
 published version for both. Put the model and solving helpers below in `src/commonMain/kotlin/NQueens.kt`.
 They use common APIs throughout.
 
-JVM uses bundled solver libraries. Node uses Z3 Wasm through the `z3-solver` npm dependency. Native requires a
+JVM uses bundled solver libraries. Node defaults include the portable Kotlin engine plus HiGHS and Z3 Wasm. Native tries Kotlin, then HiGHS and Z3.
+The Kotlin engine needs no external solver runtime. To make the Z3 route available, provide a
 Z3 shared library: set `KT_CONSTRAINTS_Z3_LIBRARY` to its absolute path, or make it available on the loader
 path. See [Run on Kotlin/Native with Z3](../how-to/native-and-z3.md).
 
@@ -68,13 +69,12 @@ For this model, the default ranking prefers these routes when their runtimes are
 | Target | Preferred route | Runtime |
 |---|---|---|
 | JVM | `cp-sat/direct` | OR-Tools native libraries bundled with its Maven dependency |
-| JS under Node | `z3/wasm` | `z3-solver` npm dependency |
-| Kotlin/Native | `z3/native` | Separately installed Z3 shared library |
+| JS under Node | `kotlin/direct` | No external solver runtime |
+| Kotlin/Native | `kotlin/direct` | No external solver runtime |
 
-On JVM, `AutoBackend.load()` also registers Choco, Z3, SCIP and HiGHS. JVM and Node can register MiniZinc routes when
+On JVM, `AutoBackend.load()` also registers Choco, Kotlin, Z3, SCIP and HiGHS. JVM, Node and Native can register MiniZinc routes when
 `MINIZINC_EXECUTABLE` is set. `AutoBackend` may fall back if a candidate fails or returns `UNKNOWN`, so read the
-printed `result.descriptor.id` to find the actual answering route. The pure-Kotlin backend is not part of this
-default registry. See [Automatic solver selection](../explanation/backends/selection.md).
+printed `result.descriptor.id` to find the actual answering route. The pure-Kotlin backend is part of every platform's default registry. For exact real optimization using the same common API, see [LP and MILP models](../how-to/linear-programs.md). See [Automatic solver selection](../explanation/backends/selection.md).
 
 ## 5. Run the same test on each target
 

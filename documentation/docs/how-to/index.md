@@ -7,7 +7,7 @@ Contents in navigation order. Follow the [suggested reading order](../index.md#s
 | [Install](install.md) | Dependencies, package access and runtime setup |
 | [Choose a programming style](programming-styles.md) | Receiver DSL, explicit factories and language facades |
 | [Optimize](optimize.md) | Optimize an objective |
-| [Solve linear and mixed-integer programs](linear-programs.md) | Real objectives, exact optima and LP/MILP statuses |
+| [Solve LP and MILP models](linear-programs.md) | Real objectives, exact optima and LP/MILP statuses |
 | [Enumerate solutions](enumerate-solutions.md) | Enumerate solutions |
 | [Set limits and cancel](limits-and-cancellation.md) | Set limits and cancel a search |
 | [Classic problems](problems/index.md) | Classic problems |
@@ -24,7 +24,7 @@ Contents in navigation order. Follow the [suggested reading order](../index.md#s
 | [Choose a solver](choose-a-solver.md) | Availability, model support and required operations |
 | [Use MiniZinc](use-minizinc.md) | Engine configurations, CLI setup and browser assets |
 | [Run on Kotlin/Native with Z3](native-and-z3.md) | Shared-library loading and runtime checks |
-| [Use incremental sessions](incremental-sessions.md) | Repeated checks, assumptions and assertion rollback |
+| [Use incremental sessions](incremental-sessions.md) | Repeated checks and optimization, assumptions and assertion rollback |
 | [Use constraint stores](constraint-stores.md) | Posting, domain evidence, entailment and branch rollback |
 | [Use exact reals and bit-vectors](exact-reals-and-bitvectors.md) | Rational arithmetic and fixed-width wrapping values |
 | [Add a backend](contributing/add-a-backend.md) | Adapter contracts, shared tests and integration |

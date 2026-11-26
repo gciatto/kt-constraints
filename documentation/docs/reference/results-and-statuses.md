@@ -17,6 +17,8 @@ An **objective** is the expression to minimize or maximize.
 | `terminationReason` | `TerminationReason` | Execution completion or interruption reason; default `COMPLETED` |
 | `objectiveValue` | `BigInteger?` | Exact incumbent integer objective; requires an assignment |
 | `bestBound` | `BigInteger?` | Exact proven objective bound when supplied; may be absent |
+| `realObjectiveValue` | `Rational?` | Real-objective incumbent, instead of `objectiveValue`; requires an assignment |
+| `realBestBound` | `Rational?` | Bound for a real objective, instead of `bestBound`; may be absent |
 | `metadata` | `SolveMetadata` | Immutable messages and backend-defined statistics |
 
 `Assignment.valueOf(variable)` returns the typed value or null when absent from the projection. Integers and bit-vector values use `BigInteger`; a **bit-vector** is a fixed-width sequence of bits.
@@ -24,12 +26,14 @@ Real values use `Rational`, an exact fraction of two integers. `intValueOf` and 
 
 | SolveStatus | Interpretation |
 |---|---|
-| `FEASIBLE` | A feasible assignment was found; optimization optimality is not established |
-| `OPTIMAL` | An integer objective is proved optimal; `objectiveValue` is required |
+| `FEASIBLE` | A feasible assignment was found; it need not attain an optimum (including strict-bound suprema/infima) |
+| `OPTIMAL` | An integer or real objective is optimal according to the route's evidence; the corresponding objective field is required |
 | `INFEASIBLE` | No feasible assignment exists |
 | `UNBOUNDED` | Unboundedness reported with engine evidence |
 | `INFEASIBLE_OR_UNBOUNDED` | Engine evidence does not distinguish these outcomes |
 | `UNKNOWN` | No decisive answer and no feasible incumbent |
+
+On exact routes, `OPTIMAL` establishes the exact optimum. On floating-point routes it is a numerical claim under the opted-in tolerance contract, not a rational certificate. Exact `Rational` fields preserve the decoded values, not a stronger proof. A completed `FEASIBLE` result can carry an unattained supremum/infimum in `realBestBound`; for example, maximizing `x < 1` has bound 1 and no maximum. See [LP/MILP models](../how-to/linear-programs.md) and [internal certificates](../explanation/pure-kotlin-solver.md#linear-programs-the-exact-simplex). Certificates are checked internally and are not exported by the result API.
 
 The status enum covers outcomes beyond what every current model or backend can produce. Satisfaction normally returns `FEASIBLE`, not `OPTIMAL`. An optimal result's provided bound must equal its objective. Bounds are lower bounds for minimization and upper bounds for maximization; absence of a bound does not imply any particular gap.
 
@@ -55,7 +59,7 @@ completion diagnostics or statistics. Consume `solutions` through `SolveComplete
 
 ## Streams
 
-`SolutionStream.next()` returns `SolutionFound` events, then one `SolveCompleted`, then null. A solution event carries the projected assignment and optional objective. The completion event carries a `SolveResult`; `terminalResult` exposes it once known. Close the stream when stopping early.
+`SolutionStream.next()` returns `SolutionFound` events, then one `SolveCompleted`, then null. A solution event carries the projected assignment and optional `objectiveValue` or `realObjectiveValue`, according to its objective sort. The completion event carries a `SolveResult`; `terminalResult` exposes it once known. Close the stream when stopping early.
 
 Satisfaction enumeration is distinct by output projection. Optimization streams report improving incumbents. Exhaustive satisfaction enumeration requires the route's `ENUMERATION` capability. See [Enumerate solutions](../how-to/enumerate-solutions.md).
 
@@ -72,6 +76,8 @@ for one check. Read [solving modes](../explanation/solving-modes.md) and
 | `descriptor` | Answering engine and route |
 | `terminationReason` | Same termination enum as batch results |
 | `unsatCore` | Optional sufficient subset of the current check's assumptions; only on `UNSATISFIABLE` |
+| `realObjectiveValue` | `Rational?` | Real-objective incumbent, instead of `objectiveValue`; requires an assignment |
+| `realBestBound` | `Rational?` | Bound for a real objective, instead of `bestBound`; may be absent |
 | `metadata` | Messages and statistics |
 
 Satisfiable and unsatisfiable checks require `COMPLETED`. A core need not be minimal. Null means no core was supplied; it differs from an empty core. Assumptions apply only to that check. Session checks are satisfiability queries, even if the original model carries an optimization objective. See [Incremental sessions](../how-to/incremental-sessions.md).

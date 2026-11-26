@@ -5,10 +5,11 @@
 Start with the [route reference](../reference/solvers-and-routes.md) and
 [platform availability](../reference/platform-availability.md).
 
+- Use the pure-Kotlin route for portable exact LP/MILP without an external solver runtime.
 - Use Z3 for arbitrary-precision integer literals, exact linear reals, bit-vectors or incremental sessions.
 - On the JVM, consider CP-SAT or Choco for finite-domain combinatorial models. Use Choco's
   store when you need native domain propagation.
-- For bounded affine integer models, consider SCIP or HiGHS through OR-Tools.
+- For bounded affine integer models, consider SCIP or HiGHS through OR-Tools. For real LP/MILP, these and direct HiGHS require explicit tolerance consent; see [LP/MILP models](linear-programs.md).
 - Use [MiniZinc](use-minizinc.md) when you want one of its installed engine configurations.
 
 Choose a route as well as an engine: `cp-sat/direct` and `cp-sat/minizinc` have different
@@ -36,13 +37,13 @@ suspending function. The shown imports also cover later Kotlin helpers on this p
 --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/SolverTasks.kt:selection"
 ```
 
-`selection.rejections` gives reasons for rejected routes. `selection.best` fails if no
+`selection.features` describes the problem class and objective shape. `selection.diagnosis` explains an empty selection, including capabilities no registered route provides; `selection.rejections` gives reasons for rejected routes. `selection.best` fails if no
 candidate qualifies. `availability()` probes the runtime; `support(model, options)` checks
 the whole model and requested options, and reports any lossless decompositions.
 Pass the same options during selection and execution.
 
 Java can use the same backend checks before wrapping the selected backend in
-`BlockingSolver.of(...)`. In TypeScript, load a route with `loadZ3`, `loadMiniZincNode` or
+`BlockingSolver.of(...)`. In TypeScript, load a route with `loadKotlin`, `loadZ3`, `loadMiniZincNode` or
 `loadMiniZincBrowser`; inspect its `id` and `capabilities`. Loading and solving reject on
 runtime or support failures; the facade does not expose the Kotlin registry.
 

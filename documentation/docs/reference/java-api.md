@@ -18,6 +18,8 @@
 
 Arithmetic, comparison, Boolean and conversion operators are instance methods of the expression interfaces: `x.plus(3)`, `x.minus(y).eq(1)`, `p.and(q)`, `p.not()`, `x.negate()` (or `x.unaryMinus()`), `n.asRealExpr()`, `p.asIntExpr()`. Helpers without a receiver expression are static: `Expressions.sum(terms).le(5)`, `Expressions.allDifferent(x, y)`. Symbolic equality is `eq`; object equality remains `equals`. There are no `double` arithmetic overloads. Full core node constructors remain available where the DSL has no wrapper, such as `Table` and bit-vector nodes. See [Modelling language](modelling-language.md).
 
+`minimize`/`maximize` accept integer or real expressions; real objectives return `Rational` through `getRealObjectiveValue()` and `getRealBestBound()`. See [solve LP and MILP models](../how-to/linear-programs.md) for tested Java examples and explicit floating-point tolerance consent.
+
 ## Solvers and streams
 
 | Type | Public surface |
@@ -38,7 +40,7 @@ Overloads omit optional solve options, assumptions or timeouts. `solve` blocks t
 
 A stream yields `SolutionFound` events followed by one `SolveCompleted`; close it when stopping early. The final result is available through the completion event or `getTerminalResult()`. Use try-with-resources for the solver and stream.
 
-`openSession` requires an `IncrementalConstraintSolver`; unsupported routes throw `UnsupportedOperationException`. `push` returns an owner-specific `Checkpoint`; `popTo` invalidates it and newer checkpoints. Session checks return `CheckResult`, with an optional sufficient assumption core. `optimize` takes an `Objective`, such as `new Objective.Maximize(expr)`, for that call only and returns a `SolveResult`. There is no `declare` wrapper on `BlockingSession`.
+`openSession` requires an `IncrementalConstraintSolver`; unsupported routes throw `UnsupportedOperationException`. `push` returns an owner-specific `Checkpoint`; `popTo` invalidates it and newer checkpoints. Session checks return `CheckResult`, with an optional sufficient assumption core. `optimize` takes an `Objective`, such as `new Objective.Maximize(expr)` or `new Objective.MaximizeReal(realExpr)`, for that call only and returns a `SolveResult`. There is no `declare` wrapper on `BlockingSession`.
 
 ## Constraint stores
 
@@ -55,7 +57,7 @@ A stream yields `SolutionFound` events followed by one `SolveCompleted`; close i
 
 Stores are single-consumer: do not overlap operations, including pending futures. Forks are independent owners and must be closed separately. Marks are local and become stale after rollback. `project` returns a `Residual`, whose `exact` flag must be inspected rather than assuming variable elimination is exact.
 
-Results use the ordinary Kotlin getter names (`getStatus`, `getAssignment`, `getObjectiveValue`, `getBestBound`, `getTerminationReason`). See [Results and statuses](results-and-statuses.md).
+Results use the ordinary Kotlin getter names (`getStatus`, `getAssignment`, `getObjectiveValue`, `getBestBound`, `getRealObjectiveValue`, `getRealBestBound`, `getTerminationReason`). See [Results and statuses](results-and-statuses.md).
 
 The boundary checks live in `interop-java/src/test/java/io/github/gciatto/ktconstraints/interop/JavaUsage.java` and its Kotest caller. For a guided example, see [Knapsack from Java](../tutorials/java-knapsack.md); for declarations, see the [API reference](/kt-constraints/api/index.html).
 

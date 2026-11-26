@@ -38,7 +38,7 @@ For mixed integer/real arithmetic, explicitly embed an integer expression using 
 `asRealExpr()`, Java `n.asRealExpr()` or TypeScript `asRealExpression(...)`. Multiply real
 expressions by rational constants; products of real variables are not offered by the
 linear real API. Real variables are unbounded; add inequalities when you need bounds.
-Optimization objectives remain integer expressions; see [optimization](optimize.md).
+Objectives may be integer or real expressions; see [solve LP and MILP models](linear-programs.md).
 
 ## Model fixed-width wrapping arithmetic
 
