@@ -43,9 +43,7 @@ jobs:
         with:
           node-version: '22'
       - name: Check npm publication of the TypeScript facade on GitHub Packages and npmjs (dry run)
-        run: |
-          ./scripts/publish-npm.sh -PforceVersion=0.0.0-ci github --dry-run
-          ./scripts/publish-npm.sh -PforceVersion=0.0.0-ci npmjs --dry-run
+        run: ./.github/scripts/check-npm-publications.sh
       - name: Job summary
         if: always()
         uses: ./.github/actions/ci-summary
@@ -83,9 +81,7 @@ jobs:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_PASSWORD }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          npm install
-          npx semantic-release
+        run: ./.github/scripts/release.sh
       - name: Release job summary
         if: always()
         uses: ./.github/actions/ci-summary

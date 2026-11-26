@@ -62,19 +62,12 @@ jobs:
     needs: [build, test-extensively, docs, release]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Overall CI summary
         env:
           BUILD: ${{ needs.build.result }}
           EXTENSIVE: ${{ needs.test-extensively.result }}
           DOCS: ${{ needs.docs.result }}
           RELEASE: ${{ needs.release.result }}
-        run: |
-          {
-            echo '# Kt-Constraints CI summary'
-            echo '| Stage | Outcome |'
-            echo '| --- | --- |'
-            echo "| Build and lint | $BUILD |"
-            echo "| Multi-OS tests | $EXTENSIVE |"
-            echo "| Documentation | $DOCS |"
-            echo "| Release (opt-in) | $RELEASE |"
-          } >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
+        run: ./.github/scripts/ci-summary.sh
