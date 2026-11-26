@@ -11,6 +11,7 @@ class SolverTasksSpec :
         test("solve a program in floating point") { SolverTasks.floatingPointProgram() }
         test("enumerate") { SolverTasks.enumerate() }
         test("restore sessions") { SolverTasks.session() }
+        test("re-optimize sessions") { SolverTasks.sessionOptimization() }
         test("restore stores") { SolverTasks.store() }
         test("cancel asynchronous search") { SolverTasks.cancel() }
         test("preserve decimal input") { SolverTasks.real() }
