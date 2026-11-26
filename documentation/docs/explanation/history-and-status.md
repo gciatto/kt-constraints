@@ -63,7 +63,7 @@ Release configuration adopted GitHub Packages for Maven and npm artifacts and re
 | Batch results and streams | Implemented | Satisfaction, integer optimization, projected enumeration on capable routes, cancellation and explicit completion evidence |
 | Z3 routes | Implemented | JVM, JavaScript Wasm and desktop Native; incremental checks, assumptions and cores |
 | Direct JVM CP | Implemented | Choco and CP-SAT, with checked bounded integer subsets |
-| Linear and mixed-integer programs | Implemented | Real objectives; exact optima from the pure-Kotlin simplex and branch and cut (checked certificates, floating-point start) and from Z3; SCIP and HiGHS in floating point on an explicit numeric tolerance; benchmark families with known optima |
+| Linear and mixed-integer programs | Implemented | Real objectives; exact optima from the pure-Kotlin simplex and branch and bound (checked certificates, floating-point start) and from Z3; SCIP and HiGHS in floating point on an explicit numeric tolerance; benchmark families with known optima |
 | MIP through OR-Tools | Implemented, restricted | SCIP and HiGHS; bounded affine integer lowering, numerical proof statuses, no enumeration; HiGHS requires a backend time limit |
 | MiniZinc execution | Partial | Five engine configurations on the JVM and on Linux and macOS Native, Node Gecode CLI and browser Chuffed Wasm; no Native Windows command transport |
 | Constraint stores | Implemented, restricted | Choco native propagation on JVM and a generic satisfiability store over incremental solvers; sound non-exact residuals and non-minimal explanations |

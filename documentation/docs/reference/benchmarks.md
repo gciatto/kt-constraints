@@ -131,7 +131,7 @@ integer-program  4     LINEAR_INTEGER  auto:scip/or-tools  OPTIMAL     57       
 Native route. Cells are median milliseconds of a fresh solver, including setup. A `*` marks a median where some seeds
 timed out. MiniZinc routes are in their own section below. Every proof matched the known answer. This run replaced
 the 2026-11-22 one (scales 1-6) after the pure-Kotlin and `Rational` optimisations and the technique selection that
-sends integer objectives over linear models to branch and cut; the other routes moved within noise. HiGHS Wasm and
+sends integer objectives over linear models to branch and bound; the other routes moved within noise. HiGHS Wasm and
 Native take only the linear families.
 
 Scale 3:
@@ -280,7 +280,7 @@ Scale 16:
     confirmed (see [Z3](../explanation/backends/z3.md)). Kotlin already comes before Z3 everywhere.
 12. **With a tolerance, floating-point routes are 2-6x faster than Kotlin on dense LPs and facility location at scale
     16.** Kotlin stays within 1 s on every row and is fastest, or within a few milliseconds of the fastest, on the
-    knapsacks, where one round of Gomory cuts closes the gap. It also returns exact answers. The fixed order keeps Kotlin first; on Node and Native, HiGHS now
+    knapsacks, where its search closes the gap in a few nodes. It also returns exact answers. The fixed order keeps Kotlin first; on Node and Native, HiGHS now
     comes before Z3, because it wins every linear row both accept.
 13. **JVM: keep SCIP and HiGHS after Z3.** They beat Z3 on linear rows, but are 2-20x slower on the `allDifferent`
     and counting models they also accept (n-queens, pigeonhole, assignment). A fixed order cannot tell those classes
