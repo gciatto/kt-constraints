@@ -252,7 +252,9 @@ baseline. Cells are median milliseconds; the number in brackets is the route's p
 Every route gets `numericTolerance = NumericTolerance()`, so floating-point routes take part. Exact routes must
 match the optimum exactly; floating-point ones within a relative 1e-4. Every answer did, and no route overran its
 timeout by more than 2 s. The size column of a `ROUTE,` row is the column count for `lp-planted` and the knapsacks, and
-facilities × customers for facility location. A `—` means the route did not take the model. This run first exposed a
+facilities × customers for facility location. A `—` means the route did not take the model. The Kotlin columns were measured again on 2026-11-26 after Gomory cuts were
+turned off by default (other routes unchanged). The Kotlin route also solves the two later binary families, `set-cover` and
+`multi-knapsack`, within 2-89 ms at scale 16 on every platform; the other routes have not been measured on them yet. This run first exposed a
 false optimality claim: HiGHS through OR-Tools, left at HiGHS' default 1e-4 relative gap because OR-Tools' wrapper
 ignores its generic gap parameter, reported 29572 as optimal on a scale-16 bounded knapsack whose optimum is 29574. The
 route now passes HiGHS' own gap options; its scale-16 bounded-knapsack cell was measured after that fix.
@@ -261,26 +263,26 @@ Scale 8:
 
 | family | JVM kotlin | JVM z3 | JVM scip | JVM highs | JVM cp-sat | JVM choco | Node kotlin | Node highs wasm | Node z3 wasm | Native kotlin | Native highs | Native z3 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| lp-planted | 57 | 30000* | 22 | 16 | — | — | 78 | 48 | timeout | 89 | 32 | 30000* |
-| milp-knapsack | 9 | timeout | 7 | 24 | — | — | 36 | 9 | timeout | 9 | 18 | timeout |
-| facility-location | 50 | 1558 | 17 | 42 | — | — | 71 | 45 | 2101 | 55 | 31 | 1561 |
-| bounded-knapsack | 2 | 203 | 8 | 19 | 13 | timeout | 7 | 7 | 174 | 4 | 19 | 203 |
+| lp-planted | 59 | 30000* | 22 | 16 | — | — | 78 | 48 | timeout | 76 | 32 | 30000* |
+| milp-knapsack | 10 | timeout | 7 | 24 | — | — | 25 | 9 | timeout | 14 | 18 | timeout |
+| facility-location | 46 | 1558 | 17 | 42 | — | — | 53 | 45 | 2101 | 39 | 31 | 1561 |
+| bounded-knapsack | 9 | 203 | 8 | 19 | 13 | timeout | 22 | 7 | 174 | 10 | 19 | 203 |
 
 Scale 16:
 
 | family | JVM kotlin | JVM z3 | JVM scip | JVM highs | JVM cp-sat | JVM choco | Node kotlin | Node highs wasm | Node z3 wasm | Native kotlin | Native highs | Native z3 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| lp-planted | 312 | timeout | 69 | 53 | — | — | 573 | 194 | timeout | 774 | 147 | timeout |
-| milp-knapsack | 2 | timeout | 7 | 18 | — | — | 7 | 12 | timeout | 3 | 16 | timeout |
-| facility-location | 204 | timeout | 33 | 58 | — | — | 349 | 68 | timeout | 292 | 49 | timeout |
-| bounded-knapsack | 9 | 608 | 9 | 13 | 30 | timeout | 35 | 11 | 214 | 14 | 21 | 614 |
+| lp-planted | 397 | timeout | 69 | 53 | — | — | 552 | 194 | timeout | 700 | 147 | timeout |
+| milp-knapsack | 15 | timeout | 7 | 18 | — | — | 53 | 12 | timeout | 34 | 16 | timeout |
+| facility-location | 223 | timeout | 33 | 58 | — | — | 340 | 68 | timeout | 283 | 49 | timeout |
+| bounded-knapsack | 6 | 608 | 9 | 13 | 30 | timeout | 24 | 11 | 214 | 14 | 21 | 614 |
 
 11. **Exact LP and MILP: Kotlin, never Z3.** `kotlin/direct` is the fastest exact route on every row and platform,
     by 10-1000x. Z3 times out from scale 8 on the dense LPs and rational knapsacks; its optimizer also needs every claim
     confirmed (see [Z3](../explanation/backends/z3.md)). Kotlin already comes before Z3 everywhere.
 12. **With a tolerance, floating-point routes are 2-6x faster than Kotlin on dense LPs and facility location at scale
-    16.** Kotlin stays within 1 s on every row and is fastest, or within a few milliseconds of the fastest, on the
-    knapsacks, where its search closes the gap in a few nodes. It also returns exact answers. The fixed order keeps Kotlin first; on Node and Native, HiGHS now
+    16.** Kotlin stays within 1 s on every row and within about 2-4x of them on the knapsacks, where its search closes
+    the gap in a few nodes. It also returns exact answers. The fixed order keeps Kotlin first; on Node and Native, HiGHS now
     comes before Z3, because it wins every linear row both accept.
 13. **JVM: keep SCIP and HiGHS after Z3.** They beat Z3 on linear rows, but are 2-20x slower on the `allDifferent`
     and counting models they also accept (n-queens, pigeonhole, assignment). A fixed order cannot tell those classes
