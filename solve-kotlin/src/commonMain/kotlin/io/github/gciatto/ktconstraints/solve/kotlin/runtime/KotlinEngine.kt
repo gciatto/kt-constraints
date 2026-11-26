@@ -116,6 +116,7 @@ internal class KotlinEngine(
         SolveMetadata(
             statistics =
                 mapOf(
+                    "technique" to "sat",
                     "work" to budget.work.toString(),
                     "variables" to circuit.variables.toString(),
                     "compiledClauses" to circuit.clauses.toString(),
