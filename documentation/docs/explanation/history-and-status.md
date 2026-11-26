@@ -68,7 +68,7 @@ Release configuration adopted GitHub Packages for Maven and npm artifacts and re
 | MiniZinc execution | Partial | Five engine configurations on the JVM and on Linux and macOS Native, Node Gecode CLI and browser Chuffed Wasm; no Native Windows command transport |
 | Constraint stores | Implemented, restricted | Choco native propagation on JVM and a generic satisfiability store over incremental solvers; sound non-exact residuals and non-minimal explanations |
 | Java and TypeScript facades | Implemented | Real language-boundary tests; facade surfaces differ from the full Kotlin API |
-| C facade | Implemented, restricted | Shared library for desktop targets; integer/Boolean modelling and batch solving through the Native defaults |
+| C facade | Implemented, restricted | Shared library for desktop targets; Boolean, integer and exact real modelling, LP/MILP and batch solving through the Native defaults |
 | Automatic selection (`AutoBackend`) | Implemented | Explicit platform bundles, eligibility checks, explained heuristics, fallback and races; Kotlin included on every platform; browser MiniZinc requires explicit loading |
 | Benchmark-informed ranking | Partial | Recorded measurements and an experimental evidence interface; no timing dataset in the default policy |
 | Pure-Kotlin route | Implemented | Published for JVM, JS and Native with shared-contract coverage; in every default registry, ordered by benchmarks |

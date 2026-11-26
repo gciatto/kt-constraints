@@ -15,6 +15,7 @@ static int failures = 0;
 
 typedef libktconstraints_kref_io_github_gciatto_ktconstraints_c_IntExpression IntExpression;
 typedef libktconstraints_kref_io_github_gciatto_ktconstraints_c_BoolExpression BoolExpression;
+typedef libktconstraints_kref_io_github_gciatto_ktconstraints_c_RealExpression RealExpression;
 typedef libktconstraints_kref_io_github_gciatto_ktconstraints_c_IntExpressionList IntExpressionList;
 typedef libktconstraints_kref_io_github_gciatto_ktconstraints_c_ModelBuilder ModelBuilder;
 typedef libktconstraints_kref_io_github_gciatto_ktconstraints_c_Model Model;
@@ -90,10 +91,104 @@ static void edge_cases(void) {
     DISPOSE(builder);
 }
 
+// Exact reals, all comparisons, real minimization and preserved integer-objective accessors.
+static void real_edge_cases(void) {
+    ModelBuilder builder = KC.ModelBuilder.ModelBuilder();
+    ModelBuilder foreign = KC.ModelBuilder.ModelBuilder();
+    RealExpression x = KC.ModelBuilder.realVar(builder, "x");
+    RealExpression other = KC.ModelBuilder.realVar(foreign, "other");
+    check("real variable is declared", x.pinned != NULL);
+    check("duplicate real name gives a null handle", KC.ModelBuilder.realVar(builder, "x").pinned == NULL);
+    check("invalid real name gives a null handle", KC.ModelBuilder.realVar(builder, "").pinned == NULL);
+    check("malformed real constant gives a null handle", KC.realConstant("4.5x").pinned == NULL);
+    check("zero denominator gives a null handle", KC.realConstant("1/0").pinned == NULL);
+    check("empty real constant gives a null handle", KC.realConstant("").pinned == NULL);
+
+    RealExpression zero = KC.realConstant("0");
+    RealExpression half = KC.realConstant("1/2");
+    RealExpression three = KC.realConstant("3");
+    RealExpression negative = KC.realConstant("-3");
+    RealExpression fraction = KC.realConstant("9/2");
+    RealExpression decimal = KC.realConstant("4.5");
+    RealExpression sum = KC.RealExpression.plus(x, three);
+    RealExpression difference = KC.RealExpression.minus(sum, x);
+    RealExpression negated = KC.RealExpression.negate(three);
+    BoolExpression constraints[] = {
+        KC.RealExpression.eq(x, half),
+        KC.RealExpression.neq(x, zero),
+        KC.RealExpression.lt(x, three),
+        KC.RealExpression.le(x, half),
+        KC.RealExpression.gt(x, zero),
+        KC.RealExpression.ge(x, half),
+        KC.RealExpression.eq(difference, three),
+        KC.RealExpression.eq(negated, negative),
+        KC.RealExpression.eq(fraction, decimal)
+    };
+    for (unsigned i = 0; i < sizeof(constraints) / sizeof(constraints[0]); i++) {
+        check("real constraint accepted", KC.ModelBuilder.add(builder, constraints[i]));
+        DISPOSE(constraints[i]);
+    }
+    BoolExpression foreignConstraint = KC.RealExpression.eq(x, other);
+    check("foreign real constraint rejected", !KC.ModelBuilder.add(builder, foreignConstraint));
+    check("foreign real minimum rejected", !KC.ModelBuilder.minimizeReal(builder, other));
+    check("foreign real maximum rejected", !KC.ModelBuilder.maximizeReal(builder, other));
+    DISPOSE(foreignConstraint);
+    check("real minimum accepted", KC.ModelBuilder.minimizeReal(builder, x));
+    Model model = KC.ModelBuilder.build(builder);
+    Outcome minimum = KC.solve(model, 10000);
+    expect("real minimum status", KC.Outcome.get_status(minimum), "OPTIMAL");
+    expect("real minimum", KC.Outcome.get_realObjective(minimum), "1/2");
+    expect("real value", KC.Outcome.valueOfReal(minimum, x), "1/2");
+    check("no integer objective for real minimum", KC.Outcome.get_objective(minimum) == NULL);
+    check("no real value for a literal", KC.Outcome.valueOfReal(minimum, half) == NULL);
+    check("no real value for a compound expression", KC.Outcome.valueOfReal(minimum, sum) == NULL);
+    DISPOSE(minimum);
+    DISPOSE(model);
+
+    IntExpression one = KC.constant(1);
+    check("integer objective replaces real minimum", KC.ModelBuilder.maximize(builder, one));
+    model = KC.ModelBuilder.build(builder);
+    Outcome integer = KC.solve(model, 10000);
+    expect("integer objective with real constraints", KC.Outcome.get_objective(integer), "1");
+    check("no real objective for integer maximum", KC.Outcome.get_realObjective(integer) == NULL);
+    expect("real value with integer objective", KC.Outcome.valueOfReal(integer, x), "1/2");
+    DISPOSE(integer);
+    DISPOSE(model);
+    DISPOSE(one);
+
+    BoolExpression impossible = KC.RealExpression.neq(x, half);
+    check("contradiction accepted", KC.ModelBuilder.add(builder, impossible));
+    DISPOSE(impossible);
+    model = KC.ModelBuilder.build(builder);
+    Outcome infeasible = KC.solve(model, 10000);
+    expect("real infeasible status", KC.Outcome.get_status(infeasible), "INFEASIBLE");
+    check("no real objective without a solution", KC.Outcome.get_realObjective(infeasible) == NULL);
+    check("no real value without a solution", KC.Outcome.valueOfReal(infeasible, x) == NULL);
+    DISPOSE(infeasible);
+    DISPOSE(model);
+    DISPOSE(negated);
+    DISPOSE(difference);
+    DISPOSE(sum);
+    DISPOSE(decimal);
+    DISPOSE(fraction);
+    DISPOSE(negative);
+    DISPOSE(three);
+    DISPOSE(half);
+    DISPOSE(zero);
+    // Reals have no product of two variable expressions, so the facade refuses to build one.
+    RealExpression product = KC.RealExpression.times(other, other);
+    check("real variable product is refused", product.pinned == NULL);
+    DISPOSE(other);
+    DISPOSE(x);
+    DISPOSE(foreign);
+    DISPOSE(builder);
+}
+
 int main(void) {
     lib = libktconstraints_symbols();
     optimization();
     edge_cases();
+    real_edge_cases();
     if (failures > 0) {
         printf("%d check(s) failed\n", failures);
         return 1;

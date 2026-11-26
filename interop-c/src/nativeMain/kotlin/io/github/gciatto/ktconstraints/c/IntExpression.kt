@@ -18,6 +18,9 @@ class IntExpression internal constructor(
     /** Exact negation. */
     fun negate(): IntExpression = IntExpression(-expr)
 
+    /** Embeds this exact integer expression into the real sort. */
+    fun toReal(): RealExpression = RealExpression(expr.asRealExpr())
+
     /** Symbolic equality. */
     fun eq(other: IntExpression): BoolExpression = BoolExpression(expr eq other.expr)
 

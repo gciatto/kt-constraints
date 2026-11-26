@@ -1,6 +1,8 @@
 package io.github.gciatto.ktconstraints.c
 
+import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.real.RealLiteral
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
 import io.github.gciatto.ktconstraints.solve.spi.withSolver
@@ -14,6 +16,9 @@ fun constant(value: Long): IntExpression = IntExpression(IntLiteral(value))
 
 /** Exact integer constant of any size, from its decimal text; null if [decimal] is not an integer. */
 fun constantOf(decimal: String): IntExpression? = runCatching { IntExpression(IntLiteral(BigInteger.of(decimal))) }.getOrNull()
+
+/** Exact rational constant from integer, fraction or decimal text; null if [decimal] is invalid. */
+fun realConstant(decimal: String): RealExpression? = runCatching { RealExpression(RealLiteral(Rational.parse(decimal))) }.getOrNull()
 
 /** Requires all [operands] to take pairwise different values. */
 fun allDifferent(operands: IntExpressionList): BoolExpression = BoolExpression(dslAllDifferent(*operands.items.toTypedArray()))
