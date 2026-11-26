@@ -103,7 +103,7 @@ internal object VerifiedStart {
      * Solves the square system `matrix·x = rhs` exactly, or null when it is singular: rows are scaled to integers and
      * eliminated fraction-free (Bareiss), so every division is exact and only the final quotients need a gcd.
      */
-    fun solve(
+    private fun solve(
         matrix: List<List<Rational>>,
         rhs: List<Rational>,
     ): List<Rational>? {

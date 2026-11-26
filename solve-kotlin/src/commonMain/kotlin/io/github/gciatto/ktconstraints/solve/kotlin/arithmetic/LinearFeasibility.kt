@@ -41,7 +41,7 @@ internal class LinearFeasibility(
             val previous = side[slack]
             if (previous == null || row.tighter(scaled[previous]!!)) side[slack] = index
         }
-        for ((form, slack) in slacks) {
+        for (slack in slacks.values) {
             tableau.bound(slack, lower[slack]?.let { scaled[it]!!.bound }, upper[slack]?.let { scaled[it]!!.bound })
         }
         if (!tableau.check()) {

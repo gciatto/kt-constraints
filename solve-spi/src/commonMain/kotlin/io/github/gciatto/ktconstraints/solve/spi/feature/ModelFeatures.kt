@@ -139,7 +139,10 @@ class ModelFeatures private constructor(
                 is Sort.BitVector -> bitVectors = true
             }
             if (variable is IntVar) {
-                variable.domain.intervals.forEach { record(it.min).also { _ -> record(it.max) } }
+                variable.domain.intervals.forEach {
+                    record(it.min)
+                    record(it.max)
+                }
                 if (variable.domain.intervals.any { it.min < BigInteger.ZERO || it.max > BigInteger.ONE }) binary = false
             }
         }
