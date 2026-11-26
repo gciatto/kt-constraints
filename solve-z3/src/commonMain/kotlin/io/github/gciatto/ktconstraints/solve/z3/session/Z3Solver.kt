@@ -33,15 +33,7 @@ internal class Z3Solver<T>(
     override fun openSession(model: ConstraintModel): IncrementalSession {
         check(!isClosed) { "Solver is closed" }
         requireSupported(model)
-        val session =
-            Z3Session(
-                model,
-                descriptor,
-                newOwner(),
-                { snapshot, timeout -> solve(snapshot, SolveOptions(timeoutMillis = timeout)) },
-            ) { closed ->
-                update { it - closed }
-            }
+        val session = Z3Session(model, descriptor, newOwner()) { closed -> update { it - closed } }
         update { it + session }
         // close() may have drained the sessions between the check above and registration.
         if (isClosed) {
