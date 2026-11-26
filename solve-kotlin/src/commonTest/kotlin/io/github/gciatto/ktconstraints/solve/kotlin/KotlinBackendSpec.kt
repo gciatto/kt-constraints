@@ -10,6 +10,7 @@ import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.test.solve.differentialContract
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
+import io.github.gciatto.ktconstraints.test.solve.incrementalOptimizationContract
 import io.github.gciatto.ktconstraints.test.solve.linearProgrammingContract
 import io.github.gciatto.ktconstraints.test.solve.solverContract
 import io.kotest.core.spec.style.FunSpec
@@ -22,6 +23,7 @@ class KotlinBackendSpec :
         include(linearProgrammingContract { KotlinBackend().createSolver() })
         include(differentialContract("kotlin") { KotlinBackend().createSolver() })
         include(incrementalContract { KotlinBackend().createSolver() })
+        include(incrementalOptimizationContract { KotlinBackend().createSolver() })
 
         test("route is available without an external runtime") {
             val backend = KotlinBackend()
