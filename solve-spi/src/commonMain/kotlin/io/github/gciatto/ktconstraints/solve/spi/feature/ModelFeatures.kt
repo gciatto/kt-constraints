@@ -59,16 +59,30 @@ class ModelFeatures private constructor(
     val nodes: Int,
     /** Largest absolute integer among literals, coefficients and domain bounds. */
     val maxMagnitude: BigInteger,
+    /** Whether a Boolean connective (or, not, implication, equivalence, nested and) occurs below top-level conjunction. */
+    val logic: Boolean,
+    /** Whether every integer variable ranges over `0..1`, making integer columns binary. */
+    val binaryIntegers: Boolean,
+    /** Whether the objective is real rather than integer. */
+    val realObjective: Boolean,
 ) {
+    /**
+     * Whether the model is a linear program in the broad sense: a conjunction of linear relations over integers, reals
+     * and Booleans, without logic, globals or products of variables, so simplex-based techniques apply directly.
+     */
+    val linear: Boolean get() = !logic && !reified && globals.isEmpty() && !nonlinear && !usesBitVectors
+
     /** The family heuristics and benchmark evidence key on; the most specialised sort wins. */
     val problemClass: ProblemClass
         get() =
             when {
                 usesBitVectors -> ProblemClass.SMT_BITVECTOR
+                usesReals && linear -> if (usesIntegers) ProblemClass.MIXED_INTEGER_PROGRAM else ProblemClass.LINEAR_PROGRAM
                 usesReals -> ProblemClass.SMT_REAL
                 !usesIntegers -> ProblemClass.PURE_BOOLEAN
                 globals.isNotEmpty() || reified -> ProblemClass.CP_GLOBALS
                 nonlinear || objective == ObjectiveKind.NONLINEAR -> ProblemClass.NONLINEAR_INTEGER
+                linear && binaryIntegers -> ProblemClass.BINARY_PROGRAM
                 else -> ProblemClass.LINEAR_INTEGER
             }
 
@@ -93,6 +107,9 @@ class ModelFeatures private constructor(
                 constraints = model.constraints.size,
                 nodes = walk.nodes,
                 maxMagnitude = walk.magnitude,
+                logic = walk.logic,
+                binaryIntegers = walk.binary,
+                realObjective = model.objective?.expression?.sort == Sort.Real,
             )
         }
     }
@@ -105,6 +122,8 @@ class ModelFeatures private constructor(
         var bitVectors = false
         var nonlinear = false
         var reified = false
+        var logic = false
+        var binary = true
         val globals = mutableSetOf<GlobalKind>()
         var nodes = 0
         var magnitude: BigInteger = BigInteger.ZERO
@@ -119,7 +138,10 @@ class ModelFeatures private constructor(
                 Sort.Real -> reals = true
                 is Sort.BitVector -> bitVectors = true
             }
-            if (variable is IntVar) variable.domain.intervals.forEach { record(it.min).also { _ -> record(it.max) } }
+            if (variable is IntVar) {
+                variable.domain.intervals.forEach { record(it.min).also { _ -> record(it.max) } }
+                if (variable.domain.intervals.any { it.min < BigInteger.ZERO || it.max > BigInteger.ONE }) binary = false
+            }
         }
 
         /** Walks [constraint], descending through top-level conjunctions without counting them as reification. */
@@ -187,6 +209,7 @@ class ModelFeatures private constructor(
                 else -> Unit
             }
             if (node.isConnective() && children.any { it.relation }) reified = true
+            if (node is BoolOr || node is BoolNot || node is BoolImplies || node is BoolEquality || node is BoolAnd) logic = true
         }
 
         private fun record(value: BigInteger) {
