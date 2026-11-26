@@ -155,27 +155,35 @@ internal class BranchAndBound(
                 if (best?.let { found.score > it.score } != false) improve(found)
                 if (stopAtFirst) return Outcome.Optimal(found)
             }
-            val value = simplex.valueOf(branching)
-            val floor = floor(value)
-            val fraction = value.real - Rational.of(floor)
-            val down =
-                Node(
-                    node.tightenings + Tightening(branching, null, DeltaRational.of(Rational.of(floor))),
-                    bound,
-                    Branch(branching, false, fraction),
-                )
-            val up =
-                Node(
-                    node.tightenings + Tightening(branching, DeltaRational.of(Rational.of(floor + BigInteger.ONE)), null),
-                    bound,
-                    Branch(branching, true, Rational.ONE - fraction),
-                )
-            // Last pushed is explored next: dive towards the nearer integer.
-            if (fraction >= HALF) open.addAll(listOf(down, up)) else open.addAll(listOf(up, down))
+            open.addAll(children(node, branching, bound))
             plunge = true
         }
         if (!stopAtFirst) current = null
         return best?.let { Outcome.Optimal(it) } ?: Outcome.Infeasible
+    }
+
+    /** The two children, with the nearer integer last so the search dives into it first. */
+    private fun children(
+        node: Node,
+        index: Int,
+        bound: DeltaRational,
+    ): List<Node> {
+        val value = simplex.valueOf(index)
+        val floor = floor(value)
+        val fraction = value.real - Rational.of(floor)
+        val down =
+            Node(
+                node.tightenings + Tightening(index, null, DeltaRational.of(Rational.of(floor))),
+                bound,
+                Branch(index, false, fraction),
+            )
+        val up =
+            Node(
+                node.tightenings + Tightening(index, DeltaRational.of(Rational.of(floor + BigInteger.ONE)), null),
+                bound,
+                Branch(index, true, Rational.ONE - fraction),
+            )
+        return if (fraction >= HALF) listOf(down, up) else listOf(up, down)
     }
 
     /** Records how much a branching on [branch]'s column cost, per unit it moved the column. */
@@ -223,7 +231,7 @@ internal class BranchAndBound(
     /**
      * Root evidence is checked against [program] itself: a refutation, a ray (valid at any node, since nodes only add
      * bounds) and, for pure linear programs, the dual bound. shortcut: deeper nodes' proofs are not checked, since
-     * that would need a tree certificate; upgrade when branch and bound gains cuts.
+     * that would need a tree certificate; extend verification when tree certificates are implemented.
      */
     private fun certify(
         valid: Boolean,

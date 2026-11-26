@@ -20,7 +20,7 @@ import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
 import io.github.gciatto.ktconstraints.solve.spi.incremental.SessionModels
 import io.github.gciatto.ktconstraints.solve.spi.managed.CheckpointStack
-import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
+import io.github.gciatto.ktconstraints.solve.stream.forEachSolution
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -110,7 +110,7 @@ internal class KotlinSession(
             if (LinearPrograms.handles(snapshot)) {
                 val report = LinearPrograms.report(snapshot)
                 if (!report.isSupported) throw UnsupportedModelException(report)
-                return@exclusive branchAndCut(snapshot, timeoutMillis)
+                return@exclusive optimizeLinear(snapshot, timeoutMillis)
             }
             val report = KotlinSupport.report(snapshot)
             if (!report.isSupported) throw UnsupportedModelException(report)
@@ -125,7 +125,7 @@ internal class KotlinSession(
             }
         }
 
-    private suspend fun branchAndCut(
+    private suspend fun optimizeLinear(
         snapshot: ConstraintModel,
         timeoutMillis: Long?,
     ): SolveResult {
@@ -133,20 +133,14 @@ internal class KotlinSession(
         linear.store(stream)
         try {
             if (closed.load()) stream.cancel()
-            while (true) {
-                when (val event = stream.next()) {
-                    is SolveCompleted -> return event.result
-                    null -> return requireNotNull(stream.terminalResult)
-                    else -> Unit
-                }
-            }
+            return stream.forEachSolution {}
         } finally {
             linear.store(null)
             stream.close()
         }
     }
 
-    /** The engine, the literals of the active assertions plus [assumptions], and the variables declared so far. */
+    /** The engine and the literals of the active assertions plus [assumptions]. */
     internal suspend fun active(
         assumptions: List<BoolExpr>,
         budget: SearchBudget,

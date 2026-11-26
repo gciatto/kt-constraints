@@ -5,7 +5,6 @@ import io.github.gciatto.ktconstraints.core.evaluation.GroundEvaluator
 import io.github.gciatto.ktconstraints.core.integer.IntToReal
 import io.github.gciatto.ktconstraints.core.real.RealExpr
 import io.github.gciatto.ktconstraints.model.ConstraintModel
-import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.ConstraintSolver
 import io.github.gciatto.ktconstraints.solve.NumericTolerance
 import io.github.gciatto.ktconstraints.solve.SolveOptions
@@ -17,20 +16,6 @@ import io.kotest.core.spec.style.funSpec
 import io.kotest.datatest.withTests
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-
-/** One linear or mixed-integer linear program with its exact expected outcome. */
-data class LinearCase(
-    /** Stable test name. */
-    val name: String,
-    /** Expected status. */
-    val status: SolveStatus,
-    /** Expected exact optimum, for [SolveStatus.OPTIMAL]. */
-    val optimum: Rational? = null,
-    /** Declares the program in a fresh scope. */
-    val build: ConstraintScope.() -> Unit,
-) {
-    override fun toString(): String = name
-}
 
 /**
  * Shared LP and MILP contracts for routes that optimize real objectives. Exact routes (no [tolerance]) must reach
@@ -109,8 +94,7 @@ private fun validate(
 ) {
     val assignment = result.assignment ?: return
     model.constraints.forEach { GroundEvaluator.evaluate(it, assignment) shouldBe true }
-    val objective = model.objective?.expression as? RealExpr ?: return
-    result.realObjectiveValue shouldBe GroundEvaluator.evaluate(objective, assignment)
+    validateObjective(model, result)
 }
 
 private fun r(

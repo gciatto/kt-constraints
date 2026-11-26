@@ -168,7 +168,7 @@ internal class NativeHighsRun : HighsRun {
             val primal = alloc<IntVar>()
             Highs_getIntInfoValue(highs, "primal_solution_status", primal.ptr)
             val values =
-                if (primal.value == SOLUTION_FEASIBLE || model == MODEL_EMPTY) {
+                if (primal.value == SOLUTION_FEASIBLE || model == HighsStatus.MODEL_EMPTY) {
                     val buffer = allocArray<DoubleVar>(columns.coerceAtLeast(1))
                     val ignored = allocArray<DoubleVar>(columns.coerceAtLeast(1))
                     Highs_getSolution(highs, buffer, ignored, null, null)
@@ -176,18 +176,7 @@ internal class NativeHighsRun : HighsRun {
                 } else {
                     null
                 }
-            HighsOutcome(status(model), values, "HiGHS model status $model")
-        }
-
-    private fun status(model: Int): HighsStatus =
-        when (model) {
-            MODEL_OPTIMAL, MODEL_EMPTY -> HighsStatus.OPTIMAL
-            MODEL_INFEASIBLE -> HighsStatus.INFEASIBLE
-            MODEL_UNBOUNDED_OR_INFEASIBLE -> HighsStatus.UNBOUNDED_OR_INFEASIBLE
-            MODEL_UNBOUNDED -> HighsStatus.UNBOUNDED
-            MODEL_TIME_LIMIT -> HighsStatus.TIME_LIMIT
-            MODEL_INTERRUPT, MODEL_HIGHS_INTERRUPT -> HighsStatus.INTERRUPTED
-            else -> HighsStatus.OTHER
+            HighsOutcome(HighsStatus.of(model), values, "HiGHS model status $model")
         }
 
     private inline fun <T> locked(block: () -> T): T {
@@ -208,13 +197,5 @@ internal class NativeHighsRun : HighsRun {
         const val MAXIMIZE = -1
         const val STATUS_ERROR = -1
         const val SOLUTION_FEASIBLE = 2
-        const val MODEL_EMPTY = 6
-        const val MODEL_OPTIMAL = 7
-        const val MODEL_INFEASIBLE = 8
-        const val MODEL_UNBOUNDED_OR_INFEASIBLE = 9
-        const val MODEL_UNBOUNDED = 10
-        const val MODEL_TIME_LIMIT = 13
-        const val MODEL_INTERRUPT = 17
-        const val MODEL_HIGHS_INTERRUPT = 19
     }
 }

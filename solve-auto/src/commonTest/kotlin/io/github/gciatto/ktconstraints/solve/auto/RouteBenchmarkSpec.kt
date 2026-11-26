@@ -66,8 +66,8 @@ class RouteBenchmarkSpec :
                 }
                 for (catalogue in catalogues) {
                     for (scale in scales) {
-                        for (index in catalogue.builders(scale, 0).indices) {
-                            val first = catalogue.builders(scale, 0)[index]()
+                        for ((index, build) in catalogue.builders(scale, 0).withIndex()) {
+                            val first = build()
                             val seeded = first.family in catalogue.seeded
                             val distinct =
                                 listOf(first) +
