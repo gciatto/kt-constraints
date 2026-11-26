@@ -92,6 +92,9 @@ internal class KotlinSession(
      * Linear snapshots (real objectives, and integer ones over linear constraints) go to branch and cut, as batch
      * solves do; any other integer objective is bisected on the session's own engine, with each bound an assumption,
      * so compiled definitions and learned clauses carry over to later checks and optimizations.
+     * Branch and cut deliberately starts afresh on each call: keeping the exact tableau between calls was measured to
+     * be 2x slower on facility location and 20x slower on dense LPs, because exact pivots from a warm basis carry the
+     * huge fractions that the floating-point start avoids.
      */
     override suspend fun optimize(
         objective: Objective,
