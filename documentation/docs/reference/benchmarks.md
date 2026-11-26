@@ -252,7 +252,10 @@ baseline. Cells are median milliseconds; the number in brackets is the route's p
 Every route gets `numericTolerance = NumericTolerance()`, so floating-point routes take part. Exact routes must
 match the optimum exactly; floating-point ones within a relative 1e-4. Every answer did, and no route overran its
 timeout by more than 2 s. The size column of a `ROUTE,` row is the column count for `lp-planted` and the knapsacks, and
-facilities × customers for facility location. A `—` means the route did not take the model.
+facilities × customers for facility location. A `—` means the route did not take the model. This run first exposed a
+false optimality claim: HiGHS through OR-Tools, left at HiGHS' default 1e-4 relative gap because OR-Tools' wrapper
+ignores its generic gap parameter, reported 29572 as optimal on a scale-16 bounded knapsack whose optimum is 29574. The
+route now passes HiGHS' own gap options; its scale-16 bounded-knapsack cell was measured after that fix.
 
 Scale 8:
 
@@ -270,7 +273,7 @@ Scale 16:
 | lp-planted | 312 | timeout | 69 | 53 | — | — | 573 | 194 | timeout | 774 | 147 | timeout |
 | milp-knapsack | 2 | timeout | 7 | 18 | — | — | 7 | 12 | timeout | 3 | 16 | timeout |
 | facility-location | 204 | timeout | 33 | 58 | — | — | 349 | 68 | timeout | 292 | 49 | timeout |
-| bounded-knapsack | 9 | 608 | 9 | — | 30 | timeout | 35 | 11 | 214 | 14 | 21 | 614 |
+| bounded-knapsack | 9 | 608 | 9 | 13 | 30 | timeout | 35 | 11 | 214 | 14 | 21 | 614 |
 
 11. **Exact LP and MILP: Kotlin, never Z3.** `kotlin/direct` is the fastest exact route on every row and platform,
     by 10-1000x. Z3 times out from scale 8 on the dense LPs and rational knapsacks; its optimizer also needs every claim
