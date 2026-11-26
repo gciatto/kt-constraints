@@ -15,12 +15,12 @@ import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
-import io.github.gciatto.ktconstraints.solve.spi.incremental.SessionModels
 import io.github.gciatto.ktconstraints.solve.spi.managed.CheckpointStack
 import io.github.gciatto.ktconstraints.solve.z3.port.Z3Owner
 import io.github.gciatto.ktconstraints.solve.z3.port.Z3Port
 import io.github.gciatto.ktconstraints.solve.z3.translation.Z3Support
 import io.github.gciatto.ktconstraints.solve.z3.translation.Z3Translation
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.TimeSource
@@ -31,8 +31,6 @@ internal class Z3Session<T>(
     private val model: ConstraintModel,
     override val descriptor: SolverDescriptor,
     private val owner: Z3Owner<T>,
-    /** Solves a batch model with a fresh Z3 context, as the owning solver does. */
-    private val solveFresh: suspend (ConstraintModel, Long?) -> SolveResult,
     private val onClosed: (Z3Session<T>) -> Unit,
 ) : IncrementalSession {
     private val busy = AtomicBoolean(false)
@@ -40,6 +38,9 @@ internal class Z3Session<T>(
     private val frames = mutableListOf(model.constraints.toMutableList())
     private val declarations = mutableListOf(mutableListOf<Variable>())
     private val known = model.variables.toMutableSet()
+
+    /** The Z3 terms asserted in each frame beyond the translation's own, which optimizations hand to Z3's optimizer. */
+    private val terms = mutableListOf(mutableListOf<T>())
     private val translation: Z3Translation<T>
     private var checks = 0
 
@@ -54,7 +55,11 @@ internal class Z3Session<T>(
         exclusive {
             require(known.add(variable)) { "Variable already in the session: ${variable.name}" }
             try {
-                owner.confinedNow { port -> port.assert(listOfNotNull(translation.declare(variable))) }
+                owner.confinedNow { port ->
+                    val domain = listOfNotNull(translation.declare(variable))
+                    port.assert(domain)
+                    terms.last() += domain
+                }
             } catch (rejection: UnsupportedModelException) {
                 known -= variable
                 throw rejection
@@ -65,7 +70,11 @@ internal class Z3Session<T>(
     override fun add(constraint: BoolExpr) =
         exclusive {
             requireAccepted(listOf(constraint))
-            owner.confinedNow { port -> port.assert(listOf(translation.translate(constraint)) + translation.drainDefinedness()) }
+            owner.confinedNow { port ->
+                val asserted = listOf(translation.translate(constraint)) + translation.drainDefinedness()
+                port.assert(asserted)
+                terms.last() += asserted
+            }
             frames.last() += constraint
         }
 
@@ -74,6 +83,7 @@ internal class Z3Session<T>(
             owner.confinedNow { it.push() }
             frames += mutableListOf<BoolExpr>()
             declarations += mutableListOf<Variable>()
+            terms += mutableListOf<T>()
             checkpoints.push()
         }
 
@@ -81,7 +91,10 @@ internal class Z3Session<T>(
         exclusive {
             val popped = checkpoints.popTo(checkpoint)
             owner.confinedNow { it.pop(popped) }
-            repeat(popped) { frames.removeAt(frames.lastIndex) }
+            repeat(popped) {
+                frames.removeAt(frames.lastIndex)
+                terms.removeAt(terms.lastIndex)
+            }
             val forgotten = List(popped) { declarations.removeAt(declarations.lastIndex) }.flatten()
             known -= forgotten.toSet()
             translation.forget(forgotten)
@@ -104,9 +117,9 @@ internal class Z3Session<T>(
     }
 
     /**
-     * Optimizes a batch model standing for the session, with the claim-confirming optimizer of batch solves.
-     * shortcut: each call starts a fresh Z3 context instead of reusing the session's, since confirmations run plain
-     * checks that would interleave with the session's frames; reuse it when Z3 optimizations dominate a workload.
+     * Optimizes over the session's own context: Z3's optimizer sees the active assertions plus [assumptions], and its
+     * claims are confirmed by plain checks of the session's solver in temporary frames. Like batch solves, a call that
+     * overruns its timeout by a second is abandoned with the incumbent found so far.
      */
     override suspend fun optimize(
         objective: Objective,
@@ -114,12 +127,35 @@ internal class Z3Session<T>(
         timeoutMillis: Long?,
     ): SolveResult {
         require(timeoutMillis == null || timeoutMillis >= 0) { "Timeout must be non-negative" }
-        val snapshot =
-            exclusive {
-                requireAccepted(assumptions)
-                SessionModels.of(model, declarations.flatten(), frames.flatten().drop(model.constraints.size) + assumptions, objective)
+        return exclusive {
+            requireAccepted(assumptions)
+            val optimizer =
+                Z3SessionOptimizer(
+                    translation,
+                    objective,
+                    translation.assertions + terms.flatten(),
+                    frames.flatten(),
+                    assumptions,
+                    model.outputVariables + declarations.flatten(),
+                    descriptor,
+                    timeoutMillis,
+                )
+            val call: suspend () -> SolveResult = {
+                owner.confined { port ->
+                    try {
+                        optimizer.run(port)
+                    } catch (inconclusive: Z3SessionOptimizer.Unconfirmed) {
+                        optimizer.unconfirmed(inconclusive.reason)
+                    }
+                }
             }
-        return solveFresh(snapshot, timeoutMillis).copy(descriptor = descriptor)
+            if (timeoutMillis == null) {
+                call()
+            } else {
+                withTimeoutOrNull(timeoutMillis + WATCHDOG_GRACE_MILLIS) { call() }
+                    ?: optimizer.result(null, TerminationReason.TIMEOUT)
+            }
+        }
     }
 
     override fun close() {
@@ -206,3 +242,6 @@ internal class Z3Session<T>(
         }
     }
 }
+
+/** How long past its timeout an optimization may run before it is abandoned with its incumbent. */
+private const val WATCHDOG_GRACE_MILLIS = 1000L
