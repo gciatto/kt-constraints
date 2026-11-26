@@ -9,6 +9,7 @@ import io.github.gciatto.ktconstraints.solve.kotlin.lp.SimplexStopped
 import io.github.gciatto.ktconstraints.solve.linear.FloatingPointPrograms
 import io.github.gciatto.ktconstraints.solve.linear.LinearProgram
 import io.github.gciatto.ktconstraints.solve.linear.LinearSolution
+import io.github.gciatto.ktconstraints.solve.result.SolveMetadata
 import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
@@ -21,9 +22,9 @@ import kotlin.concurrent.Volatile
 import kotlin.time.TimeSource
 
 /**
- * Optimizes a linear or mixed-integer program's real objective with exact branch and bound over the simplex: an exact
- * optimum, an unattained supremum or infimum reported as a bound with a feasible incumbent, unboundedness or
- * infeasibility. Emits at most one incumbent; a stop keeps the best integral solution found so far, with the proven
+ * Optimizes a linear or mixed-integer program's objective, real or integer, with exact branch and bound over the
+ * simplex: an exact optimum, an unattained supremum or infimum reported as a bound with a feasible incumbent,
+ * unboundedness or infeasibility. Emits at most one incumbent; a stop keeps the best integral solution found so far, with the proven
  * bound of the unexplored nodes.
  */
 internal class KotlinLinearStream(
@@ -37,6 +38,7 @@ internal class KotlinLinearStream(
     private val sign = if (goal.maximize) Rational.ONE else Rational.of(-1)
     private val started = TimeSource.Monotonic.markNow()
     private var completion: SolveCompleted? = null
+    private var provenBound: Rational? = null
     private var incumbent: SolutionFound? = null
     private val search = BranchAndBound(program) { released || expired() }
 
@@ -88,23 +90,41 @@ internal class KotlinLinearStream(
         return FloatingPointPrograms.found(model, solution).also { incumbent = it }
     }
 
+    private fun metadata(): SolveMetadata = SolveMetadata(statistics = mapOf("technique" to "branch-and-cut") + search.statistics())
+
     private fun expired(): Boolean = options.timeoutMillis?.let { started.elapsedNow().inWholeMilliseconds >= it } == true
 
     private fun finish(
         status: SolveStatus,
         reason: TerminationReason,
-        bound: Rational? = completion?.result?.realBestBound,
+        bound: Rational? = provenBound,
     ): SolveCompleted {
+        provenBound = bound
         val found = incumbent
-        return SolveCompleted(
-            SolveResult(
-                status,
-                found?.assignment,
-                descriptor,
-                reason,
-                realObjectiveValue = found?.realObjectiveValue,
-                realBestBound = bound?.takeIf { status != SolveStatus.OPTIMAL || it == found?.realObjectiveValue },
-            ),
-        ).also { completion = it }
+        val result =
+            if (goal.real) {
+                SolveResult(
+                    status,
+                    found?.assignment,
+                    descriptor,
+                    reason,
+                    metadata = metadata(),
+                    realObjectiveValue = found?.realObjectiveValue,
+                    realBestBound = bound?.takeIf { status != SolveStatus.OPTIMAL || it == found?.realObjectiveValue },
+                )
+            } else {
+                // An integer objective takes integer values only, so its bound rounds towards the incumbent.
+                val integral = bound?.let { if (goal.maximize) it.floor() else -(-it).floor() }
+                SolveResult(
+                    status,
+                    found?.assignment,
+                    descriptor,
+                    reason,
+                    objectiveValue = found?.objectiveValue,
+                    bestBound = integral?.takeIf { status != SolveStatus.OPTIMAL || it == found?.objectiveValue },
+                    metadata = metadata(),
+                )
+            }
+        return SolveCompleted(result).also { completion = it }
     }
 }
