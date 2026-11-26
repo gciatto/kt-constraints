@@ -23,6 +23,7 @@ class KotlinBackend(
                 SolverCapability.OPTIMIZATION,
                 SolverCapability.ENUMERATION,
                 SolverCapability.INCREMENTAL_ASSERTIONS,
+                SolverCapability.INCREMENTAL_OPTIMIZATION,
                 SolverCapability.BACKTRACKING,
                 SolverCapability.ASSUMPTIONS,
                 SolverCapability.INTEGER_ARITHMETIC,

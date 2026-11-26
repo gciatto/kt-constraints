@@ -2,7 +2,10 @@ package io.github.gciatto.ktconstraints.solve.kotlin.runtime
 import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.bool.BoolExpr
 import io.github.gciatto.ktconstraints.model.ConstraintModel
+import io.github.gciatto.ktconstraints.model.Objective
+import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.assignment.Assignment
 import io.github.gciatto.ktconstraints.solve.assignment.project
 import io.github.gciatto.ktconstraints.solve.incremental.CheckResult
 import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
@@ -10,11 +13,16 @@ import io.github.gciatto.ktconstraints.solve.incremental.Checkpoint
 import io.github.gciatto.ktconstraints.solve.incremental.IncrementalSession
 import io.github.gciatto.ktconstraints.solve.kotlin.KotlinConfiguration
 import io.github.gciatto.ktconstraints.solve.kotlin.KotlinSupport
+import io.github.gciatto.ktconstraints.solve.kotlin.lp.LinearPrograms
 import io.github.gciatto.ktconstraints.solve.kotlin.search.SearchBudget
 import io.github.gciatto.ktconstraints.solve.kotlin.search.SearchStopped
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import io.github.gciatto.ktconstraints.solve.spi.exception.UnsupportedModelException
+import io.github.gciatto.ktconstraints.solve.spi.incremental.SessionModels
 import io.github.gciatto.ktconstraints.solve.spi.managed.CheckpointStack
+import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /** User frames select assumptions; search decision levels and learned clauses have independent lifetimes. */
@@ -32,6 +40,9 @@ internal class KotlinSession(
     private val declarations = mutableListOf(mutableListOf<Variable>())
     private val known = model.variables.toMutableSet()
     private var engine: KotlinEngine? = null
+
+    /** The branch-and-cut stream of an optimization in progress, so that closing the session cancels it. */
+    private val linear = AtomicReference<KotlinLinearStream?>(null)
 
     override fun declare(variable: Variable) =
         exclusive {
@@ -77,27 +88,98 @@ internal class KotlinSession(
             }
         }
 
-    private suspend fun checkActive(
+    /**
+     * Linear snapshots (real objectives, and integer ones over linear constraints) go to branch and cut, as batch
+     * solves do; any other integer objective is bisected on the session's own engine, with each bound an assumption,
+     * so compiled definitions and learned clauses carry over to later checks and optimizations.
+     */
+    override suspend fun optimize(
+        objective: Objective,
+        assumptions: List<BoolExpr>,
+        timeoutMillis: Long?,
+    ): SolveResult =
+        exclusive {
+            require(timeoutMillis == null || timeoutMillis >= 0)
+            val temporary = assumptions.toList()
+            requireAccepted(temporary)
+            val declared = declarations.flatten()
+            val snapshot = SessionModels.of(model, declared, frames.flatten().map { it.expression } + temporary, objective)
+            if (LinearPrograms.handles(snapshot)) {
+                val report = LinearPrograms.report(snapshot)
+                if (!report.isSupported) throw UnsupportedModelException(report)
+                return@exclusive branchAndCut(snapshot, timeoutMillis)
+            }
+            val report = KotlinSupport.report(snapshot)
+            if (!report.isSupported) throw UnsupportedModelException(report)
+            val budget = SearchBudget(timeoutMillis, configuration.workLimit) { closed.load() }
+            val search = SessionOptimization(objective, descriptor, model.outputVariables + declared)
+            try {
+                budget.poll()
+                budget.checkpoint()
+                search.run(this, temporary, budget)
+            } catch (stopped: SearchStopped) {
+                search.stopped(stopped.reason)
+            }
+        }
+
+    private suspend fun branchAndCut(
+        snapshot: ConstraintModel,
+        timeoutMillis: Long?,
+    ): SolveResult {
+        val stream = KotlinLinearStream(snapshot, SolveOptions(timeoutMillis = timeoutMillis), descriptor) {}
+        linear.store(stream)
+        try {
+            if (closed.load()) stream.cancel()
+            while (true) {
+                when (val event = stream.next()) {
+                    is SolveCompleted -> return event.result
+                    null -> return requireNotNull(stream.terminalResult)
+                    else -> Unit
+                }
+            }
+        } finally {
+            linear.store(null)
+            stream.close()
+        }
+    }
+
+    /** The engine, the literals of the active assertions plus [assumptions], and the variables declared so far. */
+    internal suspend fun active(
         assumptions: List<BoolExpr>,
         budget: SearchBudget,
-    ): CheckResult {
+    ): Pair<KotlinEngine, IntArray> {
         val current =
             engine ?: KotlinEngine(model, configuration, budget).also {
                 it.initialize(budget, includeObjective = false)
                 engine = it
             }
         current.circuit.useBudget(budget)
-        val declared = declarations.flatten()
-        for (variable in declared) current.translation.declare(variable)
-        val active = frames.flatten()
+        for (variable in declarations.flatten()) current.translation.declare(variable)
         val literals = mutableListOf<Int>()
-        for (assertion in active) {
+        for (assertion in frames.flatten()) {
             budget.checkpoint()
             val literal = assertion.literal ?: current.literal(assertion.expression, budget).also { assertion.literal = it }
             literals += literal
         }
         for (assumption in assumptions) literals += current.literal(assumption, budget)
-        val full = current.check(literals.toIntArray(), budget)
+        return current to literals.toIntArray()
+    }
+
+    /** Throws when [full] violates an active assertion or one of [assumptions]. */
+    internal fun validate(
+        current: KotlinEngine,
+        full: Assignment,
+        assumptions: List<BoolExpr>,
+    ) = current.validate(full, frames.flatten().map { it.expression } + assumptions)
+
+    private suspend fun checkActive(
+        assumptions: List<BoolExpr>,
+        budget: SearchBudget,
+    ): CheckResult {
+        val (current, literals) = active(assumptions, budget)
+        val declared = declarations.flatten()
+        val active = frames.flatten()
+        val full = current.check(literals, budget)
         return if (full == null) {
             CheckResult(CheckStatus.UNSATISFIABLE, null, descriptor, unsatCore = assumptions, metadata = current.metadata(budget))
         } else {
@@ -112,7 +194,10 @@ internal class KotlinSession(
     }
 
     override fun close() {
-        if (closed.compareAndSet(false, true)) onClosed(this)
+        if (closed.compareAndSet(false, true)) {
+            linear.load()?.cancel()
+            onClosed(this)
+        }
         // The active coroutine owns arrays until its checkpoint observes close; clearing them here would race.
     }
 
