@@ -22,7 +22,6 @@ import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
 import io.github.gciatto.ktconstraints.solve.stream.SolutionEvent
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
-import org.gciatto.kt.math.BigInteger
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
@@ -69,7 +68,10 @@ internal class KotlinStream(
             budget.checkpoint()
             if (optimization?.proven == true) return complete(TerminationReason.COMPLETED)
             val target = optimization?.target()
-            val assumptions = if (target == null) intArrayOf() else intArrayOf(objectiveAtLeast(current, target))
+            val assumptions =
+                target?.let {
+                    intArrayOf(current.objectiveAtLeast(requireNotNull(current.objective), it, model.objective?.maximize == true))
+                } ?: intArrayOf()
             val full = current.check(assumptions, budget)
             if (full == null) {
                 if (target == null) return complete(TerminationReason.COMPLETED)
@@ -112,19 +114,6 @@ internal class KotlinStream(
         }
         engine = current
         return current
-    }
-
-    private suspend fun objectiveAtLeast(
-        current: KotlinEngine,
-        target: BigInteger,
-    ): Int {
-        val translation = current.translation
-        val objective = requireNotNull(current.objective)
-        return if (model.objective?.maximize == true) {
-            translation.linear.lessOrEqual(translation.binary.integer(target), objective)
-        } else {
-            translation.linear.lessOrEqual(objective, translation.binary.integer(-target))
-        }
     }
 
     private fun complete(

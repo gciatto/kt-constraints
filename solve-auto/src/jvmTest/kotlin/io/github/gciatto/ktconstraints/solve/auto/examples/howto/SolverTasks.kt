@@ -18,7 +18,6 @@ import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
 import io.github.gciatto.ktconstraints.solve.choco.ChocoStore
-import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
 import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
 import io.github.gciatto.ktconstraints.solve.minizinc.MiniZincBackend
 import io.github.gciatto.ktconstraints.solve.minizinc.MiniZincEngine
@@ -94,13 +93,6 @@ internal suspend fun cancelEnumeration(): TerminationReason? {
 
 // --8<-- [start:session]
 
-/** The outcome of each check in [checkTemporaryAssertions]. */
-internal data class SessionChecks(
-    val withTrialAssertion: CheckStatus,
-    val withAssumption: CheckStatus,
-    val afterRollback: CheckStatus,
-)
-
 /** Checks a trial assertion in a reversible frame, then a temporary assumption, then the restored model. */
 internal suspend fun checkTemporaryAssertions(): SessionChecks =
     ConstraintScope.empty {
@@ -124,14 +116,6 @@ internal suspend fun checkTemporaryAssertions(): SessionChecks =
 
 // --8<-- [start:session-optimization]
 
-/** The optimum of `2x + y` at each step of [reoptimize]. */
-internal data class Reoptimized(
-    val initial: BigInteger?,
-    val inFrame: BigInteger?,
-    val assumed: BigInteger?,
-    val restored: BigInteger?,
-)
-
 /** Re-optimizes as a session changes: inside a frame, under a one-call assumption, then with the frame popped. */
 internal suspend fun reoptimize(): Reoptimized =
     ConstraintScope.empty {
@@ -154,15 +138,6 @@ internal suspend fun reoptimize(): Reoptimized =
 // --8<-- [end:session-optimization]
 
 // --8<-- [start:store]
-
-/** The domain of y observed at each step of [restoreStoreDomains]. */
-internal data class StoreSteps(
-    val afterFixingX: IntDomain,
-    val entailedThen: Entailment,
-    val afterUndo: IntDomain,
-    val inFork: IntDomain,
-    val afterFork: IntDomain,
-)
 
 /** Propagates in a Choco store, then restores it through a mark and a fork. */
 internal suspend fun restoreStoreDomains(): StoreSteps =

@@ -17,6 +17,7 @@ import io.github.gciatto.ktconstraints.solve.kotlin.search.SearchBudget
 import io.github.gciatto.ktconstraints.solve.result.SolveMetadata
 import io.github.gciatto.ktconstraints.solve.spi.exception.BackendExecutionException
 import io.github.gciatto.ktconstraints.solve.spi.support.rejectRealObjective
+import org.gciatto.kt.math.BigInteger
 
 /** One isolated mutable search. Theory conflicts include every Boolean fact used by the exact real check. */
 internal class KotlinEngine(
@@ -75,6 +76,18 @@ internal class KotlinEngine(
         circuit.useBudget(budget)
         return translation.assertion(constraint, budget)
     }
+
+    /** The compiled [objective] reaches score [target]; minimization negates the score. */
+    suspend fun objectiveAtLeast(
+        objective: Any,
+        target: BigInteger,
+        maximize: Boolean,
+    ): Int =
+        if (maximize) {
+            translation.linear.lessOrEqual(translation.binary.integer(target), objective)
+        } else {
+            translation.linear.lessOrEqual(objective, translation.binary.integer(-target))
+        }
 
     suspend fun check(
         assumptions: IntArray,

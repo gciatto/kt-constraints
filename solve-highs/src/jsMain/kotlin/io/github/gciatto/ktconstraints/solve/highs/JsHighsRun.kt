@@ -28,13 +28,13 @@ internal class JsHighsRun(
             val status = (model.getModelStatus() as Number).toInt()
             val primal = (model.info.get("primal_solution_status") as Number).toInt()
             val values =
-                if (primal == SOLUTION_FEASIBLE || status == MODEL_EMPTY) {
+                if (primal == SOLUTION_FEASIBLE || status == HighsStatus.MODEL_EMPTY) {
                     val found: dynamic = model.getSolution().colValue
                     List(program.columns.size) { (found[it] as Number).toDouble() }
                 } else {
                     null
                 }
-            return HighsOutcome(status(status), values, "HiGHS model status $status")
+            return HighsOutcome(HighsStatus.of(status), values, "HiGHS model status $status")
         } finally {
             model.dispose()
         }
@@ -87,27 +87,8 @@ internal class JsHighsRun(
         return data
     }
 
-    private fun status(model: Int): HighsStatus =
-        when (model) {
-            MODEL_OPTIMAL, MODEL_EMPTY -> HighsStatus.OPTIMAL
-            MODEL_INFEASIBLE -> HighsStatus.INFEASIBLE
-            MODEL_UNBOUNDED_OR_INFEASIBLE -> HighsStatus.UNBOUNDED_OR_INFEASIBLE
-            MODEL_UNBOUNDED -> HighsStatus.UNBOUNDED
-            MODEL_TIME_LIMIT -> HighsStatus.TIME_LIMIT
-            MODEL_INTERRUPT, MODEL_HIGHS_INTERRUPT -> HighsStatus.INTERRUPTED
-            else -> HighsStatus.OTHER
-        }
-
     private companion object {
         const val MILLIS_PER_SECOND = 1000.0
         const val SOLUTION_FEASIBLE = 2
-        const val MODEL_EMPTY = 6
-        const val MODEL_OPTIMAL = 7
-        const val MODEL_INFEASIBLE = 8
-        const val MODEL_UNBOUNDED_OR_INFEASIBLE = 9
-        const val MODEL_UNBOUNDED = 10
-        const val MODEL_TIME_LIMIT = 13
-        const val MODEL_INTERRUPT = 17
-        const val MODEL_HIGHS_INTERRUPT = 19
     }
 }

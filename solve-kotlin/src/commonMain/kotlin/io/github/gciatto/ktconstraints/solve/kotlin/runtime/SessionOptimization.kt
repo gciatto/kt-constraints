@@ -57,7 +57,7 @@ internal class SessionOptimization(
         while (!search.proven) {
             budget.checkpoint()
             val target = search.target()
-            val bound = target?.let { atLeast(engine, compiled.value, it) }
+            val bound = target?.let { engine.objectiveAtLeast(compiled.value, it, maximize) }
             val full = engine.check(if (bound == null) base else base + bound, budget)
             if (full == null) {
                 if (target == null) return result(SolveStatus.INFEASIBLE, TerminationReason.COMPLETED)
@@ -75,24 +75,6 @@ internal class SessionOptimization(
 
     /** The answer when a limit or cancellation stopped [run]: the incumbent, if any, with the bound proven so far. */
     fun stopped(reason: TerminationReason): SolveResult = result(if (best == null) SolveStatus.UNKNOWN else SolveStatus.FEASIBLE, reason)
-
-    /** The objective is at least the score [target], in maximization terms: minimization negates the score. */
-    private suspend fun atLeast(
-        engine: KotlinEngine,
-        objective: Any,
-        target: BigInteger,
-    ): Int {
-        val linear = engine.translation.linear
-        val binary = engine.translation.binary
-        return if (maximize) {
-            linear.lessOrEqual(
-                binary.integer(target),
-                objective,
-            )
-        } else {
-            linear.lessOrEqual(objective, binary.integer(-target))
-        }
-    }
 
     private fun result(
         status: SolveStatus,
