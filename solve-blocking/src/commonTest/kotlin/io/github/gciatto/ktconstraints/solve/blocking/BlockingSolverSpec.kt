@@ -1,5 +1,7 @@
 package io.github.gciatto.ktconstraints.solve.blocking
 
+import io.github.gciatto.ktconstraints.core.Rational
+import io.github.gciatto.ktconstraints.core.integer.IntToReal
 import io.github.gciatto.ktconstraints.model.ConstraintScope
 import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
 import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
@@ -59,6 +61,39 @@ class BlockingSolverSpec :
                     session.check().status shouldBe CheckStatus.UNSATISFIABLE
                     session.popTo(before)
                     session.check(listOf(x eq 2)).assignment?.intValueOf(x) shouldBe 2
+                }
+            }
+        }
+
+        test("solve returns exact optima of mixed-integer programs") {
+            val scope = ConstraintScope.empty()
+            val x = scope.realVar("x")
+            val n = scope.intVar("n", 0..5)
+            scope.add(x le IntToReal(n) * Rational.of(1, 3))
+            scope.add(IntToReal(n) + x le Rational.of(7, 2))
+            scope.maximize(x)
+            val result = KotlinBackend().withBlockingSolver { it.solve(scope.buildModel()) }
+            result.status shouldBe SolveStatus.OPTIMAL
+            // n = 2 gives x = 2/3; n = 3 only x = 1/2.
+            result.realObjectiveValue shouldBe Rational.of(2, 3)
+            result.metadata.statistics["technique"] shouldBe "branch-and-cut"
+        }
+
+        test("sessions decide rational linear feasibility across checkpoints") {
+            val scope = ConstraintScope.empty()
+            val x = scope.realVar("x")
+            val y = scope.realVar("y")
+            scope.add(x + y le 1)
+            KotlinBackend().withBlockingSolver { solver ->
+                solver.openSession(scope.buildModel()).use { session ->
+                    val before = session.push()
+                    session.add(x gt Rational.of(1, 2))
+                    session.add(y gt Rational.of(1, 2))
+                    session.check().status shouldBe CheckStatus.UNSATISFIABLE
+                    session.popTo(before)
+                    val result = session.check(listOf(x gt Rational.of(1, 2)))
+                    result.status shouldBe CheckStatus.SATISFIABLE
+                    (requireNotNull(requireNotNull(result.assignment).valueOf(x)) > Rational.of(1, 2)) shouldBe true
                 }
             }
         }
