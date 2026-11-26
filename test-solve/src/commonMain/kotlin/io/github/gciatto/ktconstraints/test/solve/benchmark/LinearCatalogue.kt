@@ -31,7 +31,7 @@ object LinearCatalogue {
             { rationalKnapsack(6 + 4 * scale, seed) },
             { facilityLocation(2 + scale, 4 + 2 * scale, seed) },
             { boundedKnapsack(4 + 2 * scale, seed) },
-            { setCover(8 + scale, 12 + 2 * scale, seed) },
+            { setCover(6 + scale, 12 + 2 * scale, seed) },
             { multiKnapsack(8 + 2 * scale, seed) },
         )
 
