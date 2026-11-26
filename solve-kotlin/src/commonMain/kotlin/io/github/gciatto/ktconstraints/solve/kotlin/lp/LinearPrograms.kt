@@ -7,19 +7,19 @@ import io.github.gciatto.ktconstraints.solve.spi.feature.ModelFeatures
 import io.github.gciatto.ktconstraints.solve.spi.support.SupportReport
 
 /**
- * Which models the pure-Kotlin route solves with exact branch and cut over the simplex, rather than with its SAT
- * engine: every real objective, which only branch and cut optimizes, and every integer objective over a linear model
- * (a linear, 0-1 or mixed-integer program). On the benchmark families, branch and cut beat the SAT encoding on all of
+ * Which models the pure-Kotlin route solves with exact branch and bound over the simplex, rather than with its SAT
+ * engine: every real objective, which only branch and bound optimizes, and every integer objective over a linear model
+ * (a linear, 0-1 or mixed-integer program). On the benchmark families, branch and bound beat the SAT encoding on all of
  * those, by up to four orders of magnitude when integer domains are wide. Satisfaction, enumeration, logic, globals
  * and products stay with the SAT engine.
  */
 internal object LinearPrograms {
-    /** Whether [model] goes to branch and cut. */
+    /** Whether [model] goes to branch and bound. */
     fun handles(model: ConstraintModel): Boolean {
         val goal = model.objective ?: return false
         return goal.isReal || ModelFeatures.of(model).linear && LinearProgram.report(model).isSupported
     }
 
-    /** Why branch and cut cannot solve [model], which it [handles]: anything outside the linear fragment. */
+    /** Why branch and bound cannot solve [model], which it [handles]: anything outside the linear fragment. */
     fun report(model: ConstraintModel): SupportReport = LinearProgram.report(model)
 }

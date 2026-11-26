@@ -76,7 +76,7 @@ class BlockingSolverSpec :
             result.status shouldBe SolveStatus.OPTIMAL
             // n = 2 gives x = 2/3; n = 3 only x = 1/2.
             result.realObjectiveValue shouldBe Rational.of(2, 3)
-            result.metadata.statistics["technique"] shouldBe "branch-and-cut"
+            result.metadata.statistics["technique"] shouldBe "branch-and-bound"
         }
 
         test("sessions decide rational linear feasibility across checkpoints") {
