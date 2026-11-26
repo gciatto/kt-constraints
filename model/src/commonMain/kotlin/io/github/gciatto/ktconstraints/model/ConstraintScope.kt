@@ -50,6 +50,15 @@ class ConstraintScope private constructor() {
         max: Long,
     ): IntVar = intVar(name, IntDomain.of(min, max))
 
+    /**
+     * Adopts [variable], created by another scope, keeping its identity: expressions over it become valid here.
+     * Variable identities are unique across scopes; a variable already here, or another one with its name, is rejected.
+     */
+    fun <V : Variable> declare(variable: V): V {
+        require(variable.id !in ids) { "Variable already declared: ${variable.name}" }
+        return addVariable(variable.name) { variable }
+    }
+
     /** Declares an unbounded exact real variable; routes without exact reals reject models declaring one. */
     fun realVar(name: String): RealVar = addVariable(name) { factory.realVar(name) }
 
