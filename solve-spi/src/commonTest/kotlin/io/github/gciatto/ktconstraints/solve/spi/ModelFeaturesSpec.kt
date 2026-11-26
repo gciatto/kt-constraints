@@ -19,6 +19,7 @@ import io.github.gciatto.ktconstraints.core.global.scheduling.BinPacking
 import io.github.gciatto.ktconstraints.core.global.scheduling.Cumulative
 import io.github.gciatto.ktconstraints.core.global.scheduling.NoOverlap2D
 import io.github.gciatto.ktconstraints.core.integer.IntLiteral
+import io.github.gciatto.ktconstraints.core.integer.IntToReal
 import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntMax
 import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntMin
 import io.github.gciatto.ktconstraints.core.integer.arithmetic.IntProduct
@@ -29,12 +30,16 @@ import io.github.gciatto.ktconstraints.core.integer.relation.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.real.RealLiteral
 import io.github.gciatto.ktconstraints.core.real.relation.RealLessThan
 import io.github.gciatto.ktconstraints.model.ConstraintModel
+import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.spi.feature.GlobalKind
 import io.github.gciatto.ktconstraints.solve.spi.feature.ModelFeatures
 import io.github.gciatto.ktconstraints.solve.spi.feature.ObjectiveKind
 import io.github.gciatto.ktconstraints.solve.spi.feature.ProblemClass
+import io.github.gciatto.ktconstraints.solve.spi.ranking.Heuristics
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withTests
+import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import org.gciatto.kt.math.BigInteger
 
@@ -88,12 +93,46 @@ class ModelFeaturesSpec :
                     ProblemClass.CP_GLOBALS,
                 ),
                 Triple(
-                    "reals",
+                    "reals-with-logic",
+                    ConstraintModel.of {
+                        val r = realVar("r")
+                        add(BoolOr(RealLessThan(RealLiteral(Rational.of(1, 2)), r), RealLessThan(r, RealLiteral(Rational.ZERO))))
+                    },
+                    ProblemClass.SMT_REAL,
+                ),
+                Triple(
+                    "linear-program",
                     ConstraintModel.of {
                         val r = realVar("r")
                         add(RealLessThan(RealLiteral(Rational.of(1, 2)), r))
+                        minimize(r)
                     },
-                    ProblemClass.SMT_REAL,
+                    ProblemClass.LINEAR_PROGRAM,
+                ),
+                Triple(
+                    "mixed-integer-program",
+                    ConstraintModel.of {
+                        val r = realVar("r")
+                        val n = intVar("n", 0..9)
+                        add(r le IntToReal(n) * Rational.of(1, 3))
+                        maximize(r)
+                    },
+                    ProblemClass.MIXED_INTEGER_PROGRAM,
+                ),
+                Triple(
+                    "binary-program",
+                    ConstraintModel.of {
+                        val xs = List(3) { intVar("x$it", 0..1) }
+                        val flag = boolVar("flag")
+                        add(
+                            IntLessOrEqual(
+                                IntSum(LinearSum(xs, listOf(BigInteger.of(2), BigInteger.of(3), BigInteger.of(4))), BoolToInt(flag)),
+                                IntLiteral(5),
+                            ),
+                        )
+                        maximize(LinearSum(xs, listOf(BigInteger.ONE, BigInteger.TWO, BigInteger.of(3))))
+                    },
+                    ProblemClass.BINARY_PROGRAM,
                 ),
                 Triple(
                     "bit-vectors",
@@ -128,6 +167,27 @@ class ModelFeaturesSpec :
             features.variables shouldBe 3
             features.constraints shouldBe 2
             features.maxMagnitude shouldBe BigInteger.of(20_000)
+        }
+
+        test("model-features/quadratic-real-objectives-need-their-own-capability") {
+            val quadratic =
+                ConstraintModel.of {
+                    val x = intVar("x", 0..3)
+                    val y = intVar("y", 0..3)
+                    val r = realVar("r")
+                    maximize(IntToReal(IntProduct(x, y)) + r)
+                    add(r le 1)
+                }
+            val features = ModelFeatures.of(quadratic)
+            features.realObjective shouldBe true
+            features.objective shouldBe ObjectiveKind.NONLINEAR
+            Heuristics.requiredCapabilities(features) shouldContain SolverCapability.NONLINEAR_REAL_OBJECTIVES
+            val integerProduct =
+                ConstraintModel.of {
+                    val x = intVar("x", 0..3)
+                    maximize(IntProduct(x, x))
+                }
+            Heuristics.requiredCapabilities(ModelFeatures.of(integerProduct)) shouldNotContain SolverCapability.NONLINEAR_REAL_OBJECTIVES
         }
 
         test("model-features/min-and-max-are-globals") {
