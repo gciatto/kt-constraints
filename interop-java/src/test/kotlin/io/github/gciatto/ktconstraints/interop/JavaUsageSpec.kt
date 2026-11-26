@@ -4,6 +4,7 @@ import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.choco.ChocoBackend
 import io.github.gciatto.ktconstraints.solve.choco.ChocoStore
 import io.github.gciatto.ktconstraints.solve.cpsat.CpSatBackend
+import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
 import io.github.gciatto.ktconstraints.solve.mip.OrToolsMipBackend
 import io.github.gciatto.ktconstraints.solve.spi.SolverBackend
 import io.github.gciatto.ktconstraints.solve.spi.store.SatisfiabilityStore
@@ -33,6 +34,8 @@ class JavaUsageSpec :
         test("java/z3/direct/exact-integers") { JavaUsage.exactIntegers(Z3Backend()) }
         test("java/choco/direct/future-cancellation") { JavaUsage.cancelAsync(ChocoBackend()) }
         test("java/z3/direct/incremental-session") { JavaUsage.sessions(Z3Backend()) }
+        test("java/z3/direct/session-optimization") { JavaUsage.sessionOptimization(Z3Backend()) }
+        test("java/kotlin/direct/session-optimization") { JavaUsage.sessionOptimization(KotlinBackend()) }
         test("java/choco/direct/sessions-are-refused") { JavaUsage.sessionsUnsupported(ChocoBackend()) }
         test("java/choco/direct/propagating-store") { JavaUsage.store(ChocoStore()) }
         test("java/z3/direct/satisfiability-store") { JavaUsage.store(SatisfiabilityStore.of(Z3Backend().createSolver())) }

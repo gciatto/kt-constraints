@@ -13,11 +13,13 @@ import io.github.gciatto.ktconstraints.core.bitvector.operation.BitVecRelation
 import io.github.gciatto.ktconstraints.core.domain.IntDomain
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.model.ConstraintScope
+import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.SolveOptions
 import io.github.gciatto.ktconstraints.solve.SolverCapability
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
 import io.github.gciatto.ktconstraints.solve.choco.ChocoStore
 import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus
+import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
 import io.github.gciatto.ktconstraints.solve.minizinc.MiniZincBackend
 import io.github.gciatto.ktconstraints.solve.minizinc.MiniZincEngine
 import io.github.gciatto.ktconstraints.solve.result.SolveResult
@@ -119,6 +121,37 @@ internal suspend fun checkTemporaryAssertions(): SessionChecks =
         }
     }
 // --8<-- [end:session]
+
+// --8<-- [start:session-optimization]
+
+/** The optimum of `2x + y` at each step of [reoptimize]. */
+internal data class Reoptimized(
+    val initial: BigInteger?,
+    val inFrame: BigInteger?,
+    val assumed: BigInteger?,
+    val restored: BigInteger?,
+)
+
+/** Re-optimizes as a session changes: inside a frame, under a one-call assumption, then with the frame popped. */
+internal suspend fun reoptimize(): Reoptimized =
+    ConstraintScope.empty {
+        val x = intVar("x", 0..9)
+        val y = intVar("y", 0..9)
+        add(x + y le 12)
+        val goal = Objective.Maximize(x * 2 + y)
+        KotlinBackend().createSolver().use { solver ->
+            solver.openSession(buildModel()).use { session ->
+                val initial = session.optimize(goal)
+                val checkpoint = session.push()
+                session.add(y ge 5)
+                val inFrame = session.optimize(goal)
+                session.popTo(checkpoint)
+                val assumed = session.optimize(goal, assumptions = listOf(x le 4))
+                Reoptimized(initial.objectiveValue, inFrame.objectiveValue, assumed.objectiveValue, session.optimize(goal).objectiveValue)
+            }
+        }
+    }
+// --8<-- [end:session-optimization]
 
 // --8<-- [start:store]
 

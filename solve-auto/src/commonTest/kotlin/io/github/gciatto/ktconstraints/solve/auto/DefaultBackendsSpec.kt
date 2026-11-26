@@ -46,6 +46,6 @@ class DefaultBackendsSpec :
             val reasons = failure.report.unsupported
             reasons.first() shouldBe "model: SMT_REAL"
             reasons.any { "NONLINEAR_REAL_OBJECTIVES, which no registered backend offers" in it && "quadratic" in it } shouldBe true
-            reasons.filter { "rejected" in it }.all { "Missing capability: NONLINEAR_REAL_OBJECTIVES" in it } shouldBe true
+            reasons.filter { "rejected" in it }.filterNot { "Missing capability: NONLINEAR_REAL_OBJECTIVES" in it } shouldBe emptyList()
         }
     })
