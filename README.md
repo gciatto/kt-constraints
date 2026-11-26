@@ -1,42 +1,43 @@
 # Kt-Constraints
 
 **One typed constraint model for Kotlin, Java, TypeScript and C, solved by Z3, CP-SAT, Choco, SCIP, HiGHS,
-MiniZinc or a pure-Kotlin engine on the JVM, Node, the browser and native targets, with exact arithmetic throughout.**
+MiniZinc or a pure-Kotlin engine on the JVM, Node, the browser and native targets, with exact model arithmetic.**
 
 [![CI](https://github.com/gciatto/kt-constraints/actions/workflows/dispatcher.yml/badge.svg)](https://github.com/gciatto/kt-constraints/actions/workflows/dispatcher.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF.svg)
 [![Release](https://img.shields.io/github/v/release/gciatto/kt-constraints)](https://github.com/gciatto/kt-constraints/releases)
 
-Kt-Constraints is a Kotlin Multiplatform library for constraint programming and SMT. You describe a problem once,
-as an immutable, solver-independent model. The library then hands it to whichever solver suits the problem and the
-platform, and reports which solver answered and what it actually proved.
+Kt-Constraints is a Kotlin Multiplatform library for constraint programming, SMT and linear/mixed-integer programming
+(LP/MILP). You describe a problem once, as an immutable, solver-independent model. The library hands it to a solver
+suited to the problem and platform, and reports which solver answered and what it actually proved.
 
 **[Documentation](https://gciatto.github.io/kt-constraints/)**: tutorials for each language, a cookbook of classic
 problems, the full reference with the [API docs](https://gciatto.github.io/kt-constraints/api/), and how it all works inside.
 
 ```kotlin
-import io.github.gciatto.ktconstraints.dsl.allDifferent
+import io.github.gciatto.ktconstraints.core.Rational
 import io.github.gciatto.ktconstraints.model.ConstraintScope
-import io.github.gciatto.ktconstraints.solve.auto.AutoBackend
+import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend
 import io.github.gciatto.ktconstraints.solve.spi.withSolver
 
 suspend fun main() =
     ConstraintScope.empty {
-        val x = intVar("x", 1..9)
-        val y = intVar("y", 1..9)
-        val z = intVar("z", 1..9)
-        add(allDifferent(x, y, z))
-        add(x + y eq z * 2)
-        add(x gt y)
-        maximize(x * y)
+        val x = intVar("x", 0..10)
+        val y = realVar("y")
+        add(y ge 0)
+        add((x.asRealExpr() + y) le Rational.parse("4.5"))
+        add((x.asRealExpr() + y * 3) le 6)
+        maximize(x.asRealExpr() * 3 + y * 2)
 
-        // The automatic backend ranks the solvers bundled for this platform and falls back on failure.
-        val result = AutoBackend.load().use { auto -> auto.withSolver { it.solve(buildModel()) } }
-        println("${result.status} by ${result.descriptor.id}: ${result.objectiveValue}") // OPTIMAL by cp-sat/direct: 63 (on the JVM)
-        println("x = ${result.assignment?.valueOf(x)}, y = ${result.assignment?.valueOf(y)}") // x = 9, y = 7
+        val result = KotlinBackend().withSolver { it.solve(buildModel()) }
+        println("${result.status}: ${result.realObjectiveValue}") // OPTIMAL: 13
+        println("x = ${result.assignment?.valueOf(x)}, y = ${result.assignment?.valueOf(y)}") // x = 4, y = 1/2
     }
 ```
+
+This is the tested model from the [LP/MILP guide](https://gciatto.github.io/kt-constraints/how-to/linear-programs/),
+which also shows its continuous LP relaxation, Java and TypeScript usage, and floating-point solver options.
 
 ## Why Kt-Constraints
 
@@ -44,15 +45,19 @@ suspend fun main() =
   solver inside them. Global constraints such as `Circuit` and `Cumulative` stay global until a specific solver
   lowers them, so each solver can use its native propagator.
 - **Exact by construction.** Integers are arbitrary-precision, reals are exact rationals (`0.1` really is `1/10`),
-  and bit-vectors have a fixed width. Out-of-range values are never silently truncated, real values are never
-  approximated, and constraints are never dropped.
-- **Honest answers.** A result says whether it is `OPTIMAL`, `FEASIBLE`, `INFEASIBLE` or `UNKNOWN`, and which solver
+  and bit-vectors have a fixed width. Out-of-range values are never silently truncated and constraints are never
+  dropped. Floating-point routes require explicit `NumericTolerance` consent for real models.
+- **Honest answers.** A result says whether it is `OPTIMAL`, `FEASIBLE`, `INFEASIBLE`, `UNBOUNDED` or `UNKNOWN`, and which solver
   produced it. A timeout keeps the best solution found so far, but never calls it optimal. A solver that cannot
-  represent your model rejects it up front and says why.
+  represent your model rejects it up front and says why. Kotlin's exact simplex checks optimality, infeasibility and
+  unboundedness certificates internally; these are not exported, and MILP proofs also depend on branch and bound.
+- **Choose the technique automatically.** Model analysis guides route eligibility; inside the Kotlin engine,
+  linear optimization uses exact simplex and branch and bound, while satisfaction and integer optimization with
+  logic or globals use SAT. Route selection and technique selection are separate.
 - **Runs where your code runs.** It works on the JVM, Node, browsers (through WebAssembly) and Kotlin/Native
   desktop targets, with idiomatic APIs for Kotlin, Java and TypeScript, plus a C shared library.
-- **More than one-shot solving.** There are streams of solutions, SMT-style incremental sessions with checkpoints
-  and unsat cores, and constraint stores for logic-programming engines.
+- **More than one-shot solving.** There are streams of solutions, incremental checks and optimization with
+  checkpoints, assumptions and unsat cores on Kotlin and Z3, and constraint stores for logic-programming engines.
 
 ## What you can model today
 
@@ -61,7 +66,7 @@ suspend fun main() =
 | **Sorts** | Booleans, bounded and unbounded integers, exact reals, fixed-width bit-vectors |
 | **Expressions** | Boolean connectives, integer and real arithmetic, comparisons, `min`/`max`/`abs`, int↔real and bool↔int conversions, bit-vector arithmetic and comparisons |
 | **Global constraints** | `allDifferent`, `element`, `table`, `regular` (automata), `circuit`, `subCircuit`, `inverse`, `cumulative`, `disjunctive`, `binPacking`, `noOverlap2D`, `count`, `among`, `globalCardinality`, `nValue`, `atMost`/`atLeast`/`exactly`, `increasing`/`decreasing`, `lexLess`/`lexLessOrEqual`, linear sums |
-| **Objectives** | Satisfaction, integer minimization and maximization, weighted soft constraints (`minimizeViolations`) |
+| **Objectives** | Satisfaction, integer and linear real minimization/maximization (LP/MILP), weighted soft constraints (`minimizeViolations`) |
 | **Models** | Named constraints, annotations, source locations, and output projection onto a subset of the variables |
 
 ## Solvers and where they run
@@ -73,9 +78,10 @@ Every ✅ means that CI runs the real engine there and fails if it is missing or
 | Z3 (`z3/direct`, `z3/wasm`, `z3/native`) | ✅ | ✅ | ✅ | ✅ | Unbounded integers, exact reals, bit-vectors, incremental sessions |
 | OR-Tools CP-SAT (`cp-sat/direct`) | ✅ | | | | Combinatorial optimization with native globals |
 | Choco (`choco/direct`) | ✅ | | | | Classic CP with reified globals; a propagating constraint store |
-| SCIP, HiGHS via OR-Tools (`scip/or-tools`, `highs/or-tools`) | ✅ | | | | Linear integer models |
+| SCIP, HiGHS via OR-Tools (`scip/or-tools`, `highs/or-tools`) | ✅ | | | | Integer models and LP/MILP; real models require explicit numeric tolerance |
+| HiGHS (`highs/wasm`, `highs/native`) | | ✅ | | ✅ Linux x64 | LP/MILP through Wasm or the C API; real models require explicit numeric tolerance |
 | MiniZinc: Gecode, Chuffed, CP-SAT, HiGHS, CBC (`*/minizinc`) | ✅ | ✅ Gecode | ✅ Chuffed | | Any solver with a MiniZinc configuration |
-| Pure Kotlin (`kotlin/direct`) | ✅ | ✅ | ✅ | ✅ | Zero dependencies: CDCL SAT, exact finite circuits, rational linear feasibility |
+| Pure Kotlin (`kotlin/direct`) | ✅ | ✅ | ✅ | ✅ | CDCL SAT, exact finite circuits, rational linear feasibility and exact LP/MILP |
 
 The JVM solvers are tested on Linux, macOS and Windows, and Z3 Native on Linux, macOS and Windows. The JVM solvers
 need no separate installation, because their native libraries come with their Maven dependencies. The MiniZinc
@@ -84,9 +90,9 @@ platform-by-platform evidence.
 
 ## How fast is it?
 
-Median milliseconds to solve a fresh instance, setup included, on one Linux x64 host. These are the medium-size
-(scale 6) instances of the project's route benchmark, with 3 seeds and a 10 s timeout; every answer matched the
-known optimum or proof.
+Recorded on 2026-11-26: median milliseconds to solve a fresh instance, setup included, on one Linux x64 host.
+These are medium-size (scale 6) instances of the project's route benchmark, with 3 seeds and a 10 s timeout;
+every proof matched the known answer.
 
 | Family | JVM CP-SAT | JVM Choco | JVM Z3 | JVM SCIP | JVM HiGHS | JVM Kotlin | Node Z3 Wasm | Node Kotlin | Native Z3 | Native Kotlin |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -133,12 +139,13 @@ are in the [benchmarks reference](https://gciatto.github.io/kt-constraints/refer
 // 1. Batch: one result, or `solutions(model)`, a cold stream of solutions that ends with a completion event.
 val result = Z3Backend().withSolver { it.solve(model) }
 
-// 2. Incremental, SMT style: assert, set a checkpoint, check under assumptions, roll back.
+// 2. Incremental: assert, set a checkpoint, check or optimize, roll back (Kotlin and Z3).
 Z3Backend().createSolver().use { solver ->
     solver.openSession(model).use { session ->
         val checkpoint = session.push()
         session.add(x eq 3)
         val check = session.check(assumptions = listOf(flag)) // SATISFIABLE, UNSATISFIABLE (+ unsatCore) or UNKNOWN
+        val optimum = session.optimize(Objective.Maximize(x)) // objective and assumptions apply to this call only
         session.popTo(checkpoint)
     }
 }
@@ -156,8 +163,9 @@ ChocoStore().use { store ->
 }
 ```
 
-Batch solving, incremental sessions and constraint stores are separate, capability-checked APIs. A solver only
-offers what it really supports; for example, it never re-solves from scratch while pretending to be incremental.
+Batch solving, incremental sessions and constraint stores are separate, capability-checked APIs. Incremental
+optimization uses the active assertions; Kotlin starts a fresh linear search per call and retains SAT work for
+integer objectives with logic or globals. See [incremental sessions](https://gciatto.github.io/kt-constraints/how-to/incremental-sessions/).
 `AutoBackend` is a backend like the others that chooses among the solvers available on the current platform. Ranking
 is extensible, and it can try solvers one after another or race several in parallel. See
 [Logic engines](https://gciatto.github.io/kt-constraints/explanation/solving-modes/) for the store API.
@@ -226,8 +234,8 @@ repositories {
     }
 }
 dependencies {
-    implementation("io.github.gciatto:kt-constraints-dsl:<version>")
-    implementation("io.github.gciatto:kt-constraints-solve-auto:<version>") // AutoBackend + the default solvers
+    implementation("io.github.gciatto:kt-constraints-solve-kotlin:<version>") // the example above
+    implementation("io.github.gciatto:kt-constraints-solve-auto:<version>") // optional: AutoBackend + default solvers
 }
 ```
 
@@ -240,7 +248,7 @@ npm install @gciatto/kt-constraints-interop-js
 [Installation](https://gciatto.github.io/kt-constraints/how-to/install/) covers Maven, the C library, building from source, and the runtime each solver
 needs. Publishing on Maven Central and npmjs is planned.
 
-**Good to know:** not available yet: MiniZinc execution from Kotlin/Native on Windows, a direct HiGHS C API adapter,
+**Good to know:** not available yet: MiniZinc execution from Kotlin/Native on Windows,
 FlatZinc interchange, Gurobi, and propagating constraint stores beyond Choco.
 
 ## Modules
@@ -249,7 +257,8 @@ FlatZinc interchange, Gurobi, and propagating constraint stores beyond Choco.
 |---|---|
 | `:core`, `:model`, `:dsl` | Expressions, domains, global constraints, immutable models, expression operators and the Java `Expressions` facade |
 | `:solve`, `:solve-spi` | Solver, session, store and result APIs; the backend contract, capability checks and registry |
-| `:solve-z3`, `:solve-cpsat`, `:solve-choco`, `:solve-mip`, `:solve-minizinc` | Solver adapters |
+| `:solve-z3`, `:solve-cpsat`, `:solve-choco`, `:solve-mip`, `:solve-highs`, `:solve-minizinc` | Solver adapters |
+| `:solve-linear` | Shared exact linear-program representation and lowering |
 | `:solve-kotlin` | Pure-Kotlin solver, on every platform |
 | `:solve-auto` | `AutoBackend`: default solvers per platform, fallback and race strategies |
 | `:solve-blocking` | Blocking solver, stream, session and store wrappers for the JVM and Native; `CompletableFuture`s on the JVM |
