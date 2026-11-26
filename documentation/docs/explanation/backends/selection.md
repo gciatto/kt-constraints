@@ -13,8 +13,8 @@ Registration order is a decreasing-performance order taken from the [recorded be
 | Platform | Registration order | Optional additions |
 |---|---|---|
 | JVM | `cp-sat/direct`, `choco/direct`, `kotlin/direct`, `z3/direct`, `scip/or-tools`, `highs/or-tools` | If `MINIZINC_EXECUTABLE` is set, appended: `gecode/minizinc`, `chuffed/minizinc`, `cp-sat/minizinc`, `highs/minizinc`, `cbc/minizinc`, in that order |
-| JS | `kotlin/direct`, `z3/wasm`, `highs/wasm`, the Wasm modules asynchronously loaded | On Node, Gecode `gecode/minizinc-js-cli` after `kotlin/direct` when `MINIZINC_EXECUTABLE` is set |
-| Native | `kotlin/direct`, `z3/native`, `highs/native` | If `MINIZINC_EXECUTABLE` is set, appended: the same five MiniZinc routes as the JVM; they start processes on Linux and macOS only |
+| JS | `kotlin/direct`, `highs/wasm`, `z3/wasm`; Wasm modules load asynchronously | On Node, Gecode `gecode/minizinc-js-cli` after HiGHS and before Z3 when `MINIZINC_EXECUTABLE` is set |
+| Native | `kotlin/direct`, `highs/native`, `z3/native` | If `MINIZINC_EXECUTABLE` is set, appended: the same five MiniZinc routes as the JVM; they start processes on Linux and macOS only |
 
 The default HiGHS instance has a mandatory 60,000 ms backend limit because OR-Tools cannot interrupt it. Browser Chuffed through MiniZinc requires explicit loading. `AutoBackend.load()` ranks with `RankingPolicy.REGISTRATION_ORDER` unless given another policy, so each model goes to the first route in this order that passes the eligibility checks of step 3. Step 4 applies only to a scoring policy, such as `RankingPolicy.DEFAULT`, passed explicitly. On JS, a Z3 Wasm module that cannot start is left out instead of failing the load.
 
@@ -48,7 +48,7 @@ Source: [ModelFeatures](https://github.com/gciatto/kt-constraints/blob/develop/s
 
 ## 3. Reject ineligible routes before scoring
 
-First derive required capabilities: always `SATISFACTION`, plus `OPTIMIZATION` for an objective, `INTEGER_ARITHMETIC` for integers, `REAL_ARITHMETIC` for reals, `BITVECTORS` for bit-vectors, and `GLOBAL_CONSTRAINTS` when globals occur, and `NONLINEAR_REAL_OBJECTIVES` when a real objective multiplies variables, as a quadratic objective does. No bundled route declares that last capability, so such models are rejected before any route runs; a future route that optimizes them only needs to declare it to be selected. Add any capabilities explicitly requested from the registry. Enumeration routing adds `ENUMERATION`.
+First derive required capabilities: always `SATISFACTION`, plus `OPTIMIZATION` for an objective, `INTEGER_ARITHMETIC` for integers, `REAL_ARITHMETIC` for reals, `BITVECTORS` for bit-vectors, and `GLOBAL_CONSTRAINTS` when globals occur, and `NONLINEAR_REAL_OBJECTIVES` when a real objective multiplies variables, as a quadratic objective does. No bundled route declares that last capability, so such models are rejected before any route runs; a future route would also need to pass availability and whole-model support checks. Add any capabilities explicitly requested from the registry. Enumeration routing adds `ENUMERATION`. Floating-point routes accepting reals require explicit `SolveOptions.numericTolerance`; registration alone does not opt a real model into tolerance-based solving. See [LP/MILP usage](../../how-to/linear-programs.md).
 
 For each registered backend, `SolverRegistry.rank` checks these stages in order and stops at the first failing stage:
 

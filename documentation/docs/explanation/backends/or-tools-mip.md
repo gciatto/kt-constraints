@@ -23,7 +23,7 @@ SCIP supports interruption. OR-Tools cannot interrupt this HiGHS integration: cl
 
 ## Capabilities
 
-Both support batch satisfaction and integer optimization. The stream emits at most one returned witness or incumbent after the native solve finishes, then a completion event; it does not expose intermediate improvements. Neither descriptor promises exhaustive satisfaction enumeration. Neither offers incremental sessions, assumptions, unsatisfiable cores or stores.
+Both support batch satisfaction and integer or real optimization, subject to whole-model support and tolerance consent. The stream emits at most one returned witness or incumbent after the native solve finishes, then a completion event; it does not expose intermediate improvements. Neither descriptor promises exhaustive satisfaction enumeration. Neither offers incremental sessions, assumptions, unsatisfiable cores or stores.
 
 Returned integer assignments are validated against the source model. Optimality and infeasibility statuses rely on numerical engine evidence, rather than exact rational proof certificates. See [results and statuses](../../reference/results-and-statuses.md).
 
@@ -31,7 +31,7 @@ Returned integer assignments are validated against the source model. Optimality 
 
 The lowering accepts Boolean logic and bounded affine integer arithmetic. **Affine** means a constant plus a weighted sum of variables; products must reduce to multiplication by a constant. Globals and reified relations can become auxiliary variables and big-M rows. A **big-M row** uses a sufficiently large bound to enable or disable a linear restriction according to a Boolean decision. These transformations can be much larger than the source constraint.
 
-The checked margin is 10^6 for literals, coefficients, bounds and derived rows. Reals, bit-vectors, genuinely nonlinear variable products, unsupported nodes and out-of-range derived expressions are rejected. Integer source representation remains exact; acceptance by the adapter does not make the underlying numerical proof rationally certified. See [numeric subsets](../../reference/solvers-and-routes.md#checked-numeric-subsets) and the [shared lowering](https://github.com/gciatto/kt-constraints/blob/develop/solve-mip/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/mip/program/MipBuilder.kt).
+For integer-only models, the checked margin is 10^6 for literals, coefficients, bounds and derived rows. Real models use the shared `LinearProgram` lowering instead: a conjunction of affine relations, without logic, globals, sparse integer domains or strict real inequalities. They require `numericTolerance`. Bit-vectors, genuinely nonlinear variable products and unsupported nodes are rejected. Integer source representation remains exact; acceptance by the adapter does not make the underlying numerical proof rationally certified. See [numeric subsets](../../reference/solvers-and-routes.md#checked-numeric-subsets) and the [shared lowering](https://github.com/gciatto/kt-constraints/blob/develop/solve-mip/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/mip/program/MipBuilder.kt).
 
 ## Options type
 

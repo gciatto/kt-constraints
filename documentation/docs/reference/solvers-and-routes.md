@@ -8,7 +8,7 @@ the entire model and requested options. See [Kotlin solver API](solver-api.md).
 
 ## Batch and incremental routes
 
-In this table, **base** means `SATISFACTION`, `OPTIMIZATION`, `INTEGER_ARITHMETIC` and `GLOBAL_CONSTRAINTS`. **SMT** adds `INCREMENTAL_ASSERTIONS`, `BACKTRACKING`, `ASSUMPTIONS`, `UNSAT_CORES`, `REAL_ARITHMETIC` and `BITVECTORS`. These are exact enum names from `SolverCapability`.
+In this table, **base** means `SATISFACTION`, `OPTIMIZATION`, `INTEGER_ARITHMETIC` and `GLOBAL_CONSTRAINTS`. **SMT** adds `INCREMENTAL_ASSERTIONS`, `BACKTRACKING`, `ASSUMPTIONS`, `UNSAT_CORES`, `INCREMENTAL_OPTIMIZATION`, `REAL_ARITHMETIC` and `BITVECTORS`. These are exact enum names from `SolverCapability`.
 
 | ID | Backend / engine binding | Execution platform | Descriptor capabilities |
 |---|---|---|---|
@@ -19,8 +19,8 @@ In this table, **base** means `SATISFACTION`, `OPTIMIZATION`, `INTEGER_ARITHMETI
 | `choco/direct` | `ChocoBackend`, Choco | JVM | Base + `ENUMERATION` |
 | `scip/or-tools` | `OrToolsMipBackend.scip()`, OR-Tools MPSolver | JVM | Base + floating-point reals (`REAL_ARITHMETIC`, `FLOATING_POINT_REALS`) |
 | `highs/or-tools` | `OrToolsMipBackend.highs(limitMillis)`, OR-Tools MPSolver | JVM | Base + floating-point reals (`REAL_ARITHMETIC`, `FLOATING_POINT_REALS`) |
-| `highs/native` | `HighsNativeBackend(libraryPath)`, HiGHS C API loaded at run time | Native | Linear programs only: integers and floating-point reals, no globals |
-| `highs/wasm` | `HighsJsBackend.load()`, `highs` npm module | JS | Linear programs only: integers and floating-point reals, no globals |
+| `highs/native` | `HighsNativeBackend(libraryPath)`, HiGHS C API loaded at run time | Native | `SATISFACTION`, `OPTIMIZATION`, `INTEGER_ARITHMETIC`, `REAL_ARITHMETIC`, `FLOATING_POINT_REALS` |
+| `highs/wasm` | `HighsJsBackend.load()`, `highs` npm module | JS | Same as `highs/native` |
 | `gecode/minizinc` | `MiniZincBackend(GECODE)`, Gecode CLI configuration | JVM | Base + `ENUMERATION` |
 | `chuffed/minizinc` | `MiniZincBackend(CHUFFED)`, Chuffed CLI configuration | JVM | Base + `ENUMERATION` |
 | `cp-sat/minizinc` | `MiniZincBackend(CP_SAT)`, CP-SAT CLI configuration | JVM | Base + `ENUMERATION` |
@@ -34,7 +34,7 @@ In this table, **base** means `SATISFACTION`, `OPTIMIZATION`, `INTEGER_ARITHMETI
 
 No batch descriptor advertises `DOMAIN_PROPAGATION` or `ENTAILMENT`. Those belong to the separate store interface. `ChocoStore` uses the same `choco/direct` ID with a store-specific descriptor. It advertises `INCREMENTAL_ASSERTIONS`, `BACKTRACKING`, `DOMAIN_PROPAGATION`, `ENTAILMENT`, `INTEGER_ARITHMETIC` and `GLOBAL_CONSTRAINTS`, with `PROPAGATION` evidence. `SatisfiabilityStore` wraps an incremental solver and answers entailment by satisfiability checks; it reports `SATISFIABILITY` evidence and does not narrow domains by propagation.
 
-`AutoBackend` has the descriptor `auto/fallback` or `auto/race`, advertising the batch and session capabilities that at least one of its routes declares; its solvers open sessions on the best incremental route. When no route is eligible, its solver throws `UnsupportedModelException`. When eligible attempts produce no answer, it returns `UNKNOWN` with that descriptor. Successful results retain the answering route's descriptor.
+`AutoBackend` has the descriptor `auto/fallback` or `auto/race`, advertising the delegated batch and assertion-session capabilities that at least one of its routes declares (currently excluding `INCREMENTAL_OPTIMIZATION` and `FLOATING_POINT_REALS`); its solvers open sessions on the best incremental route. When no route is eligible, its solver throws `UnsupportedModelException`. When eligible attempts produce no answer, it returns `UNKNOWN` with that descriptor. Successful results retain the answering route's descriptor.
 
 ## Concrete backend entry points
 
@@ -50,6 +50,8 @@ All backend classes implement `availability`, `support`, `createSolver`, `isAvai
 | `ChocoStore()` | Companion `DESCRIPTOR` identifies its separate store capabilities under `choco/direct`; operations follow the [store contract](solver-api.md#constraint-stores) |
 | `OrToolsMipBackend.scip()`, `.highs(solveLimitMillis)` | `SCIP` and `HIGHS` companion descriptors; `solveLimitMillis` is null for interruptible SCIP and the required positive engine limit for HiGHS |
 
+`HighsNativeBackend` and `HighsJsBackend.load()` expose the direct [HiGHS C API and Wasm routes](../explanation/backends/highs.md); `HighsRoutes.NATIVE` and `WASM` provide descriptors without loading a runtime.
+
 The route settings are listed in [Configuration](configuration.md). A descriptor constant is metadata, not a runtime availability probe.
 
 ## Checked numeric subsets
@@ -59,14 +61,17 @@ These are adapter limits, often more conservative than an engine's advertised ra
 | Route | Integer subset | Other numeric support |
 |---|---|---|
 | All Z3 routes | Exact arbitrary-precision integer expressions over current finite variable domains; no fixed adapter magnitude bound | Exact rational linear reals, fixed-width bit-vectors |
-| `kotlin/direct` | Arbitrary-precision finite integer domains and circuits, subject to compiler/work limits | Exact rational linear feasibility and bit-vectors |
+| `kotlin/direct` | Arbitrary-precision finite integer domains and circuits, subject to compiler/work limits | Exact rational linear feasibility and LP/MILP optimization; bit-vectors |
 | `cp-sat/direct` | Checked magnitude at most `2^61` | Boolean/integer only |
 | `choco/direct`, `ChocoStore` | Checked magnitude at most `10^7` | Boolean/integer only |
-| `scip/or-tools`, `highs/or-tools` | Checked margin `10^6` for literals, coefficients, bounds and derived rows; affine products only | Boolean/integer MIP lowering; with a numeric tolerance, linear programs with continuous columns and no strict inequalities |
+| `scip/or-tools`, `highs/or-tools` | Integer-only lowering: checked margin `10^6` for literals, coefficients, bounds and derived rows; affine products only | Real models use shared linear lowering with explicit numeric tolerance; no logic, globals, sparse integer domains or strict real inequalities |
+| `highs/native`, `highs/wasm` | Contiguous finite integer domains and affine rows; integer-only decoded rows must hold exactly | LP/MILP with explicit numeric tolerance for reals; no strict real inequalities, logic or globals |
 | `gecode/minizinc`, `gecode/minizinc-js-cli` | Symmetric maximum absolute integer `2,147,483,646` | Boolean/integer only |
 | `chuffed/minizinc`, `chuffed/minizinc-wasm` | Symmetric maximum absolute integer `499,999,999`; ±500,000,000 are reserved sentinels | Boolean/integer only |
 | `cp-sat/minizinc` | Symmetric maximum absolute integer `2,147,483,646` | Boolean/integer only |
 | `highs/minizinc`, `cbc/minizinc` | Symmetric maximum absolute integer `1,000,000`; reject variable-by-variable products | Boolean/integer only |
+
+See [solve LP and MILP models](../how-to/linear-programs.md) for tested examples on Kotlin JVM/JS/Native, Java and TypeScript/JavaScript, and the C facade's integer-only subset.
 
 MIP assignments are decoded and validated against the original model. Numerical engine proof evidence underlies optimality and infeasibility; these adapters do not supply exact rational proof certificates. A positive OR-Tools MIP relative gap yields feasible results, never optimal ones.
 

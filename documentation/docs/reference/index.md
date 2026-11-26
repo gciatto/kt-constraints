@@ -18,3 +18,5 @@ Contents in navigation order. Follow the [suggested reading order](../index.md#s
 | [Benchmarks](benchmarks.md) | Measurements, methodology and selection evidence |
 | [CI pipeline](ci-pipeline.md) | Workflow triggers, checks and publication gates |
 | [API (KDoc)](api.md) | Generated declaration reference |
+
+For continuous and mixed-integer optimization across languages, see [solve LP and MILP models](../how-to/linear-programs.md).

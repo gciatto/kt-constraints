@@ -16,7 +16,7 @@ All modules below are included by `settings.gradle.kts`. Publication eligibility
 | `:solve-cpsat` | Direct OR-Tools CP-SAT adapter | JVM | Yes | `io.github.gciatto:kt-constraints-solve-cpsat` |
 | `:solve-mip` | MIP lowering; SCIP and HiGHS through OR-Tools | Portable IR; JVM execution | Yes | `io.github.gciatto:kt-constraints-solve-mip` |
 | `:solve-linear` | Exact linear programs of models, exact checking of floating-point answers | Portable | Yes | `io.github.gciatto:kt-constraints-solve-linear` |
-| `:solve-minizinc` | MiniZinc compiler/decoder and runtime adapters | Portable IR; JVM and JS execution | Yes | `io.github.gciatto:kt-constraints-solve-minizinc` |
+| `:solve-minizinc` | MiniZinc compiler/decoder and runtime adapters | Portable IR; JVM, JS and Linux/macOS Native execution | Yes | `io.github.gciatto:kt-constraints-solve-minizinc` |
 | `:solve-auto` | `AutoBackend`: automatic selection over the default routes, fallback/race strategies | Portable | Yes | `io.github.gciatto:kt-constraints-solve-auto` |
 | `:solve-kotlin` | Pure-Kotlin solver and incremental sessions | Portable | Yes | `io.github.gciatto:kt-constraints-solve-kotlin` |
 | `:solve-blocking` | `BlockingSolver`, `BlockingSolutionStream`, `BlockingSession`, `BlockingStore`; `CompletableFuture` variants on the JVM | JVM and Native (no JavaScript) | Yes | `io.github.gciatto:kt-constraints-solve-blocking` |

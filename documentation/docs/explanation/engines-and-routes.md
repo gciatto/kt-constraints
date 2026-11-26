@@ -24,7 +24,7 @@ Z3 uses `z3/direct` on the JVM, `z3/wasm` in JavaScript and `z3/native` on Kotli
 
 Choco and CP-SAT have direct JVM adapters. Choco also provides `ChocoStore` for native propagation (removing impossible domain values) and reversible posting (adding constraints that can later be undone); see [solving modes](solving-modes.md). The CP-SAT route exposes batch solving and streams; native globals inside its batch model do not imply a public propagating store.
 
-SCIP and HiGHS run through OR-Tools in `:solve-mip`, as `scip/or-tools` and `highs/or-tools`. They share a bounded integer-program lowering. That is separate from the reserved direct HiGHS C API integration.
+SCIP and HiGHS run through OR-Tools in `:solve-mip`, as `scip/or-tools` and `highs/or-tools`. They share a bounded integer-program lowering and use shared linear-program lowering for models with reals. Direct [HiGHS C API and Wasm routes](backends/highs.md) are implemented in `:solve-highs` on Native and JS.
 
 MiniZinc is a compiler and runtime route to several engines. The JVM and Linux/macOS Native integrations support Gecode, Chuffed, CP-SAT, HiGHS and CBC configurations. JavaScript has a Gecode Node CLI route, `gecode/minizinc-js-cli`, and a Chuffed browser route, `chuffed/minizinc-wasm`. MiniZinc owns flattening and its solver-specific decompositions. Native Windows command execution is not implemented.
 
@@ -32,7 +32,7 @@ The `kotlin/direct` route is implemented in common Kotlin, so it runs on every p
 
 ## Exact models and numerical engines
 
-The model representation does not silently adopt the numeric semantics of whichever engine is selected. Bounded routes check their representable subset before execution, and routes lacking exact reals reject real models rather than substituting MiniZinc floats or MIP continuous variables.
+The model representation does not silently adopt the numeric semantics of whichever engine is selected. Bounded routes check their representable subset before execution, and routes lacking real support reject real models. Floating-point MIP routes accept reals only with explicit `SolveOptions.numericTolerance`; MiniZinc routes retain their Boolean/integer subset. See [LP/MILP models](../how-to/linear-programs.md).
 
 MIP lowering uses exact integer expressions and bounded coefficients, but the external MIP solve is numerical. Returned integer witnesses are rounded and independently checked exactly against the source model. This establishes a valid witness; it does not provide an exact certificate for a numerical proof of optimality or infeasibility. Those statuses rely on the engine's reported evidence. The **relative MIP gap** measures the difference between the incumbent objective and the proven bound, relative to the objective’s magnitude. A configured positive relative MIP gap yields feasible results rather than claims of optimality.
 

@@ -11,7 +11,7 @@ A `ConstraintCompiler<C : CompiledModel>` separates translation from execution. 
 | `UnsupportedModelException` | Unsupported semantics, ranges or options; `report` is the full `SupportReport` |
 | `BackendUnavailableException` | Runtime cannot start; optional `cause` retains the original failure |
 | `BackendExecutionException` | Engine, protocol or transport failed; optional `cause` retains the original failure |
-| `NoCompatibleBackendException` | Registry has no eligible backend; `rejections` maps route IDs to reasons |
+| `NoCompatibleBackendException` | Registry has no eligible backend; `rejections` maps route IDs to reasons; `diagnosis` explains the model class and capabilities absent from all registered routes |
 
 These errors do not establish that a mathematical model has no solutions.
 
@@ -34,6 +34,8 @@ Adapters using mixed integer programming (MIP) translate integer and Boolean mod
 | `objective` | `ObjectiveKind.NONE`, `LINEAR` or `NONLINEAR`; this describes shape, not minimization versus maximization |
 | `variables`, `constraints`, `nodes` | Declared variable count, top-level assertion count, and expression occurrences across assertions and objective |
 | `maxMagnitude` | Largest absolute integer literal, coefficient or domain bound; not a bound on all computed intermediates |
+| `logic`, `linear` | Boolean-connective flag and suitability for direct linear techniques; `linear` excludes logic, reification, globals, variable products and bit-vectors |
+| `binaryIntegers`, `realObjective` | Whether integer domains lie within `0..1`; whether the objective has real sort |
 | `problemClass` | Coarse family used by ranking and performance evidence |
 
 `GlobalKind` tags are `ALL_DIFFERENT`, `TABLE`, `ELEMENT`, `CARDINALITY`, `MIN_MAX`, `INVERSE`, `CIRCUIT`, `CUMULATIVE`, `REGULAR`, `SUBCIRCUIT`, `BIN_PACKING` and `NO_OVERLAP_2D`. They describe the matching [modelling constructs](modelling-language.md); derived helpers can appear as their underlying expressions.
@@ -51,6 +53,8 @@ Adapters using mixed integer programming (MIP) translate integer and Boolean mod
 | `SMT_BITVECTOR` | Bit-vectors |
 
 Classification checks bit-vectors first, then linear programs over reals, other reals, pure Booleans, globals/reification, nonlinear arithmetic, 0-1 programs, and finally linear integers. A class is a selection hint; only the backend support check establishes compatibility.
+
+Selection exposes `diagnosis` and `unmetCapabilities` when no route is eligible. For example, a nonlinear real objective requires `NONLINEAR_REAL_OBJECTIVES`, which no bundled route declares. This capability diagnostic does not add products of real variables to the built-in expression language. Route choice and the Kotlin engine's internal SAT/simplex technique choice are separate; see [techniques](../explanation/pure-kotlin-solver.md#choosing-the-technique) and [LP/MILP usage](../how-to/linear-programs.md).
 
 ## Ranking extension points
 

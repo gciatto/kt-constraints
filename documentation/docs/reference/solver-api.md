@@ -16,7 +16,7 @@ Use this page to choose an operation and manage its lifetime. See [Modelling lan
 | `solutions(model, options)` | Open a `SolutionStream` for multiple solutions or improving optimization candidates |
 | `ConstraintSolver.close()` | Release the solver's resources; close owned searches when finished |
 | `SolutionStream.next()` | Suspending, single-consumer read of a `SolutionEvent`; concurrent reads are rejected |
-| `SolutionFound.assignment`, `objectiveValue` | A projected solution and its optional exact integer objective. An optimization candidate is an **incumbent**: the best feasible answer found so far |
+| `SolutionFound.assignment`, `objectiveValue`, `realObjectiveValue` | A projected solution and its optional exact integer or rational real objective. An optimization candidate is an **incumbent**: the best feasible answer found so far |
 | `SolveCompleted.result` | The stream's single definitive completion result; subsequent reads return null |
 | `SolutionStream.terminalResult` | Null until completion or cancellation, then the definitive result, even before its event is consumed |
 | `ConstraintSolver.forEachSolution(model, options) { found -> ... }` | Suspending enumeration that opens the stream, passes each `SolutionFound` to the block, closes the stream and returns the terminal `SolveResult` |
@@ -32,9 +32,9 @@ diagnostics or statistics. Consume `solutions` through `SolveCompleted` when you
 
 A stream is single-pass. Close it if you stop reading early. Satisfaction enumeration distinguishes assignments by the model's output projection, the ordered variables included in public answers. Exhaustive enumeration needs `SolverCapability.ENUMERATION`; a stream alone does not promise it. See [Enumerate solutions](../how-to/enumerate-solutions.md).
 
-`SolveOptions` supplies `timeoutMillis`, `solutionLimit` and `backendOptions`. `DEFAULT` supplies no caller limits or tuning; `plus` replaces tuning of the same concrete type, and `backend<T>()` retrieves the last matching type. A `BackendOptions` implementation tunes its own route; other routes ignore it. Consult [Configuration](configuration.md) for every field, default and route-specific setting.
+`SolveOptions` supplies `timeoutMillis`, `solutionLimit`, `backendOptions` and opt-in `numericTolerance`. `DEFAULT` supplies no caller limits or tuning; `plus` replaces tuning of the same concrete type, and `backend<T>()` retrieves the last matching type. A `BackendOptions` implementation tunes its own route; other routes ignore it. Consult [Configuration](configuration.md) for every field, default and route-specific setting.
 
-`SolveResult` carries `status`, nullable `assignment`, `descriptor`, `terminationReason`, nullable `objectiveValue` and `bestBound`, and `metadata`. `SolveMetadata` copies diagnostic `messages` and backend-defined string `statistics`. Read the [status and termination tables](results-and-statuses.md) together: reaching a limit does not prove infeasibility or optimality.
+`SolveResult` carries `status`, nullable `assignment`, `descriptor`, `terminationReason`, nullable integer `objectiveValue`/`bestBound` or rational `realObjectiveValue`/`realBestBound`, and `metadata`. `SolveMetadata` copies diagnostic `messages` and backend-defined string `statistics`. Read the [status and termination tables](results-and-statuses.md) together: reaching a limit does not prove infeasibility or optimality.
 
 ## Blocking calls
 
@@ -81,7 +81,7 @@ A projected assignment may omit variables needed to evaluate a compound expressi
 
 ## Incremental sessions
 
-An **incremental session** keeps assertions between checks. A **frame** groups changes that can be undone together. This is repeated satisfiability checking, separate from batch optimization and from domain propagation (removing impossible values).
+An **incremental session** keeps assertions between checks. A **frame** groups changes that can be undone together. It supports repeated satisfiability checks and, on capable routes, per-call optimization; it does not imply domain propagation (removing impossible values).
 
 `IncrementalConstraintSolver` extends `ConstraintSolver`; obtain one with `backend.createIncrementalSolver()`, which fails explicitly on routes without sessions. Its `openSession(model)` puts the model's constraints and variables in the root frame; closing the solver closes its sessions. Session checks ask for satisfiability even when the source model has an objective; `optimize` takes its objective per call.
 
@@ -93,7 +93,7 @@ An **incremental session** keeps assertions between checks. A **frame** groups c
 | `push()` | Open a frame and return an opaque `Checkpoint` for the state before that frame's changes |
 | `popTo(checkpoint)` | Remove that frame and all newer frames, including their variables; invalidate those checkpoints |
 | `check(assumptions, timeoutMillis)` | Suspending satisfiability query; assumptions hold for this call only; defaults are an empty list and no timeout |
-| `optimize(objective, assumptions, timeoutMillis)` | Suspending optimization of an `Objective` (integer or real) over the active assertions plus assumptions; the objective and assumptions hold for this call only. Returns a `SolveResult` with batch meaning: `OPTIMAL`, `FEASIBLE` with an incumbent and proven bound after a limit, `INFEASIBLE`, `UNBOUNDED` or `UNKNOWN`. Routes declare `INCREMENTAL_OPTIMIZATION` |
+| `optimize(objective, assumptions, timeoutMillis)` | Suspending optimization of an `Objective` (integer or real) over the active assertions plus assumptions; the objective and assumptions hold for this call only. Returns a `SolveResult` with batch meaning: `OPTIMAL`, `FEASIBLE` with an incumbent and any available bound after a limit, `INFEASIBLE`, `UNBOUNDED` or `UNKNOWN`. Routes declare `INCREMENTAL_OPTIMIZATION` |
 | `close()` | Idempotent resource release |
 
 A checkpoint belongs to one session; stale or foreign checkpoints are errors. Use one consumer per session. `CheckResult` reports `CheckStatus`, assignment, descriptor, termination, metadata and optional assumption `unsatCore`. The core is a sufficient subset, not necessarily the smallest one; see [Results and statuses](results-and-statuses.md#incremental-checkresult) and [Use incremental sessions](../how-to/incremental-sessions.md).
@@ -152,12 +152,15 @@ both the solver and the backend runtime.
 
 | `SolverCapability` | Operation or construct advertised |
 |---|---|
-| `SATISFACTION`, `OPTIMIZATION` | Find a witness; optimize an integer objective |
+| `SATISFACTION`, `OPTIMIZATION` | Find a witness; optimize an integer or real objective, subject to support |
 | `ENUMERATION` | Enumerate distinct projected satisfaction assignments; finite projections can be exhausted, while real outputs may yield an endless stream of distinct rational witnesses |
 | `INCREMENTAL_ASSERTIONS`, `BACKTRACKING` | Keep assertions between calls; restore earlier state |
 | `DOMAIN_PROPAGATION`, `ENTAILMENT` | Narrow domains; answer logical implication queries |
 | `ASSUMPTIONS`, `UNSAT_CORES` | Temporary check assertions; sufficient unsatisfiable assumption subsets |
 | `INTEGER_ARITHMETIC`, `REAL_ARITHMETIC`, `BITVECTORS` | Numeric expression families; whole-model support still applies |
+| `INCREMENTAL_OPTIMIZATION` | Optimize a per-call objective over active session assertions |
+| `FLOATING_POINT_REALS` | Real arithmetic under explicit `numericTolerance` consent |
+| `NONLINEAR_REAL_OBJECTIVES` | Nonlinear real optimization; no bundled route declares it |
 | `GLOBAL_CONSTRAINTS` | Structured constraints such as all-different; native handling or exact lowering depends on the route |
 
 See [Solvers and routes](solvers-and-routes.md) for actual descriptors and numeric subsets and [Platform availability](platform-availability.md) for supported execution environments.
@@ -173,6 +176,7 @@ See [Solvers and routes](solvers-and-routes.md) for actual descriptors and numer
 | `Selection.features` | Extracted `ModelFeatures` used for ranking |
 | `Selection.candidates` | Eligible `Candidate`s, highest weighted score first; ties preserve registration order |
 | `Selection.rejections` | Reasons keyed by rejected engine/route ID |
+| `Selection.diagnosis`, `unmetCapabilities` | Empty-selection explanation and required capabilities absent from every registered descriptor |
 | `Selection.best` | First candidate; throws `NoCompatibleBackendException` when none survives |
 | `Candidate.backend`, `contributions`, `total`, `explanation` | Selected route, per-heuristic scores, weighted sum and readable diagnostic explanation |
 
@@ -185,6 +189,6 @@ See [Solvers and routes](solvers-and-routes.md) for actual descriptors and numer
 | `Fallback` (default) | Try ranked routes sequentially under one deadline; proceed after `UNKNOWN` or failure |
 | `Race(parallelism = 2)` | Run at most this positive number of routes at once under one deadline; the first proof wins and cancels the rest; otherwise retain the best incumbent without claiming optimality |
 
-The strategy's `route` is `fallback` or `race`. The backend advertises the union of its routes' batch and session capabilities, and its `createSolver()` returns an `IncrementalConstraintSolver`. Successful answers identify the answering route; an empty eligible set throws `UnsupportedModelException`. If eligible attempts produce no answer, the result is `UNKNOWN` under `auto/fallback` or `auto/race`. Metadata lists skipped and failed routes. `solutions` uses the best eligible enumerating route, and `openSession` the best route with incremental assertions.
+The strategy's `route` is `fallback` or `race`. The backend advertises the union of delegated batch and assertion-session capabilities (currently excluding `INCREMENTAL_OPTIMIZATION` and `FLOATING_POINT_REALS`), and its `createSolver()` returns an `IncrementalConstraintSolver`. Successful answers identify the answering route; an empty eligible set throws `UnsupportedModelException`. If eligible attempts produce no answer, the result is `UNKNOWN` under `auto/fallback` or `auto/race`. Metadata lists skipped and failed routes. `solutions` uses the best eligible enumerating route, and `openSession` the best route with incremental assertions.
 
 For tuning ranking, extracting features and implementing backends, see [Backend SPI](spi.md). `ExperimentalKtConstraintsApi` is an error-level opt-in annotation for APIs whose shape may change without a deprecation cycle, including benchmark-driven ranking; callers must opt in deliberately.

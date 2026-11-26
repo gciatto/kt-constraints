@@ -17,13 +17,13 @@ An incumbent is a feasible assignment found so far, without an optimality proof.
 
 ## Platforms and runtime requirements
 
-`AutoBackend.load()` loads the platform bundle, fastest first according to the recorded benchmarks: direct CP-SAT, Choco, pure Kotlin, Z3 and OR-Tools SCIP/HiGHS on JVM; pure Kotlin and Z3 Wasm on JS; pure Kotlin and Native Z3 on Kotlin/Native. `MINIZINC_EXECUTABLE` enables five additional MiniZinc configurations on the JVM and Native, ranked last, or Node Gecode CLI, ranked before Z3 Wasm. Browser MiniZinc is excluded. By default it keeps this order, trying each model on the first route that has its capabilities, is available and supports it. See [the exact loading order](selection.md#1-load-the-platform-defaults).
+`AutoBackend.load()` loads the platform bundle, fastest first according to the recorded benchmarks: direct CP-SAT, Choco, pure Kotlin, Z3 and OR-Tools SCIP/HiGHS on JVM; pure Kotlin, HiGHS Wasm and Z3 Wasm on JS; pure Kotlin, Native HiGHS and Native Z3 on Kotlin/Native. `MINIZINC_EXECUTABLE` enables five additional MiniZinc configurations on the JVM and Native, ranked last, or Node Gecode CLI, ranked before Z3 Wasm. Browser MiniZinc is excluded. By default it keeps this order, trying each model on the first route that has its capabilities, is available and supports it. See [the exact loading order](selection.md#1-load-the-platform-defaults).
 
 Loading JS runtimes is asynchronous and may fail before candidate execution begins. Closing the automatic backend closes its closeable registered backends and their loaded runtimes. Callers supplying their own list must account for that ownership.
 
 ## Capabilities
 
-The descriptor is the union of registered route capabilities restricted to these batch categories: satisfaction, optimization, enumeration, integer arithmetic, real arithmetic, bit-vectors and globals. The union is not a promise that one route supports every combination. Whole-model eligibility must still find a single suitable candidate.
+The descriptor is the union of registered route capabilities restricted to delegated categories: satisfaction, optimization, enumeration, integer arithmetic, real arithmetic, bit-vectors, globals, incremental assertions, backtracking, assumptions and unsat cores. The union is not a promise that one route supports every combination. Whole-model eligibility must still find a single suitable candidate. The automatic descriptor currently omits `INCREMENTAL_OPTIMIZATION` and `FLOATING_POINT_REALS`, even when a delegated route supports them; inspect the selected route's descriptor and options.
 
 Enumeration selects one highest-ranked eligible route declaring `ENUMERATION`, even for a race strategy. It does not retry or merge streams. The returned stream owns its underlying solver, and closing the automatic solver closes its open enumeration streams. Closing does not stop an automatic batch `solve` already in progress: cancel the coroutine running it. Structured concurrency keeps the candidate work within that calling coroutine.
 
@@ -37,7 +37,7 @@ Fallback returns the first non-`UNKNOWN` result, including a feasible optimizati
 
 ## Options type
 
-There is no automatic `BackendOptions` implementation. Configure `AutoStrategy` and `RankingPolicy` when constructing/loading the backend. Per-call `SolveOptions`, including typed backend options, reach candidate support checks and execution. Each attempt receives the remaining shared timeout budget.
+There is no automatic `BackendOptions` implementation. Configure `AutoStrategy` and `RankingPolicy` when constructing/loading the backend. Per-call `SolveOptions`, including typed backend options, reach candidate support checks and execution. Each attempt receives the remaining shared timeout budget. Real models reach floating-point routes only with explicit `numericTolerance`; it permits those routes without forcing their selection. See [LP/MILP models](../../how-to/linear-programs.md).
 
 `AutoBackend.registry` exposes ranked candidates, scores and rejections for inspection. It does not change registrations dynamically. Custom registry/backend lists are explicit; there is no classpath discovery.
 
