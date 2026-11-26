@@ -1,10 +1,12 @@
 package io.github.gciatto.ktconstraints.solve.blocking
 
 import io.github.gciatto.ktconstraints.core.bool.BoolExpr
+import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
 import io.github.gciatto.ktconstraints.solve.incremental.CheckResult
 import io.github.gciatto.ktconstraints.solve.incremental.Checkpoint
 import io.github.gciatto.ktconstraints.solve.incremental.IncrementalSession
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -26,6 +28,12 @@ actual class BlockingSession internal constructor(
         assumptions: List<BoolExpr>,
         timeoutMillis: Long?,
     ): CheckResult = runBlocking { session.check(assumptions, timeoutMillis) }
+
+    actual fun optimize(
+        objective: Objective,
+        assumptions: List<BoolExpr>,
+        timeoutMillis: Long?,
+    ): SolveResult = runBlocking { session.optimize(objective, assumptions, timeoutMillis) }
 
     actual override fun close() = session.close()
 }
