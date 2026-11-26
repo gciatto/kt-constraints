@@ -50,7 +50,9 @@ A real objective reports its value in `realObjectiveValue` (TypeScript: `realObj
 
 Real objectives are optimized exactly, without floating-point tolerances, by Z3 on the JVM, in JavaScript and on
 Kotlin/Native, and by the pure-Kotlin route's simplex and branch and bound on every platform. `AutoBackend.load()` selects such a route; routes that cannot optimize real objectives reject the
-model with `Unsupported real objective`.
+model with `Unsupported real objective`. The pure-Kotlin route also uses branch and cut for integer objectives over linear
+models, such as 0-1 and integer programs, where it is much faster than its SAT encoding. A quadratic or other
+non-linear real objective is rejected with a report that names the missing `NONLINEAR_REAL_OBJECTIVES` capability.
 
 Floating-point MIP engines, such as SCIP and HiGHS through OR-Tools on the JVM, HiGHS through its C API on
 Kotlin/Native (`HighsNativeBackend`) and HiGHS Wasm in JavaScript (`HighsJsBackend`), are usually much faster on large

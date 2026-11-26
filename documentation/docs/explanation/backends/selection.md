@@ -33,19 +33,22 @@ The first matching row determines `problemClass`:
 | Priority | Condition | Class |
 |---|---|---|
 | 1 | Bit-vectors occur | `SMT_BITVECTOR` |
-| 2 | Reals occur | `SMT_REAL` |
-| 3 | No integers occur | `PURE_BOOLEAN` |
-| 4 | A global or reification occurs | `CP_GLOBALS` |
-| 5 | Nonlinear integer products or a nonlinear objective occur | `NONLINEAR_INTEGER` |
-| 6 | Otherwise | `LINEAR_INTEGER` |
+| 2 | Reals occur in a linear model, with integers | `MIXED_INTEGER_PROGRAM` |
+| 3 | Reals occur in a linear model, without integers | `LINEAR_PROGRAM` |
+| 4 | Reals occur otherwise | `SMT_REAL` |
+| 5 | No integers occur | `PURE_BOOLEAN` |
+| 6 | A global or reification occurs | `CP_GLOBALS` |
+| 7 | Nonlinear integer products or a nonlinear objective occur | `NONLINEAR_INTEGER` |
+| 8 | A linear model whose integer variables all range over `0..1` | `BINARY_PROGRAM` |
+| 9 | Otherwise | `LINEAR_INTEGER` |
 
-For example, a model mixing reals and globals is classified as `SMT_REAL`, but still requires global-constraint support. Classification influences preference; full support inspection decides whether a translation is faithful.
+A model is **linear** (`ModelFeatures.linear`) when it is a conjunction of relations without Boolean logic below the top-level conjunction (or, not, implication, equivalence), reification, globals, bit-vectors or products of variables: the shape simplex-based techniques take directly. For example, a model mixing reals and globals is classified as `SMT_REAL`, but still requires global-constraint support. Classification influences preference; full support inspection decides whether a translation is faithful.
 
 Source: [ModelFeatures](https://github.com/gciatto/kt-constraints/blob/develop/solve-spi/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/spi/feature/ModelFeatures.kt).
 
 ## 3. Reject ineligible routes before scoring
 
-First derive required capabilities: always `SATISFACTION`, plus `OPTIMIZATION` for an objective, `INTEGER_ARITHMETIC` for integers, `REAL_ARITHMETIC` for reals, `BITVECTORS` for bit-vectors, and `GLOBAL_CONSTRAINTS` when globals occur. Add any capabilities explicitly requested from the registry. Enumeration routing adds `ENUMERATION`.
+First derive required capabilities: always `SATISFACTION`, plus `OPTIMIZATION` for an objective, `INTEGER_ARITHMETIC` for integers, `REAL_ARITHMETIC` for reals, `BITVECTORS` for bit-vectors, and `GLOBAL_CONSTRAINTS` when globals occur, and `NONLINEAR_REAL_OBJECTIVES` when a real objective multiplies variables, as a quadratic objective does. No bundled route declares that last capability, so such models are rejected before any route runs; a future route that optimizes them only needs to declare it to be selected. Add any capabilities explicitly requested from the registry. Enumeration routing adds `ENUMERATION`.
 
 For each registered backend, `SolverRegistry.rank` checks these stages in order and stops at the first failing stage:
 
@@ -57,7 +60,7 @@ For each registered backend, `SolverRegistry.rank` checks these stages in order 
 
 A decomposition listed by a support report is not a rejection. A high score cannot override missing capabilities, an unavailable runtime or unsupported semantics. Selection does not create a solver, although probes can load libraries or run startup checks. Exceptions thrown during ranking itself are outside the per-attempt execution handler.
 
-`rank` returns a `Selection` with features, ordered candidates and a rejection map keyed by route ID. It can return an empty candidate list. Reading `Selection.best` or calling registry `select` then throws `NoCompatibleBackendException`. Automatic execution instead turns an empty ranking into `UnsupportedModelException` with every route rejection. Duplicate IDs are rejected when constructing the registry.
+`rank` returns a `Selection` with features, ordered candidates and a rejection map keyed by route ID. It can return an empty candidate list. Reading `Selection.best` or calling registry `select` then throws `NoCompatibleBackendException`. Automatic execution instead turns an empty ranking into `UnsupportedModelException` with every route rejection. Both lead with `Selection.diagnosis`: the model's class, then each required capability that no registered backend declares, such as `model needs NONLINEAR_REAL_OBJECTIVES, which no registered backend offers (the real objective multiplies variables, as a quadratic objective does)`. Duplicate IDs are rejected when constructing the registry.
 
 Source: [SolverRegistry](https://github.com/gciatto/kt-constraints/blob/develop/solve-spi/src/commonMain/kotlin/io/github/gciatto/ktconstraints/solve/spi/registry/SolverRegistry.kt).
 
@@ -82,6 +85,9 @@ For affinity, engine IDs `z3` and `cvc5` count as SMT; `choco`, `cp-sat`, `gecod
 | Problem class | SMT | CP | MIP |
 |---|---:|---:|---:|
 | `SMT_REAL`, `SMT_BITVECTOR` | +1.0 | -1.0 | -1.0 |
+| `LINEAR_PROGRAM`, `MIXED_INTEGER_PROGRAM` | +0.5 | 0.0 | +1.0 |
+| `BINARY_PROGRAM`, satisfaction | +0.25 | +1.0 for `cp-sat`, otherwise +0.5 | +0.5 |
+| `BINARY_PROGRAM`, optimization | +0.25 | +1.0 for `cp-sat`, otherwise +0.5 | +1.0 |
 | `LINEAR_INTEGER`, satisfaction | 0.0 | +0.5 | +0.5 |
 | `LINEAR_INTEGER`, optimization | 0.0 | +0.5 | +1.0 |
 | `NONLINEAR_INTEGER` | +0.5 | +1.0 | -1.0 |
@@ -143,7 +149,7 @@ These are the three models in [AutoBackendJvmSpec](https://github.com/gciatto/kt
 |---|---|---|
 | Integers x, y in 0..9, x + y ≤ 10; maximize 2x + y | `LINEAR_INTEGER`; satisfaction, optimization, integer arithmetic | SCIP and HiGHS each score `-0.05 + 1.0 + 0 = 0.95`; SCIP wins the registration-order tie. CP-SAT and Choco score `-0.10 + 0.5 = 0.40`; Z3 scores `-0.25 + 0 = -0.25`. The solve test proves optimum 19. |
 | Three integers in 0..2, all different; no objective | `CP_GLOBALS`; satisfaction, integer arithmetic, globals | CP-SAT and Choco each score `-0.10 + 1.0 = 0.90`; CP-SAT wins their tie. Z3 scores `-0.25 + 0.25 = 0`; direct MIP scores `-0.05 - 0.5 = -0.55`. |
-| Real r constrained by 1/2 < r; no objective | `SMT_REAL`; satisfaction, real arithmetic | Other default engines lack real arithmetic and are rejected before scoring. Z3 scores `-0.25 + 1.0 = 0.75` and wins. |
+| Real r constrained by 1/2 < r; no objective | `LINEAR_PROGRAM`; satisfaction, real arithmetic | Engines without real arithmetic are rejected before scoring, and so are the floating-point MIP routes without a numeric tolerance. Z3 scores `-0.25 + 0.5 = 0.25`. |
 
 If MiniZinc defaults are enabled and available, HiGHS/CBC score `0.45` on the first model, below direct MIP but above the direct CP routes. MiniZinc CP routes score `0.40` on the all-different model, below direct CP. MiniZinc routes lack real arithmetic and remain ineligible for the third model. These examples show both the deterministic tie rule and the current policy's willingness to put a compiled MIP route ahead of direct CP for linear optimization.
 
