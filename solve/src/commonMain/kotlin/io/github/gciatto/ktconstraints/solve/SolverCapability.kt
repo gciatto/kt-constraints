@@ -27,4 +27,7 @@ enum class SolverCapability {
      * bundled route offers it yet; models that need it are rejected before any route runs, naming this requirement.
      */
     NONLINEAR_REAL_OBJECTIVES,
+
+    /** Optimizing an objective over an incremental session's active assertions, call after call. */
+    INCREMENTAL_OPTIMIZATION,
 }
