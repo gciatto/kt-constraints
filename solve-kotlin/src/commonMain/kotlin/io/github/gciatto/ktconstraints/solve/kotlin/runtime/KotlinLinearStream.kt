@@ -40,7 +40,7 @@ internal class KotlinLinearStream(
     private var completion: SolveCompleted? = null
     private var provenBound: Rational? = null
     private var incumbent: SolutionFound? = null
-    private val search = BranchAndBound(program) { released || expired() }
+    private val search = BranchAndBound(program, stopped = { released || expired() })
 
     @Volatile
     private var released = false
@@ -90,7 +90,7 @@ internal class KotlinLinearStream(
         return FloatingPointPrograms.found(model, solution).also { incumbent = it }
     }
 
-    private fun metadata(): SolveMetadata = SolveMetadata(statistics = mapOf("technique" to "branch-and-cut") + search.statistics())
+    private fun metadata(): SolveMetadata = SolveMetadata(statistics = mapOf("technique" to "branch-and-bound") + search.statistics())
 
     private fun expired(): Boolean = options.timeoutMillis?.let { started.elapsedNow().inWholeMilliseconds >= it } == true
 

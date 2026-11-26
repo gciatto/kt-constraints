@@ -20,9 +20,9 @@ class KotlinTechniqueSpec :
         withTests(
             nameFn = { "kotlin-technique/${it.first}" },
             listOf(
-                Triple("binary-program-uses-branch-and-cut", BenchmarkCatalogue.knapsack(10), "branch-and-cut"),
-                Triple("wide-integer-program-uses-branch-and-cut", LinearCatalogue.boundedKnapsack(6), "branch-and-cut"),
-                Triple("mixed-integer-program-uses-branch-and-cut", LinearCatalogue.rationalKnapsack(8), "branch-and-cut"),
+                Triple("binary-program-uses-branch-and-bound", BenchmarkCatalogue.knapsack(10), "branch-and-bound"),
+                Triple("wide-integer-program-uses-branch-and-bound", LinearCatalogue.boundedKnapsack(6), "branch-and-bound"),
+                Triple("mixed-integer-program-uses-branch-and-bound", LinearCatalogue.rationalKnapsack(8), "branch-and-bound"),
                 Triple("globals-use-sat", BenchmarkCatalogue.assignment(4), "sat"),
             ),
         ) { (_, instance, technique) ->
@@ -42,7 +42,7 @@ class KotlinTechniqueSpec :
             val result = KotlinBackend().createSolver().use { it.solve(model) }
             result.status shouldBe SolveStatus.FEASIBLE
             // A batch satisfaction answer closes the stream at its first witness, before engine statistics are attached.
-            result.metadata.statistics["technique"] shouldNotBe "branch-and-cut"
+            result.metadata.statistics["technique"] shouldNotBe "branch-and-bound"
         }
 
         test("kotlin-technique/logic-with-an-objective-stays-with-sat") {

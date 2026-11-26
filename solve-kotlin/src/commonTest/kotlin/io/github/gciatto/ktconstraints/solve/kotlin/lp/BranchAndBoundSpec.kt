@@ -6,7 +6,9 @@ import io.github.gciatto.ktconstraints.core.real.RealExpr
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.linear.LinearProgram
 import io.github.gciatto.ktconstraints.solve.linear.LinearSolution
+import io.github.gciatto.ktconstraints.test.solve.benchmark.LinearCatalogue
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 
@@ -45,7 +47,7 @@ class BranchAndBoundSpec :
             for (polls in 1..200) {
                 val program = knapsack()
                 var count = 0
-                val search = BranchAndBound(program) { ++count > polls }
+                val search = BranchAndBound(program, stopped = { ++count > polls })
                 if (runCatching { search.maximize(score(program)) }.exceptionOrNull() !is SimplexStopped) break
                 stops++
                 val bound = search.bestBound()
@@ -59,5 +61,19 @@ class BranchAndBoundSpec :
                 }
             }
             (stops > 5 && bounded > 0) shouldBe true
+        }
+    
+        test("branch-and-bound/cut-rounds-keep-the-optimum") {
+            for (instance in listOf(LinearCatalogue.multiKnapsack(12, 1), LinearCatalogue.facilityLocation(4, 8, 2), LinearCatalogue.rationalKnapsack(14, 3))) {
+                val program = LinearProgram.of(instance.model)
+                val goal = requireNotNull(program.objective)
+                val sign = if (goal.maximize) Rational.ONE else Rational.of(-1)
+                val search = BranchAndBound(program, cutRounds = 3)
+                val outcome = search.maximize(goal.terms.mapValues { it.value * sign })
+                outcome.shouldBeInstanceOf<BranchAndBound.Outcome.Optimal>()
+                val optimum = outcome.incumbent.score.real * sign + goal.constant
+                optimum shouldBe (instance.expectedRealObjective ?: Rational.of(requireNotNull(instance.expectedObjective)))
+                search.statistics().getValue("cuts").toInt() shouldBeGreaterThan 0
+            }
         }
     })
