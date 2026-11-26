@@ -104,6 +104,11 @@ internal class OrToolsMipStream(
             native.suppressOutput()
             limit?.let { native.setTimeLimit(it.first) }
             tuning?.threads?.let { native.setNumThreads(it) }
+            if (engine == "HIGHS") {
+                // OR-Tools' HiGHS wrapper ignores RELATIVE_MIP_GAP, so HiGHS kept its 1e-4 default and called incumbents
+                // within that gap optimal. Its own options do apply, even though the setter reports false.
+                native.setSolverSpecificParametersAsString("mip_rel_gap = ${tuning?.relativeGap ?: 0.0}\nmip_abs_gap = 0")
+            }
             populate(native)
             solver = native
             thread = Thread({ search(native) }, THREAD_NAME).apply { isDaemon = true }.also { it.start() }
