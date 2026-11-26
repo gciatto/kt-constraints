@@ -26,6 +26,7 @@ import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldStartWith
 import org.gciatto.kt.math.BigInteger
 import kotlin.time.TimeSource
 
@@ -96,7 +97,9 @@ class AutoBackendSpec :
             val auto = AutoBackend(listOf(ScriptedBackend("missing", 10, log, available = false, script = unknown)))
             auto.availability().available shouldBe false
             auto.availability().reason!! shouldContain "missing is missing"
-            auto.support(satisfaction).unsupported.single() shouldContain "missing/direct rejected"
+            val reasons = auto.support(satisfaction).unsupported
+            reasons.first() shouldStartWith "model: "
+            reasons.last() shouldContain "missing/direct rejected"
             shouldThrow<UnsupportedModelException> { auto.withSolver { it.solve(satisfaction) } }
             AutoBackend(emptyList()).availability().reason shouldBe "No route is registered"
         }
