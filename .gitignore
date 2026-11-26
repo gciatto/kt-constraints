@@ -9,3 +9,6 @@ node_modules/
 local.properties
 .env
 !.github/**
+
+# Output of a manual `mkdocs build`; the Gradle task builds into documentation/build.
+documentation/site/

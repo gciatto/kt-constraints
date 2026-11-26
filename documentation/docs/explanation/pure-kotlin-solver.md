@@ -225,9 +225,21 @@ For maximization, `bestBound` is an upper bound; for minimization, the sign conv
 
 The proof is internal search evidence, not an exported SAT proof log or independently checkable optimization certificate. There is no continuous objective optimization, unbounded-objective detection, or LP relaxation in this loop. Finite integer domains already bound the supported integer objectives. See [results and statuses](../reference/results-and-statuses.md) for the public result semantics.
 
+## Choosing the technique
+
+The route reads the model's structure ([`ModelFeatures`](backends/selection.md#2-extract-features-and-classify-the-model)) before it builds anything:
+
+| Model | Technique | Why |
+|---|---|---|
+| A real objective | Branch and cut over the exact simplex | The SAT engine does not optimize real objectives |
+| An integer objective over a **linear** model: a 0-1, linear integer or mixed-integer program | Branch and cut over the exact simplex | On the benchmark families it beat the SAT encoding everywhere: 3 ms against 57 ms on a 26-item 0-1 knapsack, 8 ms against 1 s on an integer program, and 5 ms against a 20 s timeout on knapsacks whose items can be taken 50 times |
+| Satisfaction, enumeration, Boolean logic, globals or products | The SAT engine, with the exact simplex as its real theory | Branch and cut reports one optimum, not every solution, and does not take logic or globals |
+
+A linear model whose translation to a linear program fails falls back to the SAT engine. Results record the choice in the `technique` statistic: `branch-and-cut` or `sat`. A real objective that multiplies variables, such as a quadratic one, needs a capability no bundled route offers, so automatic selection rejects it before any route runs and names that requirement.
+
 ## Linear programs: the exact simplex
 
-A model whose objective is real goes to a different engine: [`Simplex`][simplex], an exact bounded-variable simplex over the model's [linear program](../how-to/linear-programs.md). Every column keeps its bounds, and each row gets a slack variable equal to its left-hand side, bounded by its right-hand side. Values are `a + b·δ` for a positive infinitesimal δ, ordered lexicographically: a strict row `Σ c·x < r` bounds its slack by `r − δ`, so strictness is exact rather than approximated by a small constant.
+A model with a real objective, or an integer objective over a linear model, goes to a different engine: [`Simplex`][simplex], an exact bounded-variable simplex over the model's [linear program](../how-to/linear-programs.md). Every column keeps its bounds, and each row gets a slack variable equal to its left-hand side, bounded by its right-hand side. Values are `a + b·δ` for a positive infinitesimal δ, ordered lexicographically: a strict row `Σ c·x < r` bounds its slack by `r − δ`, so strictness is exact rather than approximated by a small constant.
 
 1. **Feasibility.** The general simplex of Dutertre and de Moura, the procedure SMT solvers use, repeatedly takes the lowest-indexed basic variable outside its bounds and pivots it with the lowest-indexed nonbasic variable that can repair it. When none can, the bounds and rows are infeasible.
 2. **Optimization.** The primal simplex then moves the nonbasic variable with the largest reduced cost (Dantzig's rule), as far as its own bound (a bound flip, without pivoting) or the first basic variable to reach a bound (a pivot). When nothing limits the move, the objective is unbounded.

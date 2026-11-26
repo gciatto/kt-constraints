@@ -42,12 +42,15 @@ Adapters using mixed integer programming (MIP) translate integer and Boolean mod
 |---|---|
 | `PURE_BOOLEAN` | No integer expressions after excluding real and bit-vector families |
 | `LINEAR_INTEGER` | Linear integer model with top-level relations |
+| `BINARY_PROGRAM` | Linear integer model whose integer variables all range over `0..1` |
+| `LINEAR_PROGRAM` | Linear model over reals only |
+| `MIXED_INTEGER_PROGRAM` | Linear model over reals and integers |
 | `NONLINEAR_INTEGER` | Integer model with nonlinear expressions or objective |
 | `CP_GLOBALS` | Integer model with globals or reified relations |
-| `SMT_REAL` | Exact reals, possibly mixed with integers |
+| `SMT_REAL` | Exact reals in a model that is not linear, such as one with logic or reification |
 | `SMT_BITVECTOR` | Bit-vectors |
 
-Classification checks bit-vectors first, then reals, pure Booleans, globals/reification, nonlinear arithmetic, and finally linear integers. A class is a selection hint; only the backend support check establishes compatibility.
+Classification checks bit-vectors first, then linear programs over reals, other reals, pure Booleans, globals/reification, nonlinear arithmetic, 0-1 programs, and finally linear integers. A class is a selection hint; only the backend support check establishes compatibility.
 
 ## Ranking extension points
 
