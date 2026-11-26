@@ -1,7 +1,9 @@
 package io.github.gciatto.ktconstraints.solve.incremental
 import io.github.gciatto.ktconstraints.core.Variable
 import io.github.gciatto.ktconstraints.core.bool.BoolExpr
+import io.github.gciatto.ktconstraints.model.Objective
 import io.github.gciatto.ktconstraints.solve.SolverDescriptor
+import io.github.gciatto.ktconstraints.solve.result.SolveResult
 
 /**
  * Single-consumer assertion store over a model's variables, with reversible frames and repeated checks.
@@ -31,6 +33,19 @@ interface IncrementalSession : AutoCloseable {
         assumptions: List<BoolExpr> = emptyList(),
         timeoutMillis: Long? = null,
     ): CheckResult
+
+    /**
+     * Optimizes [objective] over the active assertions plus [assumptions]; both the objective and the assumptions hold
+     * for this call only, so the session can be edited and optimized again. The result has the meaning of a batch
+     * solve: `OPTIMAL` with the optimum, `FEASIBLE` with an incumbent and any proven bound when a limit stops the
+     * search, `INFEASIBLE`, `UNBOUNDED` or `UNKNOWN`. Routes without
+     * [io.github.gciatto.ktconstraints.solve.SolverCapability.INCREMENTAL_OPTIMIZATION] reject every call.
+     */
+    suspend fun optimize(
+        objective: Objective,
+        assumptions: List<BoolExpr> = emptyList(),
+        timeoutMillis: Long? = null,
+    ): SolveResult
 
     /** Releases engine resources; idempotent. */
     override fun close()
