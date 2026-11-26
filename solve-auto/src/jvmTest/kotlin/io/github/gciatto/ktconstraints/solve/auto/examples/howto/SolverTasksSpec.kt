@@ -25,6 +25,7 @@ class SolverTasksSpec :
             cancelEnumeration() shouldBe TerminationReason.CANCELLED
         }
         test("roll back assertions and check temporary assumptions") {
+            reoptimize() shouldBe Reoptimized(BigInteger.of(21), BigInteger.of(19), BigInteger.of(16), BigInteger.of(21))
             checkTemporaryAssertions() shouldBe
                 SessionChecks(
                     withTrialAssertion = CheckStatus.UNSATISFIABLE,

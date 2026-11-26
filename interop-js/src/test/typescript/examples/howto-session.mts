@@ -1,4 +1,4 @@
-import { ModelBuilder, constant, loadZ3 } from "kt-constraints-interop-js";
+import { ModelBuilder, constant, loadKotlin, loadZ3 } from "kt-constraints-interop-js";
 import type { Example } from "./example.mjs";
 
 export const example: Example = {
@@ -25,10 +25,36 @@ export const example: Example = {
                 session.close();
             }
             // --8<-- [end:session]
-            log("passed");
         } finally {
             solver.close();
             backend.close();
+        }
+        const kotlin = await loadKotlin();
+        const optimizer = kotlin.createSolver();
+        try {
+            // --8<-- [start:session-optimization]
+            const builder = new ModelBuilder();
+            const x = builder.intVar("x", 0n, 9n);
+            const y = builder.intVar("y", 0n, 9n);
+            builder.add(x.plus(y).le(constant(12n)));
+            const goal = x.times(constant(2n)).plus(y);
+            const session = optimizer.openSession(builder.build());
+            try {
+                if ((await session.maximize(goal)).objective !== 21n) throw new Error("Expected 21");
+                const before = session.push();
+                session.add(y.ge(constant(5n)));
+                if ((await session.maximize(goal)).objective !== 19n) throw new Error("Expected 19 in the frame");
+                session.popTo(before);
+                if ((await session.maximize(goal, [x.le(constant(4n))])).objective !== 16n) throw new Error("Expected 16");
+                if ((await session.maximize(goal)).objective !== 21n) throw new Error("Expected 21 again");
+            } finally {
+                session.close();
+            }
+            // --8<-- [end:session-optimization]
+            log("passed");
+        } finally {
+            optimizer.close();
+            kotlin.close();
         }
     },
 };

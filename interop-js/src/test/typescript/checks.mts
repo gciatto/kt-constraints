@@ -239,6 +239,33 @@ export async function runChecks(backend: Backend, profile: Profile, log: (line: 
             } finally {
                 session.close();
             }
+            // Incremental optimization: optima follow frames and assumptions; objectives hold for one call.
+            const optimizing = solver.openSession(builder.build());
+            try {
+                const best = await optimizing.maximize(x);
+                check(best.status === "OPTIMAL" && best.objective === 10n, `maximize ${best.status} ${best.objective}`);
+                const frame = optimizing.push();
+                optimizing.add(x.le(constant(6n)));
+                check((await optimizing.maximize(x)).objective === 6n, "the optimum follows the frame");
+                check((await optimizing.minimize(x, [x.ge(constant(2n))])).objective === 2n, "assumptions bound one call");
+                optimizing.popTo(frame);
+                check((await optimizing.maximize(x)).objective === 10n, "the optimum returns with the frame popped");
+                if (profile.reals) {
+                    const realBuilder = new ModelBuilder();
+                    const r = realBuilder.realVar("r");
+                    realBuilder.add(r.le(real("3/2")));
+                    const reals = solver.openSession(realBuilder.build());
+                    try {
+                        const exact = await reals.maximizeReal(r);
+                        check(exact.status === "OPTIMAL" && exact.realObjective === "3/2", `real ${exact.realObjective}`);
+                        check((await reals.maximizeReal(r, [r.le(real("1/3"))])).realObjective === "1/3", "real assumption");
+                    } finally {
+                        reals.close();
+                    }
+                }
+            } finally {
+                optimizing.close();
+            }
         });
         // Constraint store: post, mark, entail, undo, fail, explain with the caller's expressions, fork.
         const store: Store = backend.createStore();

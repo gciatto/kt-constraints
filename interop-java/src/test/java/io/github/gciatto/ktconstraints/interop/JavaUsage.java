@@ -8,6 +8,7 @@ import io.github.gciatto.ktconstraints.core.real.RealVar;
 import io.github.gciatto.ktconstraints.dsl.Expressions;
 import io.github.gciatto.ktconstraints.model.ConstraintModel;
 import io.github.gciatto.ktconstraints.model.ConstraintScope;
+import io.github.gciatto.ktconstraints.model.Objective;
 import io.github.gciatto.ktconstraints.solve.SolveOptions;
 import io.github.gciatto.ktconstraints.solve.assignment.Assignment;
 import io.github.gciatto.ktconstraints.solve.blocking.BlockingSession;
@@ -197,6 +198,26 @@ public final class JavaUsage {
             CheckResult async = session.checkAsync(Collections.singletonList(x.eq(7)), 60_000L)
                 .get(120, TimeUnit.SECONDS);
             check(Integer.valueOf(7).equals(async.getAssignment().intValueOf(x)), "async x " + async.getAssignment().valueOf(x));
+        }
+    }
+
+    /** Incremental optimization from Java: optima follow frames, assumptions bound one call, futures work too. */
+    public static void sessionOptimization(SolverBackend backend) throws Exception {
+        ConstraintScope scope = ConstraintScope.empty();
+        IntVar x = scope.intVar("x", 0, 10);
+        try (BlockingSolver solver = BlockingSolver.of(backend);
+             BlockingSession session = solver.openSession(scope.buildModel())) {
+            Objective goal = new Objective.Maximize(x);
+            SolveResult best = session.optimize(goal);
+            check(best.getStatus() == SolveStatus.OPTIMAL, "status " + best.getStatus());
+            check(BigInteger.of(10).equals(best.getObjectiveValue()), "optimum " + best.getObjectiveValue());
+            Checkpoint checkpoint = session.push();
+            session.add(x.lt(4));
+            check(BigInteger.of(3).equals(session.optimize(goal).getObjectiveValue()), "framed optimum");
+            check(BigInteger.of(2).equals(session.optimize(goal, Collections.singletonList(x.le(2))).getObjectiveValue()), "assumed optimum");
+            session.popTo(checkpoint);
+            SolveResult async = session.optimizeAsync(goal).get(120, TimeUnit.SECONDS);
+            check(BigInteger.of(10).equals(async.getObjectiveValue()), "async optimum " + async.getObjectiveValue());
         }
     }
 

@@ -5,6 +5,7 @@ import io.github.gciatto.ktconstraints.core.integer.IntVar;
 import io.github.gciatto.ktconstraints.core.real.RealVar;
 import io.github.gciatto.ktconstraints.interop.JavaNumbers;
 import io.github.gciatto.ktconstraints.model.ConstraintScope;
+import io.github.gciatto.ktconstraints.model.Objective;
 import io.github.gciatto.ktconstraints.solve.NumericTolerance;
 import io.github.gciatto.ktconstraints.solve.SolveOptions;
 import io.github.gciatto.ktconstraints.solve.auto.AutoBackend;
@@ -18,6 +19,7 @@ import io.github.gciatto.ktconstraints.solve.choco.ChocoStore;
 import io.github.gciatto.ktconstraints.solve.incremental.CheckStatus;
 import io.github.gciatto.ktconstraints.solve.mip.OrToolsMipBackend;
 import io.github.gciatto.ktconstraints.solve.incremental.Checkpoint;
+import io.github.gciatto.ktconstraints.solve.kotlin.KotlinBackend;
 import io.github.gciatto.ktconstraints.solve.result.SolveResult;
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus;
 import io.github.gciatto.ktconstraints.solve.store.Entailment;
@@ -27,10 +29,12 @@ import io.github.gciatto.ktconstraints.solve.stream.SolutionFound;
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted;
 import io.github.gciatto.ktconstraints.solve.z3.Z3Backend;
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import org.gciatto.kt.math.BigInteger;
 
 /** Java boundary examples quoted by the how-to guides. */
 public final class SolverTasks {
@@ -151,6 +155,28 @@ public final class SolverTasks {
             check(session.check().getStatus() == CheckStatus.SATISFIABLE, "restored");
         }
         // --8<-- [end:session]
+    }
+
+    /** Re-optimizes a session as it changes: inside a frame, under a one-call assumption, then restored. */
+    public static void sessionOptimization() {
+        // --8<-- [start:session-optimization]
+        ConstraintScope scope = ConstraintScope.empty();
+        IntVar x = scope.intVar("x", 0, 9);
+        IntVar y = scope.intVar("y", 0, 9);
+        scope.add(x.plus(y).le(12));
+        Objective goal = new Objective.Maximize(x.times(2).plus(y));
+        try (BlockingSolver solver = BlockingSolver.of(new KotlinBackend());
+             BlockingSession session = solver.openSession(scope.buildModel())) {
+            check(session.optimize(goal).getObjectiveValue().equals(BigInteger.of(21)), "initial optimum");
+            Checkpoint before = session.push();
+            session.add(y.ge(5));
+            check(session.optimize(goal).getObjectiveValue().equals(BigInteger.of(19)), "framed optimum");
+            session.popTo(before);
+            SolveResult assumed = session.optimize(goal, Collections.singletonList(x.le(4)));
+            check(assumed.getObjectiveValue().equals(BigInteger.of(16)), "assumed optimum");
+            check(session.optimize(goal).getObjectiveValue().equals(BigInteger.of(21)), "restored optimum");
+        }
+        // --8<-- [end:session-optimization]
     }
 
     /** Posts constraints through the blocking store facade. */
