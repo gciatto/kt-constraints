@@ -3,6 +3,7 @@ package io.github.gciatto.ktconstraints.solve.mip
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
 import io.github.gciatto.ktconstraints.solve.result.TerminationReason
 import io.github.gciatto.ktconstraints.solve.spi.withSolver
+import io.github.gciatto.ktconstraints.test.solve.benchmark.LinearCatalogue
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.longs.shouldBeLessThan
@@ -20,6 +21,14 @@ class HighsSpec :
         test("highs/or-tools/requires-a-positive-solve-limit") {
             shouldThrow<IllegalArgumentException> { OrToolsMipBackend.highs(0) }
             OrToolsMipBackend.highs(LIMIT_MILLIS).solveLimitMillis shouldBe LIMIT_MILLIS
+        }
+
+        test("highs/or-tools/optimality-is-proven-without-a-gap") {
+            // HiGHS' default 1e-4 relative gap once called 29572 optimal here; the optimum is 29574.
+            val instance = LinearCatalogue.boundedKnapsack(36, 1)
+            val result = OrToolsMipBackend.highs(LIMIT_MILLIS).withSolver { it.solve(instance.model) }
+            result.status shouldBe SolveStatus.OPTIMAL
+            result.objectiveValue shouldBe instance.expectedObjective
         }
 
         test("highs/or-tools/backend-limit-is-a-resource-limit") {
