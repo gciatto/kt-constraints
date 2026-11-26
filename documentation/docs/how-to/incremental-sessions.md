@@ -2,7 +2,7 @@
 
 ## 1. Start from a satisfaction model
 
-Choose a route with `INCREMENTAL_ASSERTIONS`; Z3 supports sessions on JVM, JS and Native.
+Choose a route with `INCREMENTAL_ASSERTIONS`; Z3 and the pure-Kotlin route support sessions on JVM, JS and Native.
 Kotlin's `IncrementalConstraintSolver.openSession(model)` opens a session over the model's
 variables and assertions. Java and TypeScript expose `solver.openSession(model)`.
 Session checks are satisfiability queries; to optimize, pass an objective to `optimize` (section 4).
@@ -64,7 +64,7 @@ Routes with `INCREMENTAL_OPTIMIZATION` (the pure-Kotlin route and Z3) optimize t
 `session.optimize(objective, assumptions, timeoutMillis)` in Kotlin and Java, and `minimize`, `maximize`,
 `minimizeReal` and `maximizeReal` in TypeScript. The objective and the assumptions hold for that call only, so the
 same session can be edited, checked and optimized again. The result is a `SolveResult` (TypeScript: `Outcome`) with
-the meaning of a batch solve: `OPTIMAL` with the optimum, `FEASIBLE` with an incumbent and the bound proven so far
+the meaning of a batch solve: `OPTIMAL` with the optimum, `FEASIBLE` with an incumbent and any available bound proven so far
 when a limit stops it, `INFEASIBLE`, `UNBOUNDED` or `UNKNOWN`.
 
 === "Kotlin"
@@ -90,7 +90,7 @@ on the session's own SAT engine, with every objective bound passed as an assumpt
 definitions carry over to later checks and optimizations. Linear models, and every real objective, are optimized
 exactly by branch and bound over the current assertions, starting afresh from a floating-point guess on each call:
 keeping the exact tableau between calls was measured to be slower, since exact pivots from a warm basis carry large
-fractions. Z3 optimizes on the session's own context: its optimizer sees the active assertions, and every claim is
-confirmed by a plain check of the session's solver, as batch solves do. A non-linear real objective is rejected, as in
+fractions. Z3 optimizes on the session's own context: its optimizer sees the active assertions, and attained optima and unattained bounds are
+confirmed by plain checks of the session's solver, as batch solves do. Unboundedness uses the optimizer's claim. A non-linear real objective is rejected, as in
 batch solving.
 

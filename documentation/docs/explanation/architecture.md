@@ -22,7 +22,7 @@ The diagram shows the main dependency direction rather than every Gradle edge. `
 | Layer | Responsibility |
 |---|---|
 | `:core` | Sorts, variables and identities, exact numbers, domains, expression nodes and their operators, globals, traversal and ground evaluation |
-| `:model` | Mutable `ConstraintScope`, frozen `ConstraintModel`, assertion metadata, integer objectives and output projection |
+| `:model` | Mutable `ConstraintScope`, frozen `ConstraintModel`, assertion metadata, integer and real objectives and output projection |
 | `:dsl` | Kotlin helpers without a receiver expression (sums, counting, globals, automata), plus the Java-facing `Expressions` factories |
 | `:solve` | Solver, stream, incremental-session and store interfaces; assignments, options, descriptors and result contracts |
 | `:solve-spi` | Backend and compiler contracts, support reports, availability, registry, feature extraction, ranking and shared lifecycle machinery |

@@ -135,14 +135,14 @@ Scheduling intervals are half-open: an end may equal another start. Parallel lis
 | `add(constraint, name, annotations, source)` | Assert a Boolean expression; optional unique name, string annotations and `SourceLocation` |
 | `project(*variables)` | Ordered output subset; defaults to all variables; an explicit empty projection is valid |
 | `buildModel()` | Detached immutable snapshot |
-| `minimize(expression)` / `Objective.Minimize` | Minimize one integer expression, replacing the objective |
-| `maximize(expression)` / `Objective.Maximize` | Maximize one integer expression, replacing the objective |
+| `minimize(expression)` / `Objective.Minimize` | Minimize one integer expression; `Objective.MinimizeReal` and the real overload minimize one real expression, replacing the objective |
+| `maximize(expression)` / `Objective.Maximize` | Maximize one integer expression; `Objective.MaximizeReal` and the real overload maximize one real expression, replacing the objective |
 | `satisfy()` / null objective | Clear optimization and select satisfaction |
 | `minimizeViolations(*soft)` | Minimize the total non-negative `Long` weight of false constraints; arguments are `Pair<BoolExpr, Long>`; return the penalty expression |
 
 Names must be non-blank and unique within a scope. Variable IDs encode identity; foreign variables are rejected in assertions, objectives and projections. Projection rejects duplicates. Soft constraints remain preferences unless also asserted with `add`. Built models are unaffected by later builder edits. Their `variables`, `entries`, `constraints` and `outputVariables` retain declaration, assertion and projection order. `ConstraintEntry` holds its expression and metadata. `SourceLocation(file, line = 1, column = 1)` uses a non-blank source identifier and positive, one-based positions; it does not access the filesystem.
 
-See [Optimize](../how-to/optimize.md) and the [API reference](/kt-constraints/api/index.html) for overloads and declarations.
+See [Optimize](../how-to/optimize.md), [solve LP and MILP models](../how-to/linear-programs.md) and the [API reference](/kt-constraints/api/index.html) for overloads and declarations.
 
 ## Expression interfaces and identity
 
@@ -160,7 +160,7 @@ An **expression** is an immutable calculation or condition. Its **sort** identif
 
 `VariableFactory.empty()` creates an independent identity owner. Its `boolVar`, `intVar(name, domain)`, `realVar` and `bitVecVar` create fresh variables for tools such as incremental sessions. For ordinary models, use `ConstraintScope` so declarations, assertions and projections are validated together. Factory-created variables do not automatically belong to a model scope.
 
-`ConstraintModel.objective` is null for satisfaction or an `Objective.Minimize`/`Objective.Maximize` carrying `expression`. Its `variables`, `entries`, `constraints` and `outputVariables` are detached lists. `ConstraintEntry.expression`, `name`, `annotations` and `source` preserve assertion metadata; annotation keys are sorted. `ConstraintScope.add`, objective setters, `satisfy` and `project` return the builder for chaining.
+`ConstraintModel.objective` is null for satisfaction or an `Objective.Minimize`, `Maximize`, `MinimizeReal` or `MaximizeReal` carrying `expression` and a `maximize` direction flag. Its `variables`, `entries`, `constraints` and `outputVariables` are detached lists. `ConstraintEntry.expression`, `name`, `annotations` and `source` preserve assertion metadata; annotation keys are sorted. `ConstraintScope.add`, objective setters, `satisfy` and `project` return the builder for chaining.
 
 ## Numeric and global helper details
 
@@ -168,7 +168,7 @@ An **expression** is an immutable calculation or condition. Its **sort** identif
 |---|---|
 | `IntDomain` | `intervals`, nullable `min`/`max`, `isEmpty`, exact `cardinality`, `isFinite = true`, membership via `contains`, `union` and `intersect` |
 | `IntInterval(min, max)` | Non-empty inclusive interval; rejects reversed bounds |
-| `Rational` | Normalized `numerator` and positive `denominator`, `isInteger`, exact `plus`, `minus`, `times`, `unaryMinus` and comparison; `ZERO` and `ONE` constants. Text output is an integer or `p/q`; parsing rejects exponent notation |
+| `Rational` | Normalized `numerator` and positive `denominator`, `isInteger`, exact `plus`, `minus`, `times`, `div`, `unaryMinus`, `floor` and comparison; `ZERO` and `ONE` constants. Text output is an integer or `p/q`; parsing rejects exponent notation |
 | `unaryMinus`, `negate` | Kotlin `-expression`, or `negate()` from Java, builds `IntNegation` or `RealNegation`; it does not solve or mutate the operand |
 | `BitVecOperator` | Operation selector for `BitVecBinary`: arithmetic, bitwise and shift values listed above |
 | `BitVecRelation` | Relation selector for `BitVecComparison`: equality and signed/unsigned ordering listed above |

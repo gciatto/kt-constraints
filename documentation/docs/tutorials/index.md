@@ -14,3 +14,5 @@ answer. You need basic familiarity with the language you choose; no solver exper
 
 Use [Install](../how-to/install.md) for package authentication and runtime setup. If you already have a model
 and want to perform a particular task, use the [how-to guides](../how-to/index.md).
+
+For continuous and mixed-integer optimization across languages, see [solve LP and MILP models](../how-to/linear-programs.md).

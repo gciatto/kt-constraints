@@ -10,11 +10,11 @@ This engine combines a finite arithmetic compiler, Boolean satisfiability search
 
 ## Platforms and runtime requirements
 
-Production code is in `commonMain` for JVM, JS and Native, with no solver executable, JNI library or solver Wasm binary. Existing measurements cover JVM Linux, Node and Linux x64 Native. Common source does not establish browser packaging or test coverage on every target; see [platform availability](../../reference/platform-availability.md). There is no published TypeScript loader for this engine.
+Production code is in `commonMain` for JVM, JS and Native, with no solver executable, JNI library or solver Wasm binary. Existing measurements cover JVM Linux, Node and Linux x64 Native. Common source does not establish browser packaging or test coverage on every target; see [platform availability](../../reference/platform-availability.md). The TypeScript facade exports `loadKotlin()` for this engine.
 
 ## Capabilities
 
-The descriptor declares batch satisfaction, integer optimization, exhaustive projected satisfaction enumeration, incremental assertions, backtracking, assumptions and unsatisfiable cores. Its incremental solver can be wrapped in the generic `SatisfiabilityStore`; this does not expose native domain propagation. Capability declarations remain subject to model support and compilation/work limits.
+The descriptor declares batch satisfaction, integer and linear real optimization, incremental optimization, exhaustive projected satisfaction enumeration, incremental assertions, backtracking, assumptions and unsatisfiable cores. Its incremental solver can be wrapped in the generic `SatisfiabilityStore`; this does not expose native domain propagation. Capability declarations remain subject to model support and compilation/work limits.
 
 ## Supported modelling features and numeric limits
 
@@ -28,7 +28,7 @@ There is no Kotlin-specific `BackendOptions` type. Construct `KotlinBackend` wit
 
 ## Performance
 
-The recorded catalogue often favors this route over Z3 on Node and Native, and on small JVM models. Hard scheduling, larger arithmetic circuits and growing exact rationals can still be expensive. Measurements do not justify silently adding it to defaults. See [benchmarks](../../reference/benchmarks.md) for numbers, release Native settings and missing workload families.
+The recorded catalogue often favors this route over Z3 on Node and Native, and on small JVM models. Hard scheduling, larger arithmetic circuits and growing exact rationals can still be expensive. The default bundles include it in the order stated above. See [benchmarks](../../reference/benchmarks.md) for numbers, release Native settings and missing workload families.
 
 ## How to use it directly
 

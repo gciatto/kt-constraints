@@ -18,7 +18,7 @@ nav:
       - Install: how-to/install.md
       - Choose a programming style: how-to/programming-styles.md
       - Optimize: how-to/optimize.md
-      - Solve linear and mixed-integer programs: how-to/linear-programs.md
+      - Solve LP and MILP models: how-to/linear-programs.md
       - Enumerate solutions: how-to/enumerate-solutions.md
       - Set limits and cancel: how-to/limits-and-cancellation.md
       - Classic problems:
@@ -68,6 +68,7 @@ nav:
           - Z3: explanation/backends/z3.md
           - CP-SAT: explanation/backends/cp-sat.md
           - Choco: explanation/backends/choco.md
+          - HiGHS C API and Wasm: explanation/backends/highs.md
           - OR-Tools MIP: explanation/backends/or-tools-mip.md
           - MiniZinc: explanation/backends/minizinc.md
           - Pure Kotlin: explanation/backends/kotlin.md

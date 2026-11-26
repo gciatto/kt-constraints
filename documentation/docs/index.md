@@ -33,7 +33,7 @@ brackets are optional detours for that step.
 4. [Choose a programming style](how-to/programming-styles.md): the scope DSL versus explicit factories.
 5. [Modelling language](reference/modelling-language.md) and [Global constraints](explanation/global-constraints.md):
    the operators you can use and why `allDifferent` and friends stay whole.
-6. [Optimize](how-to/optimize.md), then [Enumerate solutions](how-to/enumerate-solutions.md), then
+6. [Optimize](how-to/optimize.md) ([LP/MILP models](how-to/linear-programs.md) for continuous and mixed-integer optimization), then [Enumerate solutions](how-to/enumerate-solutions.md), then
    [Set limits and cancel](how-to/limits-and-cancellation.md).
 7. Classic problems, in nav order from [N-Queens](how-to/problems/n-queens.md) to
    [Nurse rostering](how-to/problems/nurse-rostering.md) (leave Pigeonhole for step 4).

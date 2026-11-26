@@ -1,6 +1,6 @@
 # C API
 
-`:interop-c` generates a Kotlin/Native shared library named `libktconstraints` and `libktconstraints_api.h`. Release ZIPs contain the library and header for `linuxX64`, `macosArm64` and `mingwX64`. This is a C facade over Boolean and integer modelling plus blocking Native Z3 solving; it does not expose the entire Kotlin API.
+`:interop-c` generates a Kotlin/Native shared library named `libktconstraints` and `libktconstraints_api.h`. Release ZIPs contain the library and header for `linuxX64`, `macosArm64` and `mingwX64`. This is a C facade over Boolean and integer modelling plus blocking solving through Native automatic defaults; it does not expose the entire Kotlin API.
 
 ## Names and calls
 
@@ -21,10 +21,12 @@ Kotlin object references have generated handle types such as `libktconstraints_k
 | `allDifferent(list)` | Boolean pairwise distinctness constraint |
 | `sum(list)` | Exact integer sum; empty sum is zero |
 | `Model` | Immutable snapshot; `get_variableCount`, `get_constraintCount` |
-| `solve(model, timeoutMillis)` | Blocking solve using Native defaults, `kotlin/direct` first and then `z3/native`; non-positive timeout means no limit |
+| `solve(model, timeoutMillis)` | Blocking solve using Native defaults, `kotlin/direct`, then `highs/native` and `z3/native`, followed by enabled MiniZinc routes; non-positive timeout means no limit |
 | `Outcome` | `get_status`, `get_message`, `get_route`, `get_objective`, `valueOf`, `truthOf` |
 
 Variables created through `intVar` have inclusive `Long` bounds. Constants and intermediates can exceed 64 bits. There are no C facade real/bit-vector expressions, projection controls, sessions, streams, stores, soft-constraint helpers or general solver tuning.
+
+C supports integer objectives, including linear integer programs, but has no real variables or real objectives, so continuous LP and genuine mixed real/integer models cannot be expressed. The [LP/MILP guide](../how-to/linear-programs.md#c-integer-programs) links the tested C integer-program example.
 
 ## Results and invalid input
 

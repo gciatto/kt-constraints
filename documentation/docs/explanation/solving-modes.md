@@ -4,8 +4,8 @@ Batch search, incremental checks and constraint stores retain different kinds of
 
 | Mode | State retained | Main question |
 |---|---|---|
-| Batch solver | One search over a frozen model | Find a solution, enumerate outputs or optimize an integer objective |
-| Incremental session | Declarations and an assertion stack | Are these active assertions satisfiable under these temporary assumptions? |
+| Batch solver | One search over a frozen model | Find a solution, enumerate outputs or optimize an integer or real objective |
+| Incremental session | Declarations and an assertion stack | Check satisfiability or optimize a per-call objective under temporary assumptions |
 | Constraint store | Posted constraints, declarations, marks and possibly narrowed domains | What follows after posting a constraint, and what must be restored on backtracking? |
 
 ## Batch search owns the search
@@ -23,6 +23,8 @@ Batch is appropriate when the application can describe the whole problem before 
 `IncrementalConstraintSolver.openSession` opens an `IncrementalSession` whose root contains the model. New assertions and declarations belong to the current frame. `push` creates a checkpoint; `popTo` restores the state at that checkpoint and invalidates it and all newer checkpoints. Foreign or stale checkpoints are rejected.
 
 A `check` answers satisfiability, optionally under assumptions that apply only to that call. An unsat core, when returned, is a sufficient subset of those assumptions, not a promise of a minimal explanation of all root assertions. Session checks are satisfiability queries; a model objective does not turn `check` into an optimization operation.
+
+On routes declaring `INCREMENTAL_OPTIMIZATION`, `session.optimize` optimizes an integer or real objective over the active assertions. Its objective and assumptions apply to that call only; it returns the same result contract as batch optimization. See [session optimization](../how-to/incremental-sessions.md#4-re-optimize-as-the-session-changes).
 
 Z3 exposes incremental sessions on its JVM, JavaScript and Native routes. The pure-Kotlin route also implements the incremental interface. Neither interface promises domain-change reports. Retaining an assertion stack and narrowing variable domains are different capabilities.
 

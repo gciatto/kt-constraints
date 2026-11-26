@@ -27,6 +27,8 @@ Native MiniZinc routes start the `minizinc` executable with `posix_spawn`, so th
 `kotlin/direct` has an implementation in `commonMain` and unconditional shared conformance tests, executed locally on
 JVM Linux, Node and Linux x64 Native; the other cells await CI evidence from the jobs that now include the module. The production implementation is portable; that alone does not prove the remaining platform cells.
 
+LP/MILP support follows route semantics as well as platform reach: Kotlin and Z3 optimize exactly; OR-Tools MIP and direct HiGHS require explicit `numericTolerance` for real models. These cells describe route coverage, not a promise that every capability was exercised on every platform. See [LP/MILP usage](../how-to/linear-programs.md).
+
 ## Facades
 
 | Facade                                   | JVM Linux | JVM macOS arm64 | JVM Windows | Node | Chromium |
