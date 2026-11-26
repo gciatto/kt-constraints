@@ -21,6 +21,7 @@ import io.github.gciatto.ktconstraints.solve.spi.withSolver
 import io.github.gciatto.ktconstraints.solve.stream.SolutionFound
 import io.github.gciatto.ktconstraints.solve.stream.SolveCompleted
 import io.github.gciatto.ktconstraints.test.solve.incrementalContract
+import io.github.gciatto.ktconstraints.test.solve.incrementalOptimizationContract
 import io.github.gciatto.ktconstraints.test.solve.linearProgrammingContract
 import io.github.gciatto.ktconstraints.test.solve.oracle.FiniteOracle
 import io.github.gciatto.ktconstraints.test.solve.solverContract
@@ -51,6 +52,7 @@ class Z3JsSpec :
 
             include(linearProgrammingContract { loaded().createSolver() })
             include(incrementalContract { loaded().createSolver() })
+            include(incrementalOptimizationContract { loaded().createSolver() })
             include(storeContract(propagates = false) { SatisfiabilityStore.of(loaded().createSolver()) })
             include(z3OptimizationContract { loaded().createSolver() })
             include(z3RealContract { loaded().createSolver() })
