@@ -47,12 +47,12 @@ A stream is single-pass. Close it if you stop reading early. Satisfaction enumer
 | `BlockingSolver.of(backend)` | Create a solver from the backend without taking ownership of the backend |
 | `BlockingSolver.solve`, `solutions`, `openSession` | Blocking `SolveResult`; a `BlockingSolutionStream`; a `BlockingSession` (`UnsupportedOperationException` for routes without sessions) |
 | `BlockingSolutionStream` | `Iterator<SolutionEvent>` and `AutoCloseable`, so `for (event in stream)` reads solutions and then one completion; `terminalResult`, `cancel` |
-| `BlockingSession` | `add`, `push`, `popTo`, blocking `check(assumptions, timeoutMillis)` |
+| `BlockingSession` | `add`, `push`, `popTo`, blocking `check(assumptions, timeoutMillis)` and `optimize(objective, assumptions, timeoutMillis)` |
 | `ConstraintStore.blocking()`, `BlockingStore.of(store)` | Take ownership of a store with blocking `constrain`, `entails` and `explain` |
 | `SolverBackendLoader<B>.load()` | Suspending factory of a backend whose runtime starts asynchronously; implemented by `AutoBackend.Companion`, `Z3` and `Z3JsBackend.Companion` |
 | `loadAutoBackend(strategy, policy)` | JVM and Native, in `:solve-auto`: blocking counterpart of `AutoBackend.load` (Java: `AutoBackends.loadAutoBackend()`) |
 
-On the JVM the wrappers also offer `solveAsync`, `checkAsync`, `constrainAsync` and `entailsAsync`, which return a `CompletableFuture`; closing the owner cancels pending futures, and interrupting a blocked thread cancels its search. Each wrapper is single-consumer, like the object it wraps. Inside coroutines prefer the suspending API, which does not hold a thread while the engine searches.
+On the JVM the wrappers also offer `solveAsync`, `checkAsync`, `optimizeAsync`, `constrainAsync` and `entailsAsync`, which return a `CompletableFuture`; closing the owner cancels pending futures, and interrupting a blocked thread cancels its search. Each wrapper is single-consumer, like the object it wraps. Inside coroutines prefer the suspending API, which does not hold a thread while the engine searches.
 
 ```kotlin
 --8<-- "solve-auto/src/jvmTest/kotlin/io/github/gciatto/ktconstraints/solve/auto/examples/howto/BlockingCalls.kt:imports"
@@ -83,7 +83,7 @@ A projected assignment may omit variables needed to evaluate a compound expressi
 
 An **incremental session** keeps assertions between checks. A **frame** groups changes that can be undone together. This is repeated satisfiability checking, separate from batch optimization and from domain propagation (removing impossible values).
 
-`IncrementalConstraintSolver` extends `ConstraintSolver`; obtain one with `backend.createIncrementalSolver()`, which fails explicitly on routes without sessions. Its `openSession(model)` puts the model's constraints and variables in the root frame; closing the solver closes its sessions. Session checks ask for satisfiability even when the source model has an objective.
+`IncrementalConstraintSolver` extends `ConstraintSolver`; obtain one with `backend.createIncrementalSolver()`, which fails explicitly on routes without sessions. Its `openSession(model)` puts the model's constraints and variables in the root frame; closing the solver closes its sessions. Session checks ask for satisfiability even when the source model has an objective; `optimize` takes its objective per call.
 
 | `IncrementalSession` member | Contract |
 |---|---|
@@ -93,6 +93,7 @@ An **incremental session** keeps assertions between checks. A **frame** groups c
 | `push()` | Open a frame and return an opaque `Checkpoint` for the state before that frame's changes |
 | `popTo(checkpoint)` | Remove that frame and all newer frames, including their variables; invalidate those checkpoints |
 | `check(assumptions, timeoutMillis)` | Suspending satisfiability query; assumptions hold for this call only; defaults are an empty list and no timeout |
+| `optimize(objective, assumptions, timeoutMillis)` | Suspending optimization of an `Objective` (integer or real) over the active assertions plus assumptions; the objective and assumptions hold for this call only. Returns a `SolveResult` with batch meaning: `OPTIMAL`, `FEASIBLE` with an incumbent and proven bound after a limit, `INFEASIBLE`, `UNBOUNDED` or `UNKNOWN`. Routes declare `INCREMENTAL_OPTIMIZATION` |
 | `close()` | Idempotent resource release |
 
 A checkpoint belongs to one session; stale or foreign checkpoints are errors. Use one consumer per session. `CheckResult` reports `CheckStatus`, assignment, descriptor, termination, metadata and optional assumption `unsatCore`. The core is a sufficient subset, not necessarily the smallest one; see [Results and statuses](results-and-statuses.md#incremental-checkresult) and [Use incremental sessions](../how-to/incremental-sessions.md).
