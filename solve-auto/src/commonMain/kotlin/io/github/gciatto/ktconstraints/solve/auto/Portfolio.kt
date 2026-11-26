@@ -183,7 +183,7 @@ internal class Portfolio(
 
     private companion object {
         private fun rejections(selection: Selection) =
-            selection.rejections.map { (id, reasons) -> "$id rejected: ${reasons.joinToString("; ")}" }
+            selection.diagnosis + selection.rejections.map { (id, reasons) -> "$id rejected: ${reasons.joinToString("; ")}" }
 
         /** The objective value of [result], integer or real, as an exact rational. */
         private fun score(result: SolveResult): Rational? = result.realObjectiveValue ?: result.objectiveValue?.let { Rational.of(it) }
