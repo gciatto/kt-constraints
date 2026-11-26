@@ -78,10 +78,20 @@ class RationalSpec :
                     else -> random.nextLong()
                 }
 
-            fun value(): Rational = Rational.of(BigInteger.of(component()), BigInteger.of(component().let { if (it == 0L) 7 else it }))
+            // Some values exceed Long, so every pair of the Int, Long and BigInteger representations meets.
+            fun big(value: Long): BigInteger =
+                if (random.nextInt(5) ==
+                    0
+                ) {
+                    BigInteger.of(value) * BigInteger.of(Long.MAX_VALUE)
+                } else {
+                    BigInteger.of(value)
+                }
+
+            fun value(): Rational = Rational.of(big(component()), big(component().let { if (it == 0L) 7 else it }))
 
             fun big(r: Rational) = r.numerator to r.denominator
-            repeat(2000) {
+            repeat(4000) {
                 val a = value()
                 val b = value()
                 val (an, ad) = big(a)
