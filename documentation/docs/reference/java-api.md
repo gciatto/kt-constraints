@@ -24,7 +24,7 @@ Arithmetic, comparison, Boolean and conversion operators are instance methods of
 |---|---|
 | `BlockingSolver` | Static `of(SolverBackend)` creates a solver with `createSolver()` but does not close the backend; `of(ConstraintSolver)` takes ownership. `getDescriptor`, `solve(model, options)`, `solveAsync(model, options)`, `solutions(model, options)`, `openSession(model)`, `close` |
 | `BlockingSolutionStream` | `Iterator<SolutionEvent>` and `AutoCloseable`; `hasNext`, `next`, `getTerminalResult`, `cancel`, `close` |
-| `BlockingSession` | `getDescriptor`, `add`, `push`, `popTo`, `check(assumptions, timeoutMillis)`, `checkAsync(assumptions, timeoutMillis)`, `close` |
+| `BlockingSession` | `getDescriptor`, `add`, `push`, `popTo`, `check(assumptions, timeoutMillis)`, `checkAsync(assumptions, timeoutMillis)`, `optimize(objective, assumptions, timeoutMillis)`, `optimizeAsync(objective, assumptions, timeoutMillis)`, `close` |
 
 Backends are `AutoCloseable`: open the backend in the same try-with-resources statement as the solver, before it, so that a backend owning a runtime (such as `AutoBackend`) is released after the solver. `AutoBackends.loadAutoBackend()`, `loadAutoBackend(strategy)` and `loadAutoBackend(strategy, policy)` in `:solve-auto` load the routes bundled for the JVM on the calling thread; JVM backends such as `new Z3Backend()` or `new ChocoBackend()` are constructed directly.
 
@@ -38,7 +38,7 @@ Overloads omit optional solve options, assumptions or timeouts. `solve` blocks t
 
 A stream yields `SolutionFound` events followed by one `SolveCompleted`; close it when stopping early. The final result is available through the completion event or `getTerminalResult()`. Use try-with-resources for the solver and stream.
 
-`openSession` requires an `IncrementalConstraintSolver`; unsupported routes throw `UnsupportedOperationException`. `push` returns an owner-specific `Checkpoint`; `popTo` invalidates it and newer checkpoints. Session checks return `CheckResult`, with an optional sufficient assumption core. There is no `declare` wrapper on `BlockingSession`.
+`openSession` requires an `IncrementalConstraintSolver`; unsupported routes throw `UnsupportedOperationException`. `push` returns an owner-specific `Checkpoint`; `popTo` invalidates it and newer checkpoints. Session checks return `CheckResult`, with an optional sufficient assumption core. `optimize` takes an `Objective`, such as `new Objective.Maximize(expr)`, for that call only and returns a `SolveResult`. There is no `declare` wrapper on `BlockingSession`.
 
 ## Constraint stores
 
