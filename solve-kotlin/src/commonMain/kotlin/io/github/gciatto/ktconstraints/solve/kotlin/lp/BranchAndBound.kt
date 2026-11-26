@@ -8,8 +8,8 @@ import io.github.gciatto.ktconstraints.solve.linear.approximate
 import org.gciatto.kt.math.BigInteger
 
 /**
- * Exact branch and cut over a [LinearProgram]'s integer columns. Rounds of [GomoryCuts] first tighten the root
- * relaxation, and the cut pool stays in every node's relaxation. Every node tightens integer bounds on one shared
+ * Exact branch and bound over a [LinearProgram]'s integer columns. Optional rounds of [GomoryCuts] first tighten the
+ * root relaxation, and the cut pool stays in every node's relaxation. Every node tightens integer bounds on one shared
  * [Simplex], which repairs feasibility from the previous basis instead of starting over. The search plunges: after a
  * branching it dives into the child nearer the relaxation's value, and once a dive ends it resumes from the open node
  * with the best bound, so [bestBound] tightens steadily. Columns are chosen by pseudocost, the objective lost per unit
@@ -21,6 +21,11 @@ import org.gciatto.kt.math.BigInteger
 internal class BranchAndBound(
     private val program: LinearProgram,
     private val stopped: () -> Boolean = { false },
+    /**
+     * Rounds of Gomory cuts at the root. Off by default: on the five mixed-integer benchmark families, every round slowed the
+     * search overall (zero rounds took 610 ms, one 700 ms, five 14 s), as exact cut rows make every later pivot dearer.
+     */
+    private val cutRounds: Int = 0,
 ) {
     private val simplex = Simplex(program, stopped = stopped)
 
@@ -77,7 +82,7 @@ internal class BranchAndBound(
      */
     private fun cut(score: Map<Int, Rational>) {
         var previous: DeltaRational? = null
-        repeat(CUT_ROUNDS) {
+        repeat(cutRounds) {
             apply(emptyList())
             if (!simplex.check() || !simplex.maximize(score)) return
             val value = simplex.objectiveValue(score)
@@ -312,9 +317,6 @@ internal class BranchAndBound(
         val HALF: Rational = Rational.of(1, 2)
         val MINIMUM_GAIN: Rational = Rational.of(1, 1_000_000)
 
-        // shortcut: one round, tuned on the knapsack and facility-location families only (more rounds bloated the
-        // tableau for little bound gain); revisit with more MILP families or a gap-based stopping rule.
-        const val CUT_ROUNDS = 1
         const val CUTS_PER_ROUND = 8
     }
 }

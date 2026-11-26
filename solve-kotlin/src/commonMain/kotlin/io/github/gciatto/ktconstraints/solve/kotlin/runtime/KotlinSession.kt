@@ -41,7 +41,7 @@ internal class KotlinSession(
     private val known = model.variables.toMutableSet()
     private var engine: KotlinEngine? = null
 
-    /** The branch-and-cut stream of an optimization in progress, so that closing the session cancels it. */
+    /** The branch-and-bound stream of an optimization in progress, so that closing the session cancels it. */
     private val linear = AtomicReference<KotlinLinearStream?>(null)
 
     override fun declare(variable: Variable) =
@@ -89,10 +89,10 @@ internal class KotlinSession(
         }
 
     /**
-     * Linear snapshots (real objectives, and integer ones over linear constraints) go to branch and cut, as batch
+     * Linear snapshots (real objectives, and integer ones over linear constraints) go to branch and bound, as batch
      * solves do; any other integer objective is bisected on the session's own engine, with each bound an assumption,
      * so compiled definitions and learned clauses carry over to later checks and optimizations.
-     * Branch and cut deliberately starts afresh on each call: keeping the exact tableau between calls was measured to
+     * Branch and bound deliberately starts afresh on each call: keeping the exact tableau between calls was measured to
      * be 2x slower on facility location and 20x slower on dense LPs, because exact pivots from a warm basis carry the
      * huge fractions that the floating-point start avoids.
      */
