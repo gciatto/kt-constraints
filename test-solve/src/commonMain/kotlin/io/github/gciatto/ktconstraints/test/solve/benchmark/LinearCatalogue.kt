@@ -1,15 +1,19 @@
 package io.github.gciatto.ktconstraints.test.solve.benchmark
 
 import io.github.gciatto.ktconstraints.core.Rational
+import io.github.gciatto.ktconstraints.core.integer.IntLiteral
 import io.github.gciatto.ktconstraints.core.integer.IntToReal
+import io.github.gciatto.ktconstraints.core.integer.arithmetic.LinearSum
+import io.github.gciatto.ktconstraints.core.integer.relation.IntLessOrEqual
 import io.github.gciatto.ktconstraints.core.real.RealExpr
 import io.github.gciatto.ktconstraints.core.real.RealLiteral
 import io.github.gciatto.ktconstraints.model.ConstraintModel
 import io.github.gciatto.ktconstraints.solve.result.SolveStatus
+import org.gciatto.kt.math.BigInteger
 import kotlin.random.Random
 
 /**
- * Linear and mixed-integer programs with real objectives whose optima are known independently of any solver: planted
+ * Linear and mixed-integer programs, mostly with real objectives, whose optima are known independently of any solver: planted
  * primal-dual pairs, dynamic programming and enumeration. [builders] grows them with `scale`, like [BenchmarkCatalogue].
  */
 object LinearCatalogue {
@@ -25,10 +29,11 @@ object LinearCatalogue {
             { plantedLp(8 * scale, 5 * scale, seed) },
             { rationalKnapsack(6 + 4 * scale, seed) },
             { facilityLocation(2 + scale, 4 + 2 * scale, seed) },
+            { boundedKnapsack(4 + 2 * scale, seed) },
         )
 
     /** Families whose instances change with the seed: all of them. */
-    val SEEDED: Set<String> = setOf("lp-planted", "milp-knapsack", "facility-location")
+    val SEEDED: Set<String> = setOf("lp-planted", "milp-knapsack", "facility-location", "bounded-knapsack")
 
     /**
      * `max c·x` subject to `A·x ≤ b`, `x ≥ 0`, with positive `A`, built around a planted optimal pair: a rational
@@ -121,6 +126,40 @@ object LinearCatalogue {
                 minimize(sum(fixed + variable))
             }
         return BenchmarkInstance("facility-location", facilities * customers, model, SolveStatus.OPTIMAL, expectedRealObjective = optimum)
+    }
+
+    /**
+     * Bounded knapsack with an integer objective: [n] items, each taken up to 50 times, so integer domains are wide.
+     * The optimum comes from dynamic programming over the capacity.
+     */
+    fun boundedKnapsack(
+        n: Int,
+        seed: Int = 0,
+    ): BenchmarkInstance {
+        val random = Random(SEED + 59 * n + SEED_STRIDE * seed)
+        val copies = 50
+        val weights = List(n) { random.nextInt(3, 40) }
+        val values = List(n) { random.nextInt(1, 60) }
+        val capacity = weights.sum() * copies / 4
+        val best = IntArray(capacity + 1)
+        for (item in 0 until n) {
+            // Bounded multiplicity: a fresh row per item, taking 0..copies of it.
+            val previous = best.copyOf()
+            for (room in 0..capacity) {
+                for (count in 1..copies) {
+                    val used = count * weights[item]
+                    if (used > room) break
+                    best[room] = maxOf(best[room], previous[room - used] + count * values[item])
+                }
+            }
+        }
+        val model =
+            ConstraintModel.of {
+                val take = List(n) { intVar("take$it", 0..copies) }
+                add(IntLessOrEqual(LinearSum(take, weights.map { BigInteger.of(it.toLong()) }), IntLiteral(capacity)))
+                maximize(LinearSum(take, values.map { BigInteger.of(it.toLong()) }))
+            }
+        return BenchmarkInstance("bounded-knapsack", n, model, SolveStatus.OPTIMAL, BigInteger.of(best[capacity].toLong()))
     }
 
     /** A balanced sum, so deep left-nested trees do not grow with the number of terms. */
