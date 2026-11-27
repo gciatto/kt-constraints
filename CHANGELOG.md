@@ -1,3 +1,104 @@
+## [4.0.0](https://github.com/gciatto/kt-constraints/compare/3.1.0...4.0.0) (2026-11-27)
+
+### ⚠ BREAKING CHANGES
+
+* **solve:** IncrementalSession has a new abstract member, so
+custom session implementations must implement optimize.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01X2xs6ExEnwgHgap41DajQW
+* **solve-highs:** Objective gains the MinimizeReal and MaximizeReal
+subtypes, so exhaustive `when` expressions over Objective need new
+branches; SolverCapability gains FLOATING_POINT_REALS; the OR-Tools MIP
+routes now declare REAL_ARITHMETIC and FLOATING_POINT_REALS.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01X2xs6ExEnwgHgap41DajQW
+
+### Features
+
+* **interop-c:** model and solve exact LP/MILP from C ([cd5d018](https://github.com/gciatto/kt-constraints/commit/cd5d018c6e0efe7df1b29ed37bb0adeafda4cbf6))
+* **interop-js:** add minimize and maximize to sessions ([7522868](https://github.com/gciatto/kt-constraints/commit/75228689a6896bd8067e91c77d4039a0e5872e6c))
+* **model:** express real objectives and report exact rational objective values ([65ff156](https://github.com/gciatto/kt-constraints/commit/65ff15604d45199453710b2024fdc9f3b7056a44))
+* **model:** let a scope adopt variables created elsewhere ([cb9d607](https://github.com/gciatto/kt-constraints/commit/cb9d607473373f55a4e17a47f4e9708d6d25d520))
+* **solve-auto:** lead unsupported-model reports with the model diagnosis ([8670660](https://github.com/gciatto/kt-constraints/commit/8670660568b9aafb0c371f303191541a951debf2))
+* **solve-auto:** try HiGHS before Z3 on Node and Native ([24cf1c1](https://github.com/gciatto/kt-constraints/commit/24cf1c1cb5a5699506fe3ae56b34e0645af5bc8b))
+* **solve-blocking:** expose session optimization, with futures on the JVM ([12ff5e7](https://github.com/gciatto/kt-constraints/commit/12ff5e74479d7ad7d9900086a5973e00b2e0c12f))
+* **solve-highs:** add direct HiGHS routes on Kotlin/Native and JavaScript ([1aeab50](https://github.com/gciatto/kt-constraints/commit/1aeab50e994a53a79f1fa00b2b916ea696fb8967))
+* **solve-kotlin:** check simplex certificates and explain real conflicts ([44a609d](https://github.com/gciatto/kt-constraints/commit/44a609d2209aeb8f227c98d0384bcda6138a29f1))
+* **solve-kotlin:** choose branch and cut or SAT from the model's structure ([d4415b0](https://github.com/gciatto/kt-constraints/commit/d4415b05234cb2d25adc1b93439980df2ffe4057))
+* **solve-kotlin:** optimize incrementally over sessions ([f70d14f](https://github.com/gciatto/kt-constraints/commit/f70d14f69785d3d0e0a446a11aa9fb7426e47c2a))
+* **solve-kotlin:** optimize linear programs exactly with a bounded-variable simplex ([8833c58](https://github.com/gciatto/kt-constraints/commit/8833c58aa3b9ff18fcb176b3578a5236e92305ec))
+* **solve-kotlin:** search mixed-integer programs best bound first with pseudocosts ([8b31381](https://github.com/gciatto/kt-constraints/commit/8b31381b8da5036dc11a3a9f9d955f16261ee907))
+* **solve-kotlin:** solve mixed-integer programs exactly with branch and bound ([d89b608](https://github.com/gciatto/kt-constraints/commit/d89b6086d201d67ad3be30ecfc1a2f227fce9965))
+* **solve-kotlin:** tighten mixed-integer relaxations with exact Gomory cuts ([bd43438](https://github.com/gciatto/kt-constraints/commit/bd43438761c7cf3f700b3219c43b924ee369fc5a))
+* **solve-mip:** solve linear programs with reals in floating point on explicit consent ([8c9c0bc](https://github.com/gciatto/kt-constraints/commit/8c9c0bca9c51fc243c9894aa37d957c0d75fe868))
+* **solve-spi:** build batch models standing for a session's state ([730e248](https://github.com/gciatto/kt-constraints/commit/730e24821f0f13e7051281341f1a1783553b5c1f))
+* **solve-spi:** classify linear, mixed-integer and 0-1 programs and diagnose unmet needs ([f40ff23](https://github.com/gciatto/kt-constraints/commit/f40ff237a135812ff5d554b4affac133033755fa))
+* **solve-z3:** optimize real objectives exactly with Z3's optimizer ([addec72](https://github.com/gciatto/kt-constraints/commit/addec72706e2a33020701c6b57cff4c1da2ec764))
+* **solve-z3:** optimize sessions on their own context ([67dd490](https://github.com/gciatto/kt-constraints/commit/67dd490949db0ebc283846499e7992c1620588a0))
+* **solve-z3:** optimize sessions through snapshots of their assertions ([3ebcbda](https://github.com/gciatto/kt-constraints/commit/3ebcbda2b88cacdc62f18ce0accf7a05ff8dae63))
+* **solve:** add a capability for non-linear real objectives ([1b42ecc](https://github.com/gciatto/kt-constraints/commit/1b42ecc90b02b691122caac5a4a1e8fe9346aa9c))
+* **solve:** optimize over incremental sessions ([b24eaa5](https://github.com/gciatto/kt-constraints/commit/b24eaa54ad52cdfdfaacea204a20ec353874e822))
+
+### Bug Fixes
+
+* **solve-mip:** stop HiGHS through OR-Tools from calling near-optimal incumbents optimal ([2e3c9c7](https://github.com/gciatto/kt-constraints/commit/2e3c9c7a556a913aedc1491126cadf4de3b5bec5))
+* **solve-z3:** confirm optimizer claims within the remaining time budget ([3b792b6](https://github.com/gciatto/kt-constraints/commit/3b792b67903dc9826f6e8834b00a401637393597))
+* **solve-z3:** confirm the optimizer's claims before reporting real optima ([553f1b1](https://github.com/gciatto/kt-constraints/commit/553f1b1ae86a1972779d78023eaa8cba4fe75f68))
+* **solve-z3:** stop reads one second past the timeout even when Z3 overruns ([5eeaaea](https://github.com/gciatto/kt-constraints/commit/5eeaaeadcea3b20208c6a2ca988d8b317ce41535))
+* **test-solve:** keep set cover within its enumeration limit up to scale 16 ([5604d7c](https://github.com/gciatto/kt-constraints/commit/5604d7c17a987c00f9507aa5e7f911f9456856a1))
+
+### Documentation
+
+* **documentation:** describe branch and bound with cuts off by default ([7ed4228](https://github.com/gciatto/kt-constraints/commit/7ed42284961348d37456d593f001582d19a40a6c))
+* **documentation:** describe problem classes, technique selection and diagnoses ([4578538](https://github.com/gciatto/kt-constraints/commit/457853870c98626ae933a0607d5255751e642c23))
+* **documentation:** describe the simplex real theory, certificates and best-bound search ([83eb93d](https://github.com/gciatto/kt-constraints/commit/83eb93d076f36cc8eb359a09285868514cb6ce30))
+* **documentation:** document LP/MILP across platforms and languages ([7a91cd0](https://github.com/gciatto/kt-constraints/commit/7a91cd0c8c270c76c5cc9c5811ad33f7332fa9b8))
+* **documentation:** explain how to re-optimize incremental sessions ([9a8453f](https://github.com/gciatto/kt-constraints/commit/9a8453fe428f6c5e49850a55da95bb2c9626481f))
+* **documentation:** list linear and mixed-integer programs in the status table ([58b4c82](https://github.com/gciatto/kt-constraints/commit/58b4c8284e90c632c831d7d8fe891c1ea67faf4f))
+* **documentation:** record LP/MILP route benchmarks and refresh the catalogue run ([fbe250b](https://github.com/gciatto/kt-constraints/commit/fbe250b0bd8698339d3dc552a33f018384ade7ed))
+* **documentation:** record the HiGHS gap fix and fill its benchmark cell ([5b4ab1b](https://github.com/gciatto/kt-constraints/commit/5b4ab1ba81a6d71aa0a4f25770644c68b491a8e2))
+* **documentation:** refresh Kotlin's LP/MILP benchmark columns with cuts off ([73bc0ca](https://github.com/gciatto/kt-constraints/commit/73bc0ca278582649dad603b0d5e4a31f587bf540))
+* **documentation:** refresh route benchmarks after technique selection and the Rational variants ([37f7ed5](https://github.com/gciatto/kt-constraints/commit/37f7ed5a394cc32d48685cf8efd571969abbe880))
+* **readme:** present LP/MILP, technique selection and session optimization ([aa09031](https://github.com/gciatto/kt-constraints/commit/aa0903107a67633de94b9f5ab35866f0103bda02))
+* **solve-kotlin:** record why session branch and cut restarts each call ([2e400db](https://github.com/gciatto/kt-constraints/commit/2e400db0c6eaa2c11ae7492b1b4f2f5fe7e143f8))
+
+### Performance improvements
+
+* **core:** keep machine-sized rationals off BigInteger ([7d4b1b6](https://github.com/gciatto/kt-constraints/commit/7d4b1b63b7c1f0bf1a9fd2df5633bf3564394916))
+* **core:** represent rationals as Int, Long or BigInteger variants ([7deae95](https://github.com/gciatto/kt-constraints/commit/7deae9584a949fac336f334a87e4e876f8c1ffcb))
+* **core:** run rational arithmetic on checked Longs across the whole Long range ([de6fb44](https://github.com/gciatto/kt-constraints/commit/de6fb44220c187c1c823d6fc830fb4c472246173))
+* **solve-kotlin:** pivot the floating guess sparsely and back-substitute fraction-free ([acf16d7](https://github.com/gciatto/kt-constraints/commit/acf16d721f76b27def70f2abaf44b27117a8222f))
+* **solve-kotlin:** price the exact simplex with Dantzig's rule and cut once ([309d610](https://github.com/gciatto/kt-constraints/commit/309d6103cfeb127c40011fdd0919cb8815419b27))
+* **solve-kotlin:** start exact linear programs from a floating-point basis ([cc17219](https://github.com/gciatto/kt-constraints/commit/cc172192656688dc09730d6d69b31d75393212a5))
+* **solve-kotlin:** turn Gomory cuts off by default ([0f2f218](https://github.com/gciatto/kt-constraints/commit/0f2f2181e8aa2296cb7409613d74a3a40e581cd8))
+
+### Tests
+
+* **solve-auto:** cover session optimization in examples and at the Java and TypeScript boundaries ([65e8b7e](https://github.com/gciatto/kt-constraints/commit/65e8b7e15708bf550c59cc8e2f53e2746b7d3694))
+* **solve-auto:** let timed-out scripted solvers overrun the deadline ([b1822c3](https://github.com/gciatto/kt-constraints/commit/b1822c370b503ddd26f8456afb352377d5d334e9))
+* **solve-auto:** report routes that overrun their timeout in the route benchmark ([1271e4a](https://github.com/gciatto/kt-constraints/commit/1271e4a8c441d4d5b678c2cade0cde57c1b5f996))
+* **solve-blocking:** cover mixed-integer optima and real-valued sessions ([e21fdca](https://github.com/gciatto/kt-constraints/commit/e21fdcaf972b592d1655569281f1f9c8f0d844f0))
+* **test-solve:** add a bounded knapsack family with wide integer domains ([460413b](https://github.com/gciatto/kt-constraints/commit/460413b0afc94352ed8d9373dfc989611fdaefde))
+* **test-solve:** add a shared incremental optimization contract ([13de15e](https://github.com/gciatto/kt-constraints/commit/13de15ea91ca98b369ef59e90b41b00be9a826a6))
+* **test-solve:** add LP and MILP benchmark families with known optima ([28b4c42](https://github.com/gciatto/kt-constraints/commit/28b4c4213de78fc2d39a1e037ebbbe7d01fe983a))
+* **test-solve:** add set-cover and two-constraint knapsack families ([e0bf1fc](https://github.com/gciatto/kt-constraints/commit/e0bf1fc9122d58f206eadb3a91274adac025f6c4))
+
+### Build and continuous integration
+
+* **test-native:** provision zlib beside HiGHS on macOS ([ee2eaa4](https://github.com/gciatto/kt-constraints/commit/ee2eaa404c6d9b5b791722bb14ceb2d28f9be773))
+* **workflows:** move multi-line workflow scripts into .github/scripts ([f96fc27](https://github.com/gciatto/kt-constraints/commit/f96fc274662262f94f171df2cf57f84f48e4ee8e))
+
+### Style improvements
+
+* **solve-kotlin:** wrap the cut-rounds test's instance list ([41a0fee](https://github.com/gciatto/kt-constraints/commit/41a0fee80dee0257391e036408197ebc9a601d27))
+* **solve-z3:** name the optimum vector size in the JS port ([bcc7c15](https://github.com/gciatto/kt-constraints/commit/bcc7c1582e6f6cd612338e64ee81bb6e4ea3cff7))
+
+### Refactoring
+
+* **solve-kotlin:** share LP/MILP helpers and split multi-type files ([6fe465f](https://github.com/gciatto/kt-constraints/commit/6fe465f59c79cb029b53c78cc2d559ae070c4caf))
+
 ## [3.1.0](https://github.com/gciatto/kt-constraints/compare/3.0.0...3.1.0) (2026-11-25)
 
 ### Features
