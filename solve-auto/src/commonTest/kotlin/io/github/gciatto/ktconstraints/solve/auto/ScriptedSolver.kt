@@ -24,7 +24,8 @@ internal class ScriptedSolver(
         log.peak = maxOf(log.peak, log.running)
         try {
             val timedOut = options.timeoutMillis != null && options.timeoutMillis!! < delayMillis
-            delay(if (timedOut) options.timeoutMillis!! else delayMillis)
+            // +1: Node timers may fire ~1 ms early, which would leave the shared deadline unexpired.
+            delay(if (timedOut) options.timeoutMillis!! + 1 else delayMillis)
             return script(model, descriptor, timedOut)
         } catch (cancelled: CancellationException) {
             log.cancelled += descriptor.engine
